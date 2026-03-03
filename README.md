@@ -22,7 +22,8 @@ Use o pacote local gerado para instalacao offline/manual.
 
 ## Comandos principais
 
-- `/prumo:prumo` (setup/menu do sistema)
+- `/prumo:setup` (setup/menu do sistema)
+- `/prumo:prumo` (alias legado de setup)
 - `/prumo:briefing`
 - `/prumo:handover`
 - `/prumo:sanitize`
@@ -48,4 +49,4 @@ Se aparecer "comando desconhecido" apos instalar/atualizar, siga o protocolo de 
 
 ## Versao
 
-Versao atual: `4.0.5`.
+Versao atual: `4.1.0`.

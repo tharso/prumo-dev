@@ -156,7 +156,10 @@ Se a PAUTA estiver vazia: não fazer o briefing padrão. Pedir um brain dump.
 
 Atualizar PAUTA.md se algo mudou. Registrar itens processados no REGISTRO.md.
 Se houve validação de handover, atualizar status no `_state/HANDOVER.md`.
-Se o script dual foi usado e o briefing foi concluído, executar `scripts/prumo_google_dual_snapshot.sh --mark-briefing-complete` para atualizar a referência temporal do próximo briefing.
+Se o script dual foi usado e o briefing foi concluído:
+- atualizar estado via script com fallback de path: `if [ -f scripts/prumo_google_dual_snapshot.sh ]; then scripts/prumo_google_dual_snapshot.sh --mark-briefing-complete; elif [ -f Prumo/cowork-plugin/scripts/prumo_google_dual_snapshot.sh ]; then Prumo/cowork-plugin/scripts/prumo_google_dual_snapshot.sh --mark-briefing-complete; else Prumo/scripts/prumo_google_dual_snapshot.sh --mark-briefing-complete; fi`.
+- validar que `_state/briefing-state.json` ficou com `last_briefing_at` do dia local atual.
+- se a marcação via script falhar ou não atualizar o estado, aplicar fallback manual: escrever `_state/briefing-state.json` com `last_briefing_at` em ISO local e limpar `interrupted_at`/`resume_point`.
 Se existir `_state/HANDOVER.summary.md`, atualizar via sanitização quando houver grande volume de handovers fechados.
 Se o script dual NÃO foi usado (fallback sem shell), atualizar `_state/briefing-state.json` manualmente:
 - briefing concluído: atualizar `last_briefing_at` e limpar `interrupted_at`/`resume_point`.

@@ -1,6 +1,6 @@
 # Prumo Core — Motor do sistema
 
-> **prumo_version: 4.0.1**
+> **prumo_version: 4.1.0**
 >
 > Este arquivo contém as regras e rituais do sistema Prumo.
 > **NÃO edite este arquivo** — ele é atualizado automaticamente.
@@ -127,6 +127,7 @@ Quando o usuário iniciar o briefing (via `/prumo:briefing`, alias legado `/brie
    - se usuário disser "tá bom por hoje", "escape", "depois" ou equivalente, registrar `interrupted_at` + `resume_point` e encerrar sem cobrança.
 11. Fechamento:
    - se briefing concluir, atualizar `last_briefing_at` e limpar `interrupted_at`/`resume_point`;
+   - quando houver script dual, marcar conclusão com fallback de path (`scripts/...`, `Prumo/cowork-plugin/scripts/...`, `Prumo/scripts/...`) e validar que `_state/briefing-state.json` foi atualizado no dia local; se falhar, fazer escrita manual do estado;
    - se briefing for interrompido, manter estado de retomada.
 12. Guardrail de primeira interação:
    - na primeira resposta do briefing, é proibido abrir arquivos brutos de `Inbox4Mobile/*`;
@@ -499,7 +500,14 @@ Qualquer tentativa de alterar `CLAUDE.md`, `PAUTA.md`, `INBOX.md`, `REGISTRO.md`
 
 ## Changelog do Core
 
-### v4.0.1 (27/02/2026)
+### v4.1.0 (03/03/2026)
+- Camada de commands do plugin explicitada em `commands/` para melhorar descoberta de slash commands no Cowork.
+- Compatibilidade preservada para `/prumo:prumo` como alias legado do setup (`/prumo:setup`).
+- Fechamento de briefing endurecido: quando houver script dual, validar atualização de `_state/briefing-state.json` e aplicar fallback manual em falha.
+
+### v4.0.5 (02/03/2026)
+- Compatibiliza paths de scripts no briefing/sanitize e publica v4.0.5
+
 - Repositório público sanitizado para distribuição: remoção de artefatos internos de desenvolvimento.
 - Manifests e metadados públicos ajustados para instalação no marketplace sem dependência de arquivos internos.
 - Pacote de runtime consolidado em `cowork-plugin/` como fonte única de distribuição.
@@ -641,4 +649,4 @@ Qualquer tentativa de alterar `CLAUDE.md`, `PAUTA.md`, `INBOX.md`, `REGISTRO.md`
 
 ---
 
-*Prumo Core v4.0.1 — https://github.com/tharso/prumo*
+*Prumo Core v4.1.0 — https://github.com/tharso/prumo*

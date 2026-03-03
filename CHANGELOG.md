@@ -4,6 +4,28 @@ Este arquivo registra mudanças públicas do produto Prumo.
 
 O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamento semântico.
 
+## [4.1.0] - 2026-03-03
+
+### Added
+- Diretório `commands/` no plugin com slash commands explícitos para UI do Cowork:
+  - `commands/setup.md`
+  - `commands/prumo.md` (alias legado)
+  - `commands/briefing.md`
+  - `commands/handover.md`
+  - `commands/sanitize.md`
+  - `commands/start.md`
+- Comando legado `/prumo:prumo` preservado via alias dedicado, sem quebrar fluxo de usuários existentes.
+
+### Changed
+- Versionamento sincronizado para `4.1.0` em:
+  - `VERSION`
+  - `cowork-plugin/VERSION`
+  - `plugin.json`
+  - `.claude-plugin/plugin.json`
+  - `marketplace.json`
+  - `.claude-plugin/marketplace.json`
+- README atualizado para refletir `/prumo:setup` como comando canônico e `/prumo:prumo` como alias legado.
+
 ## [4.0.5] - 2026-02-27
 
 ### Fixed
