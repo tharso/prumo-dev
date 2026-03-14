@@ -1,18 +1,11 @@
 {
   "name": "prumo",
-  "description": "Sistema de organização de vida pessoal. Transforma o Claude em interface única para capturar, processar, lembrar e cobrar. Micromanagement. Sem o idiota.",
-  "version": "4.1.0",
+  "description": "Sistema de organização de vida pessoal com IA. Transforma o Claude em interface única para capturar, processar, lembrar e cobrar — tudo em arquivos locais, sem cloud, sem lock-in.",
+  "version": "4.1.1",
   "author": {
     "name": "Prumo Maintainers"
   },
-  "homepage": "https://tharso.github.io/prumo",
+  "homepage": "https://prumo.me",
   "repository": "https://github.com/tharso/prumo",
-  "license": "MIT",
-  "skills": [
-    "./cowork-plugin/skills/prumo",
-    "./cowork-plugin/skills/briefing",
-    "./cowork-plugin/skills/handover",
-    "./cowork-plugin/skills/sanitize",
-    "./cowork-plugin/skills/start"
-  ]
+  "license": "MIT"
 }

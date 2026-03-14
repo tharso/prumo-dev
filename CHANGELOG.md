@@ -4,6 +4,18 @@ Este arquivo registra mudanças públicas do produto Prumo.
 
 O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamento semântico.
 
+## [4.1.1] - 2026-03-10
+
+### Changed
+- Removida a chave `skills` dos manifests `plugin.json` e `.claude-plugin/plugin.json` para validar descoberta de comandos/skills via fluxo atual do Cowork, sem alterar a estrutura física de diretórios.
+- Versionamento sincronizado para `4.1.1` em:
+  - `VERSION`
+  - `cowork-plugin/VERSION`
+  - `plugin.json`
+  - `.claude-plugin/plugin.json`
+  - `marketplace.json`
+  - `.claude-plugin/marketplace.json`
+
 ## [4.1.0] - 2026-03-03
 
 ### Added

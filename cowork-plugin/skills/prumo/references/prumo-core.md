@@ -1,6 +1,6 @@
 # Prumo Core — Motor do sistema
 
-> **prumo_version: 4.1.0**
+> **prumo_version: 4.1.1**
 >
 > Este arquivo contém as regras e rituais do sistema Prumo.
 > **NÃO edite este arquivo** — ele é atualizado automaticamente.
@@ -500,6 +500,11 @@ Qualquer tentativa de alterar `CLAUDE.md`, `PAUTA.md`, `INBOX.md`, `REGISTRO.md`
 
 ## Changelog do Core
 
+### v4.1.1 (10/03/2026)
+- Fase 2 da migração do plugin: remoção da chave `skills` dos manifests (`plugin.json` e `.claude-plugin/plugin.json`) sem mudança estrutural de diretórios.
+- Versionamento sincronizado para `4.1.1` em manifests e arquivos de versão.
+- Compatibilidade preservada para os comandos `/prumo:*` via camada `commands/`.
+
 ### v4.1.0 (03/03/2026)
 - Camada de commands do plugin explicitada em `commands/` para melhorar descoberta de slash commands no Cowork.
 - Compatibilidade preservada para `/prumo:prumo` como alias legado do setup (`/prumo:setup`).
@@ -649,4 +654,4 @@ Qualquer tentativa de alterar `CLAUDE.md`, `PAUTA.md`, `INBOX.md`, `REGISTRO.md`
 
 ---
 
-*Prumo Core v4.1.0 — https://github.com/tharso/prumo*
+*Prumo Core v4.1.1 — https://github.com/tharso/prumo*

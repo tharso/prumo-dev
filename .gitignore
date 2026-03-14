@@ -10,10 +10,15 @@ aprendizados-*.md
 artigo-prumo-*.md
 landing-copy-*.md
 manifesto-prumo.md
+identidade-visual-*.md
 melhorias-pendentes/
 prumo-ideias.html
-prumo-landing.html
+prumo-landing*.html
+favicon-preview.html
 test-output/
+Old/
+experiments/
+trab/
 
 # Estado runtime local (handover, lock e telemetria de manutenção)
 _state/
