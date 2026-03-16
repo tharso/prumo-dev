@@ -1,6 +1,6 @@
 # Prumo Core — Motor do sistema
 
-> **prumo_version: 4.2.3**
+> **prumo_version: 4.2.4**
 >
 > Este arquivo contém as regras e rituais do sistema Prumo.
 > **NÃO edite este arquivo** — ele é atualizado automaticamente.
@@ -71,7 +71,7 @@
 Para evitar overhead sem empobrecer o sistema, usar leitura por camadas:
 
 1. Camada base (sempre): `CLAUDE.md`, `PRUMO-CORE.md`, `PAUTA.md`, `INBOX.md`.
-2. Camada leve (preferencial): `_state/HANDOVER.summary.md`, `Inbox4Mobile/_preview-index.json`, `Inbox4Mobile/inbox-preview.html`.
+2. Camada leve (preferencial): `_state/HANDOVER.summary.md`, `Inbox4Mobile/_preview-index.json`, `Inbox4Mobile/inbox-preview.html`, snapshots `Prumo/snapshots/email-snapshot.json` no Google Drive quando disponíveis.
 3. Camada profunda (sob demanda): binários e arquivos longos (`PDF`, `imagens`, transcrições extensas) apenas para itens `P1`, ambíguos ou de risco.
 
 Referência operacional: `Prumo/references/modules/load-policy.md`.
@@ -100,11 +100,18 @@ Quando o usuário iniciar o briefing (via `/prumo:briefing`, alias legado `/brie
    - se houver `interrupted_at` + `resume_point` no mesmo dia local, oferecer retomada: `a) retomar` / `b) recomeçar`;
    - se `interrupted_at` for de dia anterior, expirar silenciosamente (`interrupted_at`/`resume_point` limpos).
    - antes de qualquer escrita nova, capturar em memória o `last_briefing_at` anterior e usar esse valor como janela desta sessão.
-6. Rodar autosanitização (quando shell disponível):
+6. Tentar fonte primária multi-conta via snapshots no Google Drive:
+   - buscar `Prumo/snapshots/email-snapshot.json` das contas conectadas via MCP Google Drive;
+   - usar os snapshots como fonte principal para agenda e emails crus por conta;
+   - validar `generated_at`: se estiver acima de 30 min, avisar defasagem no briefing com minutos aproximados, mas ainda aproveitar o snapshot;
+   - respeitar `since` do próprio snapshot;
+   - se houver `emails_error` ou `calendar_error`, preservar dados parciais e reportar o erro em 1 linha;
+   - se o snapshot estiver ausente, inválido, ilegível ou a leitura exceder 45 segundos, seguir para os fallbacks sem bloquear o briefing.
+7. Rodar autosanitização (quando shell disponível):
    - executar `if [ -f scripts/prumo_auto_sanitize.py ]; then python3 scripts/prumo_auto_sanitize.py --workspace . --apply; elif [ -f Prumo/cowork-plugin/scripts/prumo_auto_sanitize.py ]; then python3 Prumo/cowork-plugin/scripts/prumo_auto_sanitize.py --workspace . --apply; else python3 Prumo/scripts/prumo_auto_sanitize.py --workspace . --apply; fi`;
    - respeitar cooldown e gatilhos internos;
    - se falhar, seguir briefing normalmente e reportar falha de manutenção.
-7. Executar briefing em **blocos progressivos**:
+8. Executar briefing em **blocos progressivos**:
    - **Bloco 1 — Panorama (automático, sem interação):**
      - agenda do dia (compromissos + horário);
      - regenerar `inbox-preview.html` + `_preview-index.json` antes de anunciar o panorama (quando shell disponível);
@@ -116,17 +123,18 @@ Quando o usuário iniciar o briefing (via `/prumo:briefing`, alias legado `/brie
    - **Contexto completo (sob demanda):**
      - só aparece em `c` ou via `/prumo:briefing --detalhe`;
      - inclui itens em andamento, atrasados/parados (`desde DD/MM`), agendados da semana e cobranças elegíveis.
-8. Aplicar **supressão temporal** para itens agendados:
+9. Aplicar **supressão temporal** para itens agendados:
    - formato canônico em `PAUTA.md`: `| cobrar: DD/MM` (ou `DD/MM/AAAA`);
    - se `cobrar` estiver no futuro, item não entra no Bloco 1 nem na proposta do dia (apenas conta no agregado);
    - na data de cobrança, item vira elegível para proposta/contexto;
    - na revisão semanal, supressão não se aplica (mostrar tudo).
-9. Curadoria de email (quando disponível) mantém taxonomia obrigatória:
+10. Se os snapshots do Drive não estiverem disponíveis ou válidos e houver shell, pode usar `scripts/prumo_google_dual_snapshot.sh` como fallback multi-conta.
+11. Curadoria de email (quando disponível) mantém taxonomia obrigatória:
    - `Responder`, `Ver`, `Sem ação`;
    - prioridade `P1/P2/P3` e motivo objetivo.
-10. Escape hatch:
+12. Escape hatch:
    - se usuário disser "tá bom por hoje", "escape", "depois" ou equivalente, registrar `interrupted_at` + `resume_point` e encerrar sem cobrança.
-11. Persistência de briefing (obrigatória, sem exceção):
+13. Persistência de briefing (obrigatória, sem exceção):
    - antes da primeira resposta com Bloco 1 + Bloco 2, o agente DEVE persistir o início do briefing do dia em `_state/briefing-state.json`.
    - com shell, preferir `prumo_briefing_state.py` em qualquer um dos paths válidos (`scripts/...`, `Prumo/cowork-plugin/scripts/...`, `Prumo/scripts/...`).
    - sem shell, escrever `last_briefing_at` diretamente com timestamp ISO local atual e limpar `interrupted_at`/`resume_point`.
@@ -135,7 +143,7 @@ Quando o usuário iniciar o briefing (via `/prumo:briefing`, alias legado `/brie
    - validação pós-escrita: ler o arquivo e validar por caso. Se briefing iniciou/concluiu, `last_briefing_at` deve conter a data do dia local e `interrupted_at`/`resume_point` não devem existir. Se briefing foi interrompido, `interrupted_at` deve conter a data do dia local, `resume_point` deve existir, e `last_briefing_at` deve continuar apontando para o início da sessão atual.
    - se a validação do caso correspondente falhar, repetir a escrita correta para esse caso.
    - o briefing do dia só está oficialmente aberto quando esse estado inicial estiver persistido.
-12. Guardrail de primeira interação:
+14. Guardrail de primeira interação:
    - na primeira resposta do briefing, é proibido abrir arquivos brutos de `Inbox4Mobile/*`;
    - primeiro vem panorama + proposta; detalhe só depois de `c` ou `--detalhe`.
 
@@ -190,11 +198,13 @@ No início de cada sessão (especialmente se for um chat novo):
 3. Ler PAUTA.md
 4. Ler INBOX.md (processar se houver itens)
 5. Verificar `Inbox4Mobile/` por triagem leve primeiro (`inbox-preview.html` + `_preview-index.json`); aprofundar só itens críticos
-6. Se Gmail configurado: buscar emails com subject do agente
-7. Se existir `_state/HANDOVER.summary.md`, verificar pendências por ele; fallback para `_state/HANDOVER.md`
-8. Se existir `_state/briefing-state.json`, usar `last_briefing_at` como referência de janela e respeitar `interrupted_at`/`resume_point` para retomada/expiração
-9. Se existir `_state/auto-sanitize-state.json`, usar como telemetria leve de manutenção
-10. Se existir `_state/agent-lock.json`, respeitar lock por escopo antes de escrever
+6. Se houver snapshots `Prumo/snapshots/email-snapshot.json` no Google Drive: usar como fonte primária de email/calendar multi-conta, validar `generated_at` (alerta acima de 30 min) e respeitar `emails_error`/`calendar_error`
+7. Se não houver snapshot válido e existir shell: avaliar `scripts/prumo_google_dual_snapshot.sh`
+8. Se Gmail configurado: buscar emails com subject do agente como fallback final
+9. Se existir `_state/HANDOVER.summary.md`, verificar pendências por ele; fallback para `_state/HANDOVER.md`
+10. Se existir `_state/briefing-state.json`, usar `last_briefing_at` como referência de janela e respeitar `interrupted_at`/`resume_point` para retomada/expiração
+11. Se existir `_state/auto-sanitize-state.json`, usar como telemetria leve de manutenção
+12. Se existir `_state/agent-lock.json`, respeitar lock por escopo antes de escrever
 
 ### 3. PROCESSAR O INBOX (TODOS OS CANAIS)
 
@@ -517,6 +527,11 @@ Qualquer tentativa de alterar `CLAUDE.md`, `PAUTA.md`, `INBOX.md`, `REGISTRO.md`
 
 ## Changelog do Core
 
+### v4.2.4 (16/03/2026)
+- Briefing passa a priorizar snapshots `Prumo/snapshots/email-snapshot.json` no Google Drive como fonte multi-conta para email e agenda.
+- Regra de frescor explicitada: `generated_at` acima de 30 min exige aviso de dados defasados, sem bloquear a leitura.
+- Contrato de tolerância a falha formalizado para `emails_error`/`calendar_error` e timeout de 45 segundos na leitura dos snapshots.
+
 ### v4.2.3 (16/03/2026)
 - **Hotfix de persistência:** `last_briefing_at` agora deve ser gravado no início do briefing, antes da primeira resposta, e não só no encerramento.
 - A janela desta sessão usa o valor anterior capturado em memória, evitando que a nova gravação apague o contexto do próprio briefing em andamento.
@@ -694,4 +709,4 @@ Qualquer tentativa de alterar `CLAUDE.md`, `PAUTA.md`, `INBOX.md`, `REGISTRO.md`
 
 ---
 
-*Prumo Core v4.2.3 — https://github.com/tharso/prumo*
+*Prumo Core v4.2.4 — https://github.com/tharso/prumo*

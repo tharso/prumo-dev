@@ -4,6 +4,27 @@ Este arquivo registra mudanças públicas do produto Prumo.
 
 O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamento semântico.
 
+## [4.2.4] - 2026-03-16
+
+### Added
+- Briefing passa a priorizar snapshots privados `Prumo/snapshots/email-snapshot.json` no Google Drive como fonte multi-conta para agenda e emails.
+- Guia operacional em `docs/apps-script-setup.md` atualizado com o contrato de consumo do briefing.
+
+### Changed
+- Setup do Prumo passa a recomendar Google Apps Script + Google Drive como caminho preferencial para email/calendar multi-conta, deixando Gemini dual como fallback avançado.
+- Core e skill de briefing agora exigem:
+  - alerta explícito quando `generated_at` estiver acima de 30 minutos;
+  - tolerância a falha parcial com `emails_error` e `calendar_error`;
+  - timeout de 45 segundos na leitura dos snapshots antes de cair para fallback.
+- Versionamento sincronizado para `4.2.4` em:
+  - `VERSION`
+  - `cowork-plugin/VERSION`
+  - `plugin.json`
+  - `.claude-plugin/plugin.json`
+  - `marketplace.json`
+  - `.claude-plugin/marketplace.json`
+- Smoke test de briefing reforçado para validar a presença do contrato de snapshots no Drive.
+
 ## [4.2.3] - 2026-03-16
 
 ### Fixed

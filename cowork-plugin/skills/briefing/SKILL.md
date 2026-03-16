@@ -92,12 +92,25 @@ Verificar TODOS os canais, sem pular nenhum:
    - Se a geração falhar e existir preview anterior, ainda linkar o preview e explicitar que pode estar defasado.
    - Se a geração falhar sem preview utilizável, seguir com lista numerada no chat (fallback universal), mantendo a regra de aprofundamento seletivo e explicitando a falha de preview ao usuário.
    - No Bloco 1 (panorama), mostrar apenas o link do preview e a contagem de itens (sem abrir itens individuais).
-2. **Google dual via Gemini CLI (prioridade quando disponível)**:
-   - Se existir `scripts/prumo_google_dual_snapshot.sh`, executar esse script.
+2. **Snapshots no Google Drive via Apps Script (prioridade quando disponíveis)**:
+   - Buscar via MCP do Google Drive os arquivos `Prumo/snapshots/email-snapshot.json` das contas conectadas.
+   - Tratar cada snapshot como fonte por conta (`pessoal`/`trabalho`) para agenda e emails crus.
+   - Validar `generated_at` de cada arquivo:
+     - se estiver com mais de 30 min, usar mesmo assim, mas avisar explicitamente no briefing que os dados estão defasados e dizer de quantos minutos;
+     - se o arquivo estiver ausente, ilegível ou inválido, seguir para o fallback sem quebrar o briefing.
+   - Respeitar o `since` gravado no próprio snapshot quando ele existir. Não recalcular essa janela por cima.
+   - Se o JSON trouxer `emails_error` ou `calendar_error`, preservar os dados parciais disponíveis e expor o erro em 1 linha objetiva.
+   - A curadoria continua no Prumo, não no Apps Script:
+     - classificar emails em `Responder`, `Ver` e `Sem ação`;
+     - atribuir prioridade `P1/P2/P3` com motivo objetivo;
+     - consolidar agenda por conta no panorama.
+   - Timebox de leitura: 45 segundos no total. Se estourar, seguir briefing sem email/calendar e avisar.
+3. **Google dual via Gemini CLI (fallback com shell)**:
+   - Se os snapshots não estiverem disponíveis ou válidos e existir `scripts/prumo_google_dual_snapshot.sh`, executar esse script.
    - Usar a saída do script como fonte principal para agenda (`AGENDA_HOJE` + `AGENDA_AMANHA`) e curadoria de emails (`TRIAGEM_RESPONDER`, `TRIAGEM_VER`, `TRIAGEM_SEM_ACAO`) das contas `pessoal` e `trabalho`.
    - Respeitar a janela "desde o último briefing" informada no próprio script.
    - Se uma conta falhar (auth/MCP), sinalizar no briefing e manter a outra conta.
-3. **Fallback sem shell (paridade obrigatória de curadoria)**:
+4. **Fallback sem shell (paridade obrigatória de curadoria)**:
    - Se o script dual não existir ou não puder executar no runtime, usar integração nativa de Gmail/Calendar.
    - Definir janela de análise de email:
      - Se existir `_state/briefing-state.json` com `last_briefing_at`, usar esse timestamp.
@@ -107,7 +120,7 @@ Verificar TODOS os canais, sem pular nenhum:
      - `Ver` (exige leitura/checagem, sem resposta imediata)
      - `Sem ação` (baixo valor imediato)
    - Atribuir prioridade `P1/P2/P3` e motivo objetivo em cada item.
-4. **Google Calendar fallback** (se configurado): listar eventos de hoje e amanhã.
+5. **Google Calendar fallback** (se configurado): listar eventos de hoje e amanhã.
 
 ## Passo 5: Processar inbox
 
