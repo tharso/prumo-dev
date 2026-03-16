@@ -42,3 +42,4 @@ Use este fluxo para manter arquivos de estado enxutos.
    - quantos foram arquivados,
    - próximos passos sugeridos (se houver).
 2. Não editar arquivos pessoais (`CLAUDE.md`, `PAUTA.md`, `INBOX.md`, `REGISTRO.md`, `IDEIAS.md`).
+3. Se o usuário estiver pedindo limpeza/revisão do `CLAUDE.md`, interromper este fluxo e redirecionar para `/prumo:higiene`.

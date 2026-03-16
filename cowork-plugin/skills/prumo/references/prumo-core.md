@@ -1,6 +1,6 @@
 # Prumo Core — Motor do sistema
 
-> **prumo_version: 4.4.1**
+> **prumo_version: 4.5.0**
 >
 > Este arquivo é o núcleo estável do Prumo.
 > Ele define regras, guardrails e a localização dos módulos canônicos.
@@ -51,6 +51,7 @@ Arquivos de estado esperados em `_state/`:
 | `/prumo:status` | Panorama rápido |
 | `/prumo:handover` | Operar handovers |
 | `/prumo:sanitize` | Sanitizar estado operacional |
+| `/prumo:higiene` | Higiene assistida do `CLAUDE.md` |
 | `/prumo:menu` | Listar comandos |
 
 Canônico de briefing: `/prumo:briefing`
@@ -68,6 +69,7 @@ Quando um comando específico for executado, o agente deve ler o módulo corresp
 | Update de versão | `Prumo/cowork-plugin/skills/prumo/references/modules/version-update.md` |
 | Multiagente | `Prumo/cowork-plugin/skills/prumo/references/modules/multiagent.md` |
 | Sanitização | `Prumo/cowork-plugin/skills/prumo/references/modules/sanitization.md` |
+| Higiene do CLAUDE | `Prumo/cowork-plugin/skills/prumo/references/modules/claude-hygiene.md` |
 | Política de leitura | `Prumo/cowork-plugin/skills/prumo/references/modules/load-policy.md` |
 | Runtime paths | `Prumo/cowork-plugin/skills/prumo/references/modules/runtime-paths.md` |
 | Feedback do produto | `Prumo/cowork-plugin/skills/prumo/references/feedback-loop.md` |
@@ -166,6 +168,8 @@ Se o usuário der feedback, bug ou sugestão sobre o Prumo em si, capturar isso 
 
 `ASSERT: Arquivo frio só pode ser movido para archive se houver entrada correspondente em _state/archive/ARCHIVE-INDEX.*`
 
+`ASSERT: CLAUDE.md nunca entra em autosanitização; higiene só acontece com confirmação explícita do usuário.`
+
 ## Rituais e procedimentos
 
 ### Briefing diário
@@ -233,6 +237,12 @@ Ler e seguir:
 
 - `Prumo/cowork-plugin/skills/prumo/references/modules/sanitization.md`
 
+### Higiene do CLAUDE
+
+Ler e seguir:
+
+- `Prumo/cowork-plugin/skills/prumo/references/modules/claude-hygiene.md`
+
 ### Runtime paths
 
 Ler e seguir:
@@ -255,8 +265,8 @@ Histórico completo de versão vive em `CHANGELOG.md`.
 
 Versão atual deste core:
 
-- `4.4.1`
+- `4.5.0`
 
 ---
 
-*Prumo Core v4.4.1 — https://github.com/tharso/prumo*
+*Prumo Core v4.5.0 — https://github.com/tharso/prumo*

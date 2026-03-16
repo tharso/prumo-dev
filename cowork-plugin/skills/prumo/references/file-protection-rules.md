@@ -6,7 +6,7 @@ Antes de gerar QUALQUER arquivo, verificar se ele já existe na pasta do usuári
 
 | Arquivo | Se já existir |
 |---------|---------------|
-| CLAUDE.md | **Não sobrescrever silenciosamente.** Em setup inicial pode criar; em reconfiguração, pedir confirmação explícita antes de regenerar. Sempre criar backup em `_backup/CLAUDE.md.YYYY-MM-DD-HHMMSS`. |
+| CLAUDE.md | **Não sobrescrever silenciosamente.** Em setup inicial pode criar; em reconfiguração, pedir confirmação explícita antes de regenerar. Em higiene assistida, sempre mostrar patch e criar backup em `_backup/CLAUDE.md.YYYY-MM-DD-HHMMSS` antes de aplicar. |
 | PRUMO-CORE.md | **Sobrescrever** apenas em atualização de motor ou setup explícito. Sempre criar backup em `_backup/PRUMO-CORE.md.YYYY-MM-DD-HHMMSS` antes da troca. |
 | AGENTS.md | **Não sobrescrever silenciosamente.** Se existir, pedir confirmação explícita, criar backup em `_backup/AGENTS.md.YYYY-MM-DD-HHMMSS` e só então atualizar. |
 | PAUTA.md, INBOX.md, REGISTRO.md, IDEIAS.md | **NÃO sobrescrever.** Informar: "Encontrei [arquivo] com conteúdo existente. Mantendo o atual." |

@@ -4,6 +4,30 @@ Este arquivo registra mudanças públicas do produto Prumo.
 
 O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamento semântico.
 
+## [4.5.0] - 2026-03-16
+
+### Added
+- Novo comando `/prumo:higiene` para revisão assistida do `CLAUDE.md`, separado de `sanitize`.
+- Novo script `cowork-plugin/scripts/prumo_claude_hygiene.py` que:
+  - diagnostica duplicações, redundâncias e conflitos potenciais;
+  - gera relatório JSON/Markdown;
+  - gera patch proposto;
+  - só aplica com `--apply`, criando backup e registrando em `REGISTRO.md`.
+- Novo módulo canônico [claude-hygiene.md](cowork-plugin/skills/prumo/references/modules/claude-hygiene.md) e nova skill dedicada [higiene/SKILL.md](cowork-plugin/skills/higiene/SKILL.md).
+- Smoke dedicado `cowork-plugin/scripts/tests/claude_hygiene_smoke.sh`.
+- Issue pública da feature: [#33](https://github.com/tharso/prumo/issues/33).
+
+### Changed
+- `PRUMO-CORE.md`, README, setup e regras de proteção agora deixam explícito que `CLAUDE.md` é configuração viva e não participa de autosanitização.
+- `sanitize` passou a apontar explicitamente para `/prumo:higiene` quando a demanda for limpeza do `CLAUDE.md`.
+- Versionamento sincronizado para `4.5.0` em:
+  - `VERSION`
+  - `cowork-plugin/VERSION`
+  - `plugin.json`
+  - `.claude-plugin/plugin.json`
+  - `marketplace.json`
+  - `.claude-plugin/marketplace.json`
+
 ## [4.4.1] - 2026-03-16
 
 ### Fixed

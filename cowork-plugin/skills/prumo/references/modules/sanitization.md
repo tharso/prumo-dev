@@ -1,6 +1,6 @@
 # Sanitization
 
-> **module_version: 4.4.1**
+> **module_version: 4.5.0**
 >
 > Fonte canônica de sanitização manual e automática do estado operacional.
 
@@ -34,3 +34,4 @@ Regras:
    - arquivos de `Inbox4Mobile/` marcados como processados em `_processed.json` e acima do threshold de idade;
 7. nunca apagar histórico sem archive;
 8. nunca mover sem registrar no `ARCHIVE-INDEX`.
+9. `CLAUDE.md` está fora do escopo deste comando; para isso existe higiene assistida.
