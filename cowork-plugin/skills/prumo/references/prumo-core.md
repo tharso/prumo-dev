@@ -129,7 +129,8 @@ Quando o usuário iniciar o briefing (via `/prumo:briefing`, alias legado `/brie
    - o agente DEVE escrever `_state/briefing-state.json` diretamente ao final de todo briefing. Não depende de script externo.
    - se briefing concluir: escrever `{"last_briefing_at": "<ISO local>"}` (sem `interrupted_at`/`resume_point`). Obter timestamp via `date +%Y-%m-%dT%H:%M:%S%:z` ou hora do sistema no fuso do `CLAUDE.md`.
    - se briefing for interrompido (escape): manter `last_briefing_at` existente e adicionar `interrupted_at` + `resume_point`.
-   - validação pós-escrita: ler o arquivo e confirmar que `last_briefing_at` contém a data do dia local. Se não, repetir.
+   - validação pós-escrita: ler o arquivo e validar por caso. Se briefing concluiu, `last_briefing_at` deve conter a data do dia local e `interrupted_at`/`resume_point` não devem existir. Se briefing foi interrompido, `interrupted_at` deve conter a data do dia local, `resume_point` deve existir, e `last_briefing_at` deve ser preservado sem forçar conclusão.
+   - se a validação do caso correspondente falhar, repetir a escrita correta para esse caso.
    - o briefing só está concluído quando o estado estiver persistido.
 12. Guardrail de primeira interação:
    - na primeira resposta do briefing, é proibido abrir arquivos brutos de `Inbox4Mobile/*`;

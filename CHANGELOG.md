@@ -4,6 +4,23 @@ Este arquivo registra mudanças públicas do produto Prumo.
 
 O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamento semântico.
 
+## [4.2.0] - 2026-03-16
+
+### Fixed
+- Persistência de briefing corrigida: fechamento não depende mais do `prumo_google_dual_snapshot.sh` para gravar `_state/briefing-state.json`.
+- Contrato de persistência alinhado entre core e skill de briefing, com validação distinta para briefing concluído e briefing interrompido.
+- `cowork-plugin/scripts/safe_core_update.sh` atualizado para buscar o core no path remoto atual e abortar quando o arquivo remoto vier truncado ou incompleto.
+
+### Changed
+- Versionamento sincronizado para `4.2.0` em:
+  - `VERSION`
+  - `cowork-plugin/VERSION`
+  - `plugin.json`
+  - `.claude-plugin/plugin.json`
+  - `marketplace.json`
+  - `.claude-plugin/marketplace.json`
+- Smoke test de briefing reforçado para validar consistência da superfície pública da release e o novo contrato de persistência.
+
 ## [4.1.1] - 2026-03-10
 
 ### Changed

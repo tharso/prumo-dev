@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT_DIR"
+REPO_ROOT="$(cd -- "$ROOT_DIR/.." && pwd)"
 
 fail() {
   echo "[FAIL] $1" >&2
@@ -67,6 +68,20 @@ for file in "${BRIEFING_FILES[@]}"; do
 done
 
 for file in "${BRIEFING_FILES[@]}"; do
+  assert_contains "$file" "Não depende de nenhum script externo|diretamente ao final de todo briefing" "Persistência direta: regra obrigatória ausente"
+  assert_contains "$file" "briefing concluído: confirmar que .*last_briefing_at|Se briefing concluiu, .*last_briefing_at" "Persistência direta: validação de briefing concluído ausente"
+  assert_contains "$file" "briefing interrompido: confirmar que .*interrupted_at|Se briefing foi interrompido, .*interrupted_at" "Persistência direta: validação de briefing interrompido ausente"
+done
+
+for file in "${BRIEFING_FILES[@]}"; do
+  if command -v rg >/dev/null 2>&1; then
+    ! rg -q --fixed-strings -- "--mark-briefing-complete" "$file" || fail "Persistência direta: referência legada a --mark-briefing-complete ainda presente em $file"
+  elif grep -Fq -- "--mark-briefing-complete" "$file"; then
+    fail "Persistência direta: referência legada a --mark-briefing-complete ainda presente em $file"
+  fi
+done
+
+for file in "${BRIEFING_FILES[@]}"; do
   assert_contains "$file" "_preview-index\\.json" "Preview adoption: falta referência ao índice de preview"
   assert_contains "$file" "DEVE linkar|deve ser linkado|link obrigatório" "Preview adoption: regra bloqueante de link ausente"
   assert_contains "$file" "inbox-preview\\.html" "Preview adoption: referência ao html de preview ausente"
@@ -97,6 +112,29 @@ fi
 
 assert_contains "$CORE_FILE" "com shell" "Modo com shell não descrito no core"
 assert_contains "$CORE_FILE" "sem shell" "Modo sem shell não descrito no core"
+
+PUBLIC_VERSION_FILE="$REPO_ROOT/VERSION"
+PUBLIC_PLUGIN_FILE="$REPO_ROOT/plugin.json"
+PUBLIC_MARKETPLACE_FILE="$REPO_ROOT/marketplace.json"
+PUBLIC_PLUGIN_MIRROR_FILE="$REPO_ROOT/.claude-plugin/plugin.json"
+PUBLIC_MARKETPLACE_MIRROR_FILE="$REPO_ROOT/.claude-plugin/marketplace.json"
+PUBLIC_README_FILE="$REPO_ROOT/README.md"
+PUBLIC_CHANGELOG_FILE="$REPO_ROOT/CHANGELOG.md"
+
+for file in "$PUBLIC_VERSION_FILE" "$PUBLIC_PLUGIN_FILE" "$PUBLIC_MARKETPLACE_FILE" "$PUBLIC_PLUGIN_MIRROR_FILE" "$PUBLIC_MARKETPLACE_MIRROR_FILE" "$PUBLIC_README_FILE" "$PUBLIC_CHANGELOG_FILE"; do
+  [[ -f "$file" ]] || fail "Arquivo público obrigatório ausente: $file"
+done
+
+PUBLIC_VERSION_VALUE="$(cat "$PUBLIC_VERSION_FILE")"
+[[ "$PUBLIC_VERSION_VALUE" == "$CORE_VERSION" ]] || fail "Divergência de versão pública: VERSION=$PUBLIC_VERSION_VALUE vs prumo_version=$CORE_VERSION"
+[[ "$VERSION_VALUE" == "$CORE_VERSION" ]] || fail "Divergência de versão runtime: cowork-plugin/VERSION=$VERSION_VALUE vs prumo_version=$CORE_VERSION"
+
+assert_contains "$PUBLIC_PLUGIN_FILE" "\"version\": \"$CORE_VERSION\"" "Manifest público do plugin fora de sincronia"
+assert_contains "$PUBLIC_MARKETPLACE_FILE" "\"version\": \"$CORE_VERSION\"" "Manifest público do marketplace fora de sincronia"
+assert_contains "$PUBLIC_PLUGIN_MIRROR_FILE" "\"version\": \"$CORE_VERSION\"" "Manifest espelho do plugin fora de sincronia"
+assert_contains "$PUBLIC_MARKETPLACE_MIRROR_FILE" "\"version\": \"$CORE_VERSION\"" "Manifest espelho do marketplace fora de sincronia"
+assert_contains "$PUBLIC_README_FILE" "Versão atual: .*${CORE_VERSION}" "README público fora de sincronia"
+assert_contains "$PUBLIC_CHANGELOG_FILE" "^## \\[$CORE_VERSION\\] - " "CHANGELOG público sem entrada da versão atual"
 
 # Regressão: --index-output relativo deve ser path independente de --output
 TMP_DIR="$(mktemp -d)"

@@ -7,7 +7,7 @@ set -euo pipefail
 # 2) _backup/PRUMO-CORE.md.*
 
 REPO_DIR="${1:-.}"
-REMOTE_CORE_URL="${2:-https://raw.githubusercontent.com/tharso/prumo/main/references/prumo-core.md}"
+REMOTE_CORE_URL="${2:-https://raw.githubusercontent.com/tharso/prumo/main/cowork-plugin/skills/prumo/references/prumo-core.md}"
 TARGET_FILE="${REPO_DIR}/PRUMO-CORE.md"
 BACKUP_DIR="${REPO_DIR}/_backup"
 TIMESTAMP="$(date +"%Y-%m-%d-%H%M%S")"
@@ -27,6 +27,16 @@ curl -fsSL "$REMOTE_CORE_URL" > "$TMP_FILE"
 
 if [[ ! -s "$TMP_FILE" ]]; then
   echo "Erro: conteúdo remoto vazio. Update abortado." >&2
+  exit 1
+fi
+
+if ! grep -q "^## Changelog do Core" "$TMP_FILE"; then
+  echo "Erro: core remoto incompleto (sem changelog). Update abortado." >&2
+  exit 1
+fi
+
+if ! grep -Eq '^\*Prumo Core v[0-9]+\.[0-9]+\.[0-9]+ — https://github\.com/tharso/prumo\*$' "$TMP_FILE"; then
+  echo "Erro: core remoto incompleto (sem rodapé de integridade). Update abortado." >&2
   exit 1
 fi
 

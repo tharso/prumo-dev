@@ -195,7 +195,12 @@ No início de novo dia, se `interrupted_at` for de dia anterior, limpar `interru
 
 **Validação pós-escrita:**
 
-Após escrever o arquivo, ler `_state/briefing-state.json` e confirmar que `last_briefing_at` contém a data do dia local atual. Se não contiver, repetir a escrita.
+Após escrever o arquivo, ler `_state/briefing-state.json` e validar de forma condicional:
+
+- briefing concluído: confirmar que `last_briefing_at` contém a data do dia local atual e que `interrupted_at`/`resume_point` não existem;
+- briefing interrompido: confirmar que `interrupted_at` contém a data do dia local atual, que `resume_point` foi gravado, e que `last_briefing_at` foi preservado (sem forçar carimbo de conclusão).
+
+Se a validação correspondente falhar, repetir a escrita correta para esse caso.
 
 ---
 
