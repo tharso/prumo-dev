@@ -4,6 +4,25 @@ Este arquivo registra mudanças públicas do produto Prumo.
 
 O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamento semântico.
 
+## [4.2.3] - 2026-03-16
+
+### Fixed
+- Persistência do briefing movida para o início da sessão, antes da primeira resposta, para evitar falso “X dias sem briefing” quando o usuário acabou de rodar a rotina no dia anterior.
+- A janela temporal da sessão agora usa o valor anterior de `last_briefing_at`, capturado em memória antes da nova gravação.
+
+### Added
+- Helper `cowork-plugin/scripts/prumo_briefing_state.py` para persistir início, conclusão e interrupção do briefing quando houver shell.
+
+### Changed
+- Versionamento sincronizado para `4.2.3` em:
+  - `VERSION`
+  - `cowork-plugin/VERSION`
+  - `plugin.json`
+  - `.claude-plugin/plugin.json`
+  - `marketplace.json`
+  - `.claude-plugin/marketplace.json`
+- Smoke test de briefing reforçado para validar gravação no início da sessão e presença do helper de estado.
+
 ## [4.2.2] - 2026-03-16
 
 ### Fixed

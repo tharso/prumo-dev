@@ -1,6 +1,6 @@
 # Prumo Core — Motor do sistema
 
-> **prumo_version: 4.2.2**
+> **prumo_version: 4.2.3**
 >
 > Este arquivo contém as regras e rituais do sistema Prumo.
 > **NÃO edite este arquivo** — ele é atualizado automaticamente.
@@ -99,6 +99,7 @@ Quando o usuário iniciar o briefing (via `/prumo:briefing`, alias legado `/brie
    - usar `last_briefing_at` para janela temporal de email;
    - se houver `interrupted_at` + `resume_point` no mesmo dia local, oferecer retomada: `a) retomar` / `b) recomeçar`;
    - se `interrupted_at` for de dia anterior, expirar silenciosamente (`interrupted_at`/`resume_point` limpos).
+   - antes de qualquer escrita nova, capturar em memória o `last_briefing_at` anterior e usar esse valor como janela desta sessão.
 6. Rodar autosanitização (quando shell disponível):
    - executar `if [ -f scripts/prumo_auto_sanitize.py ]; then python3 scripts/prumo_auto_sanitize.py --workspace . --apply; elif [ -f Prumo/cowork-plugin/scripts/prumo_auto_sanitize.py ]; then python3 Prumo/cowork-plugin/scripts/prumo_auto_sanitize.py --workspace . --apply; else python3 Prumo/scripts/prumo_auto_sanitize.py --workspace . --apply; fi`;
    - respeitar cooldown e gatilhos internos;
@@ -125,13 +126,15 @@ Quando o usuário iniciar o briefing (via `/prumo:briefing`, alias legado `/brie
    - prioridade `P1/P2/P3` e motivo objetivo.
 10. Escape hatch:
    - se usuário disser "tá bom por hoje", "escape", "depois" ou equivalente, registrar `interrupted_at` + `resume_point` e encerrar sem cobrança.
-11. Fechamento (obrigatório, sem exceção):
-   - o agente DEVE escrever `_state/briefing-state.json` diretamente ao final de todo briefing. Não depende de script externo.
-   - se briefing concluir: escrever `{"last_briefing_at": "<ISO local>"}` (sem `interrupted_at`/`resume_point`). Obter timestamp via `date +%Y-%m-%dT%H:%M:%S%:z` ou hora do sistema no fuso do `CLAUDE.md`.
-   - se briefing for interrompido (escape): manter `last_briefing_at` existente e adicionar `interrupted_at` + `resume_point`.
-   - validação pós-escrita: ler o arquivo e validar por caso. Se briefing concluiu, `last_briefing_at` deve conter a data do dia local e `interrupted_at`/`resume_point` não devem existir. Se briefing foi interrompido, `interrupted_at` deve conter a data do dia local, `resume_point` deve existir, e `last_briefing_at` deve ser preservado sem forçar conclusão.
+11. Persistência de briefing (obrigatória, sem exceção):
+   - antes da primeira resposta com Bloco 1 + Bloco 2, o agente DEVE persistir o início do briefing do dia em `_state/briefing-state.json`.
+   - com shell, preferir `prumo_briefing_state.py` em qualquer um dos paths válidos (`scripts/...`, `Prumo/cowork-plugin/scripts/...`, `Prumo/scripts/...`).
+   - sem shell, escrever `last_briefing_at` diretamente com timestamp ISO local atual e limpar `interrupted_at`/`resume_point`.
+   - se briefing concluir depois disso: apenas garantir que `interrupted_at`/`resume_point` continuam ausentes; se o início não tiver sido gravado, gravar como fallback.
+   - se briefing for interrompido (escape): manter `last_briefing_at` já gravado no início da sessão e adicionar `interrupted_at` + `resume_point`.
+   - validação pós-escrita: ler o arquivo e validar por caso. Se briefing iniciou/concluiu, `last_briefing_at` deve conter a data do dia local e `interrupted_at`/`resume_point` não devem existir. Se briefing foi interrompido, `interrupted_at` deve conter a data do dia local, `resume_point` deve existir, e `last_briefing_at` deve continuar apontando para o início da sessão atual.
    - se a validação do caso correspondente falhar, repetir a escrita correta para esse caso.
-   - o briefing só está concluído quando o estado estiver persistido.
+   - o briefing do dia só está oficialmente aberto quando esse estado inicial estiver persistido.
 12. Guardrail de primeira interação:
    - na primeira resposta do briefing, é proibido abrir arquivos brutos de `Inbox4Mobile/*`;
    - primeiro vem panorama + proposta; detalhe só depois de `c` ou `--detalhe`.
@@ -514,6 +517,11 @@ Qualquer tentativa de alterar `CLAUDE.md`, `PAUTA.md`, `INBOX.md`, `REGISTRO.md`
 
 ## Changelog do Core
 
+### v4.2.3 (16/03/2026)
+- **Hotfix de persistência:** `last_briefing_at` agora deve ser gravado no início do briefing, antes da primeira resposta, e não só no encerramento.
+- A janela desta sessão usa o valor anterior capturado em memória, evitando que a nova gravação apague o contexto do próprio briefing em andamento.
+- Novo helper `prumo_briefing_state.py` para persistir início, conclusão e interrupção com menos ambiguidade quando houver shell.
+
 ### v4.2.2 (16/03/2026)
 - **Hotfix de contrato:** o aviso de update não deve mais buscar changelog remoto via WebFetch.
 - Quando não houver changelog acessível por fonte local segura, o Prumo anuncia a nova versão sem detalhes, em vez de improvisar resumo remoto.
@@ -686,4 +694,4 @@ Qualquer tentativa de alterar `CLAUDE.md`, `PAUTA.md`, `INBOX.md`, `REGISTRO.md`
 
 ---
 
-*Prumo Core v4.2.2 — https://github.com/tharso/prumo*
+*Prumo Core v4.2.3 — https://github.com/tharso/prumo*

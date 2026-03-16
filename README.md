@@ -91,7 +91,7 @@ Se aparecer "comando desconhecido" após instalar/atualizar, consulte `COWORK-MA
 
 ## Versão
 
-Versão atual: `4.2.2`
+Versão atual: `4.2.3`
 
 ## Licença
 

@@ -65,11 +65,13 @@ done
 for file in "${BRIEFING_FILES[@]}"; do
   assert_contains "$file" "last_briefing_at" "Janela temporal: falta referência a last_briefing_at"
   assert_contains "$file" "24h|24 h|24 horas" "Janela temporal: falta fallback de 24h"
+  assert_contains "$file" "captur.*memória|usar esse valor como janela desta sessão" "Janela temporal: falta snapshot do valor anterior"
 done
 
 for file in "${BRIEFING_FILES[@]}"; do
-  assert_contains "$file" "Não depende de nenhum script externo|diretamente ao final de todo briefing" "Persistência direta: regra obrigatória ausente"
-  assert_contains "$file" "briefing concluído: confirmar que .*last_briefing_at|Se briefing concluiu, .*last_briefing_at" "Persistência direta: validação de briefing concluído ausente"
+  assert_contains "$file" "Não depende de script externo|Não depende de nenhum script externo|prumo_briefing_state\\.py" "Persistência direta: regra obrigatória ausente"
+  assert_contains "$file" "antes da primeira resposta.*last_briefing_at|persistir o início do briefing do dia" "Persistência direta: gravação no início ausente"
+  assert_contains "$file" "briefing iniciado/concluído: confirmar que .*last_briefing_at|Se briefing iniciou/concluiu, .*last_briefing_at" "Persistência direta: validação de briefing iniciado/concluído ausente"
   assert_contains "$file" "briefing interrompido: confirmar que .*interrupted_at|Se briefing foi interrompido, .*interrupted_at" "Persistência direta: validação de briefing interrompido ausente"
 done
 
@@ -112,6 +114,7 @@ assert_contains "$TEMPLATES_FILE" "\\| cobrar: 25/02|cobrar: DD/MM" "Template de
 
 assert_contains "$SKILL_FILE" "Google dual via Gemini CLI|script dual" "Modo com shell não descrito na skill principal"
 assert_contains "$SKILL_FILE" "Fallback sem shell" "Fallback sem shell não descrito na skill principal"
+assert_contains "$SKILL_FILE" "prumo_briefing_state\\.py" "Persistência direta: helper script ausente na skill principal"
 if [[ -f "$SKILL_MIRROR_FILE" ]]; then
   assert_contains "$SKILL_MIRROR_FILE" "Google dual via Gemini CLI|script dual" "Modo com shell não descrito na skill espelhada"
   assert_contains "$SKILL_MIRROR_FILE" "Fallback sem shell" "Fallback sem shell não descrito na skill espelhada"
@@ -119,6 +122,9 @@ fi
 
 assert_contains "$CORE_FILE" "com shell" "Modo com shell não descrito no core"
 assert_contains "$CORE_FILE" "sem shell" "Modo sem shell não descrito no core"
+
+STATE_HELPER_FILE="$ROOT_DIR/scripts/prumo_briefing_state.py"
+[[ -f "$STATE_HELPER_FILE" ]] || fail "Helper de persistência do briefing ausente"
 
 PUBLIC_VERSION_FILE="$REPO_ROOT/VERSION"
 PUBLIC_PLUGIN_FILE="$REPO_ROOT/plugin.json"

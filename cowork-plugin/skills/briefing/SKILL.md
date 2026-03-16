@@ -66,6 +66,7 @@ Se algum desses arquivos não existir, informe o usuário que o Prumo não está
 6. Se existir `_state/briefing-state.json`, trate estado de retomada:
    - se houver `interrupted_at` + `resume_point` no mesmo dia local, pergunte: `a) retomar` ou `b) recomeçar`;
    - se `interrupted_at` for de dia anterior, expire silenciosamente (limpe `interrupted_at`/`resume_point`) e siga sem cobrar briefing antigo.
+   - antes de qualquer escrita nova, capture em memória o `last_briefing_at` anterior para usar como janela desta sessão.
 7. Monte supressão temporal dos agendados:
    - parsear `| cobrar: DD/MM` (ou `DD/MM/AAAA`) nos itens de `Agendado`;
    - se `cobrar` estiver no futuro, item fica silenciado no briefing diário;
@@ -160,6 +161,14 @@ Montar o briefing em blocos progressivos (não despejar tudo de uma vez):
 7. **Guardrail da primeira interação**
    - na primeira resposta do briefing, é proibido abrir `Inbox4Mobile/*` individualmente;
    - primeiro vem panorama + proposta; arquivo bruto só após `c`/`--detalhe` ou solicitação explícita.
+8. **Persistência de início do briefing (obrigatória)**
+   - antes de enviar a primeira resposta com Bloco 1 + Bloco 2, persistir o início do briefing do dia em `_state/briefing-state.json`;
+   - se houver shell, preferir:
+     - `python3 scripts/prumo_briefing_state.py --workspace . --timezone <TZ> --mode start`
+     - `python3 Prumo/cowork-plugin/scripts/prumo_briefing_state.py --workspace . --timezone <TZ> --mode start`
+     - `python3 Prumo/scripts/prumo_briefing_state.py --workspace . --timezone <TZ> --mode start`
+   - sem shell, escrever manualmente `last_briefing_at` com timestamp ISO local do momento e limpar `interrupted_at`/`resume_point`;
+   - validar antes de responder: o arquivo precisa refletir a data local de hoje.
 
 Se a PAUTA estiver vazia: não fazer o briefing padrão. Pedir um brain dump.
 
@@ -172,25 +181,22 @@ Se houve fallback sem deleção física, manter `Inbox4Mobile/_processed.json` a
 
 ### Atualizar estado do briefing (obrigatório, sem exceção)
 
-Esta etapa é **bloqueante**: o briefing só está concluído quando `_state/briefing-state.json` refletir o estado correto. Não depende de nenhum script externo.
+Esta etapa é **bloqueante**. O briefing do dia só está oficialmente aberto quando `_state/briefing-state.json` já refletir o início da sessão antes da primeira resposta. Não depende de script externo, mas quando houver shell deve preferir `prumo_briefing_state.py`.
 
-**Se o briefing foi concluído normalmente:**
+**No início do briefing (antes da primeira resposta):**
 
-Escrever `_state/briefing-state.json` com exatamente este conteúdo (substituindo o timestamp pelo horário local real no fuso do usuário):
+- persistir `last_briefing_at` com o timestamp ISO local atual;
+- limpar `interrupted_at` e `resume_point`;
+- usar o valor anterior de `last_briefing_at` (capturado em memória no Passo 3) como janela desta sessão. Nunca recalcular a janela a partir do valor recém-gravado no mesmo briefing.
 
-```json
-{
-  "last_briefing_at": "YYYY-MM-DDTHH:MM:SS-03:00"
-}
-```
+**Se o briefing foi concluído normalmente depois disso:**
 
-O arquivo não deve conter `interrupted_at` nem `resume_point` (limpar se existirem).
-
-Como obter o timestamp: executar `date +%Y-%m-%dT%H:%M:%S%:z` via shell, ou usar a hora do sistema no fuso configurado no `CLAUDE.md`.
+- apenas confirmar que `interrupted_at`/`resume_point` continuam ausentes;
+- se o início não tiver sido persistido por algum motivo, gravar `last_briefing_at` nesse momento como fallback.
 
 **Se o briefing foi interrompido (escape hatch):**
 
-Manter `last_briefing_at` como está e adicionar estado de retomada:
+Manter `last_briefing_at` já gravado no início da sessão e adicionar estado de retomada:
 
 ```json
 {
@@ -206,10 +212,10 @@ No início de novo dia, se `interrupted_at` for de dia anterior, limpar `interru
 
 **Validação pós-escrita:**
 
-Após escrever o arquivo, ler `_state/briefing-state.json` e validar de forma condicional:
+Após cada escrita, ler `_state/briefing-state.json` e validar de forma condicional:
 
-- briefing concluído: confirmar que `last_briefing_at` contém a data do dia local atual e que `interrupted_at`/`resume_point` não existem;
-- briefing interrompido: confirmar que `interrupted_at` contém a data do dia local atual, que `resume_point` foi gravado, e que `last_briefing_at` foi preservado (sem forçar carimbo de conclusão).
+- briefing iniciado/concluído: confirmar que `last_briefing_at` contém a data do dia local atual e que `interrupted_at`/`resume_point` não existem;
+- briefing interrompido: confirmar que `interrupted_at` contém a data do dia local atual, que `resume_point` foi gravado, e que `last_briefing_at` continua apontando para o início da sessão atual.
 
 Se a validação correspondente falhar, repetir a escrita correta para esse caso.
 
