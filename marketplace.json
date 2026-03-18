@@ -15,7 +15,7 @@
         "ref": "main"
       },
       "description": "Sistema de organização de vida que transforma o Claude em interface única para capturar, processar, lembrar e cobrar. Setup conversacional em 10 etapas, onboarding dump-first, briefings diários, handover entre agentes, e sanitização de estado.",
-  "version": "4.5.1",
+  "version": "4.5.2",
       "author": {
         "name": "Prumo Maintainers"
       },

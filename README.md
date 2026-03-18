@@ -2,7 +2,7 @@
 
 **Sistema de organização de vida pessoal com IA.**
 
-Versão atual: **4.5.1**
+Versão atual: **4.5.2**
 
 Prumo é um plugin de IA que transforma o Claude, Codex ou Gemini em interface única para capturar, processar, lembrar e cobrar tudo que acontece na sua vida. Trabalho, filhos, contas, saúde, ideias — tudo entra pelo mesmo lugar.
 
@@ -75,22 +75,24 @@ Baixe o repositório e instale manualmente como pacote local.
 
 1. Abra uma nova conversa na sua plataforma (Claude Desktop, Codex ou Gemini)
 2. Selecione uma pasta no seu computador para o Prumo organizar seus arquivos
-3. Digite `/prumo:setup`
+3. Digite `/setup`
 
 O setup é um wizard conversacional — uma pergunta por vez, tudo reversível. Leva uns 15 minutos.
 
-Se preferir ir direto ao ponto: `/prumo:start` — você despeja tudo que tem na cabeça e o sistema organiza na hora.
+Se preferir ir direto ao ponto: `/start` — você despeja tudo que tem na cabeça e o sistema organiza na hora.
 
 ## Comandos
 
+No Cowork, os slash commands do Prumo aparecem sem prefixo do plugin. Use `/setup`, `/briefing`, `/handover`, `/sanitize`, `/higiene` e `/start`.
+
 | Comando | O que faz |
 |---------|-----------|
-| `/prumo:setup` | Setup completo (wizard de 10 etapas) |
-| `/prumo:start` | Onboarding rápido — despeje e o sistema organiza |
-| `/prumo:briefing` | Briefing diário (pauta, inbox, calendário, emails) |
-| `/prumo:handover` | Handover entre agentes (abrir, responder, listar, fechar) |
-| `/prumo:sanitize` | Sanitiza estado operacional e arquiva histórico frio com rastreabilidade |
-| `/prumo:higiene` | Diagnostica e propõe limpeza assistida do `CLAUDE.md` com diff e confirmação |
+| `/setup` | Setup completo (wizard de 10 etapas) |
+| `/start` | Onboarding rápido — despeje e o sistema organiza |
+| `/briefing` | Briefing diário (pauta, inbox, calendário, emails) |
+| `/handover` | Handover entre agentes (abrir, responder, listar, fechar) |
+| `/sanitize` | Sanitiza estado operacional e arquiva histórico frio com rastreabilidade |
+| `/higiene` | Diagnostica e propõe limpeza assistida do `CLAUDE.md` com diff e confirmação |
 
 ## Princípios
 
@@ -118,14 +120,14 @@ Se preferir ir direto ao ponto: `/prumo:start` — você despeja tudo que tem na
 
 ## Diagnóstico rápido
 
-Se aparecer "comando desconhecido" após instalar/atualizar, o suspeito principal é sessão velha ou app sem restart.
-Feche a conversa, abra uma nova, teste o autocomplete de `/prumo:*` e, se preciso, reinicie o Cowork antes de decretar bug no plugin.
+Se aparecer "comando desconhecido" após instalar/atualizar, o suspeito principal é sessão velha, app sem restart ou comando digitado com prefixo errado.
+Feche a conversa, abra uma nova, teste o autocomplete de `/setup`, `/briefing`, `/handover`, `/sanitize`, `/higiene` e, se preciso, reinicie o Cowork antes de decretar bug no plugin.
 
 Se o painel do app disser que atualizou, mas o plugin continuar em versão velha ou sumirem comandos novos, use o caminho canônico por CLI. O painel às vezes sorri e não faz o serviço. Concierge de hotel ruim.
 
 ## Versão
 
-Versão atual: `4.5.1`
+Versão atual: `4.5.2`
 
 ## Licença
 

@@ -52,8 +52,8 @@ Se falhar em qualquer fase, rollback imediato para o estado anterior estável.
 
 ### Critério de aceite
 
-- `/prumo:*` continua aparecendo no autocomplete.
-- `/prumo:briefing` executa normalmente.
+- Os comandos curtos do Prumo continuam aparecendo no autocomplete.
+- `/briefing` executa normalmente.
 - Skills continuam disponíveis no `system-reminder`.
 
 ### Rollback
@@ -103,13 +103,13 @@ Reverter movimento de diretórios, restaurar paths antigos, lançar patch de cor
 2. Reabrir o app.
 3. Abrir conversa nova.
 4. Testar:
-   - `/prumo:setup`
-   - `/prumo:prumo`
-   - `/prumo:briefing`
-   - `/prumo:handover`
-   - `/prumo:sanitize`
-   - `/prumo:higiene`
-   - `/prumo:start`
+   - `/setup`
+   - `/prumo`
+   - `/briefing`
+   - `/handover`
+   - `/sanitize`
+   - `/higiene`
+   - `/start`
 5. Registrar resultado com data/hora no handover da rodada.
 
 ## Governança de mudança

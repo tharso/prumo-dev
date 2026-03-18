@@ -13,6 +13,12 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 - README agora trata o fluxo por CLI como caminho preferencial para instalação/update do Prumo e documenta a UI de marketplace como caminho secundário, porque fingir que ela é sempre confiável seria publicidade enganosa com cara de tutorial.
 - Playbook e protocolo de release reforçam que a atualização do plugin precisa ser validada pelo backend, não só por um toast simpático da UI.
 
+## [4.5.2] - 2026-03-18
+
+### Fixed
+- Documentação e comandos agora refletem o comportamento real do Cowork: os slash commands do Prumo aparecem sem prefixo de plugin (`/setup`, `/briefing`, `/handover`, `/sanitize`, `/higiene`, `/start`).
+- O produto deixou de sugerir `/prumo:*` como caminho canônico no Cowork, porque promessa falsa com cara de alias é só bug usando gravata.
+
 ## [4.5.0] - 2026-03-16
 
 ### Added

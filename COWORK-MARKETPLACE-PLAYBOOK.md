@@ -165,7 +165,7 @@ Olhe o `audit.jsonl` da sessão:
 Se o `init` da sessão já tiver `prumo:*` em `slash_commands` e `prumo` em `plugins`, mas o app mostrar "comando desconhecido":
 - verifique se o comando realmente foi enviado ao backend (no `audit.jsonl` deve aparecer mensagem do usuário com `/prumo:...` ou `tool_use` da skill).
 - se não houver esse evento, o bloqueio aconteceu no parser de input do cliente (caractere extra, formatação inválida, ou rejeição local antes de enviar).
-- teste de forma controlada: digitar exatamente `/prumo:briefing`, sem ponto/espaço extra, e preferir seleção pelo autocomplete.
+- teste de forma controlada: digitar exatamente `/briefing`, sem ponto/espaço extra, e preferir seleção pelo autocomplete.
 
 ### Evidência típica de falha por source relativo
 
@@ -223,8 +223,8 @@ Use este roteiro toda vez que instalar/atualizar plugin e o slash command falhar
 1. Instale/atualize o plugin no Cowork.
 2. Feche a conversa onde você testou antes (não precisa apagar nada).
 3. Abra uma conversa nova.
-4. Digite `/` e confira se aparece `prumo:briefing` no autocomplete.
-5. Se a release adicionou comando novo, confira também se ele aparece no autocomplete (ex.: `prumo:higiene`).
+4. Digite `/` e confira se aparece `briefing` no autocomplete.
+5. Se a release adicionou comando novo, confira também se ele aparece no autocomplete (ex.: `higiene`).
 6. Se aparecer, execute o comando afetado e siga a vida.
 7. Se não aparecer:
    - faça restart do app Cowork;
@@ -236,4 +236,4 @@ Regra de ouro:
 
 Armadilha de UI (importante):
 - o submenu `Plugins` do `/` não é prova de disponibilidade de slash commands do plugin.
-- valide no submenu `Comandos` (ou digitando `/prumo` para filtrar).
+- valide no submenu `Comandos` (ou digitando `/` e procurando o nome curto do comando).

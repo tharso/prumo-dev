@@ -7,4 +7,4 @@ argument-hint: ""
 
 Executa a higiene assistida do `CLAUDE.md`. Leia e siga as instruções em [SKILL.md](../cowork-plugin/skills/higiene/SKILL.md).
 
-Alias aceito: `/prumo:higiene`.
+No Cowork, use `/higiene`.
