@@ -23,6 +23,12 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 ### Fixed
 - Versionamento do plugin/manifests alinhado para `4.6.0`. Já bastava de painel contando uma história e arquivo contando outra.
 
+## [4.6.1] - 2026-03-18
+
+### Fixed
+- A heurística de `historical_record` em `prumo_claude_hygiene.py` ficou menos afoita: sem heading contextual, agora ela exige pelo menos duas linhas com cara de changelog antes de classificar um bloco como histórico deslocado.
+- O smoke de higiene passou a cobrir explicitamente `transient_status` e um caso negativo para reduzir risco de falso positivo. Governança de arquivo não pode sair vendo fantasma em aniversário antigo.
+
 ## [4.5.1] - 2026-03-18
 
 ### Added

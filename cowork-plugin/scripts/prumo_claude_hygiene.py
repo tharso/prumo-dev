@@ -166,7 +166,7 @@ def looks_like_history_block(block: Block) -> bool:
     if any(hint in heading for hint in HISTORY_HINTS):
         return True
     history_lines = [line for line in block.raw.splitlines() if HISTORY_LINE_RE.match(line.strip())]
-    return len(history_lines) >= 1
+    return len(history_lines) >= 2
 
 
 def looks_like_action_block(block: Block) -> bool:

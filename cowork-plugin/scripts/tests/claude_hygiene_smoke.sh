@@ -20,6 +20,17 @@ assert_contains() {
   grep -Eq -- "$pattern" "$file" || fail "$label (arquivo: $file)"
 }
 
+assert_not_contains() {
+  local file="$1"
+  local pattern="$2"
+  local label="$3"
+  if command -v rg >/dev/null 2>&1; then
+    rg -q -- "$pattern" "$file" && fail "$label (arquivo: $file)"
+    return 0
+  fi
+  grep -Eq -- "$pattern" "$file" && fail "$label (arquivo: $file)"
+}
+
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 mkdir -p "$TMP_DIR/_state" "$TMP_DIR/_backup"
@@ -47,9 +58,19 @@ Cobrar itens parados com humor seco.
 
 - Checar contrato em 01/01/2026.
 
+## Infra
+
+- Domínios transferindo desde 01/01/2026.
+- Serviço migrando desde 02/01/2026.
+
 ## Changelog
 
 - **05/02/2026**: Sistema criado como Claudia.
+- **06/02/2026**: Migração para Prumo.
+
+## Perfil
+
+- Conheci Mari em 01/01/2016.
 EOF
 
 cat > "$TMP_DIR/REGISTRO.md" <<'EOF'
@@ -69,8 +90,10 @@ assert_contains "$TMP_DIR/_state/claude-hygiene/claude-hygiene-report.md" "Dupli
 assert_contains "$TMP_DIR/_state/claude-hygiene/claude-hygiene-report.md" "Potencial conflito" "Relatorio nao apontou conflito"
 assert_contains "$TMP_DIR/_state/claude-hygiene/claude-hygiene-report.md" "Lembrete vencido no arquivo vivo" "Relatorio nao apontou lembrete vencido"
 assert_contains "$TMP_DIR/_state/claude-hygiene/claude-hygiene-report.md" "Histórico no arquivo vivo" "Relatorio nao apontou historico deslocado"
+assert_contains "$TMP_DIR/_state/claude-hygiene/claude-hygiene-report.md" "Status transitório envelhecido" "Relatorio nao apontou status transitorio envelhecido"
 assert_contains "$TMP_DIR/_state/claude-hygiene/claude-hygiene-report.md" "PAUTA.md / REGISTRO.md" "Relatorio nao sugeriu destino para lembrete vencido"
 assert_contains "$TMP_DIR/_state/claude-hygiene/claude-hygiene-report.md" "REGISTRO.md / CHANGELOG" "Relatorio nao sugeriu destino para historico"
+assert_not_contains "$TMP_DIR/_state/claude-hygiene/claude-hygiene-report.md" "Conheci Mari em 01/01/2016" "Relatorio gerou falso positivo no caso negativo"
 assert_contains "$TMP_DIR/CLAUDE.md" "Evite emojis." "Dry-run alterou CLAUDE.md"
 
 python3 "$ROOT_DIR/scripts/prumo_claude_hygiene.py" --workspace "$TMP_DIR" --apply >/dev/null
