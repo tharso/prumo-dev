@@ -199,7 +199,10 @@ Depois de estabilizar:
 1. Fixar URL por commit do `marketplace.json` para eliminar cache velho.
 2. Pedir retry no app após remover marketplace antigo e adicionar de novo.
 3. Capturar erro exato + trecho do `main.log`.
-4. Se necessário, manter `.zip` como fallback temporário com prazo de remoção.
+4. Se necessário, usar o caminho canônico por CLI:
+   - `claude plugin marketplace add <url-do-marketplace>`
+   - `claude plugin install prumo@prumo-marketplace`
+5. Se necessário, manter `.zip` como fallback temporário com prazo de remoção.
 
 ## 10) Nota prática sobre testes de comando
 

@@ -2,7 +2,7 @@
 
 **Sistema de organização de vida pessoal com IA.**
 
-Versão atual: **4.5.0**
+Versão atual: **4.5.1**
 
 Prumo é um plugin de IA que transforma o Claude, Codex ou Gemini em interface única para capturar, processar, lembrar e cobrar tudo que acontece na sua vida. Trabalho, filhos, contas, saúde, ideias — tudo entra pelo mesmo lugar.
 
@@ -27,21 +27,47 @@ Prumo funciona diferente: você despeja o caos, ele organiza. Sem dashboard pra 
 
 Prumo funciona com **Claude Desktop (Cowork)**, **Codex CLI** e **Gemini CLI**.
 
-### Opção 1: Marketplace por URL (recomendada)
+### Opção 1: CLI canônico (recomendada)
 
-Na sua plataforma, use a URL do marketplace:
+Se você usa Claude Desktop/Cowork, este é o caminho mais confiável hoje.
+Sim, eu preferia poder dizer "clica no botão bonito". O produto ainda não ganhou esse luxo.
+
+```bash
+claude plugin marketplace add https://raw.githubusercontent.com/tharso/prumo/main/marketplace.json
+claude plugin install prumo@prumo-marketplace
+```
+
+Para atualizar depois:
+
+```bash
+claude plugin marketplace update prumo-marketplace
+claude plugin update prumo@prumo-marketplace
+```
+
+Se quiser um instalador sóbrio, sem copiar comando em duas etapas:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/tharso/prumo/main/scripts/prumo_plugin_install.sh)
+```
+
+### Opção 2: Marketplace por URL na UI
+
+Use a URL abaixo no painel do app:
 
 ```
 https://raw.githubusercontent.com/tharso/prumo/main/marketplace.json
 ```
 
-### Opção 2: Repositório Git
+Observação importante:
+o fluxo por UI pode parecer atualizado e continuar velho por baixo. Se o app disser "comando desconhecido" ou mostrar versão antiga, use o caminho por CLI acima e poupe seu tempo.
+
+### Opção 3: Repositório Git
 
 ```
 https://github.com/tharso/prumo.git
 ```
 
-### Opção 3: Upload local (.zip)
+### Opção 4: Upload local (.zip)
 
 Baixe o repositório e instale manualmente como pacote local.
 
@@ -95,9 +121,11 @@ Se preferir ir direto ao ponto: `/prumo:start` — você despeja tudo que tem na
 Se aparecer "comando desconhecido" após instalar/atualizar, o suspeito principal é sessão velha ou app sem restart.
 Feche a conversa, abra uma nova, teste o autocomplete de `/prumo:*` e, se preciso, reinicie o Cowork antes de decretar bug no plugin.
 
+Se o painel do app disser que atualizou, mas o plugin continuar em versão velha ou sumirem comandos novos, use o caminho canônico por CLI. O painel às vezes sorri e não faz o serviço. Concierge de hotel ruim.
+
 ## Versão
 
-Versão atual: `4.5.0`
+Versão atual: `4.5.1`
 
 ## Licença
 

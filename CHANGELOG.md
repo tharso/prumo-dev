@@ -4,6 +4,15 @@ Este arquivo registra mudanças públicas do produto Prumo.
 
 O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamento semântico.
 
+## [4.5.1] - 2026-03-18
+
+### Added
+- Novo instalador/atualizador canônico em [scripts/prumo_plugin_install.sh](scripts/prumo_plugin_install.sh) para adicionar o marketplace e instalar/atualizar o plugin pelo CLI do Claude/Cowork.
+
+### Changed
+- README agora trata o fluxo por CLI como caminho preferencial para instalação/update do Prumo e documenta a UI de marketplace como caminho secundário, porque fingir que ela é sempre confiável seria publicidade enganosa com cara de tutorial.
+- Playbook e protocolo de release reforçam que a atualização do plugin precisa ser validada pelo backend, não só por um toast simpático da UI.
+
 ## [4.5.0] - 2026-03-16
 
 ### Added
