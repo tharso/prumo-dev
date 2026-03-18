@@ -139,7 +139,7 @@ Exemplo:
    - instalar
 4. Verificar `claude plugin list --json` sem `errors`.
 5. Abrir conversa nova no Cowork Desktop (ou forçar reinit) antes do teste de slash.
-6. Validar no Cowork Desktop (não só CLI), incluindo os comandos de runtime.
+6. Validar no Cowork Desktop (não só CLI), incluindo os comandos de runtime e qualquer slash command novo da release.
 
 ## 6) Logs e observabilidade (onde olhar quando der erro genérico)
 
@@ -221,11 +221,12 @@ Use este roteiro toda vez que instalar/atualizar plugin e o slash command falhar
 2. Feche a conversa onde você testou antes (não precisa apagar nada).
 3. Abra uma conversa nova.
 4. Digite `/` e confira se aparece `prumo:briefing` no autocomplete.
-5. Se aparecer, execute `/prumo:briefing` e siga a vida.
-6. Se não aparecer:
+5. Se a release adicionou comando novo, confira também se ele aparece no autocomplete (ex.: `prumo:higiene`).
+6. Se aparecer, execute o comando afetado e siga a vida.
+7. Se não aparecer:
    - faça restart do app Cowork;
    - abra nova conversa e teste de novo.
-7. Se ainda não aparecer, só então trate como incidente técnico e colete logs.
+8. Se ainda não aparecer, só então trate como incidente técnico e colete logs.
 
 Regra de ouro:
 - Se o teste foi feito numa sessão aberta antes da instalação, esse teste não vale. Refaça em sessão nova.

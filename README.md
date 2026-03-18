@@ -92,7 +92,8 @@ Se preferir ir direto ao ponto: `/prumo:start` — você despeja tudo que tem na
 
 ## Diagnóstico rápido
 
-Se aparecer "comando desconhecido" após instalar/atualizar, consulte `README-DEV.md` (seção "Protocolo de 60 segundos").
+Se aparecer "comando desconhecido" após instalar/atualizar, o suspeito principal é sessão velha ou app sem restart.
+Feche a conversa, abra uma nova, teste o autocomplete de `/prumo:*` e, se preciso, reinicie o Cowork antes de decretar bug no plugin.
 
 ## Versão
 

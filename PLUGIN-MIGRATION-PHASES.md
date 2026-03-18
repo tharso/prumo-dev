@@ -108,6 +108,7 @@ Reverter movimento de diretórios, restaurar paths antigos, lançar patch de cor
    - `/prumo:briefing`
    - `/prumo:handover`
    - `/prumo:sanitize`
+   - `/prumo:higiene`
    - `/prumo:start`
 5. Registrar resultado com data/hora no handover da rodada.
 
