@@ -64,6 +64,9 @@ Esses blocos não podem ser misturados. O produto precisa deixar claro o que é:
 2. verdade factual pendente;
 3. decisão de arquitetura do arquivo.
 
+`Mudanças seguras` só inclui o que o patch atual consegue aplicar sem interpretar
+qual cópia “merece” sobreviver ou para qual arquivo o conteúdo deve migrar.
+
 Nunca aplicar direto.
 
 ### Passo 4: Aplicar só com confirmação
@@ -81,3 +84,4 @@ Se o usuário aprovar explicitamente:
 3. Se o diagnóstico não encontrar mudança segura, o arquivo fica como está.
 4. Conflitos potenciais podem ser reportados sem serem resolvidos automaticamente.
 5. Conteúdo no arquivo errado deve virar sugestão de destino, não mudança silenciosa.
+6. Se o `PRUMO-CORE.md` do workspace estiver atrás da versão do runtime, isso deve aparecer no relatório como observação de governança.

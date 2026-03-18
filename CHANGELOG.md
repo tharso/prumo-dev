@@ -4,6 +4,13 @@ Este arquivo registra mudanças públicas do produto Prumo.
 
 O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamento semântico.
 
+## [4.6.3] - 2026-03-18
+
+### Changed
+- `Mudanças seguras` em `/higiene` agora é um bloco realmente disciplinado: só entra ali o que o patch atual consegue aplicar sem escolha semântica.
+- O relatório passou a avisar explicitamente quando o `PRUMO-CORE.md` do workspace está defasado em relação ao runtime.
+- JSON e Markdown de higiene agora mostram com clareza quando um item é autoaplicável e quando é só diagnóstico de governança.
+
 ## [4.6.2] - 2026-03-18
 
 ### Changed

@@ -30,6 +30,7 @@ Também é checagem de governança do que pertence a cada arquivo vivo do Prumo.
    - `Mudanças seguras`
    - `Itens que pedem confirmação factual`
    - `Decisões de governança/arquitetura`
+   `Mudanças seguras` só pode conter o que o patch atual consegue aplicar sem interpretação.
 3. Apontar onde está o patch proposto.
 4. Perguntar se o usuário quer aplicar.
 5. Só com confirmação explícita:
@@ -44,4 +45,5 @@ Também é checagem de governança do que pertence a cada arquivo vivo do Prumo.
 - Nunca reescrever preferências subjetivas por conta própria.
 - Nunca mover item entre arquivos sem confirmação factual do usuário.
 - Nunca misturar no mesmo bloco limpeza segura, confirmação factual e decisão de governança.
+- Se o `PRUMO-CORE.md` do workspace estiver defasado em relação ao runtime, sinalizar isso explicitamente.
 - Se o conflito for interpretativo demais, reportar e deixar a decisão para o usuário.

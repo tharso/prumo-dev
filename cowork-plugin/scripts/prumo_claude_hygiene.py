@@ -100,6 +100,15 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def parse_version_tuple(raw: str | None) -> tuple[int, int, int] | None:
+    if not raw:
+        return None
+    match = re.search(r"(\d+)\.(\d+)\.(\d+)", raw)
+    if not match:
+        return None
+    return tuple(int(part) for part in match.groups())
+
+
 def now_iso() -> str:
     return dt.datetime.now().astimezone().isoformat(timespec="seconds")
 
@@ -207,6 +216,7 @@ def detect_lifecycle_findings(blocks: list[Block], today: dt.date) -> list[dict[
                     "reason": "Bloco com cara de changelog ou histórico ocupando espaço de configuração viva.",
                     "destination": "REGISTRO.md / CHANGELOG",
                     "requires_confirmation": True,
+                    "auto_applicable": False,
                     "suggestion": "Mover o histórico para REGISTRO.md ou changelog separado. CLAUDE.md não é museu com pretensão de cockpit.",
                 }
             )
@@ -228,6 +238,7 @@ def detect_lifecycle_findings(blocks: list[Block], today: dt.date) -> list[dict[
                     "reason": f"Há referência datada vencida ({closest.strftime('%d/%m/%Y')}) com cara de pendência operacional.",
                     "destination": "PAUTA.md / REGISTRO.md",
                     "requires_confirmation": True,
+                    "auto_applicable": False,
                     "suggestion": "Se ainda estiver aberto, mover para PAUTA.md. Se resolveu, registrar em REGISTRO.md e tirar do CLAUDE.md.",
                 }
             )
@@ -244,6 +255,7 @@ def detect_lifecycle_findings(blocks: list[Block], today: dt.date) -> list[dict[
                     "reason": f"O bloco parece status transitório antigo ({oldest.strftime('%d/%m/%Y')}) e pede atualização ou remoção.",
                     "destination": "REGISTRO.md ou CLAUDE.md atualizado",
                     "requires_confirmation": True,
+                    "auto_applicable": False,
                     "suggestion": "Confirmar o fato atual. Se a transição acabou, registrar em REGISTRO.md. Se ainda vale, atualizar o texto em vez de deixar fóssil operacional.",
                 }
             )
@@ -286,6 +298,7 @@ def detect_duplicate_lines(content: str) -> list[dict[str, Any]]:
                 "reason": "A mesma instrução aparece mais de uma vez sem ganhar contexto novo.",
                 "destination": "CLAUDE.md",
                 "requires_confirmation": False,
+                "auto_applicable": False,
                 "suggestion": "Consolidar a frase em um único ponto do arquivo.",
             }
         )
@@ -318,6 +331,7 @@ def detect_duplicate_blocks(blocks: list[Block]) -> tuple[list[dict[str, Any]], 
                 "reason": "O mesmo bloco está repetido literalmente em mais de um lugar.",
                 "destination": "CLAUDE.md",
                 "requires_confirmation": False,
+                "auto_applicable": True,
                 "suggestion": "Manter o bloco mais bem posicionado e remover a repetição literal.",
             }
         )
@@ -349,6 +363,7 @@ def detect_near_duplicates(blocks: list[Block], threshold: float) -> list[dict[s
                     "reason": "Dois blocos dizem quase a mesma coisa e criam eco semântico.",
                     "destination": "CLAUDE.md",
                     "requires_confirmation": False,
+                    "auto_applicable": False,
                     "suggestion": "Fundir os dois blocos em um texto único para evitar eco com roupa diferente.",
                     "similarity": round(ratio, 3),
                 }
@@ -414,10 +429,44 @@ def detect_conflicts(lines: list[str]) -> list[dict[str, Any]]:
                 "reason": "Há instruções do mesmo tema apontando para direções opostas.",
                 "destination": "CLAUDE.md",
                 "requires_confirmation": True,
+                "auto_applicable": False,
                 "suggestion": "Revisar e decidir qual instrução vence. Aqui tem duas placas apontando para estradas opostas.",
             }
         )
     return findings
+
+
+def detect_runtime_version_drift(workspace: Path) -> list[dict[str, Any]]:
+    core_path = workspace / "PRUMO-CORE.md"
+    if not core_path.exists():
+        return []
+
+    root_dir = Path(__file__).resolve().parents[2]
+    version_path = root_dir / "VERSION"
+    expected_version = version_path.read_text(encoding="utf-8").strip() if version_path.exists() else None
+    core_content = core_path.read_text(encoding="utf-8")
+    current_version_match = re.search(r"prumo_version:\s*([0-9]+\.[0-9]+\.[0-9]+)", core_content)
+    current_version = current_version_match.group(1) if current_version_match else None
+
+    current_tuple = parse_version_tuple(current_version)
+    expected_tuple = parse_version_tuple(expected_version)
+    if not current_tuple or not expected_tuple or current_tuple >= expected_tuple:
+        return []
+
+    return [
+        {
+            "type": "runtime_version_drift",
+            "label": "PRUMO-CORE do workspace está defasado",
+            "snippet": f"{current_version} -> {expected_version}",
+            "lines": [1],
+            "risk": "medio",
+            "reason": f"O workspace ainda usa PRUMO-CORE {current_version}, enquanto o runtime atual já está em {expected_version}.",
+            "destination": "PRUMO-CORE.md",
+            "requires_confirmation": False,
+            "auto_applicable": False,
+            "suggestion": "Sinalizar explicitamente essa defasagem ao usuário. Sessão com metade nova e metade velha parece íntegra, mas pensa torto.",
+        }
+    ]
 
 
 def build_proposed_content(content: str, duplicate_indexes: set[int]) -> str:
@@ -429,9 +478,9 @@ def build_proposed_content(content: str, duplicate_indexes: set[int]) -> str:
 
 
 def classify_group(item: dict[str, Any]) -> str:
-    item_type = item.get("type")
-    if item_type in {"duplicate_line", "duplicate_block", "near_duplicate_block"}:
+    if item.get("auto_applicable") is True:
         return "safe_cleanup"
+    item_type = item.get("type")
     if item_type in {"stale_reminder", "transient_status"}:
         return "needs_factual_confirmation"
     return "governance_decision"
@@ -457,6 +506,7 @@ def render_finding_md(item: dict[str, Any]) -> list[str]:
         f"- Razão: {item.get('reason', 'n/d')}",
         f"- Destino sugerido: {item.get('destination', 'CLAUDE.md')}",
         f"- Requer confirmação factual: {'sim' if item.get('requires_confirmation') else 'não'}",
+        f"- Aplicável no patch atual: {'sim' if item.get('auto_applicable') else 'não'}",
         f"- Sugestão: {item['suggestion']}",
     ]
 
@@ -514,6 +564,7 @@ def build_report(content: str, claude_path: Path, threshold: float) -> tuple[dic
     near_duplicate_findings = detect_near_duplicates(blocks, threshold)
     conflict_findings = detect_conflicts(content.splitlines())
     lifecycle_findings = detect_lifecycle_findings(blocks, today=dt.datetime.now().astimezone().date())
+    version_findings = detect_runtime_version_drift(claude_path.parent)
 
     all_findings = (
         duplicate_line_findings
@@ -521,6 +572,7 @@ def build_report(content: str, claude_path: Path, threshold: float) -> tuple[dic
         + near_duplicate_findings
         + conflict_findings
         + lifecycle_findings
+        + version_findings
     )
     for item in all_findings:
         item["group"] = classify_group(item)
@@ -545,6 +597,10 @@ def build_report(content: str, claude_path: Path, threshold: float) -> tuple[dic
         "generated_at": now_iso(),
         "claude_path": str(claude_path),
         "summary": summary,
+        "runtime": {
+            "workspace_core_version": version_findings[0]["snippet"].split(" -> ")[0] if version_findings else None,
+            "expected_runtime_version": version_findings[0]["snippet"].split(" -> ")[1] if version_findings else None,
+        },
         "findings": all_findings,
         "grouped_findings": grouped_findings,
         "proposal": {

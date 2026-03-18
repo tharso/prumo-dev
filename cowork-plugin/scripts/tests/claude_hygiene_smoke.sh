@@ -80,6 +80,12 @@ cat > "$TMP_DIR/REGISTRO.md" <<'EOF'
 |------|--------|--------|------|---------|
 EOF
 
+cat > "$TMP_DIR/PRUMO-CORE.md" <<'EOF'
+# Prumo Core — Motor do sistema
+
+> **prumo_version: 4.5.0**
+EOF
+
 python3 "$ROOT_DIR/scripts/prumo_claude_hygiene.py" --workspace "$TMP_DIR" >/dev/null
 
 [[ -f "$TMP_DIR/_state/claude-hygiene/claude-hygiene-report.json" ]] || fail "Relatorio JSON ausente"
@@ -91,15 +97,19 @@ assert_contains "$TMP_DIR/_state/claude-hygiene/claude-hygiene-report.md" "Poten
 assert_contains "$TMP_DIR/_state/claude-hygiene/claude-hygiene-report.md" "## Mudanças seguras" "Relatorio nao criou bloco de mudancas seguras"
 assert_contains "$TMP_DIR/_state/claude-hygiene/claude-hygiene-report.md" "## Itens que pedem confirmação factual" "Relatorio nao criou bloco de confirmacao factual"
 assert_contains "$TMP_DIR/_state/claude-hygiene/claude-hygiene-report.md" "## Decisões de governança/arquitetura" "Relatorio nao criou bloco de governanca"
+assert_contains "$TMP_DIR/_state/claude-hygiene/claude-hygiene-report.md" "PRUMO-CORE do workspace está defasado" "Relatorio nao apontou core defasado"
 assert_contains "$TMP_DIR/_state/claude-hygiene/claude-hygiene-report.md" "Lembrete vencido no arquivo vivo" "Relatorio nao apontou lembrete vencido"
 assert_contains "$TMP_DIR/_state/claude-hygiene/claude-hygiene-report.md" "Histórico no arquivo vivo" "Relatorio nao apontou historico deslocado"
 assert_contains "$TMP_DIR/_state/claude-hygiene/claude-hygiene-report.md" "Status transitório envelhecido" "Relatorio nao apontou status transitorio envelhecido"
 assert_contains "$TMP_DIR/_state/claude-hygiene/claude-hygiene-report.md" "PAUTA.md / REGISTRO.md" "Relatorio nao sugeriu destino para lembrete vencido"
 assert_contains "$TMP_DIR/_state/claude-hygiene/claude-hygiene-report.md" "REGISTRO.md / CHANGELOG" "Relatorio nao sugeriu destino para historico"
+assert_contains "$TMP_DIR/_state/claude-hygiene/claude-hygiene-report.md" "Aplicável no patch atual: sim" "Relatorio nao distinguiu item autoaplicavel"
+assert_contains "$TMP_DIR/_state/claude-hygiene/claude-hygiene-report.md" "Aplicável no patch atual: não" "Relatorio nao distinguiu item nao autoaplicavel"
 assert_not_contains "$TMP_DIR/_state/claude-hygiene/claude-hygiene-report.md" "Conheci Mari em 01/01/2016" "Relatorio gerou falso positivo no caso negativo"
-assert_contains "$TMP_DIR/_state/claude-hygiene/claude-hygiene-report.json" "\"safe_cleanup_count\": 3" "JSON nao resumiu bloco seguro"
+assert_contains "$TMP_DIR/_state/claude-hygiene/claude-hygiene-report.json" "\"safe_cleanup_count\": 2" "JSON nao resumiu bloco seguro"
 assert_contains "$TMP_DIR/_state/claude-hygiene/claude-hygiene-report.json" "\"needs_factual_confirmation_count\": 2" "JSON nao resumiu bloco factual"
-assert_contains "$TMP_DIR/_state/claude-hygiene/claude-hygiene-report.json" "\"governance_decision_count\": 3" "JSON nao resumiu bloco de governanca"
+assert_contains "$TMP_DIR/_state/claude-hygiene/claude-hygiene-report.json" "\"governance_decision_count\": 5" "JSON nao resumiu bloco de governanca"
+assert_contains "$TMP_DIR/_state/claude-hygiene/claude-hygiene-report.json" "\"workspace_core_version\": \"4.5.0\"" "JSON nao registrou versao do core do workspace"
 assert_contains "$TMP_DIR/CLAUDE.md" "Evite emojis." "Dry-run alterou CLAUDE.md"
 
 python3 "$ROOT_DIR/scripts/prumo_claude_hygiene.py" --workspace "$TMP_DIR" --apply >/dev/null
