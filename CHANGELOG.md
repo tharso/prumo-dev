@@ -4,6 +4,25 @@ Este arquivo registra mudanças públicas do produto Prumo.
 
 O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamento semântico.
 
+## [4.6.0] - 2026-03-18
+
+### Added
+- Novo módulo canônico [runtime-file-governance.md](cowork-plugin/skills/prumo/references/modules/runtime-file-governance.md) definindo o contrato de permanência entre `CLAUDE.md`, `PAUTA.md`, `REGISTRO.md` e histórico.
+- A higiene assistida agora classifica drift de conteúdo em `CLAUDE.md`, incluindo:
+  - lembretes vencidos;
+  - histórico/changelog no arquivo vivo;
+  - status transitórios envelhecidos;
+  - destino sugerido por achado.
+- Issue pública da feature: [#35](https://github.com/tharso/prumo/issues/35).
+
+### Changed
+- `/higiene` deixou de ser só “detector de duplicação” e passou a agir como primeira camada de governança do arquivo vivo do usuário.
+- `claude-md-template.md` agora explicita que lembrete datado não mora em `CLAUDE.md`.
+- Smoke de higiene reforçado para validar destinos sugeridos e garantir que itens com confirmação factual não sejam auto-removidos.
+
+### Fixed
+- Versionamento do plugin/manifests alinhado para `4.6.0`. Já bastava de painel contando uma história e arquivo contando outra.
+
 ## [4.5.1] - 2026-03-18
 
 ### Added

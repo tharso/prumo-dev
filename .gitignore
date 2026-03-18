@@ -33,4 +33,4 @@ docs/
 scripts/*
 !scripts/
 !scripts/prumo_plugin_install.sh
-skills/
+/skills/

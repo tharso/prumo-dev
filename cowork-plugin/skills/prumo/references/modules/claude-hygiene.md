@@ -1,6 +1,6 @@
 # Claude Hygiene
 
-> **module_version: 4.5.0**
+> **module_version: 4.6.0**
 >
 > Fonte canônica da higiene assistida do `CLAUDE.md`.
 
@@ -20,7 +20,8 @@ Higiene aqui significa:
 
 1. Ler `CLAUDE.md`.
 2. Ler `PRUMO-CORE.md`.
-3. Se houver shell, ler `runtime-paths.md`.
+3. Ler `runtime-file-governance.md`.
+4. Se houver shell, ler `runtime-paths.md`.
 
 ### Passo 2: Rodar diagnóstico
 
@@ -32,6 +33,13 @@ O diagnóstico deve gerar:
 2. relatório Markdown;
 3. patch proposto;
 4. cópia proposta do `CLAUDE.md`.
+
+Além da limpeza estrutural, o diagnóstico deve classificar drift de conteúdo:
+
+1. pendência datada que parece pertencer a `PAUTA.md`;
+2. registro histórico que parece pertencer a `REGISTRO.md` ou changelog;
+3. status transitório velho demais para continuar em configuração viva;
+4. item que exige confirmação factual antes de qualquer movimento.
 
 Destino padrão:
 
@@ -64,3 +72,4 @@ Se o usuário aprovar explicitamente:
 2. Sem confirmação explícita, nada é escrito no arquivo.
 3. Se o diagnóstico não encontrar mudança segura, o arquivo fica como está.
 4. Conflitos potenciais podem ser reportados sem serem resolvidos automaticamente.
+5. Conteúdo no arquivo errado deve virar sugestão de destino, não mudança silenciosa.

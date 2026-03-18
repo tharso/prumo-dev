@@ -1,6 +1,6 @@
 # Prumo Core — Motor do sistema
 
-> **prumo_version: 4.5.0**
+> **prumo_version: 4.6.0**
 >
 > Este arquivo é o núcleo estável do Prumo.
 > Ele define regras, guardrails e a localização dos módulos canônicos.
@@ -70,6 +70,7 @@ Quando um comando específico for executado, o agente deve ler o módulo corresp
 | Multiagente | `Prumo/cowork-plugin/skills/prumo/references/modules/multiagent.md` |
 | Sanitização | `Prumo/cowork-plugin/skills/prumo/references/modules/sanitization.md` |
 | Higiene do CLAUDE | `Prumo/cowork-plugin/skills/prumo/references/modules/claude-hygiene.md` |
+| Governança de arquivos | `Prumo/cowork-plugin/skills/prumo/references/modules/runtime-file-governance.md` |
 | Política de leitura | `Prumo/cowork-plugin/skills/prumo/references/modules/load-policy.md` |
 | Runtime paths | `Prumo/cowork-plugin/skills/prumo/references/modules/runtime-paths.md` |
 | Feedback do produto | `Prumo/cowork-plugin/skills/prumo/references/feedback-loop.md` |
@@ -170,6 +171,8 @@ Se o usuário der feedback, bug ou sugestão sobre o Prumo em si, capturar isso 
 
 `ASSERT: CLAUDE.md nunca entra em autosanitização; higiene só acontece com confirmação explícita do usuário.`
 
+`ASSERT: Pendência viva, registro resolvido e histórico não devem disputar espaço em CLAUDE.md como se fossem a mesma espécie de informação.`
+
 ## Rituais e procedimentos
 
 ### Briefing diário
@@ -265,8 +268,8 @@ Histórico completo de versão vive em `CHANGELOG.md`.
 
 Versão atual deste core:
 
-- `4.5.0`
+- `4.6.0`
 
 ---
 
-*Prumo Core v4.5.0 — https://github.com/tharso/prumo*
+*Prumo Core v4.6.0 — https://github.com/tharso/prumo*

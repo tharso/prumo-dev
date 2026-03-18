@@ -27,6 +27,44 @@ SECTION_TITLE_RE = re.compile(r"^(#{1,6}\s+.+)$", re.MULTILINE)
 SPLIT_RE = re.compile(r"\n{2,}")
 WHITESPACE_RE = re.compile(r"\s+")
 PUNCT_RE = re.compile(r"[`*_>#\-\u2013\u2014:;,.!?\[\]\(\)\"']")
+DATE_REF_RE = re.compile(r"(?<!\d)(?:~\s*)?(?P<day>\d{2})/(?P<month>\d{2})(?:/(?P<year>\d{4}))?(?!\d)")
+HISTORY_LINE_RE = re.compile(r"^\s*[-*]\s+\*{0,2}\d{2}/\d{2}/\d{4}\*{0,2}\s*:")
+
+ACTION_HINTS = {
+    "checar",
+    "verificar",
+    "resolver",
+    "fazer",
+    "migrar",
+    "cancelar",
+    "renovar",
+    "desativar",
+    "enviar",
+    "pagar",
+    "cobrar",
+    "acompanhar",
+}
+TRANSIENT_HINTS = {
+    "transferindo",
+    "migrando",
+    "migração",
+    "migracao",
+    "sendo absorvido",
+    "absorvido",
+    "iniciado em",
+    "em transição",
+    "em transicao",
+}
+HISTORY_HINTS = {
+    "historico",
+    "histórico",
+    "changelog",
+    "mudancas",
+    "mudanças",
+    "legado",
+    "evolucao",
+    "evolução",
+}
 
 
 @dataclass
@@ -110,6 +148,103 @@ def split_blocks(content: str) -> list[Block]:
     return blocks
 
 
+def parse_date_refs(text: str, reference_year: int) -> list[dt.date]:
+    dates: list[dt.date] = []
+    for match in DATE_REF_RE.finditer(text):
+        day = int(match.group("day"))
+        month = int(match.group("month"))
+        year = int(match.group("year") or reference_year)
+        try:
+            dates.append(dt.date(year, month, day))
+        except ValueError:
+            continue
+    return dates
+
+
+def looks_like_history_block(block: Block) -> bool:
+    heading = normalize_text(block.heading)
+    if any(hint in heading for hint in HISTORY_HINTS):
+        return True
+    history_lines = [line for line in block.raw.splitlines() if HISTORY_LINE_RE.match(line.strip())]
+    return len(history_lines) >= 1
+
+
+def looks_like_action_block(block: Block) -> bool:
+    heading = normalize_text(block.heading)
+    normalized = normalize_text(block.raw)
+    if "lembrete" in heading or "pendenc" in heading or "pendênc" in heading:
+        return True
+    return any(hint in normalized for hint in ACTION_HINTS)
+
+
+def looks_like_transient_status(block: Block) -> bool:
+    normalized = normalize_text(block.raw)
+    return any(hint in normalized for hint in TRANSIENT_HINTS)
+
+
+def detect_lifecycle_findings(blocks: list[Block], today: dt.date) -> list[dict[str, Any]]:
+    findings: list[dict[str, Any]] = []
+
+    for block in blocks:
+        raw = block.raw.strip()
+        if not raw or raw.startswith("# "):
+            continue
+
+        if looks_like_history_block(block):
+            findings.append(
+                {
+                    "type": "historical_record",
+                    "label": "Histórico no arquivo vivo",
+                    "snippet": raw.splitlines()[0][:180],
+                    "lines": [block.start_line],
+                    "risk": "medio",
+                    "reason": "Bloco com cara de changelog ou histórico ocupando espaço de configuração viva.",
+                    "destination": "REGISTRO.md / CHANGELOG",
+                    "requires_confirmation": True,
+                    "suggestion": "Mover o histórico para REGISTRO.md ou changelog separado. CLAUDE.md não é museu com pretensão de cockpit.",
+                }
+            )
+            continue
+
+        dates = parse_date_refs(raw, reference_year=today.year)
+        stale_dates = [item for item in dates if (today - item).days > 2]
+        old_dates = [item for item in dates if (today - item).days > 14]
+
+        if stale_dates and looks_like_action_block(block):
+            closest = min(stale_dates)
+            findings.append(
+                {
+                    "type": "stale_reminder",
+                    "label": "Lembrete vencido no arquivo vivo",
+                    "snippet": raw.splitlines()[0][:180],
+                    "lines": [block.start_line],
+                    "risk": "medio",
+                    "reason": f"Há referência datada vencida ({closest.strftime('%d/%m/%Y')}) com cara de pendência operacional.",
+                    "destination": "PAUTA.md / REGISTRO.md",
+                    "requires_confirmation": True,
+                    "suggestion": "Se ainda estiver aberto, mover para PAUTA.md. Se resolveu, registrar em REGISTRO.md e tirar do CLAUDE.md.",
+                }
+            )
+
+        if old_dates and looks_like_transient_status(block):
+            oldest = min(old_dates)
+            findings.append(
+                {
+                    "type": "transient_status",
+                    "label": "Status transitório envelhecido",
+                    "snippet": raw.splitlines()[0][:180],
+                    "lines": [block.start_line],
+                    "risk": "medio",
+                    "reason": f"O bloco parece status transitório antigo ({oldest.strftime('%d/%m/%Y')}) e pede atualização ou remoção.",
+                    "destination": "REGISTRO.md ou CLAUDE.md atualizado",
+                    "requires_confirmation": True,
+                    "suggestion": "Confirmar o fato atual. Se a transição acabou, registrar em REGISTRO.md. Se ainda vale, atualizar o texto em vez de deixar fóssil operacional.",
+                }
+            )
+
+    return findings
+
+
 def fingerprint(text: str) -> str:
     return hashlib.sha1(text.encode("utf-8")).hexdigest()[:16]
 
@@ -142,6 +277,9 @@ def detect_duplicate_lines(content: str) -> list[dict[str, Any]]:
                 "snippet": raw_by_key[key],
                 "lines": positions,
                 "risk": "baixo",
+                "reason": "A mesma instrução aparece mais de uma vez sem ganhar contexto novo.",
+                "destination": "CLAUDE.md",
+                "requires_confirmation": False,
                 "suggestion": "Consolidar a frase em um único ponto do arquivo.",
             }
         )
@@ -171,6 +309,9 @@ def detect_duplicate_blocks(blocks: list[Block]) -> tuple[list[dict[str, Any]], 
                 "snippet": block.raw.splitlines()[0][:180],
                 "lines": [first.start_line, block.start_line],
                 "risk": "baixo",
+                "reason": "O mesmo bloco está repetido literalmente em mais de um lugar.",
+                "destination": "CLAUDE.md",
+                "requires_confirmation": False,
                 "suggestion": "Manter o bloco mais bem posicionado e remover a repetição literal.",
             }
         )
@@ -199,6 +340,9 @@ def detect_near_duplicates(blocks: list[Block], threshold: float) -> list[dict[s
                     "snippet": left.raw.splitlines()[0][:180],
                     "lines": [left.start_line, right.start_line],
                     "risk": "medio",
+                    "reason": "Dois blocos dizem quase a mesma coisa e criam eco semântico.",
+                    "destination": "CLAUDE.md",
+                    "requires_confirmation": False,
                     "suggestion": "Fundir os dois blocos em um texto único para evitar eco com roupa diferente.",
                     "similarity": round(ratio, 3),
                 }
@@ -261,6 +405,9 @@ def detect_conflicts(lines: list[str]) -> list[dict[str, Any]]:
                 "snippet": topic,
                 "lines": [polarities["positive"][0][0], polarities["negative"][0][0]],
                 "risk": "alto",
+                "reason": "Há instruções do mesmo tema apontando para direções opostas.",
+                "destination": "CLAUDE.md",
+                "requires_confirmation": True,
                 "suggestion": "Revisar e decidir qual instrução vence. Aqui tem duas placas apontando para estradas opostas.",
             }
         )
@@ -287,6 +434,8 @@ def render_report_md(payload: dict[str, Any]) -> str:
         f"- Duplicados: {payload['summary']['duplicate_count']}",
         f"- Redundâncias: {payload['summary']['redundant_count']}",
         f"- Conflitos potenciais: {payload['summary']['conflict_count']}",
+        f"- Drift de governança: {payload['summary']['policy_drift_count']}",
+        f"- Itens que pedem confirmação factual: {payload['summary']['manual_review_count']}",
         f"- Proposta altera arquivo: {'sim' if payload['summary']['proposal_changes'] else 'não'}",
         "",
         "## Achados",
@@ -306,6 +455,9 @@ def render_report_md(payload: dict[str, Any]) -> str:
                     f"- Linhas: {line_info or 'n/d'}",
                     f"- Risco: {item['risk']}",
                     f"- Trecho/tema: `{item['snippet']}`",
+                    f"- Razão: {item.get('reason', 'n/d')}",
+                    f"- Destino sugerido: {item.get('destination', 'CLAUDE.md')}",
+                    f"- Requer confirmação factual: {'sim' if item.get('requires_confirmation') else 'não'}",
                     f"- Sugestão: {item['suggestion']}",
                 ]
             )
@@ -329,12 +481,17 @@ def build_report(content: str, claude_path: Path, threshold: float) -> tuple[dic
     duplicate_block_findings, duplicate_indexes = detect_duplicate_blocks(blocks)
     near_duplicate_findings = detect_near_duplicates(blocks, threshold)
     conflict_findings = detect_conflicts(content.splitlines())
+    lifecycle_findings = detect_lifecycle_findings(blocks, today=dt.datetime.now().astimezone().date())
 
     proposed = build_proposed_content(content, duplicate_indexes)
     summary = {
         "duplicate_count": len(duplicate_line_findings) + len(duplicate_block_findings),
         "redundant_count": len(near_duplicate_findings),
         "conflict_count": len(conflict_findings),
+        "policy_drift_count": len(lifecycle_findings),
+        "manual_review_count": sum(
+            1 for item in conflict_findings + lifecycle_findings if item.get("requires_confirmation") is True
+        ),
         "proposal_changes": proposed != content,
     }
 
@@ -342,7 +499,11 @@ def build_report(content: str, claude_path: Path, threshold: float) -> tuple[dic
         "generated_at": now_iso(),
         "claude_path": str(claude_path),
         "summary": summary,
-        "findings": duplicate_line_findings + duplicate_block_findings + near_duplicate_findings + conflict_findings,
+        "findings": duplicate_line_findings
+        + duplicate_block_findings
+        + near_duplicate_findings
+        + conflict_findings
+        + lifecycle_findings,
         "proposal": {
             "changed": proposed != content,
             "fingerprint_before": fingerprint(content),
@@ -447,6 +608,8 @@ def main() -> int:
     print(f"duplicates: {report_payload['summary']['duplicate_count']}")
     print(f"redundancies: {report_payload['summary']['redundant_count']}")
     print(f"conflicts: {report_payload['summary']['conflict_count']}")
+    print(f"policy_drift: {report_payload['summary']['policy_drift_count']}")
+    print(f"manual_review: {report_payload['summary']['manual_review_count']}")
     print(f"proposal_changes: {report_payload['summary']['proposal_changes']}")
     print(f"apply_requested: {args.apply}")
     print(f"applied: {applied}")

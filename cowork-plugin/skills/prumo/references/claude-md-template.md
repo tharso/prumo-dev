@@ -57,9 +57,12 @@ INÍCIO DO TEMPLATE:
 
 {{TOM_BRIEFING}}
 
-### Lembretes recorrentes
+### Lembretes recorrentes estáveis
 
 {{LEMBRETES_RECORRENTES}}
+
+> Só entram aqui lembretes estáveis e recorrentes.
+> Pendência datada vai para `PAUTA.md`. Coisa resolvida vai para `REGISTRO.md`.
 
 ---
 

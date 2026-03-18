@@ -2,15 +2,16 @@
 name: higiene
 description: >
   Higiene assistida do CLAUDE.md. Diagnostica duplicações, redundâncias e
-  conflitos, gera relatório e patch proposto, e só aplica com confirmação
-  explícita do usuário. Use com /prumo:higiene.
+  conflitos, classifica drift de conteúdo por arquivo, gera relatório e patch
+  proposto, e só aplica com confirmação explícita do usuário. Use com /higiene.
 ---
 
 # Higiene Assistida do Prumo
 
-Você está executando o comando `/prumo:higiene`.
+Você está executando o comando `/higiene`.
 
 Isto não é sanitização operacional. É revisão assistida do `CLAUDE.md`.
+Também é checagem de governança do que pertence a cada arquivo vivo do Prumo.
 
 ## Carregamento obrigatório
 
@@ -18,13 +19,14 @@ Isto não é sanitização operacional. É revisão assistida do `CLAUDE.md`.
 2. Leia `PRUMO-CORE.md`.
 3. Leia:
    - `Prumo/cowork-plugin/skills/prumo/references/modules/claude-hygiene.md`
+   - `Prumo/cowork-plugin/skills/prumo/references/modules/runtime-file-governance.md`
 4. Quando houver shell, carregue também:
    - `Prumo/cowork-plugin/skills/prumo/references/modules/runtime-paths.md`
 
 ## Fluxo
 
 1. Rodar diagnóstico do `CLAUDE.md`.
-2. Mostrar duplicações, redundâncias e conflitos potenciais.
+2. Mostrar duplicações, redundâncias, conflitos e conteúdo no arquivo errado.
 3. Apontar onde está o patch proposto.
 4. Perguntar se o usuário quer aplicar.
 5. Só com confirmação explícita:
@@ -37,4 +39,5 @@ Isto não é sanitização operacional. É revisão assistida do `CLAUDE.md`.
 - `CLAUDE.md` nunca entra em autosanitização.
 - Nunca aplicar sem confirmação explícita.
 - Nunca reescrever preferências subjetivas por conta própria.
+- Nunca mover item entre arquivos sem confirmação factual do usuário.
 - Se o conflito for interpretativo demais, reportar e deixar a decisão para o usuário.

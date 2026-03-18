@@ -233,8 +233,8 @@ Fora da rotina de briefing, o usuário pode usar `/prumo:handover` para operar v
 **Comando `/prumo:sanitize`:**
 Quando o estado operacional estiver pesado (muitos handovers antigos), usar `/prumo:sanitize` para compactar `_state/HANDOVER.md`, mover histórico para `_state/archive/HANDOVER-ARCHIVE.md` e gerar `_state/HANDOVER.summary.md` para leitura leve no briefing. Também pode executar autosanitização por gatilhos via `scripts/prumo_auto_sanitize.py`.
 
-**Comando `/prumo:higiene`:**
-Quando o problema estiver no `CLAUDE.md` (duplicações, conflito de instruções, acúmulo de texto mal organizado), usar `/prumo:higiene`. Esse fluxo gera relatório + diff proposto e só aplica com confirmação explícita. Não confundir com sanitização automática.
+**Comando `/higiene` (alias canônico no Cowork):**
+Quando o problema estiver no `CLAUDE.md` (duplicações, conflito de instruções, acúmulo de texto mal organizado ou conteúdo no arquivo errado), usar `/higiene`. Esse fluxo gera relatório + diff proposto, sugere destino para drift de conteúdo e só aplica com confirmação explícita. Não confundir com sanitização automática.
 
 ### Etapa 10: Primeiro dump (obrigatório)
 

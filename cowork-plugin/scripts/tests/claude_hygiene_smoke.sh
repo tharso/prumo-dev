@@ -42,6 +42,14 @@ Pode usar travessão se soar melhor.
 Cobrar itens parados com humor seco.
 
 Cobrar itens parados com humor seco.
+
+## Lembretes
+
+- Checar contrato em 01/01/2026.
+
+## Changelog
+
+- **05/02/2026**: Sistema criado como Claudia.
 EOF
 
 cat > "$TMP_DIR/REGISTRO.md" <<'EOF'
@@ -59,6 +67,10 @@ python3 "$ROOT_DIR/scripts/prumo_claude_hygiene.py" --workspace "$TMP_DIR" >/dev
 [[ -f "$TMP_DIR/_state/claude-hygiene/CLAUDE.proposed.md" ]] || fail "CLAUDE proposto ausente"
 assert_contains "$TMP_DIR/_state/claude-hygiene/claude-hygiene-report.md" "Duplicado" "Relatorio nao apontou duplicacao"
 assert_contains "$TMP_DIR/_state/claude-hygiene/claude-hygiene-report.md" "Potencial conflito" "Relatorio nao apontou conflito"
+assert_contains "$TMP_DIR/_state/claude-hygiene/claude-hygiene-report.md" "Lembrete vencido no arquivo vivo" "Relatorio nao apontou lembrete vencido"
+assert_contains "$TMP_DIR/_state/claude-hygiene/claude-hygiene-report.md" "Histórico no arquivo vivo" "Relatorio nao apontou historico deslocado"
+assert_contains "$TMP_DIR/_state/claude-hygiene/claude-hygiene-report.md" "PAUTA.md / REGISTRO.md" "Relatorio nao sugeriu destino para lembrete vencido"
+assert_contains "$TMP_DIR/_state/claude-hygiene/claude-hygiene-report.md" "REGISTRO.md / CHANGELOG" "Relatorio nao sugeriu destino para historico"
 assert_contains "$TMP_DIR/CLAUDE.md" "Evite emojis." "Dry-run alterou CLAUDE.md"
 
 python3 "$ROOT_DIR/scripts/prumo_claude_hygiene.py" --workspace "$TMP_DIR" --apply >/dev/null
@@ -68,5 +80,6 @@ assert_contains "$TMP_DIR/REGISTRO.md" "Higiene assistida aplicada ao CLAUDE.md"
 
 EMOJI_COUNT="$(grep -c "^Evite emojis\.$" "$TMP_DIR/CLAUDE.md")"
 [[ "$EMOJI_COUNT" -eq 1 ]] || fail "Aplicacao nao removeu duplicacao literal"
+assert_contains "$TMP_DIR/CLAUDE.md" "Checar contrato em 01/01/2026" "Aplicacao removeu item que exigia confirmacao factual"
 
 echo "[OK] Claude hygiene smoke checks passaram."
