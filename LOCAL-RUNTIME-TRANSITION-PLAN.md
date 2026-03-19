@@ -47,7 +47,10 @@ Plugin deixa de ser arquitetura. Vira distribuição e interface.
 Manteremos:
 
 1. `workspace` do usuário como fonte de verdade do estado vivo:
+   - `AGENT.md`
    - `CLAUDE.md`
+   - `AGENTS.md`
+   - `Agente/`
    - `PAUTA.md`
    - `INBOX.md`
    - `REGISTRO.md`
@@ -94,6 +97,34 @@ Responsabilidade:
 1. armazenar estado e contexto do usuário;
 2. continuar legível e útil sem o Prumo;
 3. permanecer local-first e auditável.
+
+Estrutura recomendada:
+
+```text
+[Workspace]/
+├── AGENT.md
+├── CLAUDE.md
+├── AGENTS.md
+├── Agente/
+│   ├── INDEX.md
+│   ├── PESSOAS.md
+│   ├── SAUDE.md
+│   ├── ROTINA.md
+│   ├── INFRA.md
+│   ├── PROJETOS.md
+│   └── RELACOES.md
+├── PAUTA.md
+├── INBOX.md
+├── REGISTRO.md
+└── _state/
+```
+
+Papeis:
+
+1. `AGENT.md` vira a porta de entrada canonica;
+2. `CLAUDE.md` e `AGENTS.md` viram wrappers regeneraveis;
+3. `Agente/` guarda o contexto modular do usuario;
+4. `_state/workspace-schema.json` descreve a estrutura esperada do workspace.
 
 #### Camada 2: Runtime local do Prumo
 
@@ -180,6 +211,8 @@ O produto deve poder ser chamado assim:
 ```bash
 prumo setup
 prumo briefing
+prumo context-dump
+prumo repair
 prumo doctor
 prumo sanitize
 prumo higiene
@@ -199,9 +232,10 @@ Cada adapter deve implementar, no mínimo:
 
 1. descoberta de comando;
 2. passagem de contexto do host;
-3. passagem do workspace ativo;
-4. rendering da resposta;
-5. fallback claro quando o host não suporta determinada capacidade.
+3. passagem explícita do `workspace_path`;
+4. passagem de `raw_user_input` quando houver;
+5. rendering da resposta;
+6. fallback claro quando o host não suporta determinada capacidade.
 
 ### 6.3. Contrato de módulo
 
@@ -215,6 +249,24 @@ Cada módulo do Prumo deve declarar:
 6. guardrails.
 
 Hoje boa parte disso já existe em Markdown. A transição é mais de execução do que de semântica.
+
+### 6.4. Contrato de documentação local
+
+O runtime deve persistir localmente o que não pode morrer com a sessão.
+
+Inclui, no mínimo:
+
+1. decisões tomadas;
+2. mudanças de estado;
+3. tarefas criadas, alteradas ou concluídas;
+4. reflexões com valor futuro claro;
+5. setup, migrações e reparos estruturais.
+
+Não inclui, por obrigação:
+
+1. toda conversa exploratória;
+2. brainstorm sem consequência;
+3. cada rascunho que só serviu para pensar em voz alta.
 
 ## 7. Atualizações
 
@@ -397,17 +449,19 @@ Entregas:
 Objetivo:
 
 1. criar CLI `prumo`;
-2. mover comandos canônicos para o runtime local;
-3. manter compatibilidade com o workspace atual.
+2. provar `setup` e `briefing` end-to-end via runtime local;
+3. manter compatibilidade com o workspace atual;
+4. oferecer caminho de entrada para usuário novo sem lock-in.
 
 Entregas:
 
 1. `prumo setup`
 2. `prumo briefing`
-3. `prumo doctor`
-4. `prumo sanitize`
-5. `prumo higiene`
-6. `prumo handover`
+3. `prumo context-dump`
+4. `prumo repair`
+5. adapter experimental do Cowork
+6. fluxo mínimo de update do runtime
+7. migração mínima de workspace
 
 Risco:
 
@@ -416,6 +470,7 @@ Risco:
 Mitigação:
 
 1. adapter do Cowork deve começar a delegar cedo ao runtime.
+2. Fase 1 fica limitada a `setup`, `briefing`, `context-dump` e `repair`.
 
 ### Fase 2: Tornar o Cowork um adapter fino
 
@@ -497,3 +552,85 @@ Não abandonar plugin. Rebaixá-lo.
 Plugin é elevador. Runtime é prédio.
 
 Se tratarmos elevador como arquitetura, cada manutenção vira crise existencial. Se tratarmos elevador como acesso, a engenharia volta para o lugar certo.
+
+## 17. Consolidação pós-validação
+
+Após a rodada com Cowork e Gemini, as decisões consolidadas ficam assim:
+
+1. **Tese aprovada**: Prumo passa a ser tratado como runtime local com adapters finos.
+2. **Fase 1 enxuta, mas útil para gente nova**:
+   - incluir `setup`
+   - incluir `briefing`
+   - adiar os demais comandos
+3. **Formato do núcleo**: `biblioteca + CLI`, não CLI puro.
+4. **Princípio inegociável**: tudo que é do usuário continua no workspace do usuário; engine e artefatos do runtime vivem fora dele.
+5. **Distribuição inicial**: pragmática, sem salto prematuro para binário nativo.
+6. **Contrato de adapter**: o host deve passar `workspace_path` explicitamente e ter caminho padrão para `context-dump`.
+7. **Spike obrigatório no Cowork** antes de qualquer promessa de Fase 2.
+
+## 18. Implicação importante da Fase 1
+
+Incluir `setup` na Fase 1 muda o recorte, mas corretamente.
+
+Sem `setup`, a tese “runtime local + adapters finos” até pode ser demonstrada para usuário já existente, mas não serve como caminho de entrada para usuário novo. Isso criaria duas experiências:
+
+1. uma para quem já está dentro do castelo;
+2. outra para quem ainda precisa achar o portão.
+
+Produto sério não deve nascer assim.
+
+Portanto, a Fase 1 passa a provar duas coisas, e não uma:
+
+1. o runtime local consegue **instalar/configurar** o sistema no workspace do usuário;
+2. o runtime local consegue **operar** pelo menos o `briefing` end-to-end via adapter.
+
+## 19. Estratégia de execução sem contaminar produção
+
+Para não quebrar o que já está em circulação:
+
+1. desenvolver o runtime em trilho separado;
+2. manter o plugin atual funcionando como linha estável;
+3. tratar a Fase 1 como camada paralela, não substituição instantânea.
+
+Estratégia recomendada:
+
+1. branch dedicada de desenvolvimento para a Fase 1;
+2. possibilidade de worktree separado para spike e adapter;
+3. flags ou caminhos explícitos de runtime novo durante a transição;
+4. zero remoção do fluxo atual antes de existir prova real do novo.
+
+Em português claro: não vamos trocar o avião em voo. Vamos construir a pista ao lado, fazer o táxi e só então mover passageiro.
+
+## 20. Backlog explícito de integrações e evolução
+
+### Curto prazo
+
+1. manter snapshots via Apps Script + Drive;
+2. manter diagnósticos de Cowork (`doctor`, `update`);
+3. adapter do Cowork delegando ao runtime local;
+4. `context-dump` canônico para reduzir cegueira do host.
+
+### Médio prazo
+
+1. adapter Codex;
+2. adapter Gemini;
+3. primeira experiência de IDE;
+4. migração assistida de comandos adicionais (`handover`, `sanitize`, `higiene`);
+5. conectores locais mais estáveis para contextos recorrentes.
+
+### Longo prazo
+
+1. avaliar conectores próprios para serviços externos;
+2. reduzir dependência de integrações do host;
+3. decidir se vale distribuição mais sofisticada (binário, empacotamento cross-platform, etc.).
+
+## 21. Nomenclatura de comandos
+
+Como produto, os nomes precisam servir a gente normal, não só a quem lê script.
+
+Direção recomendada:
+
+1. manter `sanitize` como nome técnico ou legado;
+2. avaliar `faxina` como nome de produto para a mesma família de operação;
+3. tratar `handover` como comando avançado/interno, não peça central da vitrine inicial;
+4. privilegiar nomes que expliquem a ação sem pedir glossário.
