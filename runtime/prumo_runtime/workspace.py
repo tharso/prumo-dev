@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -23,6 +24,10 @@ from prumo_runtime import templates
 
 def now_iso(timezone_name: str) -> str:
     return datetime.now(ZoneInfo(timezone_name)).replace(microsecond=0).isoformat()
+
+
+def now_stamp(timezone_name: str) -> str:
+    return datetime.now(ZoneInfo(timezone_name)).strftime("%Y%m%d-%H%M%S")
 
 
 @dataclass
@@ -187,6 +192,26 @@ def infer_user_name(workspace: Path) -> str | None:
     return None
 
 
+def infer_user_name_from_legacy_claude(workspace: Path) -> str | None:
+    claude_path = workspace / "CLAUDE.md"
+    if not claude_path.exists():
+        return None
+    text = claude_path.read_text(encoding="utf-8")
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.lower().startswith("- nome preferido:"):
+            return stripped.split(":", 1)[1].strip()
+        if stripped.lower().startswith("nome preferido:"):
+            return stripped.split(":", 1)[1].strip()
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("# Prumo") and "—" in stripped:
+            candidate = stripped.split("—", 1)[1].strip()
+            if candidate:
+                return candidate
+    return None
+
+
 def infer_agent_name(workspace: Path) -> str:
     schema = read_schema(workspace)
     value = schema.get("agent_name")
@@ -212,6 +237,15 @@ def ensure_workspace_exists(workspace: Path) -> None:
         raise WorkspaceError(f"workspace não é diretório: {workspace}")
 
 
+def looks_like_wrapper(text: str) -> bool:
+    return "Leia `AGENT.md` primeiro." in text or "Compatibilidade para Claude/Cowork." in text
+
+
+def backup_path_for(workspace: Path, relative: str, stamp: str) -> Path:
+    safe_name = relative.replace("/", "__")
+    return workspace / "_backup" / "runtime-migrate" / stamp / safe_name
+
+
 def build_config_from_existing(workspace: Path) -> WorkspaceConfig:
     ensure_workspace_exists(workspace)
     user_name = infer_user_name(workspace)
@@ -226,6 +260,72 @@ def build_config_from_existing(workspace: Path) -> WorkspaceConfig:
         timezone_name=infer_timezone(workspace),
         briefing_time=infer_briefing_time(workspace),
     )
+
+
+def migrate_legacy_workspace(config: WorkspaceConfig) -> dict[str, list[str] | str]:
+    ensure_directories(config.workspace)
+    rendered = render_files(config)
+    stamp = now_stamp(config.timezone_name)
+    backup_root = config.workspace / "_backup" / "runtime-migrate" / stamp
+    backup_root.mkdir(parents=True, exist_ok=True)
+
+    backed_up: list[str] = []
+    created: list[str] = []
+    overwritten: list[str] = []
+    preserved: list[str] = []
+
+    claude_path = config.workspace / "CLAUDE.md"
+    legacy_import_path = config.workspace / "Agente" / "LEGADO-CLAUDE.md"
+    if claude_path.exists():
+        current = claude_path.read_text(encoding="utf-8")
+        if current.strip() and not looks_like_wrapper(current) and not legacy_import_path.exists():
+            legacy_import_path.parent.mkdir(parents=True, exist_ok=True)
+            legacy_import_path.write_text(current, encoding="utf-8")
+            created.append("Agente/LEGADO-CLAUDE.md")
+
+    for relative in ("AGENT.md", "CLAUDE.md", "AGENTS.md", "PRUMO-CORE.md"):
+        target = config.workspace / relative
+        backup_target = backup_path_for(config.workspace, relative, stamp)
+        backup_target.parent.mkdir(parents=True, exist_ok=True)
+        if target.exists():
+            shutil.copy2(target, backup_target)
+            backed_up.append(relative)
+            target.write_text(rendered[relative], encoding="utf-8")
+            overwritten.append(relative)
+        else:
+            target.write_text(rendered[relative], encoding="utf-8")
+            created.append(relative)
+
+    for relative, content in rendered.items():
+        if relative in ("AGENT.md", "CLAUDE.md", "AGENTS.md", "PRUMO-CORE.md"):
+            continue
+        target = config.workspace / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if target.exists():
+            preserved.append(relative)
+            continue
+        target.write_text(content, encoding="utf-8")
+        created.append(relative)
+
+    schema_path = config.workspace / "_state" / "workspace-schema.json"
+    existing_schema = read_schema(config.workspace)
+    created_at = existing_schema.get("created_at")
+    if schema_path.exists():
+        backed_up.append("_state/workspace-schema.json")
+        backup_target = backup_path_for(config.workspace, "_state/workspace-schema.json", stamp)
+        backup_target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(schema_path, backup_target)
+    write_schema(config, preserve_created_at=created_at)
+    if not schema_path.exists():
+        created.append("_state/workspace-schema.json")
+
+    return {
+        "backup_root": str(backup_root),
+        "backed_up": backed_up,
+        "created": created,
+        "overwritten": overwritten,
+        "preserved": preserved,
+    }
 
 
 def repair_workspace(workspace: Path) -> dict[str, list[str]]:

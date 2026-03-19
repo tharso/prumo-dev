@@ -25,12 +25,13 @@ Sem isso, a Fase 1 vira maquete de predio sem porta. Bonita para arquiteto. Irri
 A Fase 1 inclui apenas:
 
 1. `prumo setup`
-2. `prumo briefing`
-3. `prumo context-dump`
-4. `prumo repair`
-5. adapter experimental do Cowork
-6. fluxo de update do runtime local
-7. trilha minima de migracao do workspace
+2. `prumo migrate`
+3. `prumo briefing`
+4. `prumo context-dump`
+5. `prumo repair`
+6. adapter experimental do Cowork
+7. fluxo de update do runtime local
+8. trilha minima de migracao do workspace
 
 Fora da Fase 1:
 
@@ -168,7 +169,24 @@ Saida esperada:
 5. registro claro do que foi criado, preservado, migrado ou deixado intacto;
 6. mensagem explicita de seguranca sobre reversibilidade e ausencia de lock-in.
 
-### 5.2. `prumo briefing`
+### 5.2. `prumo migrate`
+
+Responsabilidade:
+
+1. adotar um workspace legado no trilho novo;
+2. criar `AGENT.md` e schema tecnico;
+3. sobrescrever wrappers e `PRUMO-CORE.md` com backup antes;
+4. preservar contexto legado em arquivo acessivel;
+5. evitar que a migracao dependa de telepatia do usuario ou coragem cega.
+
+Saida esperada:
+
+1. workspace antigo vira workspace adotado;
+2. backup claro e local do que foi substituido;
+3. `Agente/LEGADO-CLAUDE.md` quando houver contexto legado importado;
+4. trilho novo operacional sem apagar a autobiografia do usuario no processo.
+
+### 5.3. `prumo briefing`
 
 Responsabilidade:
 
@@ -185,7 +203,7 @@ Importante:
 3. snapshots e integracoes pragmaticas continuam validos;
 4. o briefing nao deve depender do wrapper `CLAUDE.md` para achar o contexto se o `AGENT.md` estiver presente.
 
-### 5.3. `prumo context-dump`
+### 5.4. `prumo context-dump`
 
 Responsabilidade:
 
@@ -208,7 +226,7 @@ Conteudo minimo:
 6. sinais de drift
 7. capacidades disponiveis
 
-### 5.4. `prumo repair`
+### 5.5. `prumo repair`
 
 Responsabilidade:
 
@@ -224,7 +242,7 @@ Principio:
 1. o Prumo nao impede o usuario de apagar os arquivos dele;
 2. o Prumo detecta cedo, repara o que for recriavel e fala a verdade sobre o resto.
 
-### 5.5. Adapter experimental do Cowork
+### 5.6. Adapter experimental do Cowork
 
 Responsabilidade:
 
@@ -248,6 +266,7 @@ Exemplo:
 
 ```bash
 prumo setup --workspace /caminho
+prumo migrate --workspace /caminho
 prumo briefing --workspace /caminho
 prumo context-dump --workspace /caminho --format json
 prumo repair --workspace /caminho

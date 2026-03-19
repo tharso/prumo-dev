@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 
 from prumo_runtime import __version__
-from prumo_runtime.commands import run_briefing, run_context_dump, run_repair, run_setup
+from prumo_runtime.commands import run_briefing, run_context_dump, run_migrate, run_repair, run_setup
 from prumo_runtime.workspace import WorkspaceError
 
 
@@ -19,6 +19,14 @@ def build_parser() -> argparse.ArgumentParser:
     setup.add_argument("--timezone", default="America/Sao_Paulo", help="Fuso IANA")
     setup.add_argument("--briefing-time", default="09:00", help="Horario preferido do briefing")
     setup.set_defaults(handler=run_setup)
+
+    migrate = subparsers.add_parser("migrate", help="Adotar um workspace legado no trilho novo")
+    migrate.add_argument("--workspace", required=True, help="Caminho do workspace")
+    migrate.add_argument("--user-name", help="Nome preferido do usuario")
+    migrate.add_argument("--agent-name", default="Prumo", help="Nome do agente")
+    migrate.add_argument("--timezone", default="America/Sao_Paulo", help="Fuso IANA")
+    migrate.add_argument("--briefing-time", default="09:00", help="Horario preferido do briefing")
+    migrate.set_defaults(handler=run_migrate)
 
     context_dump = subparsers.add_parser("context-dump", help="Resumir o workspace para hosts")
     context_dump.add_argument("--workspace", required=True, help="Caminho do workspace")
@@ -43,4 +51,3 @@ def main(argv: list[str] | None = None) -> int:
         return args.handler(args)
     except WorkspaceError as exc:
         parser.exit(2, f"erro: {exc}\n")
-

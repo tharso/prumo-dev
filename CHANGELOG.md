@@ -4,6 +4,16 @@ Este arquivo registra mudanças públicas do produto Prumo.
 
 O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamento semântico.
 
+## [4.9.0] - 2026-03-19
+
+### Added
+- Novo comando `prumo migrate` para adotar workspace legado no trilho novo com backup antes de tocar em wrapper e core.
+- Novo smoke `cowork-plugin/scripts/tests/local_runtime_migrate_smoke.sh` cobrindo backup, import do `CLAUDE.md` legado e atualização segura do `PRUMO-CORE.md`.
+
+### Changed
+- A trilha mínima de migração da Fase 1 deixou de ser implícita. Agora o produto tem um comando claro para isso, em vez de empurrar toda a responsabilidade para um `setup` excessivamente educado.
+- Migração de workspace legado passa a preservar o `CLAUDE.md` antigo em `Agente/LEGADO-CLAUDE.md`, o que é muito melhor do que chamar perda de contexto de “compatibilidade”.
+
 ## [4.8.1] - 2026-03-19
 
 ### Added
