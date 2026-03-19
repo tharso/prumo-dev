@@ -4,8 +4,10 @@ import os
 from shutil import which as shutil_which
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse
+from zoneinfo import ZoneInfo
 
 from prumo_runtime.constants import RUNTIME_VERSION, repo_root_from
 from prumo_runtime.workspace import (
@@ -16,6 +18,7 @@ from prumo_runtime.workspace import (
     read_text,
     semantic_version_key,
     update_briefing_state,
+    write_json,
 )
 
 
@@ -86,6 +89,31 @@ def snapshot_script_path(workspace: Path, repo_root: Path | None) -> Path | None
             / "prumo-google-dual-snapshot.sh"
         )
     return find_existing_path(candidates)
+
+
+def snapshot_cache_path(workspace: Path) -> Path:
+    return workspace / "_state" / "google-dual-snapshot.json"
+
+
+def now_iso(timezone_name: str) -> str:
+    return datetime.now(ZoneInfo(timezone_name)).replace(microsecond=0).isoformat()
+
+
+def parse_iso_datetime(value: str | None) -> datetime | None:
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value)
+    except ValueError:
+        return None
+
+
+def age_in_minutes(value: str | None, timezone_name: str) -> int | None:
+    dt_value = parse_iso_datetime(value)
+    if dt_value is None:
+        return None
+    now = datetime.now(ZoneInfo(timezone_name))
+    return max(0, int((now - dt_value).total_seconds() // 60))
 
 
 def infer_domain(url: str | None) -> str | None:
@@ -267,15 +295,54 @@ def parse_snapshot_output(output: str) -> dict:
     return result
 
 
+def load_snapshot_cache(workspace: Path, timezone_name: str) -> dict | None:
+    payload = load_json(snapshot_cache_path(workspace))
+    if not payload:
+        return None
+    cached_at = payload.get("cached_at")
+    age = age_in_minutes(cached_at, timezone_name)
+    payload["status"] = "cache"
+    payload["note"] = (
+        f"snapshot dual reaproveitado do cache local ({age} min atrás)."
+        if age is not None
+        else "snapshot dual reaproveitado do cache local."
+    )
+    payload["cache_age_minutes"] = age
+    return payload
+
+
+def write_snapshot_cache(workspace: Path, timezone_name: str, snapshot: dict) -> None:
+    payload = {
+        "cached_at": now_iso(timezone_name),
+        "ok_profiles": snapshot.get("ok_profiles", 0),
+        "profiles": snapshot.get("profiles", {}),
+        "source": "google-dual-snapshot",
+    }
+    write_json(snapshot_cache_path(workspace), payload)
+
+
 def run_dual_snapshot(workspace: Path, repo_root: Path | None) -> dict:
+    timezone_name = infer_timezone_name(workspace)
     if os.environ.get("PRUMO_RUNTIME_DISABLE_SNAPSHOT") == "1":
+        cached = load_snapshot_cache(workspace, timezone_name)
+        if cached:
+            cached["note"] = f"{cached['note']} Fonte ao vivo desligada por ambiente."
+            return cached
         return {"status": "disabled", "note": "snapshot dual desligado por ambiente", "profiles": {}, "ok_profiles": 0}
 
     script_path = snapshot_script_path(workspace, repo_root)
     if script_path is None:
+        cached = load_snapshot_cache(workspace, timezone_name)
+        if cached:
+            cached["note"] = f"{cached['note']} Script dual indisponível."
+            return cached
         return {"status": "unavailable", "note": "script dual indisponível", "profiles": {}, "ok_profiles": 0}
 
     if shutil_which("gemini") is None:
+        cached = load_snapshot_cache(workspace, timezone_name)
+        if cached:
+            cached["note"] = f"{cached['note']} Gemini CLI ausente; usei memória local."
+            return cached
         return {"status": "unavailable", "note": "gemini CLI ausente; sem snapshot dual", "profiles": {}, "ok_profiles": 0}
 
     env = os.environ.copy()
@@ -294,18 +361,38 @@ def run_dual_snapshot(workspace: Path, repo_root: Path | None) -> dict:
             env=env,
         )
     except subprocess.TimeoutExpired:
+        cached = load_snapshot_cache(workspace, timezone_name)
+        if cached:
+            cached["note"] = f"{cached['note']} Fonte ao vivo passou do limite."
+            return cached
         return {"status": "timeout", "note": "snapshot dual passou do limite e foi deixado pra lá", "profiles": {}, "ok_profiles": 0}
     except subprocess.CalledProcessError as exc:
         output = (exc.stdout or "") + ("\n" + exc.stderr if exc.stderr else "")
         parsed = parse_snapshot_output(output)
         parsed["status"] = "partial" if parsed.get("ok_profiles") else "error"
         parsed["note"] = "snapshot dual respondeu torto; preservei o que prestava." if parsed.get("ok_profiles") else "snapshot dual falhou."
+        if parsed.get("ok_profiles"):
+            write_snapshot_cache(workspace, timezone_name, parsed)
+            return parsed
+        cached = load_snapshot_cache(workspace, timezone_name)
+        if cached:
+            cached["note"] = f"{cached['note']} Fonte ao vivo falhou."
+            return cached
         return parsed
 
     parsed = parse_snapshot_output(completed.stdout)
     parsed["status"] = "ok" if parsed.get("ok_profiles") else "empty"
     parsed["note"] = "snapshot dual sem contas úteis." if not parsed.get("ok_profiles") else ""
+    if parsed.get("ok_profiles"):
+        write_snapshot_cache(workspace, timezone_name, parsed)
+        parsed["cached_at"] = now_iso(timezone_name)
     return parsed
+
+
+def infer_timezone_name(workspace: Path) -> str:
+    schema = load_json(workspace / "_state" / "workspace-schema.json")
+    value = schema.get("timezone")
+    return str(value) if value else "America/Sao_Paulo"
 
 
 def summarize_agenda(snapshot: dict) -> str:
@@ -316,7 +403,10 @@ def summarize_agenda(snapshot: dict) -> str:
     if not items:
         note = snapshot.get("note") or "Sem agenda consolidada via snapshot local."
         return note
-    return "; ".join(items[:4])
+    summary = "; ".join(items[:4])
+    if snapshot.get("status") == "cache" and snapshot.get("note"):
+        summary = f"{summary}. {snapshot['note']}"
+    return summary
 
 
 def compact_triage_item(value: str) -> str:
@@ -350,6 +440,10 @@ def summarize_emails(snapshot: dict) -> str:
     ]
     if highlights:
         parts.append("Destaques: " + "; ".join(highlights))
+    if snapshot.get("status") == "cache":
+        note = snapshot.get("note")
+        if note:
+            parts.append(note)
     return ". ".join(parts) + "."
 
 

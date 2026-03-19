@@ -121,5 +121,13 @@ assert_contains "$TMP_DIR/briefing.out" "5. Panorama local:" "briefing nao troux
 assert_contains "$TMP_DIR/briefing.out" "6. Proposta do dia:" "briefing nao chegou ao bloco final com numeracao continua"
 assert_contains "$TMP_DIR/briefing.out" "a) Aceitar e seguir" "briefing nao ofereceu a opcao a)"
 assert_contains "$TMP_DIR/briefing.out" "d) Tá bom por hoje" "briefing nao ofereceu a opcao d)"
+[[ -f "$WORKSPACE/_state/google-dual-snapshot.json" ]] || fail "briefing nao persistiu cache do snapshot dual"
+
+PRUMO_RUNTIME_DISABLE_SNAPSHOT=1 \
+PYTHONPATH="$ROOT_DIR/runtime" python3 -m prumo_runtime briefing \
+  --workspace "$WORKSPACE" >"$TMP_DIR/briefing-cache.out"
+
+assert_contains "$TMP_DIR/briefing-cache.out" "snapshot dual reaproveitado do cache local" "briefing nao reaproveitou cache do snapshot"
+assert_contains "$TMP_DIR/briefing-cache.out" "Jantar de teste" "briefing cacheado perdeu agenda do snapshot"
 
 echo "ok: local runtime phase1 smoke"

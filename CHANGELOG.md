@@ -4,6 +4,13 @@ Este arquivo registra mudanças públicas do produto Prumo.
 
 O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamento semântico.
 
+## [4.9.2] - 2026-03-19
+
+### Changed
+- O `prumo briefing` ganhou cache local de snapshot dual em `_state/google-dual-snapshot.json`. Se a coleta ao vivo funcionar uma vez, o runtime passa a ter memória curta decente em vez de amnésia performática.
+- Quando o snapshot ao vivo falha, expira ou é desligado por ambiente, o briefing agora reaproveita cache válido e avisa isso explicitamente na agenda e na triagem de emails.
+- O smoke da Fase 1 passou a verificar também o reaproveitamento do cache, porque integração externa temperamental sem teste vira superstição com shell.
+
 ## [4.9.1] - 2026-03-19
 
 ### Changed
