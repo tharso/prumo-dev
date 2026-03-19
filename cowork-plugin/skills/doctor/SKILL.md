@@ -22,7 +22,7 @@ Isto não é setup nem sanitização.
 ## Fluxo
 
 1. Rodar `prumo_cowork_doctor.sh` resolvendo scripts pela ordem definida em `runtime-paths.md`.
-2. Responder em 4 blocos curtos:
+2. Responder em 4 blocos curtos numerados continuamente:
    - `Runtime`
    - `Marketplace`
    - `Plugin`
@@ -30,6 +30,7 @@ Isto não é setup nem sanitização.
 3. Se o checkout do marketplace estiver congelado, explicar isso explicitamente.
 4. Se a versão instalada estiver atrás do catálogo local, dizer isso sem drama.
 5. Só sugerir `prumo_cowork_update.sh` ou reinstalação do plugin quando o diagnóstico apontar drift real.
+6. Quando houver ação do usuário, oferecer alternativas curtas.
 
 ## Guardrails
 

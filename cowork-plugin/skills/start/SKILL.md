@@ -94,6 +94,14 @@ Nem toda mensagem do sistema precisa ser uma pergunta. O sistema pode:
 Isso cria ritmo de conversa real. Pergunta-resposta-pergunta-resposta
 é interrogatório. Pergunta-reação-explicação-pergunta é conversa.
 
+### Continuidade visual
+
+Quando você listar itens ou próximos passos:
+
+1. use numeração contínua dentro do mesmo fluxo;
+2. se houver escolha útil para o usuário, ofereça alternativas curtas em `a)`, `b)`, `c)`;
+3. não reinicie a lista por preguiça estrutural.
+
 ### O dump é sagrado
 
 Nunca interromper o dump pra perguntar algo. Se o usuário está despejando,

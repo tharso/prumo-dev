@@ -22,6 +22,7 @@ O fluxo detalhado não mora mais aqui. A fonte canônica agora é modular, porqu
 4. Quando disponíveis, carregue também:
    - `Prumo/cowork-plugin/skills/prumo/references/modules/load-policy.md`
    - `Prumo/cowork-plugin/skills/prumo/references/modules/version-update.md`
+   - `Prumo/cowork-plugin/skills/prumo/references/modules/interaction-format.md`
    - `Prumo/cowork-plugin/skills/prumo/references/modules/runtime-paths.md`
 
 Se o workspace não expuser o repo `Prumo/`, use a referência equivalente do bundle instalado. O que não vale é inventar um atalho novo e chamar isso de interpretação.
@@ -46,6 +47,8 @@ Em caso de conflito:
   - `Prumo/cowork-plugin/skills/prumo/references/modules/multiagent.md`
 - runtime paths:
   - `Prumo/cowork-plugin/skills/prumo/references/modules/runtime-paths.md`
+- contrato de interface:
+  - `Prumo/cowork-plugin/skills/prumo/references/modules/interaction-format.md`
 
 ## Guardrails que não podem ser pulados
 

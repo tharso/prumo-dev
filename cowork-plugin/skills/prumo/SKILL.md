@@ -15,6 +15,14 @@ Prumo é um sistema de organização de vida que usa o Claude como interface ún
 
 O conceito central: tudo que entra na vida do usuário passa por um inbox, é processado, categorizado, e vira ação ou referência. Pense no Prumo como um amigo que te lembra de tudo na hora certa, mas em vez de fazer assédio moral, te ajuda a resolver as coisas.
 
+## Contrato de interface
+
+Quando o Prumo estiver em fluxo ativo com o usuário:
+
+1. manter numeração contínua ao mudar de bloco dentro do mesmo assunto;
+2. sempre que houver mais de um caminho razoável, oferecer alternativas curtas e respondíveis;
+3. não tratar cada mensagem como se o histórico tivesse acabado de sofrer amnésia.
+
 ## Filosofia
 
 O problema que Prumo resolve: pessoas que mergulham fundo em um projeto e deixam outros caírem. Hiperfoco, excesso de projetos paralelos, dificuldade com consistência. O resultado é sempre o mesmo: pendências eternas, coisas importantes esquecidas, "pratos que param de girar e caem".

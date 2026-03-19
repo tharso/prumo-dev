@@ -1,6 +1,6 @@
 # Briefing Procedure
 
-> **module_version: 4.7.0**
+> **module_version: 4.7.1**
 >
 > Fonte canônica do procedimento de `/prumo:briefing`.
 > Se este módulo conflitar com um resumo em `SKILL.md`, este módulo vence.
@@ -123,6 +123,7 @@ Entregar automaticamente:
 3. link para `Inbox4Mobile/inbox-preview.html` quando `_preview-index.json` existir;
 4. contagem silenciosa de agendados;
 5. pendências de handover em uma linha objetiva.
+6. numeração contínua mesmo ao passar do panorama para proposta e detalhe.
 
 Na primeira resposta do briefing, é proibido abrir arquivos brutos de `Inbox4Mobile/*`.
 
@@ -141,6 +142,7 @@ A proposta deve considerar:
 2. blockers;
 3. agenda disponível;
 4. itens com cobrança elegível hoje.
+5. alternativas respondíveis em `a)`, `b)`, `c)`, `d)`.
 
 ### Contexto completo sob demanda
 

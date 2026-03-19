@@ -4,6 +4,17 @@ Este arquivo registra mudanças públicas do produto Prumo.
 
 O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamento semântico.
 
+## [4.7.1] - 2026-03-19
+
+### Added
+- Novo módulo canônico [interaction-format.md](cowork-plugin/skills/prumo/references/modules/interaction-format.md) definindo o contrato de interface do Prumo no chat: numeração contínua durante o mesmo fluxo e alternativas curtas quando houver mais de um caminho razoável.
+- Novo smoke [interaction_contract_smoke.sh](cowork-plugin/scripts/tests/interaction_contract_smoke.sh) para evitar que essa diretriz volte a virar folclore enterrado em um módulo só.
+- Issue pública da regressão: [#37](https://github.com/tharso/prumo/issues/37).
+
+### Changed
+- `PRUMO-CORE.md` agora trata continuidade de numeração e oferta de alternativas como regras estáveis do sistema, não como hábito local do briefing.
+- `briefing`, `handover`, `higiene`, `doctor` e `start` foram reforçados para responder com continuidade de fluxo e reduzir atrito de resposta do usuário.
+
 ## [4.7.0] - 2026-03-18
 
 ### Added

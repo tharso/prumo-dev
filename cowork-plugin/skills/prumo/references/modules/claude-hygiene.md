@@ -1,6 +1,6 @@
 # Claude Hygiene
 
-> **module_version: 4.7.0**
+> **module_version: 4.7.1**
 >
 > Fonte canônica da higiene assistida do `CLAUDE.md`.
 
@@ -57,6 +57,8 @@ Apresentar ao usuário:
 3. `Decisões de governança/arquitetura`;
 4. impacto esperado;
 5. se a proposta altera ou não o arquivo.
+6. manter a numeração contínua entre esses blocos quando houver subitens no mesmo diagnóstico.
+7. terminar, sempre que útil, com alternativas curtas para destravar a resposta do usuário.
 
 Esses blocos não podem ser misturados. O produto precisa deixar claro o que é:
 
@@ -68,6 +70,12 @@ Esses blocos não podem ser misturados. O produto precisa deixar claro o que é:
 qual cópia “merece” sobreviver ou para qual arquivo o conteúdo deve migrar.
 
 Nunca aplicar direto.
+
+Quando houver decisão para o usuário, preferir algo do tipo:
+
+- `a) aplicar só as mudanças seguras`
+- `b) responder os itens factuais`
+- `c) revisar a governança antes`
 
 ### Passo 4: Aplicar só com confirmação
 

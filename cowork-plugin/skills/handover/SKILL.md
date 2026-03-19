@@ -11,6 +11,12 @@ Você está executando o comando `/prumo:handover`.
 
 Objetivo: operar `_state/HANDOVER.md` de forma rastreável, cooperativa e sem fricção.
 
+Ao responder no chat:
+
+1. manter numeração contínua dentro do mesmo handover;
+2. quando houver escolha do usuário, preferir alternativas curtas em `a)`, `b)`, `c)`;
+3. não reiniciar a contagem a cada bloco como se o handover tivesse perdido a memória.
+
 ## Passo 1: Ler estado
 
 1. Leia `_state/HANDOVER.md` (se existir).
@@ -27,7 +33,12 @@ Detecte a intenção do usuário e siga um destes modos:
 3. `responder`: registrar validação do agente destino (`APPROVED` ou `REJECTED`).
 4. `fechar`: mover item para `CLOSED` após validação e ajustes.
 
-Se a intenção estiver ambígua, perguntar: `listar`, `abrir`, `responder` ou `fechar`.
+Se a intenção estiver ambígua, perguntar assim:
+
+- `a) listar`
+- `b) abrir`
+- `c) responder`
+- `d) fechar`
 
 ## Passo 3: Operar handover
 
@@ -70,4 +81,3 @@ Em qualquer modo:
 ## Passo 5: Documentar
 
 Se a operação de handover representou mudança de estado do sistema, registrar linha em `REGISTRO.md`.
-

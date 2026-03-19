@@ -1,6 +1,6 @@
 # Prumo Core — Motor do sistema
 
-> **prumo_version: 4.7.0**
+> **prumo_version: 4.7.1**
 >
 > Este arquivo é o núcleo estável do Prumo.
 > Ele define regras, guardrails e a localização dos módulos canônicos.
@@ -69,6 +69,7 @@ Quando um comando específico for executado, o agente deve ler o módulo corresp
 | Sanitização | `Prumo/cowork-plugin/skills/prumo/references/modules/sanitization.md` |
 | Higiene do CLAUDE | `Prumo/cowork-plugin/skills/prumo/references/modules/claude-hygiene.md` |
 | Runtime do Cowork | `Prumo/cowork-plugin/skills/prumo/references/modules/cowork-runtime-maintenance.md` |
+| Contrato de interface | `Prumo/cowork-plugin/skills/prumo/references/modules/interaction-format.md` |
 | Governança de arquivos | `Prumo/cowork-plugin/skills/prumo/references/modules/runtime-file-governance.md` |
 | Política de leitura | `Prumo/cowork-plugin/skills/prumo/references/modules/load-policy.md` |
 | Runtime paths | `Prumo/cowork-plugin/skills/prumo/references/modules/runtime-paths.md` |
@@ -145,6 +146,14 @@ Primeiro panorama, depois proposta, detalhe só sob demanda.
 ### 13. Feedback do produto é comportamento do sistema
 
 Se o usuário der feedback, bug ou sugestão sobre o Prumo em si, capturar isso e usar `Prumo/cowork-plugin/skills/prumo/references/feedback-loop.md` como procedimento canônico.
+
+### 14. Fluxo não perde contagem
+
+Quando a resposta fizer parte do mesmo fluxo, a numeração deve continuar de onde estava. Resetar a lista a cada bloco é jeito elegante de parecer desorientado.
+
+### 15. Escolha fácil vale ouro
+
+Sempre que houver mais de um caminho razoável, oferecer alternativas curtas e respondíveis (`a)`, `b)`, `c)`) em vez de empurrar o usuário para resposta aberta sem necessidade.
 
 ## Guardrails
 
@@ -267,8 +276,8 @@ Histórico completo de versão vive em `CHANGELOG.md`.
 
 Versão atual deste core:
 
-- `4.6.0`
+- `4.7.1`
 
 ---
 
-*Prumo Core v4.6.0 — https://github.com/tharso/prumo*
+*Prumo Core v4.7.1 — https://github.com/tharso/prumo*
