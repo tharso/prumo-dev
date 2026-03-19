@@ -139,6 +139,15 @@ for file in "$CORE_FILE" "$VERSION_MODULE"; do
   assert_contains "$file" "nova versão do motor|changelog local seguro" "Update seguro: fallback sem changelog remoto ausente"
 done
 
+for file in "$SKILL_FILE" "$BRIEFING_MODULE" "$VERSION_MODULE"; do
+  assert_contains "$file" "atualizar agora" "Preflight de versão: falta opção de atualizar agora"
+  assert_contains "$file" "seguir mesmo assim" "Preflight de versão: falta opção de seguir mesmo assim"
+  assert_contains "$file" "ver diagnóstico|ver diagnostico" "Preflight de versão: falta opção de ver diagnóstico"
+done
+
+assert_contains "$BRIEFING_MODULE" "Antes do panorama.*checar atualização|Antes do panorama.*checar atualização|Antes do panorama.*checar" "Preflight de versão: briefing não para antes do panorama"
+assert_contains "$CORE_FILE" "preflight de versão" "Core não exige preflight de versão no briefing"
+
 for file in "${BRIEFING_FILES[@]}" "$BRIEFING_MODULE"; do
   if command -v rg >/dev/null 2>&1; then
     ! rg -q --fixed-strings -- "--mark-briefing-complete" "$file" || fail "Persistência direta: referência legada a --mark-briefing-complete ainda presente em $file"

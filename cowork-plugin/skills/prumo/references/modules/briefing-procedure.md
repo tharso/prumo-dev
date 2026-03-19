@@ -1,6 +1,6 @@
 # Briefing Procedure
 
-> **module_version: 4.7.1**
+> **module_version: 4.7.2**
 >
 > Fonte canônica do procedimento de `/prumo:briefing`.
 > Se este módulo conflitar com um resumo em `SKILL.md`, este módulo vence.
@@ -13,7 +13,7 @@ Antes de executar o briefing:
 1. Ler `CLAUDE.md`.
 2. Ler `PRUMO-CORE.md`.
 3. Ler `Prumo/cowork-plugin/skills/prumo/references/modules/load-policy.md` quando o repo local estiver disponível.
-4. Ler `Prumo/cowork-plugin/skills/prumo/references/modules/version-update.md` se houver verificação de versão nesta sessão.
+4. Ler `Prumo/cowork-plugin/skills/prumo/references/modules/version-update.md`.
 5. Ler `Prumo/cowork-plugin/skills/prumo/references/modules/runtime-paths.md` quando houver shell.
 
 ## Passo 1: Configuração e data local
@@ -26,7 +26,27 @@ Antes de executar o briefing:
 3. Se não houver fonte confiável, não anunciar dia/data textual no cabeçalho.
 4. Se `CLAUDE.md` ou `PRUMO-CORE.md` não existirem, interromper e orientar o usuário a rodar o setup.
 
-## Passo 2: Estado operacional
+## Passo 2: Preflight de versão
+
+Antes do panorama, o briefing deve tentar checar atualização do Prumo.
+
+1. Comparar a versão local usando o módulo `version-update.md`.
+2. Se houver versão nova detectável:
+   - parar antes do panorama;
+   - avisar a diferença de versão;
+   - dizer se existe ou não transporte seguro de aplicação;
+   - oferecer alternativas curtas para o usuário responder.
+3. Quando houver escolha, usar algo como:
+   - `a) atualizar agora`
+   - `b) seguir mesmo assim`
+   - `c) ver diagnóstico`
+4. Se não houver transporte seguro de aplicação:
+   - avisar a limitação;
+   - não bloquear o briefing;
+   - permitir seguir com `b)`.
+5. Se a checagem falhar, registrar em uma linha e seguir. O briefing não pode virar refém de updater manco.
+
+## Passo 3: Estado operacional
 
 1. Ler `PAUTA.md`.
 2. Ler `INBOX.md`.
@@ -43,7 +63,7 @@ Antes de executar o briefing:
    - usar o `last_briefing_at` anterior quando existir;
    - sem esse estado, usar fallback de 24h.
 
-## Passo 3: Canais de entrada e fontes primárias
+## Passo 4: Canais de entrada e fontes primárias
 
 ### 3.1 Autosanitização preventiva
 
@@ -100,7 +120,7 @@ Se não houver snapshot válido e o script dual não puder rodar:
    - `Sem ação`
    - `P1/P2/P3`
 
-## Passo 4: Persistir início do briefing
+## Passo 5: Persistir início do briefing
 
 Antes da primeira resposta com panorama + proposta:
 
@@ -112,7 +132,7 @@ Antes da primeira resposta com panorama + proposta:
 
 Sem essa persistência, o briefing não está oficialmente aberto.
 
-## Passo 5: Montar o briefing progressivo
+## Passo 6: Montar o briefing progressivo
 
 ### Bloco 1 — Panorama
 
@@ -152,7 +172,7 @@ Se o usuário pedir `c` ou chamar `/prumo:briefing --detalhe`:
 2. manter lista numerada contínua;
 3. não resetar o briefing nem as opções.
 
-## Passo 6: Escape hatch
+## Passo 7: Escape hatch
 
 Se o usuário disser `tá bom por hoje`, `escape`, `depois` ou equivalente:
 
@@ -163,7 +183,7 @@ Se o usuário disser `tá bom por hoje`, `escape`, `depois` ou equivalente:
 
 No mesmo dia local, a próxima chamada a `/prumo:briefing` deve oferecer retomada. Em dia seguinte, o estado expira silenciosamente.
 
-## Passo 7: Escrita e fechamento
+## Passo 8: Escrita e fechamento
 
 Depois do briefing:
 
@@ -177,6 +197,6 @@ Se o briefing concluiu normalmente:
 1. garantir que `interrupted_at` e `resume_point` não existam;
 2. não sobrescrever a janela anterior em memória usada na própria sessão.
 
-## Brain dump obrigatório quando a pauta estiver vazia
+## Passo 9: Brain dump obrigatório quando a pauta estiver vazia
 
 Se `PAUTA.md` estiver vazia ou quase vazia, não fingir briefing normal. Pedir dump fresco do usuário.

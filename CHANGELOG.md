@@ -6,6 +6,13 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [4.7.1] - 2026-03-19
 
+### Fixed
+- O briefing voltou a tratar update como preflight de verdade, não como leitura opcional de módulo esquecida no canto.
+- Quando houver versão nova detectável, o briefing agora deve avisar antes do panorama e oferecer alternativas curtas (`atualizar agora`, `seguir mesmo assim`, `ver diagnóstico`).
+- Regressão pública rastreada em [#38](https://github.com/tharso/prumo/issues/38).
+
+## [4.7.2] - 2026-03-19
+
 ### Added
 - Novo módulo canônico [interaction-format.md](cowork-plugin/skills/prumo/references/modules/interaction-format.md) definindo o contrato de interface do Prumo no chat: numeração contínua durante o mesmo fluxo e alternativas curtas quando houver mais de um caminho razoável.
 - Novo smoke [interaction_contract_smoke.sh](cowork-plugin/scripts/tests/interaction_contract_smoke.sh) para evitar que essa diretriz volte a virar folclore enterrado em um módulo só.

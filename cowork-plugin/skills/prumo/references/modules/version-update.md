@@ -1,6 +1,6 @@
 # Version Update
 
-> **module_version: 4.7.1**
+> **module_version: 4.7.2**
 >
 > Fonte canônica do fluxo de verificação e aplicação de atualização do Prumo.
 
@@ -11,6 +11,9 @@ Separar claramente:
 1. detectar que existe versão nova;
 2. verificar se há transporte seguro de aplicação;
 3. aplicar update apenas quando isso for seguro.
+
+No briefing, esta checagem não é opcional.
+Ela deve acontecer como preflight antes do panorama principal.
 
 ## Passo 1: descobrir a versão local
 
@@ -55,6 +58,18 @@ Se houver versão nova e transporte seguro:
 3. dizer que a atualização toca apenas o motor;
 4. se não houver changelog local seguro, falar apenas "nova versão do motor";
 5. esperar decisão do usuário.
+
+Quando o gatilho for o briefing, oferecer alternativas curtas:
+
+- `a) atualizar agora`
+- `b) seguir mesmo assim`
+- `c) ver diagnóstico`
+
+Se houver versão nova, mas não houver transporte seguro:
+
+1. avisar isso explicitamente;
+2. oferecer `b)` e `c)` do mesmo jeito;
+3. não sequestrar o briefing por causa do updater.
 
 ## Passo 5: aplicação segura
 

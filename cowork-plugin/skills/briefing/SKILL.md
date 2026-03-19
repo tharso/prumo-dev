@@ -57,6 +57,11 @@ Em caso de conflito:
 - Persistir `last_briefing_at` antes da primeira resposta.
 - `interrupted_at` e `resume_point` só existem se o usuário acionou escape hatch.
 - Update sem transporte seguro de aplicação não bloqueia briefing.
+- Se houver versão nova detectável, o briefing deve avisar antes do panorama e oferecer alternativas curtas.
+- Quando isso acontecer, preferir:
+  - `a) atualizar agora`
+  - `b) seguir mesmo assim`
+  - `c) ver diagnóstico`
 
 ## Resultado esperado
 
