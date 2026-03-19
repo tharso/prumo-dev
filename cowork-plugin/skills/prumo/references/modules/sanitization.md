@@ -1,6 +1,6 @@
 # Sanitization
 
-> **module_version: 4.7.3**
+> **module_version: 4.8.0**
 >
 > Fonte canônica de sanitização manual e automática do estado operacional.
 

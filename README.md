@@ -2,9 +2,11 @@
 
 **Sistema de organização de vida pessoal com IA.**
 
-Versão atual: **4.7.3**
+Versão atual: **4.8.0**
 
 Prumo é um plugin de IA que transforma o Claude, Codex ou Gemini em interface única para capturar, processar, lembrar e cobrar tudo que acontece na sua vida. Trabalho, filhos, contas, saúde, ideias — tudo entra pelo mesmo lugar.
+
+O detalhe novo, e importante, é que o produto começou a sair da jaula `plugin-first`. Agora existe um trilho experimental de runtime local, para o Prumo parar de depender emocionalmente do humor do marketplace do host.
 
 Para email e agenda multi-conta, o fluxo preferencial agora usa snapshots privados no Google Drive gerados por Google Apps Script e gravados como Google Docs com JSON texto. O motor do Prumo também saiu do formato armário de acumulador: o core agora é índice + guardrails, com procedimento detalhado em módulos canônicos. E a sanitização deixou de ser só “compactar handover”: o sistema agora já consegue arquivar frio seguro com índice global, sem brincar de sumiço.
 
@@ -60,6 +62,31 @@ Se quiser um instalador sóbrio, sem copiar comando em duas etapas:
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/tharso/prumo/main/scripts/prumo_plugin_install.sh)
 ```
+
+### Runtime local experimental
+
+O novo trilho do produto nasce aqui. Ainda não substitui o fluxo atual do plugin, mas já permite instalar o runtime local e rodar os primeiros comandos fora da barriga do host:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/tharso/prumo/main/scripts/prumo_runtime_install.sh)
+```
+
+Depois:
+
+```bash
+prumo setup --workspace /caminho/do/workspace
+prumo context-dump --workspace /caminho/do/workspace --format json
+prumo briefing --workspace /caminho/do/workspace
+prumo repair --workspace /caminho/do/workspace
+```
+
+Esse trilho cria:
+
+1. `AGENT.md` como índice canônico do workspace;
+2. `CLAUDE.md` e `AGENTS.md` como wrappers regeneráveis;
+3. `Agente/` como diretório modular do contexto do usuário.
+
+E deixa uma coisa explícita, porque software adora esconder isso em rodapé: se você desinstalar o Prumo, seus arquivos continuam seus, legíveis e no mesmo lugar.
 
 ### Opção 3: Doctor e update do Cowork
 
@@ -131,6 +158,7 @@ No Cowork, os slash commands do Prumo aparecem sem prefixo do plugin. Use `/setu
 ```
 ├── plugin.json              # Manifest do plugin
 ├── marketplace.json         # Manifest do marketplace
+├── runtime/                 # Runtime local experimental
 ├── commands/                # Slash commands (/setup, /briefing, etc.)
 ├── cowork-plugin/           # Pacote de runtime (skills, scripts, referências)
 ├── CHANGELOG.md             # Histórico de mudanças
@@ -152,7 +180,7 @@ Se o painel do app disser que atualizou, mas o plugin continuar em versão velha
 
 ## Versão
 
-Versão atual: `4.7.3`
+Versão atual: `4.8.0`
 
 ## Licença
 

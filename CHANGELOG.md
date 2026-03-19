@@ -4,6 +4,32 @@ Este arquivo registra mudanças públicas do produto Prumo.
 
 O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamento semântico.
 
+## [4.8.0] - 2026-03-19
+
+### Added
+- Runtime local experimental em `runtime/prumo_runtime/`, com CLI inicial e package Python.
+- Primeiros comandos do novo trilho:
+  - `prumo setup`
+  - `prumo briefing`
+  - `prumo context-dump`
+  - `prumo repair`
+- Novo smoke `cowork-plugin/scripts/tests/local_runtime_phase1_smoke.sh` para validar setup, schema, wrappers regeneráveis, context-dump e briefing mínimo.
+- Scripts de bootstrap do runtime:
+  - `scripts/prumo_runtime_install.sh`
+  - `scripts/prumo_runtime_update.sh`
+- Novo plano cirúrgico da Fase 1 em `LOCAL-RUNTIME-PHASE1-PLAN.md`.
+
+### Changed
+- O plano de transição foi consolidado após validação cruzada de Cowork e Gemini:
+  - `AGENT.md` agora é o índice canônico do workspace;
+  - `CLAUDE.md` e `AGENTS.md` viram wrappers regeneráveis;
+  - `Agente/` vira o diretório modular de contexto do usuário;
+  - setup didático, no-lock-in explícito e contrato de documentação local entram como parte formal do produto.
+- `PRUMO-CORE.md` subiu para `4.8.0` para parar de nascer defasado quando o runtime novo o materializa no workspace.
+
+### Fixed
+- O primeiro smoke do runtime pegou um conflito chato e real: o `PRUMO-CORE.md` gerado estava nascendo com versão anterior ao runtime. Isso já saiu corrigido antes do commit, em vez de virar presente envenenado para o primeiro usuário.
+
 ## [4.7.3] - 2026-03-19
 
 ### Fixed

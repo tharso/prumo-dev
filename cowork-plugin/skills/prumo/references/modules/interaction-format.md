@@ -1,6 +1,6 @@
 # Interaction Format
 
-> **module_version: 4.7.3**
+> **module_version: 4.8.0**
 >
 > Fonte canônica do contrato de interface do Prumo no chat.
 

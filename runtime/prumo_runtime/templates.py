@@ -1,0 +1,306 @@
+from __future__ import annotations
+
+import re
+from datetime import datetime
+from pathlib import Path
+from zoneinfo import ZoneInfo
+
+from prumo_runtime import __version__
+from prumo_runtime.constants import DEFAULT_AGENT_NAME
+
+
+def now_display(timezone_name: str) -> str:
+    return datetime.now(ZoneInfo(timezone_name)).strftime("%d/%m/%Y")
+
+
+def render_agent_md(
+    user_name: str,
+    agent_name: str,
+    timezone_name: str,
+    briefing_time: str,
+) -> str:
+    return f"""# AGENT.md
+
+> Arquivo canônico de navegação do workspace de {user_name}.
+> Se você é um agente, comece aqui. Não chute porta em arquivo aleatório como se estivesse num galpão escuro.
+
+## Identidade rápida
+
+- Nome preferido do usuário: {user_name}
+- Nome do agente: {agent_name}
+- Fuso: {timezone_name}
+- Briefing preferencial: {briefing_time}
+
+## Ler nesta ordem
+
+1. `Agente/INDEX.md`
+2. `PAUTA.md`
+3. `INBOX.md`
+4. `PRUMO-CORE.md`
+5. `REGISTRO.md` (quando precisar histórico)
+
+## Mapa do workspace
+
+- `Agente/`: contexto modular do usuário
+- `PAUTA.md`: estado vivo e pendências
+- `INBOX.md`: itens ainda não processados
+- `REGISTRO.md`: rastro do que aconteceu
+- `PRUMO-CORE.md`: regras do motor e guardrails do sistema
+- `_state/`: estado técnico e metadados do runtime
+
+## Regras rápidas
+
+1. Tudo que é do usuário continua legível sem o Prumo.
+2. `CLAUDE.md` e `AGENTS.md` são wrappers de compatibilidade, não a fonte de verdade.
+3. Se um arquivo modular faltar, usar `prumo repair` antes de inventar realidade.
+"""
+
+
+def render_claude_wrapper(user_name: str, agent_name: str) -> str:
+    return f"""# Prumo Adapter — {user_name}
+
+> Compatibilidade para Claude/Cowork.
+> Este arquivo não é a fonte canônica. Leia `AGENT.md` primeiro.
+
+## Instrução primária
+
+1. Leia `AGENT.md`.
+2. Use `PRUMO-CORE.md` para regras do sistema.
+3. Contexto pessoal e estável mora em `Agente/`.
+
+Agente: **{agent_name}**
+"""
+
+
+def render_agents_wrapper(user_name: str, agent_name: str) -> str:
+    return f"""# Prumo Adapter — {user_name}
+
+> Compatibilidade para ambientes que procuram `AGENTS.md`.
+> Se você está aqui, ótimo. Mas o volante mesmo está em `AGENT.md`.
+
+## Instrução primária
+
+1. Leia `AGENT.md`.
+2. Leia `PRUMO-CORE.md`.
+3. Contexto vivo do usuário mora em `Agente/`.
+
+Agente: **{agent_name}**
+"""
+
+
+def render_agente_index(
+    user_name: str,
+    timezone_name: str,
+    briefing_time: str,
+    setup_date: str,
+) -> str:
+    return f"""# Índice de contexto — {user_name}
+
+> Este diretório concentra o contexto vivo do usuário.
+> Se uma informação não muda o comportamento do agente nem merece memória durável, ela não ganha aluguel aqui.
+
+## Identidade
+
+- Nome preferido: {user_name}
+- Fuso: {timezone_name}
+- Briefing padrão: {briefing_time}
+- Setup inicial: {setup_date}
+
+## Onde procurar o quê
+
+1. `PESSOAS.md`: pessoas-chave, contexto, dados e pendências de relacionamento
+2. `SAUDE.md`: saúde, exames, médicos, histórico relevante
+3. `ROTINA.md`: rituais, hábitos e estrutura semanal
+4. `INFRA.md`: domínios, contas, infraestrutura e sistemas
+5. `PROJETOS.md`: frentes de trabalho, produtos, clientes e projetos
+6. `RELACOES.md`: família, amigos, dinâmica relacional e assuntos delicados
+
+## Jurisdição
+
+- Pendência viva: `PAUTA.md`
+- Item não processado: `INBOX.md`
+- Histórico e trilha do que já foi resolvido: `REGISTRO.md`
+- Regras do sistema: `PRUMO-CORE.md`
+"""
+
+
+def render_people_md() -> str:
+    return """# Pessoas
+
+> Pessoas-chave, contexto, dados importantes e pendências de relacionamento.
+
+## Pessoas-chave
+
+_Adicionar conforme a vida real for aparecendo. Melhor isso do que ficar perguntando CPF de filha como se fosse trivia de auditório._
+"""
+
+
+def render_health_md() -> str:
+    return """# Saúde
+
+> Saúde, exames, médicos, medicações, histórico clínico e rotinas relevantes.
+
+## Estado atual
+
+_Sem informações registradas ainda._
+"""
+
+
+def render_routine_md() -> str:
+    return """# Rotina
+
+> Rituais, horários, hábitos, cadências de trabalho e pontos de atrito do cotidiano.
+
+## Estado atual
+
+_Sem informações registradas ainda._
+"""
+
+
+def render_infra_md() -> str:
+    return """# Infra
+
+> Contas, domínios, ferramentas, serviços e infraestrutura digital que ainda importam.
+
+## Estado atual
+
+_Sem informações registradas ainda._
+"""
+
+
+def render_projects_md() -> str:
+    return """# Projetos
+
+> Projetos, clientes, frentes de trabalho e produtos em andamento ou hibernando.
+
+## Estado atual
+
+_Sem informações registradas ainda._
+"""
+
+
+def render_relationships_md() -> str:
+    return """# Relações
+
+> Família, amigos e dinâmicas relacionais que merecem contexto vivo.
+
+## Estado atual
+
+_Sem informações registradas ainda._
+"""
+
+
+def render_pauta_md(setup_date: str) -> str:
+    return f"""# Pauta
+
+> Estado atual das coisas. Atualizado a cada interação relevante.
+
+## Quente (precisa de atenção agora)
+
+_Nada ainda._
+
+## Em andamento
+
+_Nada ainda._
+
+## Agendado / Lembretes
+
+_Nada ainda._
+
+## Horizonte
+
+_Nada ainda._
+
+## Hibernando
+
+_Nada ainda._
+
+---
+
+*Última atualização: {setup_date}*
+"""
+
+
+def render_inbox_md() -> str:
+    return """# Inbox
+
+> Itens não processados.
+
+_Inbox limpo._
+"""
+
+
+def render_registro_md() -> str:
+    return """# Registro
+
+> Audit trail do que entrou, mudou e saiu do radar.
+
+| Data | Origem | Resumo | Ação | Destino |
+|------|--------|--------|------|---------|
+"""
+
+
+def render_ideias_md() -> str:
+    return """# Ideias
+
+> Ideias sem próxima ação imediata.
+
+_Nenhuma ideia registrada ainda._
+"""
+
+
+def render_referencias_md(setup_date: str) -> str:
+    return f"""# Índice de referências
+
+> Material de referência salvo.
+
+| # | Título | Arquivo | Data | Descrição | Keywords |
+|---|--------|---------|------|-----------|----------|
+
+_Última atualização: {setup_date}_
+"""
+
+
+def render_briefing_state_json() -> str:
+    return '{\n  "last_briefing_at": "",\n  "interrupted_at": "",\n  "resume_point": ""\n}\n'
+
+
+def render_inbox_processed_json() -> str:
+    return '{\n  "version": "1.0",\n  "items": []\n}\n'
+
+
+def load_prumo_core_text(repo_root: Path | None) -> str:
+    if repo_root:
+        candidate = repo_root / "cowork-plugin" / "skills" / "prumo" / "references" / "prumo-core.md"
+        if candidate.exists():
+            text = candidate.read_text(encoding="utf-8")
+            return re.sub(
+                r"prumo_version:\s*[0-9.]+",
+                f"prumo_version: {__version__}",
+                text,
+                count=1,
+            )
+
+    return f"""# Prumo Core — Motor do sistema
+
+> **prumo_version: {__version__}**
+>
+> Este é um fallback mínimo. Se você está lendo isso, o bundle canônico não veio junto e alguém montou o palco sem trazer a peça inteira.
+
+## Comandos
+
+1. `prumo setup`
+2. `prumo briefing`
+3. `prumo context-dump`
+4. `prumo repair`
+
+## Regras estáveis
+
+1. Sempre começar por `AGENT.md`.
+2. O contexto pessoal mora em `Agente/`.
+3. Pendência viva vai para `PAUTA.md`.
+4. Histórico resolvido vai para `REGISTRO.md`.
+5. `CLAUDE.md` e `AGENTS.md` são wrappers, não a fonte da verdade.
+
+Agente padrão: {DEFAULT_AGENT_NAME}
+"""

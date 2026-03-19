@@ -1,0 +1,31 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "prumo-runtime"
+version = "4.8.0"
+description = "Runtime local do Prumo"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [
+  { name = "Prumo Maintainers" }
+]
+dependencies = []
+
+[project.scripts]
+prumo = "prumo_runtime.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["runtime/prumo_runtime"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "/runtime/prumo_runtime",
+  "/README.md",
+  "/CHANGELOG.md",
+  "/VERSION",
+  "/scripts/prumo_runtime_install.sh",
+  "/scripts/prumo_runtime_update.sh"
+]

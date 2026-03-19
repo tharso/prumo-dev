@@ -1,6 +1,6 @@
 # Briefing Procedure
 
-> **module_version: 4.7.3**
+> **module_version: 4.8.0**
 >
 > Fonte canônica do procedimento de `/prumo:briefing`.
 > Se este módulo conflitar com um resumo em `SKILL.md`, este módulo vence.
