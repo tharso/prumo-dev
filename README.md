@@ -2,13 +2,15 @@
 
 **Sistema de organização de vida pessoal com IA.**
 
-Versão atual: **4.14.1**
+Versão atual: **4.15.0**
 
 Prumo é um plugin de IA que transforma o Claude, Codex ou Gemini em interface única para capturar, processar, lembrar e cobrar tudo que acontece na sua vida. Trabalho, filhos, contas, saúde, ideias — tudo entra pelo mesmo lugar.
 
 O detalhe novo, e importante, é que o produto começou a sair da jaula `plugin-first`. Agora existe um trilho experimental de runtime local, para o Prumo parar de depender emocionalmente do humor do marketplace do host.
 
 A direcao estrutural para Google no runtime agora esta formalizada em [ADR-001-GOOGLE-INTEGRATION.md](/Users/tharsovieira/Documents/DailyLife/Prumo/ADR-001-GOOGLE-INTEGRATION.md): Google APIs diretas como destino, snapshots como ponte.
+
+O contrato de invocação do produto agora também está explícito em [INVOCATION-UX-CONTRACT.md](/Users/tharsovieira/Documents/DailyLife/Prumo/INVOCATION-UX-CONTRACT.md). Serve para impedir que cada host invente uma porta diferente e depois jure que isso era estratégia.
 
 Para email e agenda multi-conta, o fluxo preferencial agora usa snapshots privados no Google Drive gerados por Google Apps Script e gravados como Google Docs com JSON texto. O motor do Prumo também saiu do formato armário de acumulador: o core agora é índice + guardrails, com procedimento detalhado em módulos canônicos. E a sanitização deixou de ser só “compactar handover”: o sistema agora já consegue arquivar frio seguro com índice global, sem brincar de sumiço.
 

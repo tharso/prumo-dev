@@ -1,6 +1,6 @@
 # Cowork Runtime Bridge
 
-> **module_version: 4.14.1**
+> **module_version: 4.15.0**
 >
 > Fonte canônica do bridge experimental entre Cowork e o runtime local do Prumo.
 
@@ -18,10 +18,30 @@ Resolver o script pela política de `runtime-paths.md`.
 
 ## Comandos suportados nesta fase
 
-1. `briefing`
-2. `context-dump`
-3. `repair`
-4. `setup`
+1. `start`
+2. `briefing`
+3. `context-dump`
+4. `repair`
+5. `setup`
+
+## Regra operacional da invocação curta
+
+Se o host oferecer uma porta curta do tipo `/prumo`, `@Prumo`, `bom dia, Prumo` ou affordance equivalente, o adapter fino deve tentar o runtime com `start` antes de qualquer outra coisa.
+
+Fluxo:
+
+1. resolver o workspace ativo;
+2. tentar rodar:
+
+```bash
+python3 <script-resolvido> --workspace <workspace> --command start
+```
+
+3. Se o bridge sair com código `0`, devolver a saída do runtime e encerrar.
+4. Se o bridge sair com código `12`, cair para o fluxo legado do host.
+5. Se o bridge falhar com outro código, avisar em uma linha curta e cair para o fluxo legado.
+
+Isso vale inclusive para workspace legado. O `start` existe justamente para orientar setup, migrate ou briefing sem exigir que o host adivinhe qual subcomando merece abrir a manhã.
 
 ## Regra operacional do `/briefing`
 

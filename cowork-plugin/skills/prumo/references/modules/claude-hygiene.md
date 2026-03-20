@@ -1,6 +1,6 @@
 # Claude Hygiene
 
-> **module_version: 4.14.1**
+> **module_version: 4.15.0**
 >
 > Fonte canônica da higiene assistida do `CLAUDE.md`.
 

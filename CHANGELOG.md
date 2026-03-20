@@ -4,7 +4,21 @@ Este arquivo registra mudanças públicas do produto Prumo.
 
 O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamento semântico.
 
-## [4.14.1] - 2026-03-20
+## [4.15.0] - 2026-03-20
+
+### Added
+- Novo [INVOCATION-UX-CONTRACT.md](/Users/tharsovieira/Documents/DailyLife/Prumo/INVOCATION-UX-CONTRACT.md) registrando sem ambiguidade qual é a porta técnica atual (`prumo start`) e qual é a UX final desejada por host (`/prumo`, `@Prumo`, `bom dia, Prumo` ou equivalente).
+- O bridge experimental do Cowork agora entende `start`, o que finalmente permite tratar invocação curta como adapter de verdade e não só como briefing com fantasia.
+
+### Changed
+- `prumo start` agora aceita override do caminho de client secrets via `PRUMO_GOOGLE_CLIENT_SECRETS`, em vez de depender só do caminho default de laboratório.
+- A descoberta automática de workspace por CWD ganhou limite de profundidade. Subir até `/` toda vez não era pecado mortal, mas também não era exatamente sinal de juízo.
+- O `SKILL.md` de briefing e o módulo `cowork-runtime-bridge.md` passaram a dizer explicitamente que a porta curta do host deve bater em `start`, não pular direto para briefing por reflexo condicionado.
+
+### Fixed
+- O bridge do Cowork deixou de bloquear `start` em workspace legado. Seria uma façanha bem idiota impedir justamente o comando que sabe mandar migrar.
+
+## [4.15.0] - 2026-03-20
 
 ### Changed
 - `prumo start` agora tenta inferir o workspace pelo diretório atual ou por um pai reconhecível antes de pedir `--workspace` como se o usuário estivesse solicitando visto.

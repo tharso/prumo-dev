@@ -46,6 +46,22 @@ Uma porta de entrada que pede mais adivinhação do que orientação faz o produ
 2. trocar a sugestão morta de auth Google por instrução executável ou ajuda real (`--help`) quando faltarem credenciais;
 3. ampliar o menu para não esconder `context-dump` justamente quando ele pode evitar diagnóstico burro.
 
+## 2026-03-20 — O bridge do Cowork precisava aprender a bater na porta certa
+
+### Descoberta
+
+Depois que `prumo start` virou porta de entrada canônica do runtime, o bridge experimental do Cowork continuava sabendo falar só `briefing`, `context-dump`, `repair` e `setup`. Em outras palavras: o runtime ganhou hall de entrada e o porteiro continuou levando todo mundo direto para a cozinha.
+
+### Por que importa
+
+Se o primeiro adapter fino não souber chamar `start`, o risco é cristalizar um hábito ruim: cada host continuar escolhendo sua própria entrada, e o runtime voltar a ser só um conjunto de subcomandos com currículo bonito.
+
+### Decisao
+
+1. ensinar `scripts/prumo_cowork_bridge.py` a executar `start`;
+2. permitir `start` mesmo em workspace legado, porque ele justamente sabe orientar `migrate`;
+3. registrar o contrato de invocação em um documento próprio (`INVOCATION-UX-CONTRACT.md`) para que Cowork, Codex, Gemini e companhia parem de inventar porta por conta própria.
+
 ## 2026-03-20 — O runtime funcionava; o instalador é que ainda vivia em 2019
 
 ### Descoberta

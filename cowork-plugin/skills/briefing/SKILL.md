@@ -40,6 +40,14 @@ Antes de entrar no procedimento legado do briefing:
 
 O Cowork não deve reescrever a resposta do runtime como se estivesse melhorando literatura. Aqui ele é interface, não ghostwriter.
 
+## Ponte para a UX final
+
+O briefing não é a única porta possível. A direção do produto agora é mais simples:
+
+1. se o usuário invocar o Prumo de forma curta (`/prumo`, `@Prumo`, "bom dia, Prumo" ou equivalente do host), o adapter deve tentar `start` primeiro;
+2. se o usuário pedir briefing explicitamente, aí sim o host pode ir direto para `briefing`;
+3. o host não deve improvisar onboarding, migrate ou repair na própria cabeça quando o runtime já sabe fazer isso.
+
 ## Fonte de autoridade
 
 Em caso de conflito:

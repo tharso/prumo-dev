@@ -17,6 +17,7 @@ from prumo_runtime.workspace import (
 
 LEGACY_MARKERS = ("CLAUDE.md", "PRUMO-CORE.md", "PAUTA.md", "INBOX.md", "REGISTRO.md")
 DEFAULT_GOOGLE_CLIENT_SECRETS = Path("~/Documents/_secrets/prumo/google-oauth-client.json").expanduser()
+DEFAULT_DISCOVERY_DEPTH = 8
 
 
 def _parse_iso(value: str | None) -> datetime | None:
@@ -56,7 +57,9 @@ def _looks_legacy(workspace: Path) -> bool:
 
 def _discover_workspace_from_cwd() -> Path:
     current = Path.cwd().resolve()
-    for candidate in (current, *current.parents):
+    for depth, candidate in enumerate((current, *current.parents)):
+        if depth > DEFAULT_DISCOVERY_DEPTH:
+            break
         if _has_runtime_identity(candidate) or _looks_legacy(candidate):
             return candidate
     return current
@@ -89,8 +92,17 @@ def _choose_continue_item(workspace: Path) -> str | None:
 
 def _suggest_google_auth_action(workspace: Path) -> dict[str, str]:
     workspace_str = str(workspace)
+    client_secrets_env = str(os.environ.get("PRUMO_GOOGLE_CLIENT_SECRETS") or "").strip()
     client_id = str(os.environ.get("PRUMO_GOOGLE_CLIENT_ID") or "").strip()
     client_secret = str(os.environ.get("PRUMO_GOOGLE_CLIENT_SECRET") or "").strip()
+    if client_secrets_env:
+        candidate = Path(client_secrets_env).expanduser()
+        if candidate.exists():
+            return {
+                "id": "auth-google",
+                "label": "Conectar Google",
+                "command": f"prumo auth google --workspace {workspace_str} --client-secrets {candidate}",
+            }
     if DEFAULT_GOOGLE_CLIENT_SECRETS.exists():
         return {
             "id": "auth-google",

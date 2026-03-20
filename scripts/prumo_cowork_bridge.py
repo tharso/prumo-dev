@@ -15,7 +15,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--command",
         required=True,
-        choices=["setup", "briefing", "context-dump", "repair"],
+        choices=["setup", "start", "briefing", "context-dump", "repair"],
         help="Comando do runtime a ser executado",
     )
     parser.add_argument("--user-name", help="Nome preferido do usuario (setup)")
@@ -28,8 +28,9 @@ def build_parser() -> argparse.ArgumentParser:
 
 def resolve_runtime(workspace: Path) -> tuple[list[str], dict[str, str]]:
     env = os.environ.copy()
+    prefer_repo = str(env.get("PRUMO_BRIDGE_PREFER_REPO") or "").strip() == "1"
     installed = shutil.which("prumo")
-    if installed:
+    if installed and not prefer_repo:
         return [installed], env
 
     candidates = [
@@ -55,7 +56,7 @@ def build_runtime_call(args) -> tuple[list[str], dict[str, str]]:
     workspace = Path(args.workspace).expanduser().resolve()
     command, env = resolve_runtime(workspace)
 
-    if args.command != "setup" and not workspace_enabled(workspace):
+    if args.command not in {"setup", "start"} and not workspace_enabled(workspace):
         raise FileNotFoundError("workspace ainda não está no trilho novo do runtime")
 
     command.extend([args.command, "--workspace", str(workspace)])

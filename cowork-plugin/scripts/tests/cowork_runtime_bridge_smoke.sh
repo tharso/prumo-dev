@@ -25,6 +25,10 @@ assert_contains() {
 
 mkdir -p "$WORKSPACE_OK" "$WORKSPACE_OLD"
 
+cat >"$WORKSPACE_OLD/CLAUDE.md" <<'EOF'
+# legado
+EOF
+
 PYTHONPATH="$ROOT_DIR/runtime" python3 -m prumo_runtime setup \
   --workspace "$WORKSPACE_OK" \
   --user-name "Tharso" \
@@ -54,16 +58,33 @@ cat >"$WORKSPACE_OK/INBOX.md" <<'EOF'
 - [Email] Responder contador.
 EOF
 
-python3 "$ROOT_DIR/scripts/prumo_cowork_bridge.py" \
+PRUMO_BRIDGE_PREFER_REPO=1 python3 "$ROOT_DIR/scripts/prumo_cowork_bridge.py" \
+  --workspace "$WORKSPACE_OK" \
+  --command start >"$TMP_DIR/start-ok.out"
+
+assert_contains "$TMP_DIR/start-ok.out" "Minha sugestão:" "bridge nao devolveu a porta de entrada do runtime"
+assert_contains "$TMP_DIR/start-ok.out" "Rodar o briefing agora" "bridge start nao ofereceu briefing"
+
+PRUMO_BRIDGE_PREFER_REPO=1 PRUMO_RUNTIME_DISABLE_SNAPSHOT=1 python3 "$ROOT_DIR/scripts/prumo_cowork_bridge.py" \
   --workspace "$WORKSPACE_OK" \
   --command briefing >"$TMP_DIR/bridge-ok.out"
 
 assert_contains "$TMP_DIR/bridge-ok.out" "1. Preflight:" "bridge nao devolveu saida do runtime"
 assert_contains "$TMP_DIR/bridge-ok.out" "2. Google:" "bridge nao trouxe status da integracao Google"
-assert_contains "$TMP_DIR/bridge-ok.out" "7. Proposta do dia:" "bridge nao manteve briefing completo"
+assert_contains "$TMP_DIR/bridge-ok.out" "Proposta do dia:" "bridge nao manteve briefing completo"
 
 set +e
-python3 "$ROOT_DIR/scripts/prumo_cowork_bridge.py" \
+PRUMO_BRIDGE_PREFER_REPO=1 python3 "$ROOT_DIR/scripts/prumo_cowork_bridge.py" \
+  --workspace "$WORKSPACE_OLD" \
+  --command start >"$TMP_DIR/start-old.out" 2>"$TMP_DIR/start-old.err"
+STATUS="$?"
+set -e
+
+[[ "$STATUS" -eq 0 ]] || fail "bridge start deveria funcionar ate em workspace legado"
+assert_contains "$TMP_DIR/start-old.out" "migrate" "bridge start nao sugeriu migrate no workspace legado"
+
+set +e
+PRUMO_BRIDGE_PREFER_REPO=1 python3 "$ROOT_DIR/scripts/prumo_cowork_bridge.py" \
   --workspace "$WORKSPACE_OLD" \
   --command briefing >"$TMP_DIR/bridge-old.out" 2>"$TMP_DIR/bridge-old.err"
 STATUS="$?"
