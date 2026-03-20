@@ -4,6 +4,15 @@ Este arquivo registra mudanças públicas do produto Prumo.
 
 O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamento semântico.
 
+## [4.15.2] - 2026-03-20
+
+### Added
+- `AGENTS.md` e `CLAUDE.md` gerados pelo runtime agora carregam instruções curtas de invocação (`Prumo` -> `prumo`, briefing explícito -> `prumo briefing --workspace . --refresh-snapshot`), em vez de só mandar o host "ler o outro arquivo" e rezar.
+- Nova suíte `runtime/tests/test_templates.py` cercando esse contrato nos wrappers.
+
+### Changed
+- O template canônico `agents-md-template.md` parou de tratar adapter para Codex e afins como compatibilidade muda. Agora ele assume, em texto claro, que host bom bate em `prumo` e deixa o runtime dirigir.
+
 ## [4.15.1] - 2026-03-20
 
 ### Changed

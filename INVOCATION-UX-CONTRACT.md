@@ -51,6 +51,7 @@ Um adapter fino deve:
 3. devolver a resposta do runtime sem reescrever o produto em cima dela;
 4. chamar `prumo briefing` diretamente apenas quando a intenção do usuário for briefing explícito;
 5. usar `prumo start --format json` quando o host conseguir renderizar ações/interações próprias.
+6. quando depender de arquivos-guia do workspace (`AGENTS.md`, `CLAUDE.md`), manter esses wrappers alinhados com a mesma porta curta em vez de deixá-los agir como bilhete passivo.
 
 Um adapter fino não deve:
 

@@ -15,6 +15,13 @@ INÍCIO DO TEMPLATE:
 
 # Prumo Adapter — {{USER_NAME}}
 
+## Porta curta
+
+1. Se o usuário disser "Prumo", "bom dia, Prumo" ou equivalente, rode `prumo`.
+2. Se o pedido for briefing explícito, rode `prumo briefing --workspace . --refresh-snapshot`.
+3. Se o host souber renderizar ações, prefira `prumo start --format json`.
+4. Não invente setup, migrate, repair ou auth na unha. Deixe o runtime decidir o primeiro passo.
+
 ## Instruções primárias
 
 Antes de qualquer operação, leia nesta ordem:
@@ -26,9 +33,9 @@ Antes de qualquer operação, leia nesta ordem:
 
 ## Comando canônico
 
-- Briefing canônico: `/prumo:briefing`
-- Alias legado aceito: `/briefing`
-- Handover manual: `/prumo:handover`
+- Porta canônica do runtime: `prumo`
+- Briefing explícito: `prumo briefing --workspace . --refresh-snapshot`
+- Estado estruturado: `prumo start --format json`
 
 ## Regras específicas para agentes não-Cowork
 

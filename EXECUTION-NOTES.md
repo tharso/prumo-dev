@@ -78,6 +78,22 @@ Isso parecia detalhe até bater na UX real. Host que só precisa executar "Prumo
 2. trocar o smoke principal para validar essa rota curta, não só `start` explícito;
 3. documentar isso no contrato de invocação para ninguém voltar a confundir parser com produto.
 
+## 2026-03-20 — Wrapper passivo não é adapter; é bilhete na porta
+
+### Descoberta
+
+O workspace já gerava `AGENTS.md` e `CLAUDE.md`, mas esses arquivos ainda se comportavam como simples placas dizendo "leia AGENT.md". Para hosts como Codex, isso é pouco. Se o primeiro arquivo que o host encontra não disser como invocar o runtime, ele volta a improvisar produto em cima dos arquivos.
+
+### Por que importa
+
+O adapter fino de host não nasce só no código do runtime. Ele também nasce no ponto de contato que o host lê primeiro. Se `AGENTS.md` continua mudo sobre `prumo`, o produto ainda depende de boa vontade ou telepatia do host.
+
+### Decisao
+
+1. transformar `AGENTS.md` e `CLAUDE.md` em wrappers ativos, com contrato curto de invocação;
+2. dizer explicitamente: "Prumo" -> `prumo`, briefing explícito -> `prumo briefing --workspace . --refresh-snapshot`;
+3. cercar isso com teste de geração, para o adapter não voltar a virar papel de parede.
+
 ## 2026-03-20 — O runtime funcionava; o instalador é que ainda vivia em 2019
 
 ### Descoberta

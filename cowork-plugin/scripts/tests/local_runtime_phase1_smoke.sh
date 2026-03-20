@@ -41,6 +41,10 @@ PYTHONPATH="$ROOT_DIR/runtime" python3 -m prumo_runtime setup \
 [[ -f "$WORKSPACE/_state/workspace-schema.json" ]] || fail "workspace-schema.json nao foi criado"
 [[ -f "$WORKSPACE/_state/google-integration.json" ]] || fail "google-integration.json nao foi criado"
 
+assert_contains "$WORKSPACE/AGENTS.md" 'rode `prumo`' "AGENTS.md nao explicou a porta curta do runtime"
+assert_contains "$WORKSPACE/AGENTS.md" 'prumo briefing --workspace . --refresh-snapshot' "AGENTS.md nao explicou o briefing explicito"
+assert_contains "$WORKSPACE/CLAUDE.md" 'rode `prumo`' "CLAUDE.md nao explicou a porta curta do runtime"
+
 (
   cd "$WORKSPACE"
   PYTHONPATH="$ROOT_DIR/runtime" python3 -m prumo_runtime >"$TMP_DIR/start.out"

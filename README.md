@@ -2,7 +2,7 @@
 
 **Sistema de organização de vida pessoal com IA.**
 
-Versão atual: **4.15.1**
+Versão atual: **4.15.2**
 
 Prumo é um plugin de IA que transforma o Claude, Codex ou Gemini em interface única para capturar, processar, lembrar e cobrar tudo que acontece na sua vida. Trabalho, filhos, contas, saúde, ideias — tudo entra pelo mesmo lugar.
 
@@ -116,6 +116,12 @@ Esse trilho cria:
 1. `AGENT.md` como índice canônico do workspace;
 2. `CLAUDE.md` e `AGENTS.md` como wrappers regeneráveis;
 3. `Agente/` como diretório modular do contexto do usuário.
+
+Esses wrappers já não são só placa de "veja o balcão ao lado". Agora também carregam o contrato curto de invocação para hosts que leem arquivo antes de pensar:
+
+1. se o usuário disser `Prumo`, o host deve rodar `prumo`;
+2. se o pedido for briefing explícito, o host pode rodar `prumo briefing --workspace . --refresh-snapshot`;
+3. se souber renderizar ações, melhor ainda: `prumo start --format json`.
 
 E agora também deixa uma fundação decente para integrações:
 
