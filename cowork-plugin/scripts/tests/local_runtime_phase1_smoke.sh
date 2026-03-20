@@ -41,8 +41,10 @@ PYTHONPATH="$ROOT_DIR/runtime" python3 -m prumo_runtime setup \
 [[ -f "$WORKSPACE/_state/workspace-schema.json" ]] || fail "workspace-schema.json nao foi criado"
 [[ -f "$WORKSPACE/_state/google-integration.json" ]] || fail "google-integration.json nao foi criado"
 
-PYTHONPATH="$ROOT_DIR/runtime" python3 -m prumo_runtime start \
-  --workspace "$WORKSPACE" >"$TMP_DIR/start.out"
+(
+  cd "$WORKSPACE"
+  PYTHONPATH="$ROOT_DIR/runtime" python3 -m prumo_runtime start >"$TMP_DIR/start.out"
+)
 
 assert_contains "$TMP_DIR/start.out" "Minha sugestão:" "start nao sugeriu um caminho inicial"
 assert_contains "$TMP_DIR/start.out" "Rodar o briefing agora" "start nao ofereceu briefing como porta de entrada"

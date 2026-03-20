@@ -30,6 +30,22 @@ Sem registrar essa diferença, o time corre dois riscos igualmente irritantes:
 2. tratar `prumo ...` como contrato técnico canônico, não como experiência final canônica;
 3. abrir a próxima frente de produto como `Invocation UX`, em vez de continuar mexendo só em encanamento e auth como se isso resolvesse entrada por osmose.
 
+## 2026-03-20 — `prumo start` precisava parar de agir como formulário
+
+### Descoberta
+
+Depois da validação cruzada de `prumo start`, ficou claro que a porta de entrada ainda estava com vícios de CLI interna: exigia `--workspace` mesmo quando o usuário já estava parado dentro da pasta certa, sugeria auth Google com caminho-placeholder de laboratório e ainda cortava o menu antes de mostrar contexto em alguns estados.
+
+### Por que importa
+
+Uma porta de entrada que pede mais adivinhação do que orientação faz o produto parecer mais esperto no README do que no terminal. É o tipo de atrito pequeno que vai corroendo confiança sem fazer barulho.
+
+### Decisao
+
+1. fazer `prumo start` inferir o workspace pelo diretório atual ou por um pai reconhecível;
+2. trocar a sugestão morta de auth Google por instrução executável ou ajuda real (`--help`) quando faltarem credenciais;
+3. ampliar o menu para não esconder `context-dump` justamente quando ele pode evitar diagnóstico burro.
+
 ## 2026-03-20 — O runtime funcionava; o instalador é que ainda vivia em 2019
 
 ### Descoberta

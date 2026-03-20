@@ -1,6 +1,6 @@
 # Runtime File Governance
 
-> **module_version: 4.14.0**
+> **module_version: 4.14.1**
 >
 > Política canônica de ciclo de vida dos arquivos vivos do Prumo.
 

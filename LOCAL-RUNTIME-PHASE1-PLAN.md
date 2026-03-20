@@ -198,7 +198,7 @@ Em outras palavras: o primeiro contato do usuário não deve ser um subcomando. 
 
 O que a Fase 1 faz é deixar o runtime pronto para que essa porta exista no bloco seguinte.
 
-O primeiro slice disso já entrou: `prumo start` como porta de entrada do runtime. O que ainda falta é o host bater nessa porta por conta própria.
+O primeiro slice disso já entrou: `prumo start` como porta de entrada do runtime. Ele já tenta inferir o workspace pelo diretório atual antes de exigir `--workspace` como senha de repartição. O que ainda falta é o host bater nessa porta por conta própria.
 
 ### 5.1. `prumo setup`
 

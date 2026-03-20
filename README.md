@@ -2,7 +2,7 @@
 
 **Sistema de organização de vida pessoal com IA.**
 
-Versão atual: **4.14.0**
+Versão atual: **4.14.1**
 
 Prumo é um plugin de IA que transforma o Claude, Codex ou Gemini em interface única para capturar, processar, lembrar e cobrar tudo que acontece na sua vida. Trabalho, filhos, contas, saúde, ideias — tudo entra pelo mesmo lugar.
 
@@ -77,7 +77,8 @@ Depois:
 
 ```bash
 prumo setup --workspace /caminho/do/workspace
-prumo start --workspace /caminho/do/workspace
+cd /caminho/do/workspace
+prumo start
 prumo migrate --workspace /caminho/do/workspace
 prumo auth google --workspace /caminho/do/workspace --client-secrets /caminho/do/client_secret.json
 prumo auth google --workspace /caminho/do/workspace --client-id SEU_CLIENT_ID --client-secret SEU_CLIENT_SECRET
@@ -101,10 +102,11 @@ Em português simples: agora estamos construindo o motor. A ignição universal 
 O primeiro passo concreto nessa direção já existe:
 
 ```bash
-prumo start --workspace /caminho/do/workspace
+cd /caminho/do/workspace
+prumo start
 ```
 
-Ele ainda não é `/prumo` dentro de todo host. Mas já é a porta de entrada canônica do runtime: olha o estado do workspace e oferece briefing, retomada, repair ou auth/config sem pedir que o usuário adivinhe qual subcomando merece ser invocado naquela manhã.
+Ele ainda não é `/prumo` dentro de todo host. Mas já é a porta de entrada canônica do runtime: tenta inferir o workspace pelo diretório atual (ou por um pai reconhecível), olha o estado do sistema e oferece briefing, retomada, repair ou auth/config sem pedir que o usuário adivinhe qual subcomando merece ser invocado naquela manhã.
 
 Esse trilho cria:
 

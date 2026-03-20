@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import os
+import string
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -12,6 +14,9 @@ from prumo_runtime.workspace import (
     read_text,
     workspace_overview,
 )
+
+LEGACY_MARKERS = ("CLAUDE.md", "PRUMO-CORE.md", "PAUTA.md", "INBOX.md", "REGISTRO.md")
+DEFAULT_GOOGLE_CLIENT_SECRETS = Path("~/Documents/_secrets/prumo/google-oauth-client.json").expanduser()
 
 
 def _parse_iso(value: str | None) -> datetime | None:
@@ -38,11 +43,23 @@ def _short_clock(value: str | None, timezone_name: str) -> str | None:
     return dt_value.astimezone(ZoneInfo(timezone_name)).strftime("%H:%M")
 
 
+def _has_runtime_identity(workspace: Path) -> bool:
+    return (workspace / "AGENT.md").exists() and (workspace / "_state" / "workspace-schema.json").exists()
+
+
 def _looks_legacy(workspace: Path) -> bool:
-    return any(
-        (workspace / relative).exists()
-        for relative in ("CLAUDE.md", "PRUMO-CORE.md", "PAUTA.md", "INBOX.md", "REGISTRO.md")
+    return (
+        not _has_runtime_identity(workspace)
+        and any((workspace / relative).exists() for relative in LEGACY_MARKERS)
     )
+
+
+def _discover_workspace_from_cwd() -> Path:
+    current = Path.cwd().resolve()
+    for candidate in (current, *current.parents):
+        if _has_runtime_identity(candidate) or _looks_legacy(candidate):
+            return candidate
+    return current
 
 
 def _pauta_candidates(workspace: Path) -> tuple[list[str], list[str]]:
@@ -68,6 +85,32 @@ def _choose_continue_item(workspace: Path) -> str | None:
     if ongoing:
         return ongoing[0]
     return None
+
+
+def _suggest_google_auth_action(workspace: Path) -> dict[str, str]:
+    workspace_str = str(workspace)
+    client_id = str(os.environ.get("PRUMO_GOOGLE_CLIENT_ID") or "").strip()
+    client_secret = str(os.environ.get("PRUMO_GOOGLE_CLIENT_SECRET") or "").strip()
+    if DEFAULT_GOOGLE_CLIENT_SECRETS.exists():
+        return {
+            "id": "auth-google",
+            "label": "Conectar Google",
+            "command": f"prumo auth google --workspace {workspace_str} --client-secrets {DEFAULT_GOOGLE_CLIENT_SECRETS}",
+        }
+    if client_id and client_secret:
+        return {
+            "id": "auth-google",
+            "label": "Conectar Google",
+            "command": (
+                f'prumo auth google --workspace {workspace_str} --client-id "{client_id}" '
+                f'--client-secret "{client_secret}"'
+            ),
+        }
+    return {
+        "id": "auth-google-help",
+        "label": "Ver como conectar Google sem chute cego",
+        "command": f"prumo auth google --workspace {workspace_str} --help",
+    }
 
 
 def _build_actions(workspace: Path, overview: dict) -> list[dict[str, str]]:
@@ -107,14 +150,16 @@ def _build_actions(workspace: Path, overview: dict) -> list[dict[str, str]]:
             }
         )
 
+    actions.append(
+        {
+            "id": "context",
+            "label": "Ver o estado técnico sem poesia",
+            "command": f"prumo context-dump --workspace {workspace_str} --format json",
+        }
+    )
+
     if not google_connected:
-        actions.append(
-            {
-                "id": "auth-google",
-                "label": "Conectar Google",
-                "command": f"prumo auth google --workspace {workspace_str} --client-secrets /caminho/do/client_secret.json",
-            }
-        )
+        actions.append(_suggest_google_auth_action(workspace))
 
     if not apple_connected:
         actions.append(
@@ -125,14 +170,6 @@ def _build_actions(workspace: Path, overview: dict) -> list[dict[str, str]]:
             }
         )
 
-    actions.append(
-        {
-            "id": "context",
-            "label": "Ver o estado técnico sem poesia",
-            "command": f"prumo context-dump --workspace {workspace_str} --format json",
-        }
-    )
-
     ordered: list[dict[str, str]] = []
     seen: set[str] = set()
     for action in actions:
@@ -140,7 +177,7 @@ def _build_actions(workspace: Path, overview: dict) -> list[dict[str, str]]:
             continue
         ordered.append(action)
         seen.add(action["id"])
-    return ordered[:4]
+    return ordered[:6]
 
 
 def _render_text_for_missing_workspace(workspace: Path) -> str:
@@ -166,6 +203,19 @@ def _render_text_for_legacy_workspace(workspace: Path) -> str:
             "3. Minha sugestão: adotar o workspace legado antes de pedir briefing.",
             f"a) Rodar `prumo migrate --workspace {workspace_str}`",
             f"b) Ver estado cru com `prumo context-dump --workspace {workspace_str} --format json`",
+        ]
+    )
+
+
+def _render_text_for_unknown_directory(workspace: Path) -> str:
+    workspace_str = str(workspace)
+    return "\n".join(
+        [
+            f"1. `{workspace_str}` existe, mas não parece workspace do Prumo.",
+            "2. Em português simples: aqui não há identidade canônica e também não há sinais fortes de workspace legado.",
+            "3. Minha sugestão: se esta pasta era para ser o seu sistema, faça `setup`. Se o workspace mora em outro lugar, aponte o caminho sem charada.",
+            f"a) Rodar `prumo setup --workspace {workspace_str}`",
+            "b) Rodar `prumo start --workspace /caminho/do/workspace`",
         ]
     )
 
@@ -219,7 +269,7 @@ def _render_start_text(workspace: Path, overview: dict) -> str:
 
     lines.append(f"{suggestion_index}. Minha sugestão: {suggestion}")
 
-    option_labels = ["a", "b", "c", "d"]
+    option_labels = list(string.ascii_lowercase)
     for label, action in zip(option_labels, actions):
         lines.append(f"{label}) {action['label']}")
         lines.append(f"   `{action['command']}`")
@@ -228,7 +278,11 @@ def _render_start_text(workspace: Path, overview: dict) -> str:
 
 
 def run_start(args) -> int:
-    workspace = Path(args.workspace).expanduser().resolve()
+    workspace = (
+        Path(args.workspace).expanduser().resolve()
+        if getattr(args, "workspace", None)
+        else _discover_workspace_from_cwd()
+    )
     if not workspace.exists():
         print(_render_text_for_missing_workspace(workspace))
         return 0
@@ -240,6 +294,9 @@ def run_start(args) -> int:
     except WorkspaceError:
         if _looks_legacy(workspace):
             print(_render_text_for_legacy_workspace(workspace))
+            return 0
+        if not getattr(args, "workspace", None):
+            print(_render_text_for_unknown_directory(workspace))
             return 0
         raise
 

@@ -32,7 +32,10 @@ def build_parser() -> argparse.ArgumentParser:
     setup.set_defaults(handler=run_setup)
 
     start = subparsers.add_parser("start", help="Abrir a porta de entrada do Prumo no workspace")
-    start.add_argument("--workspace", required=True, help="Caminho do workspace")
+    start.add_argument(
+        "--workspace",
+        help="Caminho do workspace (padrao: diretorio atual ou pai reconhecivel)",
+    )
     start.add_argument("--format", choices=["text", "json"], default="text")
     start.set_defaults(handler=run_start)
 

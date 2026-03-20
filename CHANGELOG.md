@@ -4,6 +4,16 @@ Este arquivo registra mudanças públicas do produto Prumo.
 
 O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamento semântico.
 
+## [4.14.1] - 2026-03-20
+
+### Changed
+- `prumo start` agora tenta inferir o workspace pelo diretório atual ou por um pai reconhecível antes de pedir `--workspace` como se o usuário estivesse solicitando visto.
+- O menu de ações do `start` ganhou mais espaço e deixou de esconder `context-dump` quando o estado fica mais carregado.
+- A sugestão de auth Google deixou de apontar para `/caminho/do/client_secret.json` como se placeholder fosse plano de produto. Se houver credencial padrão ou variáveis de ambiente, ele usa isso; se não houver, aponta para `--help` sem cinismo.
+
+### Fixed
+- Workspaces canônicos com `CLAUDE.md` e `PRUMO-CORE.md` presentes deixaram de correr risco de serem tratados como “legado” só porque ainda carregam wrappers.
+
 ## [4.14.0] - 2026-03-20
 
 ### Added
