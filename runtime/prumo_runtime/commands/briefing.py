@@ -395,7 +395,12 @@ def resolve_snapshot_data(
                 timezone_name,
                 profile=connected_profile,
             )
-            direct_snapshot = enrich_snapshot_with_apple_reminders(workspace, timezone_name, direct_snapshot)
+            direct_snapshot = enrich_snapshot_with_apple_reminders(
+                workspace,
+                timezone_name,
+                direct_snapshot,
+                refresh_snapshot=refresh_snapshot,
+            )
             write_snapshot_cache(workspace, timezone_name, direct_snapshot)
             direct_snapshot["cached_at"] = now_iso(timezone_name)
             return direct_snapshot
@@ -404,7 +409,12 @@ def resolve_snapshot_data(
                 cached["note"] = f"{cached['note']} Google API falhou ({exc}); usei cache."
                 return cached
             fallback_snapshot = run_dual_snapshot(workspace, repo_root)
-            fallback_snapshot = enrich_snapshot_with_apple_reminders(workspace, timezone_name, fallback_snapshot)
+            fallback_snapshot = enrich_snapshot_with_apple_reminders(
+                workspace,
+                timezone_name,
+                fallback_snapshot,
+                refresh_snapshot=refresh_snapshot,
+            )
             if fallback_snapshot.get("ok_profiles", 0):
                 fallback_snapshot["note"] = (
                     f"Google API falhou ({exc}). "
@@ -421,7 +431,12 @@ def resolve_snapshot_data(
                 "source": "google-direct-api",
             }
     fallback_snapshot = run_dual_snapshot(workspace, repo_root)
-    return enrich_snapshot_with_apple_reminders(workspace, timezone_name, fallback_snapshot)
+    return enrich_snapshot_with_apple_reminders(
+        workspace,
+        timezone_name,
+        fallback_snapshot,
+        refresh_snapshot=refresh_snapshot,
+    )
 
 
 def run_dual_snapshot(workspace: Path, repo_root: Path | None) -> dict:
@@ -609,12 +624,20 @@ def summarize_apple_reminders_status(workspace: Path, timezone_name: str) -> str
     status = str(payload.get("status") or "disconnected")
     auth_status = str(payload.get("authorization_status") or "unknown")
     lists = [str(item).strip() for item in payload.get("lists", []) if str(item).strip()]
+    observed_lists = [str(item).strip() for item in payload.get("observed_lists", []) if str(item).strip()]
     last_refresh = short_clock(str(payload.get("last_refresh_at") or ""), timezone_name)
     last_refresh_age = age_in_minutes(str(payload.get("last_refresh_at") or ""), timezone_name)
     last_error = str(payload.get("last_error") or "").strip()
 
     if status == "connected":
-        suffix = f" ({len(lists)} lista(s))" if lists else ""
+        scope = (
+            f"observando {len(observed_lists)} lista(s)"
+            if observed_lists
+            else f"{len(lists)} lista(s)"
+            if lists
+            else "sem listas visíveis"
+        )
+        suffix = f" ({scope})"
         if last_refresh:
             age_text = humanize_age_minutes(last_refresh_age)
             if age_text:
@@ -646,6 +669,8 @@ def enrich_snapshot_with_apple_reminders(
     workspace: Path,
     timezone_name: str,
     snapshot: dict,
+    *,
+    refresh_snapshot: bool = False,
 ) -> dict:
     apple_state = apple_reminders_summary(workspace)
     apple_status = str(apple_state.get("status") or "disconnected")
@@ -653,7 +678,11 @@ def enrich_snapshot_with_apple_reminders(
         return snapshot
 
     try:
-        apple_payload = fetch_apple_reminders_today(workspace, timezone_name)
+        apple_payload = fetch_apple_reminders_today(
+            workspace,
+            timezone_name,
+            refresh=refresh_snapshot,
+        )
     except Exception as exc:
         note = f"Apple Reminders falhou ({exc}); ignorei o tropeço."
         previous = str(snapshot.get("note") or "").strip()
@@ -677,7 +706,7 @@ def enrich_snapshot_with_apple_reminders(
         }
         snapshot["ok_profiles"] = int(snapshot.get("ok_profiles") or 0) + 1
 
-    if note and not items:
+    if note:
         previous = str(snapshot.get("note") or "").strip()
         snapshot["note"] = f"{previous} {note}".strip() if previous else note
     return snapshot

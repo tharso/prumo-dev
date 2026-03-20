@@ -9,6 +9,22 @@ Este arquivo guarda descobertas tecnicas que mudam a direcao do trabalho. Nao e 
 3. Microtestes, comandos triviais e tentativas sem valor duravel nao entram.
 4. Toda nota daqui deve ter espelho em issue relevante quando afetar roadmap ou execucao.
 
+## 2026-03-20 — O gargalo de Apple Reminders não era a lista; era o AppleScript lendo `due date`
+
+### Descoberta
+
+Mesmo limitando o escopo para uma lista só (`A vida...`), o fetch via AppleScript continuava empacando quando tentava ler `due date` item por item. Já o helper em Swift com `EventKit` devolveu o reminder de teste imediatamente e com a lista correta.
+
+### Por que importa
+
+Isso derruba uma premissa preguiçosa: não era “lista demais” nem “o briefing ainda está cru”. Era a tecnologia errada para o trecho mais sensível da coleta. Continuar insistindo em AppleScript ali seria como chamar alicate de relógio suíço.
+
+### Decisao
+
+1. usar `EventKit` como trilho principal de fetch para Apple Reminders;
+2. deixar AppleScript como fallback e ponte, não como motor do dia a dia;
+3. adicionar cache local e listas observadas para Apple Reminders, porque fetch vivo sem escopo claro é só um convite educado à lentidão.
+
 ## 2026-03-20 — Tasks entrou no radar certo
 
 ## 2026-03-20 — O lembrete não era do Google; era da Apple usando o Calendário como vitrine

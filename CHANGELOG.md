@@ -4,7 +4,20 @@ Este arquivo registra mudanças públicas do produto Prumo.
 
 O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamento semântico.
 
-## [4.12.1] - 2026-03-20
+## [4.13.1] - 2026-03-20
+
+### Added
+- Apple Reminders agora guarda cache local em `_state/apple-reminders-snapshot.json`, porque rodar a mesma consulta lenta a cada briefing seria uma forma criativa de chamar desperdício de “tempo real”.
+- `prumo auth apple-reminders` passou a aceitar `--list` repetido para limitar as listas observadas. Vasculhar 21 listas para achar um lembrete doméstico era método, não inteligência.
+
+### Changed
+- O fetch de Apple Reminders passou a preferir `EventKit` via helper Swift e deixou AppleScript como fallback. O motor saiu da Kombi e entrou no carro.
+- O `briefing` agora reaproveita cache de Apple Reminders e diz explicitamente quando está observando listas específicas.
+- O `context-dump` expõe as listas observadas de Apple Reminders, porque “todas” e “uma só” são estados diferentes, por mais que a UI preguiçosa finja o contrário.
+
+### Fixed
+- `briefing --refresh-snapshot` voltou a propagar o refresh para a trilha Apple em todos os caminhos, em vez de esquecer esse detalhe justamente onde a água passava.
+- O fetch diário de Apple Reminders deixou de empacar no `due date` do AppleScript quando havia uma lista observada clara. O problema não era a vida do usuário; era a ferramenta errada para a parte sensível.
 
 ## [4.13.0] - 2026-03-20
 
@@ -20,8 +33,6 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ### Known limitations
 - A autenticação Apple Reminders funciona, mas a coleta diária ainda está experimental: em bases maiores, o AppleScript do `Lembretes` pode ficar lento ou tropeçar em itens tortos. Em bom português: já temos a chave, ainda não temos a fechadura com bom amortecedor.
-
-## [4.12.1] - 2026-03-20
 
 ### Fixed
 - A chamada da `Tasks API` estava usando a rota errada (`/users/@me/lists/{id}/tasks`) e recebia `404` com a convicção de quem acha que está certo. Agora usa a rota correta (`/lists/{id}/tasks`) e parou de culpar o Google por um tropeço nosso.

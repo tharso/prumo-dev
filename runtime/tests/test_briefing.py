@@ -285,6 +285,39 @@ class BriefingSnapshotTests(unittest.TestCase):
                 ["16:00 | [Apple Reminders] Teste Prumo (A vida...)"],
             )
 
+    @patch(
+        "prumo_runtime.commands.briefing.fetch_apple_reminders_today",
+        return_value={
+            "status": "cache",
+            "items": [],
+            "note": "Cache local de Apple Reminders reaproveitado (4 min atrás).",
+        },
+    )
+    @patch(
+        "prumo_runtime.commands.briefing.apple_reminders_summary",
+        return_value={"status": "connected"},
+    )
+    def test_enrich_snapshot_with_apple_reminders_preserves_note_and_refresh_flag(
+        self,
+        _mock_summary,
+        mock_fetch,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = Path(tmpdir)
+            snapshot = {"ok_profiles": 0, "profiles": {}, "note": "agenda veio do Google."}
+            enriched = enrich_snapshot_with_apple_reminders(
+                workspace,
+                "America/Sao_Paulo",
+                snapshot,
+                refresh_snapshot=True,
+            )
+            self.assertIn("Cache local de Apple Reminders reaproveitado", enriched["note"])
+            mock_fetch.assert_called_once_with(
+                workspace,
+                "America/Sao_Paulo",
+                refresh=True,
+            )
+
     def test_choose_proposal_ignores_low_signal_email_before_andamento(self) -> None:
         proposal = choose_proposal(
             [],

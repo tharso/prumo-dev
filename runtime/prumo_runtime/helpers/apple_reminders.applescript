@@ -12,6 +12,27 @@ on joinLines(itemsList)
 	return joined
 end joinLines
 
+on cleanText(valueText)
+	set normalized to valueText as text
+	set AppleScript's text item delimiters to return
+	set normalized to text items of normalized as text
+	set AppleScript's text item delimiters to linefeed
+	set normalized to text items of normalized as text
+	set AppleScript's text item delimiters to tab
+	set normalized to text items of normalized as text
+	set AppleScript's text item delimiters to ""
+	return normalized
+end cleanText
+
+on itemInList(targetText, candidates)
+	repeat with oneItem in candidates
+		if (oneItem as text) is targetText then
+			return true
+		end if
+	end repeat
+	return false
+end itemInList
+
 on reminderLabel(dueDate)
 	if dueDate is missing value then
 		return "dia inteiro"
@@ -29,6 +50,23 @@ on run argv
 	if (count of argv) > 0 then
 		set action to item 1 of argv
 	end if
+	set observedLists to {}
+	if (count of argv) > 1 then
+		set idx to 2
+		repeat while idx ≤ (count of argv)
+			set currentArg to item idx of argv
+			if currentArg is "--list" then
+				if idx + 1 ≤ (count of argv) then
+					set end of observedLists to item (idx + 1) of argv
+					set idx to idx + 2
+				else
+					set idx to idx + 1
+				end if
+			else
+				set idx to idx + 1
+			end if
+		end repeat
+	end if
 	set nowDate to current date
 	set startOfDay to nowDate - (time of nowDate)
 	set endOfDay to startOfDay + (1 * days)
@@ -37,6 +75,7 @@ on run argv
 	try
 		tell application "Reminders"
 			set allLists to lists
+			set targetLists to {}
 			if action is "auth" then
 				set statusText to "connected"
 			else
@@ -46,12 +85,15 @@ on run argv
 			set end of outputLines to "AUTHORIZATION:authorized"
 			repeat with oneList in allLists
 				set listName to (name of oneList as text)
-				set end of outputLines to "LIST:" & listName
+				if (count of observedLists) is 0 or (my itemInList(listName, observedLists)) then
+					set end of targetLists to oneList
+					set end of outputLines to "LIST:" & listName
+				end if
 			end repeat
 			
 			if action is "fetch" then
 				set foundAny to false
-				repeat with oneList in allLists
+				repeat with oneList in targetLists
 					set listName to (name of oneList as text)
 					set openReminders to (every reminder of oneList whose completed is false)
 					repeat with oneReminder in openReminders
@@ -60,18 +102,28 @@ on run argv
 							if dueDate is not missing value then
 								if dueDate ≥ startOfDay and dueDate < endOfDay then
 									set foundAny to true
-									set titleText to (name of oneReminder as text)
-									set displayText to (my reminderLabel(dueDate)) & " | [Apple Reminders] " & titleText & " (" & listName & ")"
-									set end of outputLines to "ITEM:" & displayText
+									set titleText to my cleanText(name of oneReminder as text)
+									set safeListName to my cleanText(listName)
+									set labelText to my reminderLabel(dueDate)
+									set displayText to labelText & " | [Apple Reminders] " & titleText & " (" & safeListName & ")"
+									set end of outputLines to "ITEM:" & titleText & tab & safeListName & tab & labelText & tab & displayText
 								end if
 							end if
 						end try
 					end repeat
 				end repeat
 				if foundAny is false then
-					set end of outputLines to "NOTE:Nenhum Apple Reminder vencendo hoje."
+					if (count of observedLists) > 0 then
+						set end of outputLines to "NOTE:Nenhum Apple Reminder vencendo hoje nas listas observadas."
+					else
+						set end of outputLines to "NOTE:Nenhum Apple Reminder vencendo hoje."
+					end if
 				else
-					set end of outputLines to "NOTE:Apple Reminders via AppleScript."
+					if (count of observedLists) > 0 then
+						set end of outputLines to "NOTE:Apple Reminders via AppleScript nas listas observadas."
+					else
+						set end of outputLines to "NOTE:Apple Reminders via AppleScript."
+					end if
 				end if
 			end if
 		end tell

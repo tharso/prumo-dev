@@ -2,6 +2,7 @@ import EventKit
 import Foundation
 
 struct Output: Encodable {
+    var strategy: String
     var status: String
     var authorization_status: String
     var lists: [String]
@@ -31,6 +32,10 @@ func authorizationStatusString() -> String {
         switch status {
         case .authorized:
             return "authorized"
+        case .fullAccess:
+            return "fullAccess"
+        case .writeOnly:
+            return "writeOnly"
         case .denied:
             return "denied"
         case .restricted:
@@ -46,7 +51,7 @@ func authorizationStatusString() -> String {
 func hasReminderAccess() -> Bool {
     let status = EKEventStore.authorizationStatus(for: .reminder)
     if #available(macOS 14.0, *) {
-        return status == .fullAccess || status == .authorized
+        return status == .fullAccess
     } else {
         return status == .authorized
     }
@@ -91,8 +96,26 @@ func renderReminder(_ reminder: EKReminder, timezoneName: String) -> [String: St
     return [
         "title": title,
         "list": listTitle,
+        "label": label,
         "display": "\(label) | [Apple Reminders] \(title) (\(listTitle))"
     ]
+}
+
+func parseObservedLists(_ args: [String]) -> [String] {
+    var observed: [String] = []
+    var idx = 0
+    while idx < args.count {
+        if args[idx] == "--list", idx + 1 < args.count {
+            let candidate = args[idx + 1].trimmingCharacters(in: .whitespacesAndNewlines)
+            if !candidate.isEmpty {
+                observed.append(candidate)
+            }
+            idx += 2
+        } else {
+            idx += 1
+        }
+    }
+    return observed
 }
 
 func requestAccess(store: EKEventStore) -> Bool {
@@ -130,18 +153,27 @@ func runAuth() {
     }
     let finalStatus = authorizationStatusString()
     let status = granted ? "connected" : "denied"
-    emit(Output(status: status, authorization_status: finalStatus, lists: listTitles(from: store), today: [], note: nil, error: granted ? nil : "Apple negou ou não concedeu acesso aos Reminders."))
+    emit(Output(strategy: "eventkit-local", status: status, authorization_status: finalStatus, lists: listTitles(from: store), today: [], note: nil, error: granted ? nil : "Apple negou ou não concedeu acesso aos Reminders."))
 }
 
-func runFetch(timezoneName: String) {
+func runFetch(timezoneName: String, observedLists: [String]) {
     let store = EKEventStore()
     let authStatus = authorizationStatusString()
     guard hasReminderAccess() else {
-        emit(Output(status: "disconnected", authorization_status: authStatus, lists: listTitles(from: store), today: [], note: nil, error: "Apple Reminders ainda não autorizados neste Mac."))
+        emit(Output(strategy: "eventkit-local", status: "disconnected", authorization_status: authStatus, lists: listTitles(from: store), today: [], note: nil, error: "Apple Reminders ainda não autorizados neste Mac."))
         return
     }
     let (start, end) = dayBounds(timezoneName)
-    let predicate = store.predicateForIncompleteReminders(withDueDateStarting: start, ending: end, calendars: nil)
+    let calendars = store.calendars(for: .reminder)
+    let selectedCalendars: [EKCalendar]
+    if observedLists.isEmpty {
+        selectedCalendars = calendars
+    } else {
+        let observedSet = Set(observedLists)
+        selectedCalendars = calendars.filter { observedSet.contains($0.title) }
+    }
+    let visibleTitles = selectedCalendars.map { $0.title }.sorted()
+    let predicate = store.predicateForIncompleteReminders(withDueDateStarting: start, ending: end, calendars: selectedCalendars.isEmpty ? nil : selectedCalendars)
     let semaphore = DispatchSemaphore(value: 0)
     var rendered: [[String: String]] = []
     store.fetchReminders(matching: predicate) { reminders in
@@ -150,12 +182,19 @@ func runFetch(timezoneName: String) {
         semaphore.signal()
     }
     _ = semaphore.wait(timeout: .now() + 30)
-    emit(Output(status: "ok", authorization_status: authStatus, lists: listTitles(from: store), today: rendered, note: rendered.isEmpty ? "Nenhum Apple Reminder vencendo hoje." : "Apple Reminders via EventKit.", error: nil))
+    let note: String
+    if rendered.isEmpty {
+        note = observedLists.isEmpty ? "Nenhum Apple Reminder vencendo hoje." : "Nenhum Apple Reminder vencendo hoje nas listas observadas."
+    } else {
+        note = observedLists.isEmpty ? "Apple Reminders via EventKit." : "Apple Reminders via EventKit nas listas observadas."
+    }
+    emit(Output(strategy: "eventkit-local", status: "ok", authorization_status: authStatus, lists: visibleTitles, today: rendered, note: note, error: nil))
 }
 
 let args = CommandLine.arguments
 let action = args.dropFirst().first ?? "fetch"
 var timezoneName = "America/Sao_Paulo"
+let observedLists = parseObservedLists(Array(args.dropFirst()))
 if let idx = args.firstIndex(of: "--timezone"), args.indices.contains(idx + 1) {
     timezoneName = args[idx + 1]
 }
@@ -164,7 +203,7 @@ switch action {
 case "auth":
     runAuth()
 case "fetch":
-    runFetch(timezoneName: timezoneName)
+    runFetch(timezoneName: timezoneName, observedLists: observedLists)
 default:
-    emit(Output(status: "error", authorization_status: authorizationStatusString(), lists: [], today: [], note: nil, error: "acao desconhecida"))
+    emit(Output(strategy: "eventkit-local", status: "error", authorization_status: authorizationStatusString(), lists: [], today: [], note: nil, error: "acao desconhecida"))
 }

@@ -19,7 +19,11 @@ from prumo_runtime.constants import (
     SCHEMA_VERSION,
     repo_root_from,
 )
-from prumo_runtime.apple_reminders import apple_reminders_summary, render_apple_reminders_json
+from prumo_runtime.apple_reminders import (
+    apple_reminders_summary,
+    render_apple_reminders_json,
+    render_apple_reminders_snapshot_json,
+)
 from prumo_runtime import templates
 from prumo_runtime.google_integration import google_integration_summary, render_google_integration_json
 
@@ -106,6 +110,7 @@ def render_files(config: WorkspaceConfig) -> dict[str, str]:
         "_state/briefing-state.json": templates.render_briefing_state_json(),
         "_state/google-integration.json": render_google_integration_json(config.workspace),
         "_state/apple-reminders-integration.json": render_apple_reminders_json(),
+        "_state/apple-reminders-snapshot.json": render_apple_reminders_snapshot_json(),
         "Inbox4Mobile/_processed.json": templates.render_inbox_processed_json(),
     }
 

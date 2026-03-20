@@ -67,6 +67,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Conectar Apple Reminders localmente via EventKit (macOS)",
     )
     auth_apple.add_argument("--workspace", required=True, help="Caminho do workspace")
+    auth_apple.add_argument(
+        "--list",
+        dest="observe_lists",
+        action="append",
+        help="Lista de lembretes a observar. Pode repetir a flag; sem isso, tenta ver tudo e sofre por isso.",
+    )
     auth_apple.set_defaults(handler=run_auth_apple_reminders)
 
     migrate = subparsers.add_parser("migrate", help="Adotar um workspace legado no trilho novo")

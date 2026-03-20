@@ -271,6 +271,8 @@ Guardrails:
 1. auth local no macOS pode entrar antes da coleta completa;
 2. se o fetch diário falhar ou ficar lento, isso vira estado explícito no briefing, não sumiço silencioso;
 3. Apple Reminders nesta fase é trilho experimental, não cobertura prometida como se já estivesse estável.
+4. listas observadas configuráveis entram antes de qualquer ambição multi-lista “mágica”;
+5. cache local de Apple Reminders deixa de ser luxo e passa a ser requisito mínimo de sanidade operacional.
 
 ### 5.7. `prumo context-dump`
 
