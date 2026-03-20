@@ -23,6 +23,7 @@ from prumo_runtime.workspace import WorkspaceError, load_json, now_iso
 GOOGLE_CALENDAR_EVENTS_URL = "https://www.googleapis.com/calendar/v3/calendars/primary/events"
 GOOGLE_GMAIL_MESSAGES_URL = "https://gmail.googleapis.com/gmail/v1/users/me/messages"
 GOOGLE_TASKLISTS_URL = "https://tasks.googleapis.com/tasks/v1/users/@me/lists"
+GOOGLE_TASKS_LIST_BASE_URL = "https://tasks.googleapis.com/tasks/v1/lists"
 LOW_SIGNAL_SENDER_RE = re.compile(
     r"(no-?reply|newsletter|notifications?|google alerts|medium daily digest|substack|beehiiv|mailchimp|noreply)",
     re.IGNORECASE,
@@ -236,8 +237,9 @@ def fetch_tasks_today(
     timezone_name: str,
     profile: str,
 ) -> list[str]:
-    base_url = os.environ.get("PRUMO_GOOGLE_TASKLISTS_URL", GOOGLE_TASKLISTS_URL).strip()
-    tasklists_payload = google_api_get_json(base_url, access_token)
+    tasklists_url = os.environ.get("PRUMO_GOOGLE_TASKLISTS_URL", GOOGLE_TASKLISTS_URL).strip()
+    tasks_base_url = os.environ.get("PRUMO_GOOGLE_TASKS_LIST_BASE_URL", GOOGLE_TASKS_LIST_BASE_URL).strip()
+    tasklists_payload = google_api_get_json(tasklists_url, access_token)
     tasklists = tasklists_payload.get("items", []) or []
     tz = ZoneInfo(timezone_name)
     today = datetime.now(tz).date()
@@ -258,7 +260,7 @@ def fetch_tasks_today(
         }
         tasks_url = google_api_path(
             f"{urllib.parse.quote(tasklist_id, safe='')}/tasks?{urllib.parse.urlencode(params)}",
-            base_url,
+            tasks_base_url,
         )
         tasks_payload = google_api_get_json(tasks_url, access_token)
         for item in tasks_payload.get("items", []) or []:

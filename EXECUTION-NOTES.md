@@ -26,6 +26,22 @@ Deixar isso sem nome seria vender um briefing aparentemente completo com um bura
 3. quando não tiver, avisar no `snapshot-refresh` e no `briefing` que alguns lembretes do Google podem ficar de fora;
 4. não deixar a falta desse escopo derrubar a integração inteira.
 
+## 2026-03-20 — O Google não estava errado; a URL é que estava bêbada
+
+### Descoberta
+
+Depois da reauth com `tasks.readonly`, a `Tasks API` ainda falhava. O erro real mostrou `404` em uma rota montada como `/users/@me/lists/{id}/tasks`. Em bom português: o problema não era escopo, nem a API desligada. Era endpoint errado do nosso lado.
+
+### Por que importa
+
+Sem esse diagnóstico, o produto continuaria mandando o usuário reautenticar ou ativar API à toa. É o tipo de bug que não quebra tudo, só faz você perder tempo e confiança ao mesmo tempo.
+
+### Decisao
+
+1. corrigir a rota de tasks para `/tasks/v1/lists/{tasklist}/tasks`;
+2. endurecer o teste unitário para validar a URL exata;
+3. soltar isso como bugfix separado (`4.12.1`), em vez de fingir que o `4.12.0` já tinha nascido perfeito.
+
 ## 2026-03-19 — Runtime local antes do plugin
 
 ### Descoberta

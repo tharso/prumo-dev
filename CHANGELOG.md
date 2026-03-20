@@ -4,6 +4,12 @@ Este arquivo registra mudanças públicas do produto Prumo.
 
 O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamento semântico.
 
+## [4.12.1] - 2026-03-20
+
+### Fixed
+- A chamada da `Tasks API` estava usando a rota errada (`/users/@me/lists/{id}/tasks`) e recebia `404` com a convicção de quem acha que está certo. Agora usa a rota correta (`/lists/{id}/tasks`) e parou de culpar o Google por um tropeço nosso.
+- O teste unitário de `fetch_tasks_today()` ficou mais rígido e agora acusa URL torta em vez de deixar bug passar de fininho com crachá de sucesso.
+
 ## [4.12.0] - 2026-03-20
 
 ### Added

@@ -142,6 +142,7 @@ class GoogleApiParsingTests(unittest.TestCase):
         def fake_get_json(url: str, access_token: str, timeout: int = 20) -> dict:
             if url.endswith("/users/@me/lists"):
                 return {"items": [{"id": "lista-1", "title": "Lembretes"}]}
+            self.assertIn("/tasks/v1/lists/lista-1/tasks?", url)
             return {
                 "items": [
                     {"title": "Renovar Folha", "due": today.isoformat(), "status": "needsAction"},
