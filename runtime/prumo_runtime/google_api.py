@@ -22,6 +22,7 @@ from prumo_runtime.workspace import WorkspaceError, load_json, now_iso
 
 GOOGLE_CALENDAR_EVENTS_URL = "https://www.googleapis.com/calendar/v3/calendars/primary/events"
 GOOGLE_GMAIL_MESSAGES_URL = "https://gmail.googleapis.com/gmail/v1/users/me/messages"
+GOOGLE_TASKLISTS_URL = "https://tasks.googleapis.com/tasks/v1/users/@me/lists"
 LOW_SIGNAL_SENDER_RE = re.compile(
     r"(no-?reply|newsletter|notifications?|google alerts|medium daily digest|substack|beehiiv|mailchimp|noreply)",
     re.IGNORECASE,
@@ -34,6 +35,16 @@ ACTIONABLE_SUBJECT_RE = re.compile(
     r"(urgente|cancelad|cancelamento|erro|problema|faltando|verifica|verification|codigo|c[oó]digo|recovery|recupera|ajuste|confirm|deadline|prazo|falhou|failed|rejeitad|suspens|compra)",
     re.IGNORECASE,
 )
+LOW_SIGNAL_HINTS = (
+    "upgraded to a paid google cloud account",
+    "terms of service",
+    "billing profile",
+    "newsletter",
+    "daily digest",
+    "faturamento recebido",
+    "welcome to google cloud",
+)
+GOOGLE_TASKS_SCOPE = "https://www.googleapis.com/auth/tasks.readonly"
 
 
 def connected_google_profile(workspace: Path, preferred_profile: str | None = None) -> str | None:
@@ -152,6 +163,12 @@ def google_api_get_json(url: str, access_token: str, timeout: int = 20) -> dict:
         raise WorkspaceError(f"falha consultando Google API: HTTP {exc.code} {body}") from exc
 
 
+def google_api_path(path: str, base_url: str) -> str:
+    if base_url.endswith("/"):
+        return base_url + path.lstrip("/")
+    return base_url + "/" + path.lstrip("/")
+
+
 def format_event_time(item: dict, timezone_name: str) -> tuple[str, datetime]:
     start = item.get("start") or {}
     end = item.get("end") or {}
@@ -205,6 +222,65 @@ def fetch_calendar_events(access_token: str, timezone_name: str, profile: str) -
     return [item[1] for item in agenda_today], [item[1] for item in agenda_tomorrow]
 
 
+def parse_google_due_datetime(value: str, timezone_name: str) -> datetime | None:
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(ZoneInfo(timezone_name))
+    except ValueError:
+        return None
+
+
+def fetch_tasks_today(
+    access_token: str,
+    timezone_name: str,
+    profile: str,
+) -> list[str]:
+    base_url = os.environ.get("PRUMO_GOOGLE_TASKLISTS_URL", GOOGLE_TASKLISTS_URL).strip()
+    tasklists_payload = google_api_get_json(base_url, access_token)
+    tasklists = tasklists_payload.get("items", []) or []
+    tz = ZoneInfo(timezone_name)
+    today = datetime.now(tz).date()
+    rendered_items: list[tuple[datetime, str]] = []
+
+    for tasklist in tasklists[:10]:
+        if not isinstance(tasklist, dict):
+            continue
+        tasklist_id = str(tasklist.get("id") or "").strip()
+        if not tasklist_id:
+            continue
+        tasklist_title = str(tasklist.get("title") or "Lista").strip()
+        params = {
+            "showCompleted": "false",
+            "showHidden": "false",
+            "showDeleted": "false",
+            "maxResults": "20",
+        }
+        tasks_url = google_api_path(
+            f"{urllib.parse.quote(tasklist_id, safe='')}/tasks?{urllib.parse.urlencode(params)}",
+            base_url,
+        )
+        tasks_payload = google_api_get_json(tasks_url, access_token)
+        for item in tasks_payload.get("items", []) or []:
+            if not isinstance(item, dict):
+                continue
+            if str(item.get("status") or "").strip() == "completed":
+                continue
+            due_value = parse_google_due_datetime(str(item.get("due") or ""), timezone_name)
+            if due_value is None or due_value.date() != today:
+                continue
+            title = str(item.get("title") or "Tarefa sem titulo").strip()
+            rendered_items.append(
+                (
+                    due_value,
+                    f"dia inteiro | {profile} | [Tasks] {title} ({tasklist_title})",
+                )
+            )
+
+    rendered_items.sort(key=lambda pair: (pair[0], pair[1].lower()))
+    return [item[1] for item in rendered_items]
+
+
 def gmail_since_query(workspace: Path, timezone_name: str) -> str:
     state = load_json(workspace / "_state" / "briefing-state.json")
     last_briefing_at = str(state.get("last_briefing_at") or "").strip()
@@ -255,20 +331,38 @@ def is_actionable_subject(subject: str, snippet: str = "") -> bool:
     return bool(ACTIONABLE_SUBJECT_RE.search(haystack))
 
 
+def is_actionworthy_triage_item(value: str) -> bool:
+    lowered = value.lower()
+    if lowered.startswith("p1 |"):
+        return True
+    return not any(hint in lowered for hint in LOW_SIGNAL_HINTS)
+
+
 def compact_sender(sender: str) -> str:
     if "<" in sender:
         return sender.split("<", 1)[0].strip().strip('"') or sender
     return sender
 
 
-def fetch_gmail_triage(access_token: str, workspace: Path, timezone_name: str) -> tuple[int, list[str], list[str], list[str], str]:
+def fetch_gmail_triage(
+    access_token: str,
+    workspace: Path,
+    timezone_name: str,
+) -> tuple[int, list[str], list[str], list[str], str, str]:
     base_url = os.environ.get("PRUMO_GOOGLE_GMAIL_MESSAGES_URL", GOOGLE_GMAIL_MESSAGES_URL).strip()
     query = gmail_since_query(workspace, timezone_name)
     params = {"maxResults": "10", "q": query}
     listing = google_api_get_json(f"{base_url}?{urllib.parse.urlencode(params)}", access_token)
     messages = listing.get("messages", []) or []
     if not messages:
-        return 0, [], [], [], "Gmail API respondeu vazio; pelo menos desta vez foi vazio honesto."
+        return (
+            0,
+            [],
+            [],
+            [],
+            "Gmail API respondeu vazio; pelo menos desta vez foi vazio honesto.",
+            "Nenhum email novo.",
+        )
 
     view_items: list[str] = []
     no_action_items: list[str] = []
@@ -293,7 +387,8 @@ def fetch_gmail_triage(access_token: str, workspace: Path, timezone_name: str) -
             view_items.append(rendered)
 
     email_note = "email veio direto da Gmail API (triagem conservadora; melhor isso do que teatralidade confiante)."
-    return total, reply_items, view_items, no_action_items, email_note
+    email_display = "Email veio direto da Gmail API."
+    return total, reply_items, view_items, no_action_items, email_note, email_display
 
 
 def fetch_google_workspace_snapshot(
@@ -308,18 +403,45 @@ def fetch_google_workspace_snapshot(
 
     access_token, profile_payload = refresh_google_access_token(workspace, selected_profile, timezone_name)
     account_email = str(profile_payload.get("account_email") or "desconhecido")
+    scopes = list(profile_payload.get("scopes") or [])
 
     agenda_today, agenda_tomorrow = fetch_calendar_events(access_token, timezone_name, selected_profile)
-    emails_total, triage_reply, triage_view, triage_no_action, email_note = fetch_gmail_triage(
+    tasks_note = ""
+    if GOOGLE_TASKS_SCOPE in scopes:
+        try:
+            tasks_today = fetch_tasks_today(access_token, timezone_name, selected_profile)
+            agenda_today.extend(tasks_today)
+        except WorkspaceError as exc:
+            error_text = str(exc).lower()
+            if "http 403" in error_text or "insufficient" in error_text or "permission" in error_text:
+                tasks_note = (
+                    "Tasks API recusou acesso; alguns lembretes do Google ainda podem ficar de fora. "
+                    "Rode `prumo auth google --workspace ...` de novo se quiser alinhá-la."
+                )
+            else:
+                tasks_note = (
+                    "Tasks API respondeu torto; ignorei o tropeço para o briefing não virar teatro de desastre."
+                )
+    else:
+        tasks_note = (
+            "Tasks API ainda não está conectada neste perfil; alguns lembretes do Google podem ficar de fora. "
+            "Rode `prumo auth google --workspace ...` de novo para incluir isso."
+        )
+    emails_total, triage_reply, triage_view, triage_no_action, email_note, email_display = fetch_gmail_triage(
         access_token,
         workspace,
         timezone_name,
     )
 
+    agenda_note = "agenda veio direto da Google Calendar API."
+    if tasks_note:
+        agenda_note = f"{agenda_note} {tasks_note}"
+
     return {
         "status": "ok",
-        "note": "agenda veio direto da Google Calendar API.",
+        "note": agenda_note,
         "email_note": email_note,
+        "email_display": email_display,
         "source": "google-direct-api",
         "ok_profiles": 1,
         "profiles": {

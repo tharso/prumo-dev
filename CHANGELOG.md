@@ -4,6 +4,31 @@ Este arquivo registra mudanças públicas do produto Prumo.
 
 O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamento semântico.
 
+## [4.12.0] - 2026-03-20
+
+### Added
+- O runtime passou a incluir `Google Tasks API` no pacote de escopos padrão da integração Google. Não porque isso seja chique, mas porque lembrete que só existe no app do Google e some do briefing é um tipo bem específico de burrice.
+- Nova coleta de tarefas do dia via `Tasks API`, anexada ao snapshot direto quando o perfil já tiver o escopo necessário.
+- Novos testes unitários cobrindo a coleta de tarefas do dia e o comportamento do snapshot com e sem `tasks.readonly`.
+
+### Changed
+- O `snapshot-refresh` agora acusa explicitamente quando `Tasks API` ainda não está conectada no perfil ativo, em vez de fingir que a agenda está completa.
+- A agenda do briefing passa a incluir tarefas/lembretes do Google quando a integração estiver reautenticada com o escopo novo.
+
+### Fixed
+- A ausência de `Tasks API` deixou de derrubar ou confundir a integração inteira. Agora vira aviso claro, não apagão operacional.
+
+## [4.11.3] - 2026-03-20
+
+### Changed
+- A heurística de `sinal fraco` saiu do cabo de guerra entre `briefing.py` e `google_api.py` e passou a morar num lugar só. Menos chance de uma regra dizer “isso é ruído” enquanto a outra pede casamento.
+- A linha `Google:` do briefing agora mostra idade relativa do último refresh (`17h38 atrás`), em vez de exigir que o usuário faça conta de cabeça como se estivesse em prova de regra de três.
+- A seção `Emails` passou a separar melhor mensagem para gente e nota interna. O produto continua honesto, mas parou de soar como stack trace com boas maneiras.
+- O cache de agenda/snapshot também ganhou idade relativa humana no texto, porque `1057 min atrás` é linguagem de torno mecânico, não de produto.
+
+### Fixed
+- O smoke de Calendar/Gmail foi alinhado ao contrato novo do briefing e deixou de falhar por maiúscula ornamental.
+
 ## [4.11.2] - 2026-03-19
 
 ### Added

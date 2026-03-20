@@ -1,6 +1,6 @@
 # Prumo Core — Motor do sistema
 
-> **prumo_version: 4.11.2**
+> **prumo_version: 4.12.0**
 >
 > Este arquivo é o núcleo estável do Prumo.
 > Ele define regras, guardrails e a localização dos módulos canônicos.
@@ -281,8 +281,8 @@ Histórico completo de versão vive em `CHANGELOG.md`.
 
 Versão atual deste core:
 
-- `4.11.2`
+- `4.12.0`
 
 ---
 
-*Prumo Core v4.11.2 — https://github.com/tharso/prumo*
+*Prumo Core v4.12.0 — https://github.com/tharso/prumo*

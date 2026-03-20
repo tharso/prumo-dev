@@ -252,6 +252,8 @@ Guardrails:
 1. triagem de email nesta fase pode ser conservadora; melhor isso do que banca de adivinhacao;
 2. o briefing deve dizer de onde vieram agenda e email;
 3. se a fonte direta falhar, o runtime cai para cache ou snapshot dual em vez de fingir onisciencia.
+4. o briefing deve mostrar estado Google e idade do refresh sem obrigar o usuário a fazer conta de cabeça;
+5. notas internas de integração não devem vazar para a superfície do produto como se fossem texto final.
 
 ### 5.7. `prumo context-dump`
 
@@ -487,6 +489,7 @@ Escopo minimo desejado:
 6. manter tudo local, auditavel e desinstalavel sem levar embora dado do usuario.
 7. incluir Google Tasks API como proxima fonte formal para cobrir itens all-day que a `events.list` nao enxerga;
 8. tratar Reminders como fora de escopo ate aparecer uma rota menos pantanosa.
+9. tornar reauth de escopo novo (`tasks.readonly` e afins) explicito o bastante para o usuario nao precisar virar detetive do que sumiu no briefing.
 
 Nao objetivo:
 

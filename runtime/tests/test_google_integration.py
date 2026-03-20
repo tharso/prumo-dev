@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 from prumo_runtime.google_integration import (
     DEFAULT_GOOGLE_PROFILE,
+    DEFAULT_GOOGLE_SCOPES,
     default_google_integration_payload,
     google_integration_summary,
     load_google_integration,
@@ -24,6 +25,7 @@ class GoogleIntegrationTests(unittest.TestCase):
             self.assertEqual(payload["status"], "disconnected")
             self.assertEqual(payload["active_profile"], DEFAULT_GOOGLE_PROFILE)
             self.assertIn(DEFAULT_GOOGLE_PROFILE, payload["profiles"])
+            self.assertIn("https://www.googleapis.com/auth/tasks.readonly", DEFAULT_GOOGLE_SCOPES)
 
     def test_load_google_integration_merges_defaults_into_partial_payload(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

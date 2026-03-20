@@ -230,7 +230,7 @@ PYTHONPATH="$ROOT_DIR/runtime" python3 -m prumo_runtime briefing \
 
 grep -Fq "Levar Nina à escola" "$TMP_DIR/briefing.out" || fail "briefing nao usou eventos vindos da Calendar API"
 grep -Fq "agenda veio direto da Google Calendar API" "$TMP_DIR/briefing.out" || fail "briefing nao explicou a fonte da agenda"
-grep -Fq "email veio direto da Gmail API" "$TMP_DIR/briefing.out" || fail "briefing nao explicou a fonte do email"
+grep -Eq "Email veio direto da Gmail API|email veio direto da Gmail API" "$TMP_DIR/briefing.out" || fail "briefing nao explicou a fonte do email"
 grep -Fq "Ajuste urgente no site" "$TMP_DIR/briefing.out" || fail "briefing nao destacou email relevante vindo da Gmail API"
 
 echo "ok: local runtime google calendar smoke"

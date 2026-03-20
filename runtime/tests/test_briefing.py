@@ -8,13 +8,13 @@ from unittest.mock import patch
 
 from prumo_runtime.commands.briefing import (
     choose_proposal,
-    is_actionworthy_triage_item,
     load_snapshot_cache,
     resolve_snapshot_data,
     summarize_google_status,
     summarize_emails,
     write_snapshot_cache,
 )
+from prumo_runtime.google_api import is_actionworthy_triage_item
 
 
 class BriefingSnapshotTests(unittest.TestCase):
@@ -34,6 +34,7 @@ class BriefingSnapshotTests(unittest.TestCase):
                 "source": "google-direct-api",
                 "note": "fonte direta respondeu bem",
                 "email_note": "email veio direto da Gmail API",
+                "email_display": "Email veio direto da Gmail API.",
             }
             write_snapshot_cache(workspace, "America/Sao_Paulo", snapshot)
             payload = load_snapshot_cache(workspace, "America/Sao_Paulo")
@@ -42,6 +43,7 @@ class BriefingSnapshotTests(unittest.TestCase):
             self.assertEqual(payload["source"], "google-direct-api")
             self.assertIn("fonte direta respondeu bem", payload["note"])
             self.assertEqual(payload["email_note"], "email veio direto da Gmail API")
+            self.assertEqual(payload["email_display"], "Email veio direto da Gmail API.")
 
     @patch("prumo_runtime.commands.briefing.write_snapshot_cache")
     @patch("prumo_runtime.commands.briefing.fetch_google_workspace_snapshot")
@@ -60,10 +62,12 @@ class BriefingSnapshotTests(unittest.TestCase):
                 "source": "google-direct-api",
                 "note": "",
                 "email_note": "direto",
+                "email_display": "Direto.",
             }
             payload = resolve_snapshot_data(workspace, repo_root=None, refresh_snapshot=True)
             self.assertEqual(payload["source"], "google-direct-api")
             self.assertEqual(payload["email_note"], "direto")
+            self.assertEqual(payload["email_display"], "Direto.")
             self.assertIn("cached_at", payload)
             mock_write_cache.assert_called_once()
 
@@ -87,6 +91,7 @@ class BriefingSnapshotTests(unittest.TestCase):
                     "source": "google-direct-api",
                     "note": "cache decente",
                     "email_note": "cache email",
+                    "email_display": "Cache email.",
                 },
             )
             payload = resolve_snapshot_data(workspace, repo_root=None, refresh_snapshot=True)
@@ -110,6 +115,7 @@ class BriefingSnapshotTests(unittest.TestCase):
                 "profiles": {"pessoal": {"emails_total": 1}},
                 "note": "fallback ainda respirava.",
                 "email_note": "dual",
+                "email_display": "Fallback dual.",
                 "source": "google-dual-snapshot",
             }
             payload = resolve_snapshot_data(workspace, repo_root=None, refresh_snapshot=True)
@@ -141,6 +147,7 @@ class BriefingSnapshotTests(unittest.TestCase):
                     }
                 },
                 "email_note": "Gmail API respondeu vazio; pelo menos desta vez foi vazio honesto.",
+                "email_display": "Nenhum email novo.",
             }
         )
         self.assertIn("Nenhum email novo", rendered)
@@ -173,6 +180,7 @@ class BriefingSnapshotTests(unittest.TestCase):
             self.assertIn("conectado", rendered)
             self.assertIn("batata@example.com", rendered)
             self.assertIn("20:03", rendered)
+            self.assertRegex(rendered, r"(min atrás|h\d{2} atrás|h atrás)")
 
             (state_dir / "google-integration.json").write_text(
                 json.dumps(

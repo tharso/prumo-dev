@@ -9,6 +9,23 @@ Este arquivo guarda descobertas tecnicas que mudam a direcao do trabalho. Nao e 
 3. Microtestes, comandos triviais e tentativas sem valor duravel nao entram.
 4. Toda nota daqui deve ter espelho em issue relevante quando afetar roadmap ou execucao.
 
+## 2026-03-20 — Tasks entrou no radar certo
+
+### Descoberta
+
+O item all-day ausente no Google Calendar tinha cheiro de `Tasks/Reminders`, não de bug de hora ou fuso.
+
+### Por que importa
+
+Deixar isso sem nome seria vender um briefing aparentemente completo com um buraco conhecido no chão. É o tipo de honestidade criativa que só funciona até o primeiro tornozelo quebrado.
+
+### Decisao
+
+1. incluir `https://www.googleapis.com/auth/tasks.readonly` nos escopos padrão do runtime;
+2. coletar tarefas do dia via `Tasks API` quando o perfil já tiver o escopo;
+3. quando não tiver, avisar no `snapshot-refresh` e no `briefing` que alguns lembretes do Google podem ficar de fora;
+4. não deixar a falta desse escopo derrubar a integração inteira.
+
 ## 2026-03-19 — Runtime local antes do plugin
 
 ### Descoberta
@@ -261,5 +278,23 @@ Silencio operacional e so um bug que aprendeu etiqueta. Se o briefing nao disser
 2. `invalid_grant` e equivalentes marcam o perfil como `needs_reauth`;
 3. o briefing manda o usuario para `prumo auth google --workspace ...` quando necessario;
 4. email vazio vira mensagem humana (`Nenhum email novo...`), nao silencio constrangedor.
+
+Issue relacionada: [#41](https://github.com/tharso/prumo/issues/41)
+
+## 2026-03-20 — Transparencia de estado sem virar debug de elevador
+
+### Descoberta
+
+Depois do bloco `Google` entrar no briefing, apareceram dois exageros opostos: ou o produto ficava mudo, ou falava como log técnico de porão. Faltava a faixa do meio.
+
+### Por que importa
+
+Produto que explica pouco vira adivinhação. Produto que explica demais vira painel de servidor. O briefing precisa ser painel de controle, não confessionário da API.
+
+### Decisao
+
+1. idade do refresh e do cache passa a ser mostrada em linguagem humana;
+2. `email_display` e `email_note` se separam;
+3. a heurística de `sinal fraco` deixa de ficar duplicada em dois arquivos.
 
 Issue relacionada: [#41](https://github.com/tharso/prumo/issues/41)

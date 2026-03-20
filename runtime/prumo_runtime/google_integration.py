@@ -15,6 +15,7 @@ DEFAULT_GOOGLE_SCOPES = (
     "email",
     "https://www.googleapis.com/auth/calendar.readonly",
     "https://www.googleapis.com/auth/gmail.readonly",
+    "https://www.googleapis.com/auth/tasks.readonly",
 )
 KEYCHAIN_SERVICE_PREFIX = "me.prumo.google.oauth"
 UNSET = object()

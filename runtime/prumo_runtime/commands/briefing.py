@@ -10,7 +10,11 @@ from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 
 from prumo_runtime.constants import RUNTIME_VERSION, repo_root_from
-from prumo_runtime.google_api import connected_google_profile, fetch_google_workspace_snapshot
+from prumo_runtime.google_api import (
+    connected_google_profile,
+    fetch_google_workspace_snapshot,
+    is_actionworthy_triage_item,
+)
 from prumo_runtime.google_integration import google_integration_summary
 from prumo_runtime.workspace import (
     build_config_from_existing,
@@ -116,6 +120,16 @@ def age_in_minutes(value: str | None, timezone_name: str) -> int | None:
         return None
     now = datetime.now(ZoneInfo(timezone_name))
     return max(0, int((now - dt_value).total_seconds() // 60))
+
+
+def humanize_age_minutes(age_minutes: int | None) -> str | None:
+    if age_minutes is None:
+        return None
+    if age_minutes < 60:
+        return f"{age_minutes} min atrás"
+    hours = age_minutes // 60
+    minutes = age_minutes % 60
+    return f"{hours}h{minutes:02d} atrás" if minutes else f"{hours}h atrás"
 
 
 def short_clock(value: str | None, timezone_name: str) -> str | None:
@@ -315,9 +329,10 @@ def load_snapshot_cache(workspace: Path, timezone_name: str) -> dict | None:
     cached_note = str(payload.get("note") or "").strip()
     source = str(payload.get("source") or "google-dual-snapshot")
     base_label = "snapshot dual" if source == "google-dual-snapshot" else "snapshot"
+    human_age = humanize_age_minutes(age)
     cache_prefix = (
-        f"{base_label} reaproveitado do cache local ({age} min atrás)"
-        if age is not None
+        f"{base_label} reaproveitado do cache local ({human_age})"
+        if human_age is not None
         else f"{base_label} reaproveitado do cache local"
     )
     payload["status"] = "cache"
@@ -338,6 +353,7 @@ def write_snapshot_cache(workspace: Path, timezone_name: str, snapshot: dict) ->
         "source": "google-dual-snapshot",
         "note": snapshot.get("note", ""),
         "email_note": snapshot.get("email_note", ""),
+        "email_display": snapshot.get("email_display", ""),
     }
     if snapshot.get("source"):
         payload["source"] = snapshot["source"]
@@ -393,6 +409,7 @@ def resolve_snapshot_data(
                 "status": "error",
                 "note": f"Google API falhou ({exc})",
                 "email_note": "email direto via Gmail API ainda nao entrou; briefing segue sem isso por enquanto.",
+                "email_display": "Nenhum email novo por enquanto.",
                 "profiles": {},
                 "ok_profiles": 0,
                 "source": "google-direct-api",
@@ -505,26 +522,11 @@ def compact_triage_item(value: str) -> str:
     return value
 
 
-def is_actionworthy_triage_item(value: str) -> bool:
-    lowered = value.lower()
-    if lowered.startswith("p1 |"):
-        return True
-    low_signal_hints = (
-        "upgraded to a paid google cloud account",
-        "terms of service",
-        "billing profile",
-        "newsletter",
-        "daily digest",
-        "faturamento recebido",
-        "welcome to google cloud",
-    )
-    return not any(hint in lowered for hint in low_signal_hints)
-
-
 def summarize_emails(snapshot: dict) -> str:
     email_note = snapshot.get("email_note")
+    email_display = snapshot.get("email_display")
     if snapshot.get("ok_profiles", 0) == 0:
-        note = email_note or snapshot.get("note") or "Sem email consolidado via snapshot local."
+        note = email_display or email_note or snapshot.get("note") or "Sem email consolidado via snapshot local."
         return note
 
     total = 0
@@ -538,8 +540,8 @@ def summarize_emails(snapshot: dict) -> str:
         no_action += len(profile.get("triage_no_action", []))
 
     if total == 0:
-        note = email_note or "Gmail API respondeu vazio; pelo menos desta vez foi vazio honesto."
-        return f"Nenhum email novo desde a ultima janela. {note}"
+        display = email_display or "Nenhum email novo."
+        return f"{display} {email_note}".strip() if email_note else display
 
     highlights = [compact_triage_item(item) for item in (reply + view)[:3]]
     parts = [
@@ -550,7 +552,9 @@ def summarize_emails(snapshot: dict) -> str:
     ]
     if highlights:
         parts.append("Destaques: " + "; ".join(highlights))
-    if email_note:
+    if email_display:
+        parts.append(email_display)
+    elif email_note:
         parts.append(email_note)
     elif snapshot.get("status") == "cache":
         note = snapshot.get("note")
@@ -564,13 +568,18 @@ def summarize_google_status(workspace: Path, timezone_name: str) -> str:
     status = str(google.get("active_profile_status") or google.get("status") or "disconnected")
     account = str(google.get("active_account_email") or "").strip()
     last_refresh = short_clock(str(google.get("active_last_refresh_at") or ""), timezone_name)
+    last_refresh_age = age_in_minutes(str(google.get("active_last_refresh_at") or ""), timezone_name)
     last_auth = short_clock(str(google.get("active_last_authenticated_at") or ""), timezone_name)
     last_error = str(google.get("active_last_error") or "").strip()
 
     if status == "connected":
         who = account or str(google.get("active_profile") or "perfil ativo")
         if last_refresh:
-            return f"conectado ({who}, ultimo refresh {last_refresh})"
+            age_suffix = ""
+            human_age = humanize_age_minutes(last_refresh_age)
+            if human_age:
+                age_suffix = f", {human_age}"
+            return f"conectado ({who}, ultimo refresh {last_refresh}{age_suffix})"
         if last_auth:
             return f"conectado ({who}, auth {last_auth})"
         return f"conectado ({who})"
