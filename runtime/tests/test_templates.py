@@ -12,6 +12,7 @@ class TemplateAdapterTests(unittest.TestCase):
         self.assertIn("rode `prumo`", rendered)
         self.assertIn("prumo briefing --workspace . --refresh-snapshot", rendered)
         self.assertIn("prumo start --format json", rendered)
+        self.assertIn("adapter_hints", rendered)
 
     def test_agent_md_mentions_host_invocation_rules(self) -> None:
         rendered = templates.render_agent_md(
@@ -23,3 +24,4 @@ class TemplateAdapterTests(unittest.TestCase):
         self.assertIn('Se o usuário chamar "Prumo"', rendered)
         self.assertIn("host deve rodar `prumo`", rendered)
         self.assertIn("prumo briefing --workspace . --refresh-snapshot", rendered)
+        self.assertIn("adapter_hints", rendered)

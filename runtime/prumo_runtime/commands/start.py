@@ -18,6 +18,7 @@ from prumo_runtime.workspace import (
 LEGACY_MARKERS = ("CLAUDE.md", "PRUMO-CORE.md", "PAUTA.md", "INBOX.md", "REGISTRO.md")
 DEFAULT_GOOGLE_CLIENT_SECRETS = Path("~/Documents/_secrets/prumo/google-oauth-client.json").expanduser()
 DEFAULT_DISCOVERY_DEPTH = 8
+ADAPTER_CONTRACT_VERSION = "2026-03-21"
 
 
 def _shell_action(action_id: str, label: str, shell_command: str) -> dict[str, str]:
@@ -83,6 +84,14 @@ def _discover_workspace_from_cwd() -> Path:
         if _has_runtime_identity(candidate) or _looks_legacy(candidate):
             return candidate
     return current
+
+
+def _workspace_resolution_source(explicit_workspace: str | None, workspace: Path) -> str:
+    if explicit_workspace:
+        return "explicit"
+    if workspace == Path.cwd().resolve():
+        return "cwd"
+    return "parent-discovery"
 
 
 def _pauta_candidates(workspace: Path) -> tuple[list[str], list[str]]:
@@ -212,6 +221,31 @@ def _build_actions(workspace: Path, overview: dict) -> list[dict[str, str]]:
     return ordered[:6]
 
 
+def _build_adapter_hints(workspace: Path) -> dict[str, object]:
+    workspace_str = str(workspace)
+    return {
+        "contract_version": ADAPTER_CONTRACT_VERSION,
+        "short_invocations": ["Prumo", "bom dia, Prumo"],
+        "preferred_entrypoint": {
+            "kind": "shell",
+            "shell_command": "prumo",
+        },
+        "briefing_entrypoint": {
+            "kind": "shell",
+            "shell_command": f"prumo briefing --workspace {workspace_str} --refresh-snapshot",
+        },
+        "structured_entrypoint": {
+            "kind": "shell",
+            "shell_command": f"prumo start --workspace {workspace_str} --format json",
+        },
+        "behavior": {
+            "short_invocation": "run preferred_entrypoint",
+            "explicit_briefing": "run briefing_entrypoint",
+            "structured_actions": "prefer structured_entrypoint and obey actions[].kind",
+        },
+    }
+
+
 def _render_text_for_missing_workspace(workspace: Path) -> str:
     workspace_str = str(workspace)
     return "\n".join(
@@ -333,13 +367,19 @@ def run_start(args) -> int:
         raise
 
     payload = {
+        "adapter_contract_version": ADAPTER_CONTRACT_VERSION,
         "workspace_path": str(workspace),
+        "workspace_resolution": {
+            "source": _workspace_resolution_source(getattr(args, "workspace", None), workspace),
+            "path": str(workspace),
+        },
         "user_name": overview["user_name"],
         "runtime_version": overview["runtime_version"],
         "core_version": overview["core_version"],
         "google_status": overview["google_integration"]["active_profile_status"],
         "apple_reminders_status": overview["apple_reminders"]["status"],
         "missing": overview["missing"],
+        "adapter_hints": _build_adapter_hints(workspace),
         "actions": _build_actions(workspace, overview),
         "message": _render_start_text(workspace, overview),
     }

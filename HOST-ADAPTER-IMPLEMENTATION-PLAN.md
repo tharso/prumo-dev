@@ -227,6 +227,9 @@ Campos importantes do JSON:
 
 1. `kind = shell` -> executar `shell_command`
 2. `kind = host-prompt` -> usar `host_prompt` como continuação guiada
+3. `adapter_contract_version` -> saber se o adapter já entende o contrato atual ou se está lendo jornal velho
+4. `workspace_resolution` -> saber se o runtime inferiu o workspace ou recebeu caminho explícito
+5. `adapter_hints` -> parar de adivinhar entrada curta, briefing explícito e rota estruturada
 
 O adapter não deve:
 
@@ -314,7 +317,8 @@ Um host será considerado "no trilho" quando:
 2. o host encaminhar isso para `prumo start` ou `prumo`;
 3. o host não improvisar briefing por conta própria;
 4. o host conseguir executar `prumo briefing --workspace . --refresh-snapshot` quando o pedido for explícito;
-5. quando consumir JSON, respeitar `kind`, `shell_command` e `host_prompt`.
+5. quando consumir JSON, respeitar `kind`, `shell_command` e `host_prompt`;
+6. quando consumir JSON, também ler `adapter_contract_version`, `workspace_resolution` e `adapter_hints` em vez de improvisar.
 
 Um host não será considerado pronto só porque:
 

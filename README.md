@@ -2,7 +2,7 @@
 
 **Sistema de organização de vida pessoal com IA.**
 
-Versão atual: **4.15.3**
+Versão atual: **4.15.4**
 
 Prumo é um plugin de IA que transforma o Claude, Codex ou Gemini em interface única para capturar, processar, lembrar e cobrar tudo que acontece na sua vida. Trabalho, filhos, contas, saúde, ideias — tudo entra pelo mesmo lugar.
 
@@ -15,6 +15,8 @@ O contrato de invocação do produto agora também está explícito em [INVOCATI
 O próximo bloco operacional também já foi explicitado em [HOST-ADAPTER-IMPLEMENTATION-PLAN.md](/Users/tharsovieira/Documents/DailyLife/Prumo/HOST-ADAPTER-IMPLEMENTATION-PLAN.md). O ponto central ali é simples: mesma família de modelo não significa mesmo host. `Cowork` e `Claude Code` são adapters diferentes. `Gemini CLI` e `Antigravity` também.
 
 Esse plano agora também inclui um mapa de documentação oficial por host, porque desenhar adapter sem saber onde a documentação é sólida e onde ela é rala é um jeito elegante de construir ponte em neblina.
+
+O runtime também passou a carregar, em `prumo start --format json`, metadados explícitos para adapter (`adapter_contract_version`, `workspace_resolution`, `adapter_hints`). Traduzindo: o host já não precisa bancar médium para descobrir qual porta usar.
 
 Para email e agenda multi-conta, o fluxo preferencial agora usa snapshots privados no Google Drive gerados por Google Apps Script e gravados como Google Docs com JSON texto. O motor do Prumo também saiu do formato armário de acumulador: o core agora é índice + guardrails, com procedimento detalhado em módulos canônicos. E a sanitização deixou de ser só “compactar handover”: o sistema agora já consegue arquivar frio seguro com índice global, sem brincar de sumiço.
 

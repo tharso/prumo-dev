@@ -61,6 +61,10 @@ Um adapter fino deve:
 7. ao consumir `prumo start --format json`, obedecer ao campo `kind`:
    - `shell`: executar `shell_command`;
    - `host-prompt`: usar `host_prompt` como próxima ação/fala do host.
+8. ao consumir `prumo start --format json`, usar também:
+   - `adapter_contract_version` para detectar mudança de contrato;
+   - `workspace_resolution` para saber se o runtime inferiu o workspace ou recebeu caminho explícito;
+   - `adapter_hints.preferred_entrypoint`, `briefing_entrypoint` e `structured_entrypoint` para parar de adivinhar qual porta usar em cada intenção.
 
 Um adapter fino não deve:
 

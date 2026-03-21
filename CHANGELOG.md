@@ -4,6 +4,15 @@ Este arquivo registra mudanças públicas do produto Prumo.
 
 O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamento semântico.
 
+## [4.15.4] - 2026-03-21
+
+### Changed
+- `prumo start --format json` agora expõe `adapter_contract_version`, `workspace_resolution` e `adapter_hints`, para o adapter parar de jogar tarô em cima do runtime.
+- Os wrappers gerados do workspace (`AGENT.md`, `CLAUDE.md`, `AGENTS.md`) agora dizem explicitamente que host bom lê esses metadados antes de inventar moda.
+
+### Docs
+- O contrato de invocação e o plano de adapters foram alinhados a esse JSON mais explícito, porque chamar isso de "detalhe de implementação" seria um ótimo jeito de quebrar cinco hosts ao mesmo tempo.
+
 ## [4.15.3] - 2026-03-20
 
 ### Changed

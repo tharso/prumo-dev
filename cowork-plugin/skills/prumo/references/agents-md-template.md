@@ -20,7 +20,8 @@ INÍCIO DO TEMPLATE:
 1. Se o usuário disser "Prumo", "bom dia, Prumo" ou equivalente, rode `prumo`.
 2. Se o pedido for briefing explícito, rode `prumo briefing --workspace . --refresh-snapshot`.
 3. Se o host souber renderizar ações, prefira `prumo start --format json`.
-4. Não invente setup, migrate, repair ou auth na unha. Deixe o runtime decidir o primeiro passo.
+4. Se usar JSON, leia `adapter_hints` e respeite `kind`, `shell_command` e `host_prompt`.
+5. Não invente setup, migrate, repair ou auth na unha. Deixe o runtime decidir o primeiro passo.
 
 ## Instruções primárias
 

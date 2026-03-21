@@ -157,6 +157,27 @@ As duas leituras são preguiçosas.
 3. tratar `Cowork` e `Antigravity` como superfícies que ainda pedem validação prática mais pesada;
 4. não usar a pobreza documental de um host como desculpa para empastar a execução dos outros.
 
+## 2026-03-21 — Adapter bom não adivinha contrato; ele recebe pista no JSON
+
+### Descoberta
+
+Mesmo com `kind`, `shell_command` e `host_prompt`, o JSON do `start` ainda deixava o adapter preencher lacunas por conta própria:
+
+1. ele não dizia se o workspace foi inferido ou passado;
+2. ele não dizia qual versão do contrato o host estava lendo;
+3. ele ainda esperava que cada adapter redescobrisse a porta curta, o briefing explícito e a rota estruturada.
+
+### Por que importa
+
+Sem esses metadados, o adapter fica sempre um pouco esperto demais para o próprio bem. E adapter "esperto" é como porteiro que decide alterar o endereço do convidado porque achou o mapa feio.
+
+### Decisao
+
+1. incluir `adapter_contract_version` no `prumo start --format json`;
+2. incluir `workspace_resolution`;
+3. incluir `adapter_hints` com entrada curta, briefing explícito e rota estruturada;
+4. documentar isso no contrato e no plano de adapters antes que cada host volte a inventar sua própria religião.
+
 ## 2026-03-20 — O runtime funcionava; o instalador é que ainda vivia em 2019
 
 ### Descoberta

@@ -56,6 +56,7 @@ def render_agent_md(
 4. Se o usuário chamar "Prumo", "bom dia, Prumo" ou equivalente, o host deve rodar `prumo` no diretório do workspace.
 5. Se o pedido for briefing explícito, o host pode rodar `prumo briefing --workspace . --refresh-snapshot`.
 6. Se o host conseguir renderizar ações próprias, preferir `prumo start --format json` em vez de reinventar onboarding na unha.
+7. Ao consumir JSON estruturado, o host deve ler `adapter_contract_version`, `workspace_resolution` e `adapter_hints` antes de bancar o esperto.
 """
 
 
@@ -70,7 +71,8 @@ def render_claude_wrapper(user_name: str, agent_name: str) -> str:
 1. Se o usuário disser "Prumo", "bom dia, Prumo" ou equivalente, rode `prumo`.
 2. Se o pedido for briefing explícito, rode `prumo briefing --workspace . --refresh-snapshot`.
 3. Se o host souber trabalhar com JSON, prefira `prumo start --format json`.
-4. Não invente setup, migrate, repair ou auth por conta própria. O runtime já sabe dirigir.
+4. Se usar JSON, leia `adapter_hints` e respeite `kind`, `shell_command` e `host_prompt`.
+5. Não invente setup, migrate, repair ou auth por conta própria. O runtime já sabe dirigir.
 
 ## Instrução primária
 
@@ -93,7 +95,8 @@ def render_agents_wrapper(user_name: str, agent_name: str) -> str:
 1. Se o usuário disser "Prumo", "bom dia, Prumo" ou equivalente, rode `prumo`.
 2. Se o pedido for briefing explícito, rode `prumo briefing --workspace . --refresh-snapshot`.
 3. Se o host souber renderizar ações, prefira `prumo start --format json`.
-4. Não reinvente setup, migrate, repair ou auth. Deixe o runtime tomar a primeira decisão.
+4. Se usar JSON, leia `adapter_hints` e respeite `kind`, `shell_command` e `host_prompt`.
+5. Não reinvente setup, migrate, repair ou auth. Deixe o runtime tomar a primeira decisão.
 
 ## Instrução primária
 
