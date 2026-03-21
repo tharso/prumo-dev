@@ -12,6 +12,7 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ### Docs
 - O contrato de invocação e o plano de adapters foram alinhados a esse JSON mais explícito, porque chamar isso de "detalhe de implementação" seria um ótimo jeito de quebrar cinco hosts ao mesmo tempo.
+- Novo [CODEX-ADAPTER-PLAYBOOK.md](/Users/tharsovieira/Documents/DailyLife/Prumo/CODEX-ADAPTER-PLAYBOOK.md) fixando, sem misticismo, o que significa dizer que o Codex é o primeiro adapter implementado.
 
 ## [4.15.3] - 2026-03-20
 

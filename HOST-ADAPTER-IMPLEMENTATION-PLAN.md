@@ -251,6 +251,10 @@ Motivo:
 3. lê os wrappers do workspace;
 4. reduz atrito para validar adapter fino sem depender do circo de plugin do Cowork.
 
+Playbook operacional:
+
+1. [CODEX-ADAPTER-PLAYBOOK.md](/Users/tharsovieira/Documents/DailyLife/Prumo/CODEX-ADAPTER-PLAYBOOK.md)
+
 Objetivo:
 
 1. consolidar `Codex` como primeiro adapter implementado;

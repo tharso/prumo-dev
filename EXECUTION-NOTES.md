@@ -178,6 +178,22 @@ Sem esses metadados, o adapter fica sempre um pouco esperto demais para o própr
 3. incluir `adapter_hints` com entrada curta, briefing explícito e rota estruturada;
 4. documentar isso no contrato e no plano de adapters antes que cada host volte a inventar sua própria religião.
 
+## 2026-03-21 — Primeiro adapter implementado sem playbook é só promessa bem penteada
+
+### Descoberta
+
+Depois de estabilizar o contrato e o JSON do `start`, o projeto ainda corria um risco besta:
+
+1. todo mundo repetir "Codex é o primeiro adapter implementado";
+2. ninguém deixar escrito o que isso quer dizer na prática;
+3. seis dias depois, cada pessoa reimplementar o mesmo ritual com sotaque próprio.
+
+### Decisao
+
+1. criar um playbook operacional do adapter `Codex`;
+2. linkar esse playbook no plano host-by-host;
+3. tratar isso como trilho de execução, não como favoritismo de host.
+
 ## 2026-03-20 — O runtime funcionava; o instalador é que ainda vivia em 2019
 
 ### Descoberta
