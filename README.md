@@ -30,8 +30,9 @@ O retrato de campo dos hosts, hoje, ficou assim:
 
 1. `Codex` já passou como primeiro adapter implementado.
 2. `Claude Code` passou no shell explícito, mas ainda tropeça na invocação curta e no TCC de `Apple Reminders`.
-3. `Gemini CLI` foi reprovado como adapter porque tentou improvisar runtime e até mexeu em `_state/`.
-4. `Antigravity` foi melhor que o `Gemini CLI`: usou o runtime de verdade, mas ainda tropeça em disciplina de execução e continua pendente em `Apple Reminders`.
+3. `Cowork` funciona como casca fina quando você manda rodar `prumo`, mas ainda falha na rota curta/nativa e continua vulnerável ao teatrinho plugin-first.
+4. `Gemini CLI` foi reprovado como adapter porque tentou improvisar runtime e até mexeu em `_state/`.
+5. `Antigravity` foi melhor que o `Gemini CLI`: usou o runtime de verdade, mas ainda tropeça em disciplina de execução e continua pendente em `Apple Reminders`.
 
 Para email e agenda multi-conta, o fluxo preferencial agora usa snapshots privados no Google Drive gerados por Google Apps Script e gravados como Google Docs com JSON texto. O motor do Prumo também saiu do formato armário de acumulador: o core agora é índice + guardrails, com procedimento detalhado em módulos canônicos. E a sanitização deixou de ser só “compactar handover”: o sistema agora já consegue arquivar frio seguro com índice global, sem brincar de sumiço.
 

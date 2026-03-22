@@ -84,6 +84,8 @@ Um adapter fino não deve:
 2. `/prumo:briefing` ou `/briefing` podem continuar tentando `briefing` por compatibilidade;
 3. se o bridge falhar com `12`, cair para o legado sem espetáculo;
 4. se falhar com outro código, avisar em uma linha curta e cair para o legado.
+5. o host não deve ler arquivo, puxar integração por fora nem escrever `_state/` só porque a rota curta falhou.
+6. se `Prumo` ou `/prumo` não conseguirem bater em `prumo`, isso é falha do adapter. Não é licença para montar um Prumo paralelo com fita crepe.
 
 ### Claude Code
 
@@ -110,3 +112,8 @@ Diremos que a invocação está no trilho certo quando:
 3. o runtime devolver a condução certa sem o host precisar brincar de gerente de aeroporto.
 
 Se o usuário ainda precisar decorar `prumo briefing --workspace ...` para ter valor, o motor pode até estar bom. A ignição ainda não está.
+
+Observação de campo:
+
+1. hoje, `Cowork` já provou valor como `shell-thin host`;
+2. hoje, `Cowork` ainda não provou valor como invocação curta/nativa confiável.

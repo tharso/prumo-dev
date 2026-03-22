@@ -288,6 +288,32 @@ Em português curto: já sabe usar a porta certa, mas ainda entra chutando um va
 2. endurecer o contrato textual contra comando extra não solicitado e repetição burra de comando inválido;
 3. manter `Apple Reminders` como pendência específica do app, não como bloqueio do roadmap.
 
+## 2026-03-22 — Cowork como shell fino é uma coisa; Cowork como rota curta é outra
+
+### Descoberta
+
+O teste de campo no `Cowork` escancarou uma distinção que estava fácil demais de maquiar:
+
+1. em rodadas anteriores, o host já tinha provado que consegue executar `prumo` quando o usuário dita o comando inteiro;
+2. ao receber só `Prumo`, porém, ele não bateu na porta do runtime;
+3. alegou que `prumo` não estava disponível;
+4. caiu em plugin/skill/fluxo legado;
+5. leu arquivos e atualizou `briefing-state.json` por fora.
+
+### Por que importa
+
+Sem registrar isso, o projeto corre o risco de chamar um meio-acerto de "adapter pronto".
+
+Não está pronto.
+
+`Cowork` já provou que serve como casca fina. Ainda não provou que consegue ser uma porta curta confiável.
+
+### Decisao
+
+1. registrar `Cowork` como host validado apenas em modo `shell-thin`;
+2. registrar a rota curta/nativa como falha atual do adapter;
+3. tratar qualquer volta ao fluxo plugin-first como regressão conceitual, não como fallback elegante.
+
 ## 2026-03-20 — O runtime funcionava; o instalador é que ainda vivia em 2019
 
 ### Descoberta

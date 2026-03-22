@@ -300,6 +300,19 @@ Objetivo:
 2. evitar reabrir o romance tóxico com plugin como motor;
 3. se `/prumo` existir, ele deve bater em `start` e não inventar outro Prumo dentro do host.
 
+Playbook operacional:
+
+1. [COWORK-ADAPTER-PLAYBOOK.md](/Users/tharsovieira/Documents/DailyLife/Prumo/COWORK-ADAPTER-PLAYBOOK.md)
+2. [COWORK-MARKETPLACE-PLAYBOOK.md](/Users/tharsovieira/Documents/DailyLife/Prumo/COWORK-MARKETPLACE-PLAYBOOK.md)
+
+Estado atual:
+
+1. `shell-thin` validado;
+2. invocação curta/nativa falhou;
+3. o host voltou a plugin/skill/fluxo legado quando recebeu `Prumo`;
+4. houve leitura de arquivo e escrita de `briefing-state.json` fora do runtime;
+5. o problema aqui não é falta de comando, e sim falta de disciplina de adapter.
+
 ### 6.4. Slice 4: Gemini CLI
 
 Motivo:
@@ -412,6 +425,11 @@ Risco principal:
 
 1. plugin/skill registry velho voltar a sequestrar a UX.
 
+Status de campo:
+
+1. bom como casca fina de shell;
+2. ruim como rota curta/nativa neste momento.
+
 ### 8.4. Gemini CLI
 
 Porta curta desejada:
@@ -451,7 +469,7 @@ Status de campo:
 
 1. `Codex` -> aprovado como primeiro adapter implementado.
 2. `Claude Code` -> shell explícito aprovado; invocação curta e `Apple Reminders` ainda pendentes.
-3. `Cowork` -> serve como casca fina quando executa `prumo`; ecossistema plugin-first continua pouco confiável.
+3. `Cowork` -> serve como casca fina quando executa `prumo`; invocação curta/nativa falhou e o ecossistema plugin-first continua pouco confiável.
 4. `Gemini CLI` -> reprovado como adapter nesta rodada.
 5. `Antigravity` -> parcialmente validado; respeita o runtime, mas ainda tropeça em disciplina operacional.
 
@@ -481,5 +499,6 @@ A próxima ação recomendada é:
 3. só depois encostar de novo no `Cowork` como adapter fino;
 4. deixar `Gemini CLI` e `Antigravity` como próximos slices claros, não como promessa nebulosa.
 5. tratar `Antigravity` como host mais promissor do lado Gemini do que o `Gemini CLI`, sem transformar isso em atestado de maturidade precoce.
+6. manter `Cowork` oficialmente na categoria `shell-thin` até a invocação curta provar que consegue andar sem muleta de plugin.
 
 Se isso não ficar explícito agora, o projeto volta a confundir ecossistema de marca com superfície de execução. E isso seria como escolher marceneiro pela cor do caminhão.
