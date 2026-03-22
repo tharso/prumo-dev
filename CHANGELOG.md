@@ -11,6 +11,7 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 - `prumo briefing` agora aceita `--format json`, porque alguns hosts claramente precisavam de uma porta estruturada oficial em vez de continuar batendo a cabeça na mesma flag inválida.
 
 ### Docs
+- O playbook de `Antigravity` agora registra o reteste já com briefing estruturado oficial: a rota curta passou limpa, e o problema remanescente ficou mais honestamente concentrado em permissão por app.
 - O playbook de `Antigravity` agora registra o resultado real do teste de campo: bem melhor do que o `Gemini CLI`, ainda longe de comportamento impecável.
 - O plano de adapters agora fecha uma fotografia curta dos hosts já testados, o que evita transformar memória recente em lenda oral de corredor.
 - Novo [COWORK-ADAPTER-PLAYBOOK.md](/Users/tharsovieira/Documents/DailyLife/Prumo/COWORK-ADAPTER-PLAYBOOK.md), separando sem açúcar duas coisas que estavam se misturando: `Cowork` como casca fina de shell e `Cowork` como invocação curta/nativa.

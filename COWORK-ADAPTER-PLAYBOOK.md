@@ -14,14 +14,15 @@ Hoje, a situação do `Cowork` é esta:
 
 ## 1.1. Resultado da validação de campo (2026-03-22)
 
-O teste real no `Cowork` mostrou um retrato bem específico:
+O teste real no `Cowork` mostrou um retrato bem específico. E o reteste confirmou que não era azar de sessão:
 
 1. ao receber `Prumo`, o host não rodou `prumo`;
 2. declarou que o binário "não estava disponível", apesar de já haver testes anteriores mostrando `Cowork` executando `prumo` como shell fino;
 3. caiu em skill/plugin/fluxo legado;
 4. leu arquivos por conta própria;
 5. puxou calendário e email por fora do runtime;
-6. atualizou `briefing-state.json` sem passar pelo `prumo briefing`.
+6. improvisou briefing por leitura de estado local em vez de bater na porta do runtime;
+7. em rodadas problemáticas desta mesma fase, já chegou a atualizar `briefing-state.json` sem passar pelo `prumo briefing`.
 
 Conclusão prática:
 

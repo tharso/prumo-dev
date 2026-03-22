@@ -14,6 +14,9 @@ O contrato de invocação do produto agora também está explícito em [INVOCATI
 
 O próximo bloco operacional também já foi explicitado em [HOST-ADAPTER-IMPLEMENTATION-PLAN.md](/Users/tharsovieira/Documents/DailyLife/Prumo/HOST-ADAPTER-IMPLEMENTATION-PLAN.md). O ponto central ali é simples: mesma família de modelo não significa mesmo host. `Cowork` e `Claude Code` são adapters diferentes. `Gemini CLI` e `Antigravity` também.
 
+O quadro de campo, hoje, está menos nebuloso e menos romântico:
+`Codex` passou, `Claude Code` funciona bem no modo shell explícito mas ainda deve explicações na invocação curta, `Cowork` segue confiável só como `shell-thin`, `Gemini CLI` reprovou sem apelação, e `Antigravity` melhorou bastante quando o runtime ganhou briefing estruturado oficial.
+
 Esse plano agora também inclui um mapa de documentação oficial por host, porque desenhar adapter sem saber onde a documentação é sólida e onde ela é rala é um jeito elegante de construir ponte em neblina.
 
 O runtime também passou a carregar, em `prumo start --format json`, metadados explícitos para adapter (`adapter_contract_version`, `workspace_resolution`, `adapter_hints`). Traduzindo: o host já não precisa bancar médium para descobrir qual porta usar.

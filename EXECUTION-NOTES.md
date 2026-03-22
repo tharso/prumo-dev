@@ -337,6 +337,31 @@ Se vários porteiros tropeçam no mesmo degrau, talvez valha cimentar o degrau d
 2. anunciar essa rota no `start` via `adapter_hints`;
 3. alinhar wrappers e contrato de invocação para briefing estruturado explícito.
 
+## 2026-03-22 — Antigravity melhorou quando a porta ficou menos ambígua
+
+### Descoberta
+
+O reteste do `Antigravity`, já com `prumo briefing --workspace ... --refresh-snapshot --format json` documentado no runtime, foi substancialmente melhor:
+
+1. ao receber só `Prumo`, o host foi direto para `prumo start --format json`;
+2. devolveu a saída real do runtime, incluindo `briefing_structured_entrypoint`;
+3. não mostrou leitura de arquivos para improvisar briefing;
+4. não mostrou repetição da flag inválida nem comando extra saído do nada.
+
+### Por que importa
+
+Isso enfraquece uma desculpa preguiçosa que estava tentadora demais:
+
+1. nem todo host da família Gemini precisa se comportar como o `Gemini CLI`;
+2. parte do atrito anterior vinha, sim, de uma rota estruturada meio manca do nosso lado;
+3. quando a maçaneta ficou explícita, o `Antigravity` parou de tentar entrar pela janela.
+
+### Decisao
+
+1. registrar `Antigravity` como host validado para rota curta e uso do runtime;
+2. manter `Apple Reminders` como pendência específica do app;
+3. continuar observando disciplina de execução em conversas mais longas, sem rebaixar o host por reflexo traumático do `Gemini CLI`.
+
 ## 2026-03-20 — O runtime funcionava; o instalador é que ainda vivia em 2019
 
 ### Descoberta

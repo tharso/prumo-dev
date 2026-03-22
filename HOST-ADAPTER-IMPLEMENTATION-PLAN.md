@@ -471,7 +471,7 @@ Status de campo:
 2. `Claude Code` -> shell explícito aprovado; invocação curta e `Apple Reminders` ainda pendentes.
 3. `Cowork` -> serve como casca fina quando executa `prumo`; invocação curta/nativa falhou e o ecossistema plugin-first continua pouco confiável.
 4. `Gemini CLI` -> reprovado como adapter nesta rodada.
-5. `Antigravity` -> parcialmente validado; respeita o runtime, mas ainda tropeça em disciplina operacional.
+5. `Antigravity` -> validado para rota curta e uso do runtime; `Apple Reminders` ainda pendente por permissão por app e a disciplina operacional ainda merece vigilância.
 
 ## 9. Entregáveis deste novo bloco
 

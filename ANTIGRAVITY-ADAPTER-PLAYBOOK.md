@@ -15,24 +15,33 @@ Hoje, a situação do `Antigravity` é esta:
 3. o resultado foi melhor do que no `Gemini CLI`, mas ainda não limpo o bastante para carimbar sem ressalva;
 4. ele vem depois do `Gemini CLI`, não porque seja menos importante, mas porque a superfície é mais complexa.
 
-## 1.1. Resultado da validação de campo (2026-03-21)
+## 1.1. Resultado da validação de campo (2026-03-22)
 
-O teste real no `Antigravity` mostrou um retrato bem menos ruim do que o do `Gemini CLI`:
+O teste real no `Antigravity` já teve duas caras nesta rodada.
+
+Na primeira, o host mostrou bons instintos e maus modos:
 
 1. `Prumo` levou o host a executar `prumo start --format json`;
 2. o host também executou `prumo briefing --workspace . --refresh-snapshot` e `prumo context-dump --workspace ... --format json`;
 3. não houve leitura de arquivos para fingir runtime;
 4. não houve escrita manual em `_state/`;
 5. o host, porém, rodou comandos extras sem necessidade;
-6. insistiu em `prumo briefing --format json` mesmo depois de o erro deixar claro que essa flag não existe;
-7. chegou a tentar executar `a` como comando de shell, confundindo opção de menu com instrução operacional;
-8. `Apple Reminders` continuou em `denied/notDetermined`, então a integração local ainda não passou neste host.
+6. insistiu em `prumo briefing --format json` mesmo depois de o erro deixar claro que essa flag não existia;
+7. chegou a tentar executar `a` como comando de shell, confundindo opção de menu com instrução operacional.
+
+Depois que o runtime ganhou `prumo briefing --workspace ... --refresh-snapshot --format json`, o reteste ficou bem mais adulto:
+
+1. ao receber só `Prumo`, o host foi direto para `prumo start --format json`;
+2. devolveu a saída real do runtime, já com `briefing_structured_entrypoint`;
+3. não mostrou leitura de arquivos para improvisar resposta;
+4. não mostrou comandos extras ou repetição burra de flag inválida;
+5. `Apple Reminders` continuou em `denied/notDetermined`, então a integração local ainda não passou neste host.
 
 Conclusão prática:
 
-1. `Antigravity` está aprovado, por enquanto, como host que respeita o runtime melhor do que o `Gemini CLI`;
-2. `Antigravity` está pendente em disciplina de execução;
-3. `Antigravity` está pendente em `Apple Reminders` por permissão por app.
+1. `Antigravity` está aprovado, por enquanto, como host que respeita o runtime e a rota curta melhor do que o `Gemini CLI`;
+2. `Antigravity` melhorou materialmente depois da rota estruturada de briefing;
+3. `Antigravity` continua pendente em `Apple Reminders` por permissão por app.
 
 ## 2. Fontes oficiais que importam
 
@@ -68,9 +77,9 @@ Mas a validação aqui terá de olhar também:
 3. políticas de autonomia
 4. leitura de arquivos-guia do workspace
 
-E, depois do teste real, mais duas coisas:
+E, depois dos dois testes reais, mais duas coisas:
 
-5. se o host resiste à tentação de rodar comando extra só porque ficou animado;
+5. se o host mantém a disciplina quando a conversa se alonga, em vez de só se comportar no primeiro comando;
 6. se o host para depois de um erro explícito, em vez de repetir a mesma linha como papagaio elétrico.
 
 ## 5. Risco principal
@@ -83,10 +92,8 @@ O risco aqui é simples:
 
 ## 6. Próximo passo neste host
 
-1. tratar `Antigravity` como host parcialmente validado;
-2. endurecer o contrato textual contra dois vícios já vistos:
-   - rodar comando extra sem ser pedido;
-   - insistir em comando inválido depois de erro explícito;
+1. tratar `Antigravity` como host validado para rota curta e uso do runtime;
+2. manter vigilância sobre disciplina de execução em conversas mais longas;
 3. manter `Apple Reminders` como pendência específica deste app até o TCC se comportar como gente.
 
 ## 7. Checklist de aceite
@@ -97,6 +104,6 @@ Status atual do checklist:
 2. briefing explícito vira `prumo briefing --workspace . --refresh-snapshot` -> `SIM`
 3. `prumo start --format json` volta com estrutura íntegra e o host a respeita -> `SIM`
 4. o host não improvisa briefing fora do runtime -> `SIM`
-5. o host não executa comandos extras sem necessidade -> `NAO`
-6. o host não repete comando inválido depois de erro explícito -> `NAO`
+5. o host não executa comandos extras sem necessidade -> `PARCIAL`, porque o reteste melhorou, mas a primeira rodada deixou ficha corrida
+6. o host não repete comando inválido depois de erro explícito -> `PARCIAL`, pelo mesmo motivo
 7. `Apple Reminders` funciona no próprio app -> `NAO`
