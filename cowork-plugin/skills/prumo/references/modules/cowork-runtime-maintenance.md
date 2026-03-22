@@ -1,6 +1,6 @@
 # Cowork Runtime Maintenance
 
-> **module_version: 4.15.4**
+> **module_version: 4.15.5**
 >
 > Fonte canônica para instalação, diagnóstico e atualização do Prumo no Cowork.
 

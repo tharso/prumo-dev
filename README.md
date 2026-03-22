@@ -2,7 +2,7 @@
 
 **Sistema de organização de vida pessoal com IA.**
 
-Versão atual: **4.15.4**
+Versão atual: **4.15.5**
 
 Prumo é um plugin de IA que transforma o Claude, Codex ou Gemini em interface única para capturar, processar, lembrar e cobrar tudo que acontece na sua vida. Trabalho, filhos, contas, saúde, ideias — tudo entra pelo mesmo lugar.
 
@@ -17,6 +17,12 @@ O próximo bloco operacional também já foi explicitado em [HOST-ADAPTER-IMPLEM
 Esse plano agora também inclui um mapa de documentação oficial por host, porque desenhar adapter sem saber onde a documentação é sólida e onde ela é rala é um jeito elegante de construir ponte em neblina.
 
 O runtime também passou a carregar, em `prumo start --format json`, metadados explícitos para adapter (`adapter_contract_version`, `workspace_resolution`, `adapter_hints`). Traduzindo: o host já não precisa bancar médium para descobrir qual porta usar.
+
+E, agora, o `briefing` também fala JSON oficial quando o host precisar de estrutura em vez de prosa:
+
+```bash
+prumo briefing --workspace /caminho/do/workspace --refresh-snapshot --format json
+```
 
 O primeiro playbook host-específico também já existe: [CODEX-ADAPTER-PLAYBOOK.md](/Users/tharsovieira/Documents/DailyLife/Prumo/CODEX-ADAPTER-PLAYBOOK.md). Não porque o Codex seja "mais importante", mas porque alguém precisa ser o primeiro trilho asfaltado.
 
@@ -123,6 +129,7 @@ Importante, para não vender andaime como se já fosse varanda:
 5. se o host consumir `prumo start --format json`, deve tratar `shell_command` e `host_prompt` como coisas diferentes. Máquina que tenta executar conversa vira liquidificador sem tampa.
 6. se um comando falhar com erro explícito de uso, o host não deve repetir a mesma linha como se insistência fosse estratégia.
 7. host bom também não sai rodando comando extra por tédio ou por confiança demais.
+8. se quiser briefing estruturado, agora existe rota oficial. Inventar JSON na unha virou preguiça sem desculpa.
 
 Em português simples: agora estamos construindo o motor. A ignição universal vem logo depois.
 
@@ -146,7 +153,8 @@ Esses wrappers já não são só placa de "veja o balcão ao lado". Agora també
 
 1. se o usuário disser `Prumo`, o host deve rodar `prumo`;
 2. se o pedido for briefing explícito, o host pode rodar `prumo briefing --workspace . --refresh-snapshot`;
-3. se souber renderizar ações, melhor ainda: `prumo start --format json`.
+3. se precisar de briefing estruturado, o host pode rodar `prumo briefing --workspace . --refresh-snapshot --format json`;
+4. se souber renderizar ações, melhor ainda: `prumo start --format json`.
 
 E agora também deixa uma fundação decente para integrações:
 
@@ -328,7 +336,7 @@ Se o painel do app disser que atualizou, mas o plugin continuar em versão velha
 
 ## Versão
 
-Versão atual: `4.13.1`
+Versão atual: `4.15.5`
 
 ## Licença
 

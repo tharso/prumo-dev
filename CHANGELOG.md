@@ -4,16 +4,18 @@ Este arquivo registra mudanças públicas do produto Prumo.
 
 O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamento semântico.
 
-## [Unreleased]
+## [4.15.5] - 2026-03-22
 
 ### Changed
 - Os wrappers do workspace ficaram mais chatos com dois vícios que apareceram no campo: rodar comando extra sem necessidade e insistir na mesma linha depois de um erro explícito. Produto bom não precisa de tutor de obviedade, mas alguns hosts claramente ainda precisam.
+- `prumo briefing` agora aceita `--format json`, porque alguns hosts claramente precisavam de uma porta estruturada oficial em vez de continuar batendo a cabeça na mesma flag inválida.
 
 ### Docs
 - O playbook de `Antigravity` agora registra o resultado real do teste de campo: bem melhor do que o `Gemini CLI`, ainda longe de comportamento impecável.
 - O plano de adapters agora fecha uma fotografia curta dos hosts já testados, o que evita transformar memória recente em lenda oral de corredor.
 - Novo [COWORK-ADAPTER-PLAYBOOK.md](/Users/tharsovieira/Documents/DailyLife/Prumo/COWORK-ADAPTER-PLAYBOOK.md), separando sem açúcar duas coisas que estavam se misturando: `Cowork` como casca fina de shell e `Cowork` como invocação curta/nativa.
 - O contrato de invocação e as notas de execução agora registram explicitamente que o `Cowork` ainda falha na rota curta e não deve ganhar licença para improvisar runtime via plugin/skill quando isso acontecer.
+- `README.md`, wrappers e contrato de invocação agora também apontam a rota estruturada de briefing, para o host parar de achar que precisa inventar JSON em cima de prosa.
 
 ## [4.15.4] - 2026-03-21
 

@@ -3,23 +3,121 @@ from __future__ import annotations
 import json
 import tempfile
 import unittest
+from argparse import Namespace
+from contextlib import redirect_stdout
+import io
+import os
 from pathlib import Path
 from unittest.mock import patch
 
 from prumo_runtime.commands.briefing import (
+    build_briefing_payload,
     choose_proposal,
     enrich_snapshot_with_apple_reminders,
     load_snapshot_cache,
+    run_briefing,
     resolve_snapshot_data,
     summarize_apple_reminders_status,
     summarize_google_status,
     summarize_emails,
     write_snapshot_cache,
 )
+from prumo_runtime import __version__
 from prumo_runtime.google_api import is_actionworthy_triage_item
 
 
 class BriefingSnapshotTests(unittest.TestCase):
+    def test_build_briefing_payload_exposes_sections_and_proposal(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = Path(tmpdir)
+            state_dir = workspace / "_state"
+            inbox_dir = workspace / "Inbox4Mobile"
+            state_dir.mkdir(parents=True, exist_ok=True)
+            inbox_dir.mkdir(parents=True, exist_ok=True)
+            (workspace / "PAUTA.md").write_text(
+                "# Pauta\n\n## Quente (precisa de atenção agora)\n\n- Ajuste urgente no site\n\n"
+                "## Em andamento\n\n- Projeto X\n\n## Agendado / Lembretes\n\n- Revisão semanal\n",
+                encoding="utf-8",
+            )
+            (workspace / "INBOX.md").write_text("# Inbox\n\n_Inbox limpo._\n", encoding="utf-8")
+            (state_dir / "workspace-schema.json").write_text(
+                json.dumps(
+                    {
+                        "user_name": "Batata",
+                        "agent_name": "Prumo",
+                        "timezone": "America/Sao_Paulo",
+                        "briefing_time": "09:00",
+                        "files": {"generated": [], "authorial": [], "derived": []},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (workspace / "PRUMO-CORE.md").write_text(f"> **prumo_version: {__version__}**\n", encoding="utf-8")
+            (state_dir / "briefing-state.json").write_text('{"last_briefing_at": ""}', encoding="utf-8")
+            (state_dir / "google-integration.json").write_text("{}", encoding="utf-8")
+            (state_dir / "apple-reminders-integration.json").write_text("{}", encoding="utf-8")
+            previous = os.environ.get("PRUMO_RUNTIME_DISABLE_SNAPSHOT")
+            os.environ["PRUMO_RUNTIME_DISABLE_SNAPSHOT"] = "1"
+            try:
+                payload = build_briefing_payload(workspace, refresh_snapshot=False)
+            finally:
+                if previous is None:
+                    os.environ.pop("PRUMO_RUNTIME_DISABLE_SNAPSHOT", None)
+                else:
+                    os.environ["PRUMO_RUNTIME_DISABLE_SNAPSHOT"] = previous
+            self.assertEqual(payload["workspace_path"], str(workspace.resolve()))
+            self.assertTrue(payload["sections"])
+            self.assertEqual(payload["sections"][0]["id"], "preflight")
+            self.assertEqual(payload["proposal"]["options"][0]["id"], "accept")
+            self.assertIn("Proposta do dia", payload["message"])
+
+    def test_run_briefing_json_output_uses_structured_payload(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = Path(tmpdir)
+            state_dir = workspace / "_state"
+            inbox_dir = workspace / "Inbox4Mobile"
+            state_dir.mkdir(parents=True, exist_ok=True)
+            inbox_dir.mkdir(parents=True, exist_ok=True)
+            (workspace / "PAUTA.md").write_text(
+                "# Pauta\n\n## Quente (precisa de atenção agora)\n\n- Ajuste urgente no site\n",
+                encoding="utf-8",
+            )
+            (workspace / "INBOX.md").write_text("# Inbox\n\n_Inbox limpo._\n", encoding="utf-8")
+            (workspace / "PRUMO-CORE.md").write_text(f"> **prumo_version: {__version__}**\n", encoding="utf-8")
+            (state_dir / "workspace-schema.json").write_text(
+                json.dumps(
+                    {
+                        "user_name": "Batata",
+                        "agent_name": "Prumo",
+                        "timezone": "America/Sao_Paulo",
+                        "briefing_time": "09:00",
+                        "files": {"generated": [], "authorial": [], "derived": []},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (state_dir / "briefing-state.json").write_text('{"last_briefing_at": ""}', encoding="utf-8")
+            (state_dir / "google-integration.json").write_text("{}", encoding="utf-8")
+            (state_dir / "apple-reminders-integration.json").write_text("{}", encoding="utf-8")
+            args = Namespace(workspace=str(workspace), refresh_snapshot=False, format="json")
+            buffer = io.StringIO()
+            previous = os.environ.get("PRUMO_RUNTIME_DISABLE_SNAPSHOT")
+            os.environ["PRUMO_RUNTIME_DISABLE_SNAPSHOT"] = "1"
+            try:
+                with redirect_stdout(buffer):
+                    rc = run_briefing(args)
+            finally:
+                if previous is None:
+                    os.environ.pop("PRUMO_RUNTIME_DISABLE_SNAPSHOT", None)
+                else:
+                    os.environ["PRUMO_RUNTIME_DISABLE_SNAPSHOT"] = previous
+            self.assertEqual(rc, 0)
+            payload = json.loads(buffer.getvalue())
+            self.assertEqual(payload["workspace_path"], str(workspace.resolve()))
+            self.assertIn("sections", payload)
+            self.assertEqual(payload["sections"][0]["label"], "Preflight")
+            self.assertIn("proposal", payload)
+
     def test_write_and_load_snapshot_cache_preserves_notes(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             workspace = Path(tmpdir)

@@ -314,6 +314,29 @@ Não está pronto.
 2. registrar a rota curta/nativa como falha atual do adapter;
 3. tratar qualquer volta ao fluxo plugin-first como regressão conceitual, não como fallback elegante.
 
+## 2026-03-22 — Se vários hosts tropeçam na mesma quina, a quina também é problema nosso
+
+### Descoberta
+
+Depois dos testes em `Antigravity` e outros hosts, ficou claro que havia um atrito recorrente e meio idiota:
+
+1. `prumo start --format json` existia como rota estruturada;
+2. `prumo briefing --format json` não existia;
+3. alguns hosts começaram a tentar essa variante mesmo assim;
+4. o resultado era repetição de erro de uso, improviso de estrutura ou ambos.
+
+### Por que importa
+
+Não dá para tratar toda burrice do host como culpa exclusiva do host quando a porta estruturada útil está pela metade.
+
+Se vários porteiros tropeçam no mesmo degrau, talvez valha cimentar o degrau direito em vez de só distribuir sermão.
+
+### Decisao
+
+1. adicionar `--format json` oficial ao `prumo briefing`;
+2. anunciar essa rota no `start` via `adapter_hints`;
+3. alinhar wrappers e contrato de invocação para briefing estruturado explícito.
+
 ## 2026-03-20 — O runtime funcionava; o instalador é que ainda vivia em 2019
 
 ### Descoberta

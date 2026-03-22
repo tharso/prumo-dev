@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 from shutil import which as shutil_which
 import subprocess
@@ -756,8 +757,8 @@ def choose_proposal(quente: list[str], agendado: list[str], andamento: list[str]
     return "Fazer um dump real de pendências antes que o sistema vire paisagem."
 
 
-def run_briefing(args) -> int:
-    workspace = Path(args.workspace).expanduser().resolve()
+def build_briefing_payload(workspace: Path, refresh_snapshot: bool = False) -> dict:
+    workspace = workspace.expanduser().resolve()
     config = build_config_from_existing(workspace)
     repo_root = repo_root_from(Path(__file__))
 
@@ -771,55 +772,95 @@ def run_briefing(args) -> int:
     snapshot = resolve_snapshot_data(
         workspace,
         repo_root,
-        refresh_snapshot=bool(getattr(args, "refresh_snapshot", False)),
+        refresh_snapshot=refresh_snapshot,
     )
 
     update_briefing_state(workspace, config.timezone_name)
+    briefing_state = load_json(workspace / "_state" / "briefing-state.json")
+    last_briefing_at = str(briefing_state.get("last_briefing_at") or "").strip()
 
     core_version = parse_core_version(workspace)
     core_outdated = bool(core_version and semantic_version_key(core_version) < semantic_version_key(RUNTIME_VERSION))
 
-    lines: list[str] = []
-    n = 1
+    preflight_text = (
+        f"o runtime está em {RUNTIME_VERSION}, mas o core do workspace está em {core_version}. "
+        "Não é tragédia nuclear, mas é drift e merece atenção."
+        if core_outdated
+        else "runtime e workspace parecem minimamente alinhados."
+    )
+    google_text = summarize_google_status(workspace, config.timezone_name)
+    apple_text = summarize_apple_reminders_status(workspace, config.timezone_name)
+    agenda_text = summarize_agenda(snapshot)
+    inbox_mobile_text = build_inbox_line(workspace, inbox_text, preview)
+    emails_text = summarize_emails(snapshot)
 
-    if core_outdated:
-        lines.append(
-            f"{n}. Preflight: o runtime está em {RUNTIME_VERSION}, mas o core do workspace está em {core_version}. "
-            "Não é tragédia nuclear, mas é drift e merece atenção."
-        )
-    else:
-        lines.append(f"{n}. Preflight: runtime e workspace parecem minimamente alinhados.")
-    n += 1
-
-    lines.append(f"{n}. Google: {summarize_google_status(workspace, config.timezone_name)}")
-    n += 1
-
-    lines.append(f"{n}. Apple Reminders: {summarize_apple_reminders_status(workspace, config.timezone_name)}")
-    n += 1
-
-    lines.append(f"{n}. Agenda: {summarize_agenda(snapshot)}")
-    n += 1
-
-    lines.append(f"{n}. Inbox mobile: {build_inbox_line(workspace, inbox_text, preview)}")
-    n += 1
-
-    lines.append(f"{n}. Emails: {summarize_emails(snapshot)}")
-    n += 1
-
-    pauta_parts = [
-        f"Quente {len(quente)}",
-        f"Em andamento {len(andamento)}",
-        f"Agendado {len(agendado)}",
-    ]
+    pauta_counts = {
+        "quente": len(quente),
+        "em_andamento": len(andamento),
+        "agendado": len(agendado),
+    }
     hottest = list_or_placeholder(quente or andamento or agendado, "Pauta sem tração aparente.")
-    lines.append(f"{n}. Panorama local: {' | '.join(pauta_parts)}. {hottest}")
-    n += 1
-
+    panorama_text = (
+        f"Quente {pauta_counts['quente']} | Em andamento {pauta_counts['em_andamento']} | "
+        f"Agendado {pauta_counts['agendado']}. {hottest}"
+    )
     proposal = choose_proposal(quente, agendado, andamento, snapshot)
-    lines.append(f"{n}. Proposta do dia: atacar primeiro `{proposal}`.")
+
+    sections = [
+        {"id": "preflight", "label": "Preflight", "text": preflight_text},
+        {"id": "google", "label": "Google", "text": google_text},
+        {"id": "apple_reminders", "label": "Apple Reminders", "text": apple_text},
+        {"id": "agenda", "label": "Agenda", "text": agenda_text},
+        {"id": "inbox_mobile", "label": "Inbox mobile", "text": inbox_mobile_text},
+        {"id": "emails", "label": "Emails", "text": emails_text},
+        {"id": "panorama_local", "label": "Panorama local", "text": panorama_text},
+        {"id": "proposta_do_dia", "label": "Proposta do dia", "text": f"atacar primeiro `{proposal}`."},
+    ]
+
+    lines: list[str] = []
+    for index, section in enumerate(sections, start=1):
+        lines.append(f"{index}. {section['label']}: {section['text']}")
     lines.append("a) Aceitar e seguir")
     lines.append("b) Ajustar")
     lines.append("c) Ver lista completa")
     lines.append("d) Tá bom por hoje")
-    print("\n".join(lines))
+
+    return {
+        "workspace_path": str(workspace),
+        "runtime_version": RUNTIME_VERSION,
+        "core_version": core_version or "",
+        "core_outdated": core_outdated,
+        "last_briefing_at": last_briefing_at,
+        "sections": sections,
+        "proposal": {
+            "text": proposal,
+            "options": [
+                {"id": "accept", "label": "Aceitar e seguir"},
+                {"id": "adjust", "label": "Ajustar"},
+                {"id": "list", "label": "Ver lista completa"},
+                {"id": "enough", "label": "Tá bom por hoje"},
+            ],
+        },
+        "snapshot": {
+            "status": str(snapshot.get("status") or ""),
+            "source": str(snapshot.get("source") or ""),
+            "ok_profiles": int(snapshot.get("ok_profiles") or 0),
+            "note": str(snapshot.get("note") or ""),
+            "email_note": str(snapshot.get("email_note") or ""),
+            "email_display": str(snapshot.get("email_display") or ""),
+        },
+        "message": "\n".join(lines),
+    }
+
+
+def run_briefing(args) -> int:
+    workspace = Path(args.workspace).expanduser().resolve()
+    payload = build_briefing_payload(
+        workspace,
+        refresh_snapshot=bool(getattr(args, "refresh_snapshot", False)),
+    )
+    if getattr(args, "format", "text") == "json":
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+    else:
+        print(payload["message"])
     return 0

@@ -307,6 +307,10 @@ class StartCommandTests(unittest.TestCase):
             self.assertEqual(payload["adapter_contract_version"], "2026-03-21")
             self.assertEqual(payload["workspace_resolution"]["source"], "explicit")
             self.assertEqual(payload["adapter_hints"]["preferred_entrypoint"]["shell_command"], "prumo")
+            self.assertEqual(
+                payload["adapter_hints"]["briefing_structured_entrypoint"]["shell_command"],
+                f"prumo briefing --workspace {workspace.resolve()} --refresh-snapshot --format json",
+            )
             self.assertIn("Prumo", payload["adapter_hints"]["short_invocations"])
             self.assertTrue(payload["actions"])
             self.assertEqual(payload["actions"][0]["id"], "briefing")

@@ -234,6 +234,10 @@ def _build_adapter_hints(workspace: Path) -> dict[str, object]:
             "kind": "shell",
             "shell_command": f"prumo briefing --workspace {workspace_str} --refresh-snapshot",
         },
+        "briefing_structured_entrypoint": {
+            "kind": "shell",
+            "shell_command": f"prumo briefing --workspace {workspace_str} --refresh-snapshot --format json",
+        },
         "structured_entrypoint": {
             "kind": "shell",
             "shell_command": f"prumo start --workspace {workspace_str} --format json",
@@ -241,6 +245,7 @@ def _build_adapter_hints(workspace: Path) -> dict[str, object]:
         "behavior": {
             "short_invocation": "run preferred_entrypoint",
             "explicit_briefing": "run briefing_entrypoint",
+            "structured_briefing": "prefer briefing_structured_entrypoint when the host needs machine-readable briefing output",
             "structured_actions": "prefer structured_entrypoint and obey actions[].kind",
         },
     }

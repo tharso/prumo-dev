@@ -28,6 +28,7 @@ Quando necessário:
 ```bash
 prumo start --workspace /caminho/do/workspace
 prumo start --format json
+prumo briefing --workspace /caminho/do/workspace --refresh-snapshot --format json
 ```
 
 O `start` já tenta inferir o workspace pelo diretório atual ou por um pai reconhecível. E o binário `prumo`, sem subcomando, já deve cair nesse mesmo fluxo. Se nem isso acontecer, a campainha ainda está parafusada pelo lado de dentro.
@@ -57,15 +58,16 @@ Um adapter fino deve:
 2. chamar `prumo start` como primeiro ponto de contato;
 3. devolver a resposta do runtime sem reescrever o produto em cima dela;
 4. chamar `prumo briefing` diretamente apenas quando a intenção do usuário for briefing explícito;
-5. usar `prumo start --format json` quando o host conseguir renderizar ações/interações próprias.
-6. quando depender de arquivos-guia do workspace (`AGENTS.md`, `CLAUDE.md`), manter esses wrappers alinhados com a mesma porta curta em vez de deixá-los agir como bilhete passivo.
-7. ao consumir `prumo start --format json`, obedecer ao campo `kind`:
+5. se precisar de briefing estruturado, usar `prumo briefing --workspace . --refresh-snapshot --format json`;
+6. usar `prumo start --format json` quando o host quiser uma porta estruturada de entrada.
+7. quando depender de arquivos-guia do workspace (`AGENTS.md`, `CLAUDE.md`), manter esses wrappers alinhados com a mesma porta curta em vez de deixá-los agir como bilhete passivo.
+8. ao consumir `prumo start --format json`, obedecer ao campo `kind`:
    - `shell`: executar `shell_command`;
    - `host-prompt`: usar `host_prompt` como próxima ação/fala do host.
-8. ao consumir `prumo start --format json`, usar também:
+9. ao consumir `prumo start --format json`, usar também:
    - `adapter_contract_version` para detectar mudança de contrato;
    - `workspace_resolution` para saber se o runtime inferiu o workspace ou recebeu caminho explícito;
-   - `adapter_hints.preferred_entrypoint`, `briefing_entrypoint` e `structured_entrypoint` para parar de adivinhar qual porta usar em cada intenção.
+   - `adapter_hints.preferred_entrypoint`, `briefing_entrypoint`, `briefing_structured_entrypoint` e `structured_entrypoint` para parar de adivinhar qual porta usar em cada intenção.
 
 Um adapter fino não deve:
 

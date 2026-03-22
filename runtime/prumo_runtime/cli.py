@@ -132,6 +132,7 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Tentar refresh ao vivo do snapshot dual antes de responder",
     )
+    briefing.add_argument("--format", choices=["text", "json"], default="text")
     briefing.set_defaults(handler=run_briefing)
 
     snapshot_refresh = subparsers.add_parser(
