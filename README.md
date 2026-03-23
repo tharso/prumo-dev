@@ -2,7 +2,7 @@
 
 **Sistema de organização de vida pessoal com IA.**
 
-Versão atual: **4.16.1**
+Versão atual: **4.16.2**
 
 Prumo não é mais só “o briefing esperto daquele plugin”. O produto agora está sendo empurrado para o lugar certo: um runtime local-first que funciona como organizador diário, facilitador de trabalho e base para workflows futuros.
 
@@ -127,6 +127,7 @@ prumo auth apple-reminders --workspace /caminho/do/workspace
 prumo snapshot-refresh --workspace /caminho/do/workspace
 prumo snapshot-refresh --workspace /caminho/do/workspace --profile pessoal
 prumo context-dump --workspace /caminho/do/workspace --format json
+prumo inbox preview --workspace /caminho/do/workspace --format json
 prumo briefing --workspace /caminho/do/workspace
 prumo repair --workspace /caminho/do/workspace
 ```
@@ -349,7 +350,7 @@ Se o painel do app disser que atualizou, mas o plugin continuar em versão velha
 
 ## Versão
 
-Versão atual: `4.16.1`
+Versão atual: `4.16.2`
 
 ## Licença
 

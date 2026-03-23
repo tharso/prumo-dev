@@ -4,6 +4,19 @@ Este arquivo registra mudanças públicas do produto Prumo.
 
 O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamento semântico.
 
+## [4.16.2] - 2026-03-23
+
+### Added
+- Novo comando canônico `prumo inbox preview`, porque o preview do Inbox4Mobile já era parte real do produto e estava morando como capacidade implícita em vez de comando com endereço próprio.
+- Nova camada compartilhada `inbox_preview.py`, reaproveitando a lógica de geração e leitura do preview sem deixar o `briefing` bancar dono exclusivo dessa peça.
+
+### Changed
+- `prumo start --format json` agora anuncia `inbox_preview_entrypoint` em `adapter_hints`. O host não precisa mais inventar nome de comando como quem escreve fanfic de CLI.
+- O gerador de preview foi trazido para dentro do pacote do runtime, para a vitrine do inbox parar de depender do script escondido no plugin do Cowork.
+
+### Fixed
+- O gap entre “preview existe no Prumo” e “preview existe no runtime” foi finalmente fechado. Antes era um recurso verdadeiro com endereço falso. Agora os dois moram na mesma cidade.
+
 ## [4.16.1] - 2026-03-22
 
 ### Added

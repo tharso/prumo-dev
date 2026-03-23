@@ -7,7 +7,6 @@ import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
-from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 
 from prumo_runtime.apple_reminders import (
@@ -22,6 +21,7 @@ from prumo_runtime.google_api import (
     is_actionworthy_triage_item,
 )
 from prumo_runtime.google_integration import google_integration_summary
+from prumo_runtime.inbox_preview import find_existing_path, load_inbox_preview, summarize_inbox_entry
 from prumo_runtime.platform_support import is_macos, platform_label
 from prumo_runtime.workspace import (
     build_config_from_existing,
@@ -53,38 +53,6 @@ def count_inbox_items(inbox_text: str) -> int:
         elif stripped[:2].isdigit() and stripped[2:4] == ". ":
             count += 1
     return count
-
-
-def find_existing_path(candidates: list[Path]) -> Path | None:
-    for candidate in candidates:
-        if candidate.exists():
-            return candidate
-    return None
-
-
-def load_processed_filenames(workspace: Path) -> set[str]:
-    payload = load_json(workspace / "Inbox4Mobile" / "_processed.json")
-    items = payload.get("items", [])
-    names: set[str] = set()
-    if isinstance(items, list):
-        for item in items:
-            if not isinstance(item, dict):
-                continue
-            filename = item.get("filename")
-            if isinstance(filename, str) and filename.strip():
-                names.add(filename.strip())
-    return names
-
-
-def preview_script_path(repo_root: Path | None) -> Path | None:
-    if repo_root is None:
-        return None
-    return find_existing_path(
-        [
-            repo_root / "cowork-plugin" / "scripts" / "generate_inbox_preview.py",
-            repo_root / "scripts" / "generate_inbox_preview.py",
-        ]
-    )
 
 
 def snapshot_script_path(workspace: Path, repo_root: Path | None) -> Path | None:
@@ -153,113 +121,6 @@ def same_local_day(value: str | None, timezone_name: str) -> bool:
         return False
     now = datetime.now(ZoneInfo(timezone_name))
     return dt_value.astimezone(ZoneInfo(timezone_name)).date() == now.date()
-
-
-def infer_domain(url: str | None) -> str | None:
-    if not url:
-        return None
-    try:
-        host = urlparse(url).netloc.lower()
-    except ValueError:
-        return None
-    return host.replace("www.", "") or None
-
-
-def summarize_text_preview(path: Path) -> str:
-    try:
-        text = path.read_text(encoding="utf-8")
-    except UnicodeDecodeError:
-        text = path.read_text(encoding="latin-1", errors="replace")
-    for line in text.splitlines():
-        stripped = line.strip()
-        if stripped:
-            if len(stripped) > 120:
-                return stripped[:117] + "..."
-            return stripped
-    return path.name
-
-
-def summarize_inbox_entry(entry: dict) -> str:
-    filename = str(entry.get("filename") or "item sem nome")
-    kind = str(entry.get("kind") or "arquivo")
-    absolute_path = entry.get("absolute_path")
-    first_url = entry.get("first_url")
-    domain = infer_domain(first_url)
-
-    if kind == "image":
-        return f"{filename} (imagem/captura)"
-    if kind == "pdf":
-        return f"{filename} (PDF)"
-    if kind == "text" and isinstance(absolute_path, str):
-        path = Path(absolute_path)
-        if path.exists():
-            preview = summarize_text_preview(path)
-            if domain:
-                return f"{filename}: {preview} ({domain})"
-            return f"{filename}: {preview}"
-    if domain:
-        return f"{filename} ({domain})"
-    return filename
-
-
-def load_inbox_preview(workspace: Path, repo_root: Path | None) -> dict:
-    inbox_dir = workspace / "Inbox4Mobile"
-    preview_path = inbox_dir / "inbox-preview.html"
-    index_path = inbox_dir / "_preview-index.json"
-    processed = load_processed_filenames(workspace)
-    preview_status = "ausente"
-    preview_note = ""
-
-    if inbox_dir.exists():
-        script_path = preview_script_path(repo_root)
-        if script_path is not None:
-            try:
-                subprocess.run(
-                    [
-                        sys.executable,
-                        str(script_path),
-                        "--inbox-dir",
-                        str(inbox_dir),
-                        "--output",
-                        str(preview_path),
-                        "--index-output",
-                        str(index_path),
-                    ],
-                    cwd=str(workspace),
-                    check=True,
-                    capture_output=True,
-                    text=True,
-                    timeout=20,
-                )
-                preview_status = "gerado"
-            except Exception:
-                if preview_path.exists() and index_path.exists():
-                    preview_status = "stale"
-                    preview_note = "preview reaproveitado; a regeneração falhou e o resultado pode estar defasado."
-                else:
-                    preview_status = "falhou"
-                    preview_note = "preview indisponível; segui sem vitrine."
-
-    payload = load_json(index_path)
-    raw_items = payload.get("items", [])
-    items: list[dict] = []
-    if isinstance(raw_items, list):
-        for item in raw_items:
-            if not isinstance(item, dict):
-                continue
-            filename = item.get("filename")
-            if isinstance(filename, str) and filename in processed:
-                continue
-            items.append(item)
-
-    return {
-        "status": preview_status,
-        "note": preview_note,
-        "preview_path": preview_path,
-        "index_path": index_path,
-        "count": len(items),
-        "items": items,
-    }
 
 
 def parse_snapshot_output(output: str) -> dict:

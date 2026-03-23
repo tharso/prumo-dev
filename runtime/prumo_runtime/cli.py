@@ -9,6 +9,7 @@ from prumo_runtime.commands import (
     run_briefing,
     run_config_apple_reminders,
     run_context_dump,
+    run_inbox_preview,
     run_migrate,
     run_repair,
     run_setup,
@@ -119,6 +120,17 @@ def build_parser() -> argparse.ArgumentParser:
     context_dump.add_argument("--workspace", required=True, help="Caminho do workspace")
     context_dump.add_argument("--format", choices=["json", "markdown"], default="json")
     context_dump.set_defaults(handler=run_context_dump)
+
+    inbox = subparsers.add_parser("inbox", help="Operar a fila e o preview do inbox local")
+    inbox_subparsers = inbox.add_subparsers(dest="inbox_command", required=True)
+
+    inbox_preview = inbox_subparsers.add_parser(
+        "preview",
+        help="Gerar e resumir a vitrine local do Inbox4Mobile",
+    )
+    inbox_preview.add_argument("--workspace", required=True, help="Caminho do workspace")
+    inbox_preview.add_argument("--format", choices=["text", "json"], default="text")
+    inbox_preview.set_defaults(handler=run_inbox_preview)
 
     repair = subparsers.add_parser("repair", help="Validar e reparar arquivos recriaveis do workspace")
     repair.add_argument("--workspace", required=True, help="Caminho do workspace")

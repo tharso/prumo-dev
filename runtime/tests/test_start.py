@@ -370,7 +370,7 @@ class StartCommandTests(unittest.TestCase):
             process_inbox = next(action for action in payload["actions"] if action["id"] == "process-inbox")
             self.assertEqual(process_inbox["category"], "inbox-triage")
             self.assertIn("documentation_targets", process_inbox)
-            self.assertIn("fila encostada", payload["message"])
+            self.assertIn("fila que está encostada", process_inbox["label"])
             self.assertIn("host_prompt", process_inbox)
             self.assertNotIn("shell_command", process_inbox)
 
