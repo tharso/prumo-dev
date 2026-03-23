@@ -12,6 +12,8 @@ A direcao estrutural para Google no runtime agora esta formalizada em [ADR-001-G
 
 O contrato de invocação do produto agora também está explícito em [INVOCATION-UX-CONTRACT.md](/Users/tharsovieira/Documents/DailyLife/Prumo/INVOCATION-UX-CONTRACT.md). Serve para impedir que cada host invente uma porta diferente e depois jure que isso era estratégia.
 
+Também ficou registrada, sem nostalgia boba e sem maquiagem de benchmark, a comparação entre o legado plugin-first e o runtime atual em [PRUMO-PLUGIN-VS-RUNTIME-COMPARISON.md](/Users/tharsovieira/Documents/DailyLife/Prumo/PRUMO-PLUGIN-VS-RUNTIME-COMPARISON.md). Esse documento existe para fixar o objetivo certo: recuperar a fluidez antiga sem recuperar o acoplamento antigo.
+
 O próximo bloco operacional também já foi explicitado em [HOST-ADAPTER-IMPLEMENTATION-PLAN.md](/Users/tharsovieira/Documents/DailyLife/Prumo/HOST-ADAPTER-IMPLEMENTATION-PLAN.md). O ponto central ali é simples: mesma família de modelo não significa mesmo host. `Cowork` e `Claude Code` são adapters diferentes. `Gemini CLI` e `Antigravity` também.
 
 O quadro de campo, hoje, está menos nebuloso e menos romântico:
