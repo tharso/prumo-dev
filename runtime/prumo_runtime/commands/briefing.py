@@ -690,12 +690,10 @@ def build_briefing_payload(workspace: Path, refresh_snapshot: bool = False) -> d
     next_move = next_move_payload(actions)
     proposal = choose_proposal(quente, agendado, andamento, snapshot)
     daily_operation = daily_operation_payload(workspace)
-    workflow_registry = overview["capabilities"]["workflow_scaffolding"]["registry_path"]
 
     sections = [
         {"id": "preflight", "label": "Preflight", "text": preflight_text},
         {"id": "google", "label": "Google", "text": google_text},
-        {"id": "apple_reminders", "label": "Apple Reminders", "text": apple_text},
         {"id": "agenda", "label": "Agenda", "text": agenda_text},
         {"id": "inbox_mobile", "label": "Inbox mobile", "text": inbox_mobile_text},
         {"id": "emails", "label": "Emails", "text": emails_text},
@@ -717,15 +715,10 @@ def build_briefing_payload(workspace: Path, refresh_snapshot: bool = False) -> d
                 "o que muda no workspace sem transformar o host em comentarista de si mesmo."
             ),
         },
-        {
-            "id": "workflow_scaffolding",
-            "label": "Workflows",
-            "text": (
-                "Esta fase ainda não fecha workflows específicos. O combinado é identificar padrões "
-                f"repetíveis e registrar candidatos em `{workflow_registry}`."
-            ),
-        },
     ]
+
+    if overview["apple_reminders"]["status"] == "connected":
+        sections.insert(2, {"id": "apple_reminders", "label": "Apple Reminders", "text": apple_text})
 
     lines: list[str] = []
     for index, section in enumerate(sections, start=1):
@@ -738,14 +731,21 @@ def build_briefing_payload(workspace: Path, refresh_snapshot: bool = False) -> d
         lines.append(
             "   Resposta curta aceita: `1`, `a` ou `aceitar` deve executar esse próximo movimento sem reabrir menu."
         )
-    option_labels = list("abcdef")
-    for label, action in zip(option_labels, actions[:4]):
-        lines.append(f"{label}) {action['label']}")
-        lines.append(f"   `{action['command']}`")
-    lines.append("a) Aceitar e seguir")
-    lines.append("b) Ajustar")
-    lines.append("c) Ver lista completa")
-    lines.append("d) Tá bom por hoje")
+    if next_move:
+        lines.append("a) Aceitar e seguir")
+        lines.append("b) Ver lista completa")
+        lines.append("c) Ver estado técnico")
+        lines.append(f"   `prumo context-dump --workspace {workspace} --format json`")
+        lines.append("d) Tá bom por hoje")
+    else:
+        option_labels = list("abcdef")
+        for label, action in zip(option_labels, actions[:4]):
+            lines.append(f"{label}) {action['label']}")
+            lines.append(f"   `{action['command']}`")
+        lines.append("a) Aceitar e seguir")
+        lines.append("b) Ajustar")
+        lines.append("c) Ver lista completa")
+        lines.append("d) Tá bom por hoje")
 
     return {
         "workspace_path": str(workspace),

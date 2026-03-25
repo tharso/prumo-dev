@@ -228,7 +228,6 @@ class StartCommandTests(unittest.TestCase):
             action_ids = [action["id"] for action in payload["actions"]]
             self.assertIn("context", action_ids)
             self.assertTrue(any(action_id.startswith("auth-google") for action_id in action_ids))
-            self.assertIn("workflow-scaffold", action_ids)
             self.assertNotIn("auth-apple-reminders", action_ids)
             commands = " ".join(action["command"] for action in payload["actions"])
             self.assertNotIn("/caminho/do/client_secret.json", commands)
@@ -337,8 +336,7 @@ class StartCommandTests(unittest.TestCase):
             align_core_action = next(action for action in payload["actions"] if action["id"] == "align-core")
             self.assertEqual(align_core_action["category"], "workspace-alignment")
             self.assertIn("prumo migrate --workspace", align_core_action["command"])
-            workflow_action = next(action for action in payload["actions"] if action["id"] == "workflow-scaffold")
-            self.assertEqual(workflow_action["category"], "workflow-scaffolding")
+            self.assertFalse(any(action["id"] == "workflow-scaffold" for action in payload["actions"]))
             self.assertEqual(payload["next_move"]["id"], "briefing")
 
     def test_json_output_surfaces_inbox_processing_when_queue_exists(self) -> None:

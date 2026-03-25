@@ -4,6 +4,16 @@ Este arquivo registra mudanças públicas do produto Prumo.
 
 O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamento semântico.
 
+## [4.16.5] - 2026-03-25
+
+### Changed
+- O loop diário ficou mais magro: `workflow-scaffold` saiu das ações padrão de `start` e `briefing`. A estrutura continua existindo, mas parou de pedir palco antes de ter peça.
+- O `start` e o `briefing` em texto ficaram menos painel de controle e mais operador: quando há `next_move` claro, a saída humana para de despejar cardápio completo e passa a conduzir pelo movimento recomendado.
+- `Apple Reminders`, quando está fora de foco ou desconectado, deixou de roubar bloco próprio no briefing padrão. Continua no estado técnico, mas saiu da sala principal.
+
+### Fixed
+- O produto parou de empurrar complexidade prematura para a primeira tela do dia. Menos vitrine, mais condução.
+
 ## [4.16.4] - 2026-03-25
 
 ### Added

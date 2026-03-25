@@ -158,7 +158,6 @@ def _render_start_text(workspace: Path, overview: dict) -> str:
     timezone_name = overview["timezone"]
     missing = overview["missing"]
     google = overview["google_integration"]
-    apple = overview["apple_reminders"]
     platform = overview["platform"]
     capabilities = overview["capabilities"]
     briefing_state = load_json(workspace / "_state" / "briefing-state.json")
@@ -187,13 +186,11 @@ def _render_start_text(workspace: Path, overview: dict) -> str:
         (
             "2. Estado rápido: "
             f"Google `{google['active_profile_status']}`, "
-            f"Apple Reminders `{apple['status']}`, "
             f"core `{overview['core_version'] or 'ausente'}`."
         ),
         (
-            "3. Plataforma e escopo desta fase: "
-            f"`{platform['label']}` com operador diário ligado, documentação viva em jogo "
-            "e estrutura pronta para workflows."
+            "3. Plataforma e foco da fase: "
+            f"`{platform['label']}` com operador diário ligado e documentação viva em jogo."
         ),
     ]
 
@@ -220,13 +217,6 @@ def _render_start_text(workspace: Path, overview: dict) -> str:
     )
     suggestion_index = 6
 
-    if not capabilities["providers"]["apple_reminders"]["supported"]:
-        lines.append("6. Apple Reminders não existe nesta plataforma e, honestamente, não vai mandar nesta fase.")
-        suggestion_index = 7
-    elif apple["status"] != "connected":
-        lines.append("6. Apple Reminders ficou fora do foco desta fase. Se estiver negado, tratamos como degradação aceitável, não como desculpa para o produto mancar.")
-        suggestion_index = 7
-
     lines.append(f"{suggestion_index}. Minha sugestão: {suggestion}")
     if next_move:
         lines.append(f"{suggestion_index + 1}. Próximo movimento recomendado: {next_move['label']}")
@@ -235,15 +225,22 @@ def _render_start_text(workspace: Path, overview: dict) -> str:
             lines.append(f"   Motivo: {next_move['why_now']}")
         suggestion_index += 1
     lines.append(
-        f"{suggestion_index + 1}. Se aparecer padrão repetitivo de trabalho, registre o candidato em `{workflow_registry}`. Não force workflow de laboratório como se fosse contrato assinado."
+        f"{suggestion_index + 1}. Resposta curta aceita: `1`, `a` ou `aceitar` deve executar o próximo movimento recomendado sem outro menu no meio."
     )
     lines.append(
-        f"{suggestion_index + 2}. Resposta curta aceita: `1`, `a` ou `aceitar` deve executar o próximo movimento recomendado sem outro menu no meio."
+        f"{suggestion_index + 2}. Se aparecer padrão repetitivo de trabalho, registre o candidato em `{workflow_registry}`. Mas não enfie workflow no café da manhã por vaidade."
     )
-    option_labels = list("abcdefghi")
-    for label, action in zip(option_labels, actions):
-        lines.append(f"{label}) {action['label']}")
-        lines.append(f"   `{action['command']}`")
+    if next_move:
+        lines.append("a) Aceitar e seguir")
+        lines.append("b) Ver lista completa")
+        lines.append("c) Ver estado técnico")
+        lines.append(f"   `prumo context-dump --workspace {workspace} --format json`")
+        lines.append("d) Tá bom por hoje")
+    else:
+        option_labels = list("abcdefghi")
+        for label, action in zip(option_labels, actions):
+            lines.append(f"{label}) {action['label']}")
+            lines.append(f"   `{action['command']}`")
 
     return "\n".join(lines)
 

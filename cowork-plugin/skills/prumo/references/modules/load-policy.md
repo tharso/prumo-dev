@@ -1,6 +1,6 @@
 # Load Policy
 
-> **module_version: 4.16.4**
+> **module_version: 4.16.5**
 >
 > Política canônica de leitura incremental do Prumo.
 

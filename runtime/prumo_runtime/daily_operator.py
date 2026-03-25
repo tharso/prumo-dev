@@ -367,21 +367,22 @@ def build_daily_actions(
     if not google_connected:
         register(suggest_google_auth_action(workspace))
 
-    register(
-        host_prompt_action(
-            "workflow-scaffold",
-            "Preparar candidatos a workflow sem fechar nada à força",
-            (
-                f"Revise o trabalho atual e registre em `{docs['workflow_registry']}` padrões repetíveis, gatilhos, "
-                "documentação necessária e pontos de proatividade que pareçam bons candidatos a workflow do Prumo. "
-                "Não transforme isso em workflow fechado ainda."
-            ),
-            category="workflow-scaffolding",
-            documentation_targets=[docs["workflow_registry"], docs["registro"]],
-            outcome="Candidatos a workflow registrados sem vender promessa de automação antes da hora.",
-            why_now="Padrão repetido sem registro é só deja vu desperdiçado.",
+    if os.environ.get("PRUMO_ENABLE_WORKFLOW_SCAFFOLD_ACTIONS") == "1":
+        register(
+            host_prompt_action(
+                "workflow-scaffold",
+                "Preparar candidatos a workflow sem fechar nada à força",
+                (
+                    f"Revise o trabalho atual e registre em `{docs['workflow_registry']}` padrões repetíveis, gatilhos, "
+                    "documentação necessária e pontos de proatividade que pareçam bons candidatos a workflow do Prumo. "
+                    "Não transforme isso em workflow fechado ainda."
+                ),
+                category="workflow-scaffolding",
+                documentation_targets=[docs["workflow_registry"], docs["registro"]],
+                outcome="Candidatos a workflow registrados sem vender promessa de automação antes da hora.",
+                why_now="Padrão repetido sem registro é só deja vu desperdiçado.",
+            )
         )
-    )
 
     register(
         shell_action(
