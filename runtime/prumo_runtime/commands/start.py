@@ -11,6 +11,7 @@ from prumo_runtime.daily_operator import (
     daily_operation_payload,
     inbox_item_count,
     next_move_payload,
+    selection_contract_payload,
 )
 from prumo_runtime.workspace import (
     WorkspaceError,
@@ -107,6 +108,8 @@ def _build_adapter_hints(workspace: Path) -> dict[str, object]:
             "structured_briefing": "prefer briefing_structured_entrypoint when the host needs machine-readable briefing output",
             "inbox_preview": "use inbox_preview_entrypoint when triaging Inbox4Mobile or when the host needs the inbox preview instead of inventing it",
             "structured_actions": "prefer structured_entrypoint and obey actions[].kind",
+            "short_acceptance": "if the user replies with 1, a, aceitar, aceitar e seguir, seguir or ok, execute next_move directly without rerunning start and without showing another menu first",
+            "post_execution": "after executing an accepted or imperative action, report outcome and documentation changes before offering more options",
         },
     }
 
@@ -234,6 +237,9 @@ def _render_start_text(workspace: Path, overview: dict) -> str:
     lines.append(
         f"{suggestion_index + 1}. Se aparecer padrão repetitivo de trabalho, registre o candidato em `{workflow_registry}`. Não force workflow de laboratório como se fosse contrato assinado."
     )
+    lines.append(
+        f"{suggestion_index + 2}. Resposta curta aceita: `1`, `a` ou `aceitar` deve executar o próximo movimento recomendado sem outro menu no meio."
+    )
     option_labels = list("abcdefghi")
     for label, action in zip(option_labels, actions):
         lines.append(f"{label}) {action['label']}")
@@ -274,6 +280,7 @@ def run_start(args) -> int:
         overview,
         has_briefed_today=has_briefed_today,
     )
+    next_move = next_move_payload(actions)
 
     payload = {
         "adapter_contract_version": ADAPTER_CONTRACT_VERSION,
@@ -288,7 +295,8 @@ def run_start(args) -> int:
         "platform": overview["platform"],
         "capabilities": overview["capabilities"],
         "daily_operation": daily_operation_payload(workspace),
-        "next_move": next_move_payload(actions),
+        "next_move": next_move,
+        "selection_contract": selection_contract_payload(next_move),
         "google_status": overview["google_integration"]["active_profile_status"],
         "apple_reminders_status": overview["apple_reminders"]["status"],
         "missing": overview["missing"],

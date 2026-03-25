@@ -4,6 +4,18 @@ Este arquivo registra mudanças públicas do produto Prumo.
 
 O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamento semântico.
 
+## [4.16.4] - 2026-03-25
+
+### Added
+- `start` e `briefing` agora expõem `selection_contract`, deixando explícito que `1`, `a`, `aceitar`, `seguir` e equivalentes curtos devem executar `next_move` direto, sem rerodar `start` nem devolver menu por insegurança.
+- Quando o core do workspace estiver defasado, o runtime passa a oferecer ação concreta de alinhamento (`align-core`) em vez de fingir que drift é nota de rodapé decorativa.
+
+### Changed
+- `adapter_hints` e `daily_operation` agora carregam regras mais duras de interação para host: confirmação curta executa a ação recomendada e, depois da execução, o correto é relatar resultado e mudanças na documentação viva antes de abrir novas opções.
+
+### Fixed
+- O contrato ficou menos aberto à interpretação criativa do host. Traduzindo: menos maître indeciso, mais operador.
+
 ## [4.16.3] - 2026-03-25
 
 ### Changed

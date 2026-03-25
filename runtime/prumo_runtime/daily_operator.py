@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import os
+import shlex
 from pathlib import Path
 
 from prumo_runtime.workspace import extract_section, read_text, load_json
 
 
 DEFAULT_GOOGLE_CLIENT_SECRETS = Path("~/Documents/_secrets/prumo/google-oauth-client.json").expanduser()
+SHORT_ACCEPTANCE_TOKENS = ["1", "a", "aceitar", "aceitar e seguir", "seguir", "ok"]
 
 
 def shell_action(
@@ -83,6 +85,26 @@ def next_move_payload(actions: list[dict[str, object]]) -> dict[str, object] | N
         payload["outcome"] = action["outcome"]
     if "why_now" in action:
         payload["why_now"] = action["why_now"]
+    if "priority" in action:
+        payload["priority"] = action["priority"]
+    if "recommended" in action:
+        payload["recommended"] = action["recommended"]
+    return payload
+
+
+def selection_contract_payload(next_move: dict[str, object] | None) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "accept_tokens": SHORT_ACCEPTANCE_TOKENS,
+        "accept_behavior": (
+            "execute next_move directly without rerunning start and without showing another menu first"
+        ),
+        "post_action_behavior": (
+            "after executing an imperative request or accepted next_move, report concrete outcome and "
+            "documentation changes before offering new options"
+        ),
+    }
+    if next_move:
+        payload["accepts_next_move"] = next_move["id"]
     return payload
 
 
@@ -180,6 +202,25 @@ def suggest_google_auth_action(workspace: Path) -> dict[str, str]:
     )
 
 
+def suggest_core_alignment_action(workspace: Path, overview: dict) -> dict[str, object]:
+    workspace_str = shlex.quote(str(workspace))
+    user_name = shlex.quote(str(overview["user_name"]))
+    agent_name = shlex.quote(str(overview["agent_name"]))
+    timezone_name = shlex.quote(str(overview["timezone"]))
+    briefing_time = shlex.quote(str(overview["briefing_time"]))
+    return shell_action(
+        "align-core",
+        "Alinhar core e wrappers canônicos",
+        (
+            f"prumo migrate --workspace {workspace_str} --user-name {user_name} "
+            f"--agent-name {agent_name} --timezone {timezone_name} --briefing-time {briefing_time}"
+        ),
+        category="workspace-alignment",
+        outcome="Core e wrappers canônicos reaplicados com backup, para o host parar de tropeçar em placa antiga.",
+        why_now="Drift entre runtime e core costuma render comportamento fantasma, e fantasma em produto diário só serve para atrasar café.",
+    )
+
+
 def daily_operation_payload(workspace: Path) -> dict[str, object]:
     docs = documentation_targets(workspace)
     return {
@@ -215,6 +256,8 @@ def daily_operation_payload(workspace: Path) -> dict[str, object]:
             "lead_with_next_move_when_obvious": True,
             "avoid_menu_dump_when_one_path_is_clearly_hotter": True,
             "prefer_execution_plus_documentation_over_commentary": True,
+            "short_acceptance_executes_next_move": True,
+            "after_explicit_execution_do_not_return_with_menu": True,
         },
     }
 
@@ -251,6 +294,9 @@ def build_daily_actions(
                 why_now="Sem estrutura minimamente inteira, qualquer produtividade aqui vira teatro com cenário caindo.",
             )
         )
+
+    if overview.get("core_outdated"):
+        register(suggest_core_alignment_action(workspace, overview))
 
     register(
         shell_action(
@@ -360,6 +406,8 @@ def build_daily_actions(
         order.extend(["process-inbox", "organize-day", "briefing"])
     else:
         order.extend(["organize-day", "briefing"])
+    if "align-core" in actions_by_id:
+        order.append("align-core")
     if not google_connected:
         order.extend(["auth-google", "auth-google-help"])
     order.extend(["workflow-scaffold", "context"])

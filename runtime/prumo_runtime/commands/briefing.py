@@ -14,7 +14,12 @@ from prumo_runtime.apple_reminders import (
     fetch_apple_reminders_today,
 )
 from prumo_runtime.constants import RUNTIME_VERSION, repo_root_from
-from prumo_runtime.daily_operator import build_daily_actions, daily_operation_payload, next_move_payload
+from prumo_runtime.daily_operator import (
+    build_daily_actions,
+    daily_operation_payload,
+    next_move_payload,
+    selection_contract_payload,
+)
 from prumo_runtime.google_api import (
     connected_google_profile,
     fetch_google_workspace_snapshot,
@@ -730,6 +735,9 @@ def build_briefing_payload(workspace: Path, refresh_snapshot: bool = False) -> d
         lines.append(f"   `{next_move['command']}`")
         if next_move.get("why_now"):
             lines.append(f"   Motivo: {next_move['why_now']}")
+        lines.append(
+            "   Resposta curta aceita: `1`, `a` ou `aceitar` deve executar esse próximo movimento sem reabrir menu."
+        )
     option_labels = list("abcdef")
     for label, action in zip(option_labels, actions[:4]):
         lines.append(f"{label}) {action['label']}")
@@ -748,6 +756,7 @@ def build_briefing_payload(workspace: Path, refresh_snapshot: bool = False) -> d
         "capabilities": overview["capabilities"],
         "daily_operation": daily_operation,
         "next_move": next_move,
+        "selection_contract": selection_contract_payload(next_move),
         "last_briefing_at": last_briefing_at,
         "actions": actions,
         "sections": sections,
