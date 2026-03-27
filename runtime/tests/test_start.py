@@ -7,7 +7,9 @@ import tempfile
 import unittest
 from argparse import Namespace
 from contextlib import redirect_stdout
+from datetime import datetime, timedelta
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from prumo_runtime import __version__
 from prumo_runtime.commands.start import run_start
@@ -366,7 +368,13 @@ class StartCommandTests(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
-            (state_dir / "briefing-state.json").write_text('{"last_briefing_at": "2026-03-22T09:00:00-03:00"}', encoding="utf-8")
+            yesterday = (
+                datetime.now(ZoneInfo("America/Sao_Paulo")) - timedelta(days=1)
+            ).replace(hour=9, minute=0, second=0, microsecond=0)
+            (state_dir / "briefing-state.json").write_text(
+                json.dumps({"last_briefing_at": yesterday.isoformat()}),
+                encoding="utf-8",
+            )
             (state_dir / "google-integration.json").write_text("{}", encoding="utf-8")
             (state_dir / "apple-reminders-integration.json").write_text("{}", encoding="utf-8")
             args = Namespace(workspace=str(workspace), format="json")
@@ -406,7 +414,16 @@ class StartCommandTests(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
-            (state_dir / "briefing-state.json").write_text('{"last_briefing_at": "2026-03-25T09:12:00-03:00"}', encoding="utf-8")
+            same_day = datetime.now(ZoneInfo("America/Sao_Paulo")).replace(
+                hour=9,
+                minute=12,
+                second=0,
+                microsecond=0,
+            )
+            (state_dir / "briefing-state.json").write_text(
+                json.dumps({"last_briefing_at": same_day.isoformat()}),
+                encoding="utf-8",
+            )
             (state_dir / "google-integration.json").write_text("{}", encoding="utf-8")
             (state_dir / "apple-reminders-integration.json").write_text("{}", encoding="utf-8")
             args = Namespace(workspace=str(workspace), format="json")

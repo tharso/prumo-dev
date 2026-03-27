@@ -4,6 +4,13 @@ Este arquivo registra mudanças públicas do produto Prumo.
 
 O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamento semântico.
 
+## [4.16.6] - 2026-03-27
+
+### Fixed
+- O instalador do runtime para macOS/Linux deixou de depender de um checkout local implícito. Quando for executado via `curl`/process substitution, ele agora baixa um snapshot do repositório e instala a partir dali, em vez de tropeçar em `/dev` como se isso fosse o projeto.
+- O README agora também explicita o caminho certo para quem quer instalação editável de desenvolvimento a partir de um clone local.
+- `runtime/tests/test_start.py` deixou de apodrecer no calendário. Os cenários que dependiam de "briefing hoje" e "briefing ontem" agora calculam datas relativas ao fuso local em vez de ficar presos a março de 2026 como mosquito no âmbar.
+
 ## [4.16.5] - 2026-03-25
 
 ### Changed

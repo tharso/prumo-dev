@@ -2,7 +2,7 @@
 
 **Sistema de organização de vida pessoal com IA.**
 
-Versão atual: **4.16.5**
+Versão atual: **4.16.6**
 
 Prumo não é mais só “o briefing esperto daquele plugin”. O produto agora está sendo empurrado para o lugar certo: um runtime local-first que funciona como organizador diário, facilitador de trabalho e base para workflows futuros.
 
@@ -108,6 +108,14 @@ No macOS ou Linux:
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/tharso/prumo/main/scripts/prumo_runtime_install.sh)
+```
+
+Se você estiver mexendo no código do runtime e quiser instalação editável de verdade, clone o repo e rode o script local do checkout:
+
+```bash
+git clone https://github.com/tharso/prumo.git
+cd prumo
+bash scripts/prumo_runtime_install.sh
 ```
 
 No Windows (PowerShell):
@@ -352,7 +360,7 @@ Se o painel do app disser que atualizou, mas o plugin continuar em versão velha
 
 ## Versão
 
-Versão atual: `4.16.5`
+Versão atual: `4.16.6`
 
 ## Licença
 
