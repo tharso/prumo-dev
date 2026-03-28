@@ -261,7 +261,7 @@ def _build_state_flags(
         "has_continue_item": bool(continue_item),
         "inbox_count": inbox_count,
         "google_connected": overview["google_integration"]["active_profile_status"] == "connected",
-        "apple_reminders_status": overview["apple_reminders"]["status"],
+        "apple_reminders_connected": overview["apple_reminders"]["status"] == "connected",
     }
 
 
