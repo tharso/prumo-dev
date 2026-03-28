@@ -33,6 +33,20 @@ canon/
   adapters/
 ```
 
+## Ponto de partida recomendado
+
+Se alguem cair aqui sem mapa, a ordem util de leitura e:
+
+1. `contracts/invocation.md`
+2. `contracts/interaction-format.md`
+3. `contracts/capability-granularity.md`
+4. `orchestration/shared-contract.md`
+5. `orchestration/briefing.md`
+6. `governance/file-governance.md`
+7. `governance/load-policy.md`
+8. `governance/memory-hygiene.md`
+9. `adapters/host-boundaries.md`
+
 ## Relacao com o resto do repo
 
 1. `runtime/` implementa capacidades e consome este canon;

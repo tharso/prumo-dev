@@ -14,7 +14,7 @@ Relacionado:
 
 Observacao:
 
-Artefatos de oficina como handover e revisoes cruzadas vivem na `.workbench/` conceitual do repo (hoje ainda em path legado local e ignorado). Eles informam este backlog, mas nao sao parte do material versionado do produto.
+Artefatos de oficina como handover e revisoes cruzadas vivem na `.workbench/` do repo e seguem fora do material versionado do produto. Eles informam este backlog, mas nao sao parte dele.
 
 ## 1. Como usar este backlog
 
