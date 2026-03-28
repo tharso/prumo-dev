@@ -72,17 +72,33 @@ O adapter do `Claude Code` deve respeitar:
 1. `adapter_contract_version`
 2. `workspace_resolution`
 3. `adapter_hints`
-4. `actions[].kind`
-5. `actions[].shell_command`
-6. `actions[].host_prompt`
+4. `state_flags`
+5. `degradation`
+6. `next_move`
+7. `selection_contract`
+8. `actions[].kind`
+9. `actions[].shell_command`
+10. `actions[].host_prompt`
 
 Em português simples:
 
-1. `kind = shell` -> executar `shell_command`
-2. `kind = host-prompt` -> usar `host_prompt` como continuação conversacional
-3. `adapter_hints.preferred_entrypoint` -> porta curta
-4. `adapter_hints.briefing_entrypoint` -> briefing explícito
-5. `adapter_hints.structured_entrypoint` -> rota estruturada
+1. `state_flags` serve para decisão rápida; `google_status` e `apple_reminders_status` servem para detalhe
+2. `degradation` existe para evitar pânico burro ou otimismo igualmente burro
+3. `selection_contract` manda no aceite curto; não reabra menu depois de aceitação explícita
+4. `kind = shell` -> executar `shell_command`
+5. `kind = host-prompt` -> usar `host_prompt` como continuação conversacional
+6. `adapter_hints.preferred_entrypoint` -> porta curta
+7. `adapter_hints.briefing_entrypoint` -> briefing explícito
+8. `adapter_hints.structured_entrypoint` -> rota estruturada
+
+## 5.1. Ordem mínima de leitura
+
+Ao consumir JSON:
+
+1. olhar `degradation`;
+2. olhar `next_move` e `selection_contract`;
+3. olhar `actions[]`;
+4. só então usar `message` para acabamento conversacional.
 
 ## 6. Regras práticas
 

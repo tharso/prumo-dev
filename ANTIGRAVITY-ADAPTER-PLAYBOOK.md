@@ -96,6 +96,18 @@ O risco aqui é simples:
 2. manter vigilância sobre disciplina de execução em conversas mais longas;
 3. manter `Apple Reminders` como pendência específica deste app até o TCC se comportar como gente.
 
+## 6.1. Como consumir o JSON sem virar procissão de tool-call
+
+Para `Antigravity`, a ordem certa é:
+
+1. olhar `degradation` e resolver se há avaria que muda a jogada;
+2. olhar `next_move` e `selection_contract`;
+3. usar `state_flags` para decidir rápido se a cena é de `repair`, `briefing`, `continue` ou triagem;
+4. usar `google_status` e `apple_reminders_status` só para detalhe operacional;
+5. só então olhar `message` e `sections`.
+
+Se começar pela prosa e depois for descendo para o payload, o host fica lento, redundante e com cara de quem precisa de três reuniões para abrir uma porta.
+
 ## 7. Checklist de aceite
 
 Status atual do checklist:

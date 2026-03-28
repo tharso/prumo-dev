@@ -4,6 +4,16 @@ Este arquivo registra mudanças públicas do produto Prumo.
 
 O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamento semântico.
 
+## [Unreleased]
+
+### Changed
+- O `start --format json` ficou menos torto para adapters: `state_flags` agora usa flags coerentes para conectividade (`google_connected`, `apple_reminders_connected`) sem misturar boolean com status textual na mesma gaveta.
+- Os templates do workspace ficaram mais explícitos sobre a ordem correta de consumo do JSON: primeiro `degradation`, `next_move`, `selection_contract` e `state_flags`; a prosa vem depois.
+
+### Docs
+- Os playbooks de `Codex`, `Claude Code`, `Antigravity` e `Gemini CLI` agora registram, sem charada, como consumir `start/briefing` estruturados sem voltar ao vício de pescar string.
+- Novo [HOST-CONSUMPTION-VALIDATION.md](/Users/tharsovieira/Documents/DailyLife/Prumo/HOST-CONSUMPTION-VALIDATION.md), transformando “validação real de host” em protocolo curto em vez de mito oral de corredor.
+
 ## [4.16.6] - 2026-03-27
 
 ### Fixed

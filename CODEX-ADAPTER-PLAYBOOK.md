@@ -48,19 +48,36 @@ O adapter do Codex deve respeitar:
 1. `adapter_contract_version`
 2. `workspace_resolution`
 3. `adapter_hints`
-4. `actions[].kind`
-5. `actions[].shell_command`
-6. `actions[].host_prompt`
+4. `state_flags`
+5. `degradation`
+6. `next_move`
+7. `selection_contract`
+8. `actions[].kind`
+9. `actions[].shell_command`
+10. `actions[].host_prompt`
 
 Traduzindo sem perfume:
 
-1. `kind = shell` -> executar `shell_command`
-2. `kind = host-prompt` -> usar `host_prompt` como continuação conversacional
-3. `adapter_hints.preferred_entrypoint` -> porta curta
-4. `adapter_hints.briefing_entrypoint` -> briefing explícito
-5. `adapter_hints.structured_entrypoint` -> rota estruturada
+1. `state_flags` decide fluxo rápido; `google_status` e `apple_reminders_status` contam o detalhe da integração
+2. `degradation.status != ok` significa "preserve o que ainda funciona e trate a avaria sem teatro"
+3. `selection_contract` governa aceite curto; não abra menu novo depois de `1`, `a`, `aceitar`, `seguir` ou equivalente
+4. `kind = shell` -> executar `shell_command`
+5. `kind = host-prompt` -> usar `host_prompt` como continuação conversacional
+6. `adapter_hints.preferred_entrypoint` -> porta curta
+7. `adapter_hints.briefing_entrypoint` -> briefing explícito
+8. `adapter_hints.structured_entrypoint` -> rota estruturada
 
 Se o adapter ignorar isso e decidir “interpretar o espírito do JSON”, ele volta a fazer o erro clássico: transformar contrato em horóscopo.
+
+## 4.1. Regra de bolso para a ordem de leitura
+
+Quando a saída vier em JSON:
+
+1. leia `degradation` e veja se há alerta operacional;
+2. leia `next_move` e `selection_contract`;
+3. só depois use `message` para lapidar a resposta humana.
+
+Se começar pelo textão, o host vira leitor de bula tentando pilotar avião.
 
 ## 5. Regras práticas
 

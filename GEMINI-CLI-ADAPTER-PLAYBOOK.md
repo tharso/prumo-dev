@@ -69,17 +69,23 @@ O adapter do `Gemini CLI` deve respeitar:
 1. `adapter_contract_version`
 2. `workspace_resolution`
 3. `adapter_hints`
-4. `actions[].kind`
-5. `actions[].shell_command`
-6. `actions[].host_prompt`
+4. `state_flags`
+5. `degradation`
+6. `next_move`
+7. `selection_contract`
+8. `actions[].kind`
+9. `actions[].shell_command`
+10. `actions[].host_prompt`
 
 Em português curto:
 
-1. `kind = shell` -> executar `shell_command`
-2. `kind = host-prompt` -> usar `host_prompt`
-3. `adapter_hints.preferred_entrypoint` -> porta curta
-4. `adapter_hints.briefing_entrypoint` -> briefing explícito
-5. `adapter_hints.structured_entrypoint` -> rota estruturada
+1. `state_flags` e `degradation` vêm antes da prosa; o runtime não está pedindo interpretação literária
+2. `selection_contract` manda no aceite curto
+3. `kind = shell` -> executar `shell_command`
+4. `kind = host-prompt` -> usar `host_prompt`
+5. `adapter_hints.preferred_entrypoint` -> porta curta
+6. `adapter_hints.briefing_entrypoint` -> briefing explícito
+7. `adapter_hints.structured_entrypoint` -> rota estruturada
 
 ## 6. Regras práticas
 
@@ -91,6 +97,19 @@ Em português curto:
 6. Nunca ler arquivos para "simular" `prumo` se o comando ainda não foi executado.
 7. Nunca escrever `_state/briefing-state.json` ou qualquer outro arquivo de estado fingindo ser o runtime.
 8. Nunca sintetizar JSON de `start`; ou roda `prumo start --format json`, ou assume que falhou.
+
+## 6.1. Ordem obrigatória de leitura
+
+No `Gemini CLI`, esta ordem não é capricho. É contenção:
+
+1. `degradation`
+2. `next_move`
+3. `selection_contract`
+4. `state_flags`
+5. `actions[]`
+6. só depois `message`
+
+Se o host começar pelo texto e "entender o espírito", ele volta a improvisar runtime na unha.
 
 ## 7. Checklist de aceite
 
