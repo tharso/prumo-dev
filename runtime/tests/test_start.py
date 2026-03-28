@@ -308,13 +308,16 @@ class StartCommandTests(unittest.TestCase):
             self.assertEqual(rc, 0)
             payload = json.loads(buffer.getvalue())
             self.assertEqual(payload["user_name"], "Batata")
-            self.assertEqual(payload["adapter_contract_version"], "2026-03-21")
+            self.assertEqual(payload["adapter_contract_version"], "2026-03-28")
             self.assertEqual(payload["workspace_resolution"]["source"], "explicit")
             self.assertEqual(payload["adapter_hints"]["preferred_entrypoint"]["shell_command"], "prumo")
             self.assertEqual(
                 payload["adapter_hints"]["briefing_structured_entrypoint"]["shell_command"],
                 f"prumo briefing --workspace {workspace.resolve()} --refresh-snapshot --format json",
             )
+            self.assertIn("canonical_refs", payload["adapter_hints"])
+            self.assertTrue(payload["adapter_hints"]["canonical_refs"]["invocation_contract"].endswith("canon/contracts/invocation.md"))
+            self.assertTrue(payload["adapter_hints"]["canonical_refs"]["briefing_orchestration"].endswith("canon/orchestration/briefing.md"))
             self.assertIn("Prumo", payload["adapter_hints"]["short_invocations"])
             self.assertIn("short_acceptance", payload["adapter_hints"]["behavior"])
             self.assertEqual(payload["platform"]["label"], platform_label())

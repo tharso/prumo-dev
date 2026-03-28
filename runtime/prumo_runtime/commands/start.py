@@ -13,6 +13,7 @@ from prumo_runtime.daily_operator import (
     next_move_payload,
     selection_contract_payload,
 )
+from prumo_runtime.constants import repo_root_from
 from prumo_runtime.workspace import (
     WorkspaceError,
     load_json,
@@ -21,7 +22,7 @@ from prumo_runtime.workspace import (
 
 LEGACY_MARKERS = ("CLAUDE.md", "PRUMO-CORE.md", "PAUTA.md", "INBOX.md", "REGISTRO.md")
 DEFAULT_DISCOVERY_DEPTH = 8
-ADAPTER_CONTRACT_VERSION = "2026-03-21"
+ADAPTER_CONTRACT_VERSION = "2026-03-28"
 
 
 def _parse_iso(value: str | None) -> datetime | None:
@@ -77,8 +78,25 @@ def _workspace_resolution_source(explicit_workspace: str | None, workspace: Path
     return "parent-discovery"
 
 
+def _build_canonical_refs() -> dict[str, str]:
+    repo_root = repo_root_from(Path(__file__))
+    if repo_root is None:
+        return {}
+    return {
+        "canon_root": str(repo_root / "canon"),
+        "invocation_contract": str(repo_root / "canon" / "contracts" / "invocation.md"),
+        "interaction_contract": str(repo_root / "canon" / "contracts" / "interaction-format.md"),
+        "file_governance": str(repo_root / "canon" / "governance" / "file-governance.md"),
+        "load_policy": str(repo_root / "canon" / "governance" / "load-policy.md"),
+        "briefing_orchestration": str(repo_root / "canon" / "orchestration" / "briefing.md"),
+        "inbox_processing": str(repo_root / "canon" / "operations" / "inbox-processing.md"),
+        "host_boundaries": str(repo_root / "canon" / "adapters" / "host-boundaries.md"),
+    }
+
+
 def _build_adapter_hints(workspace: Path) -> dict[str, object]:
     workspace_str = str(workspace)
+    canonical_refs = _build_canonical_refs()
     return {
         "contract_version": ADAPTER_CONTRACT_VERSION,
         "short_invocations": ["Prumo", "bom dia, Prumo"],
@@ -111,6 +129,7 @@ def _build_adapter_hints(workspace: Path) -> dict[str, object]:
             "short_acceptance": "if the user replies with 1, a, aceitar, aceitar e seguir, seguir or ok, execute next_move directly without rerunning start and without showing another menu first",
             "post_execution": "after executing an accepted or imperative action, report outcome and documentation changes before offering more options",
         },
+        "canonical_refs": canonical_refs,
     }
 
 
