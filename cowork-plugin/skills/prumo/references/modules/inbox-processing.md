@@ -3,6 +3,8 @@
 > **module_version: 4.16.6**
 >
 > Fonte canônica da triagem e do commit de inbox do Prumo.
+>
+> A partir de 2026-03-28, a casa canônica compartilhada passou a ser `Prumo/canon/operations/inbox-processing.md`. Este arquivo permanece como espelho legado durante a transição.
 
 ## Escopo
 

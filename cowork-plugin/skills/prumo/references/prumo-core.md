@@ -61,8 +61,8 @@ Quando um comando específico for executado, o agente deve ler o módulo corresp
 
 | Assunto | Módulo canônico |
 |---|---|
-| Briefing | `Prumo/cowork-plugin/skills/prumo/references/modules/briefing-procedure.md` |
-| Inbox | `Prumo/cowork-plugin/skills/prumo/references/modules/inbox-processing.md` |
+| Briefing | `Prumo/canon/orchestration/briefing.md` |
+| Inbox | `Prumo/canon/operations/inbox-processing.md` |
 | Revisão semanal | `Prumo/cowork-plugin/skills/prumo/references/modules/weekly-review.md` |
 | Update de versão | `Prumo/cowork-plugin/skills/prumo/references/modules/version-update.md` |
 | Multiagente | `Prumo/cowork-plugin/skills/prumo/references/modules/multiagent.md` |
@@ -70,9 +70,9 @@ Quando um comando específico for executado, o agente deve ler o módulo corresp
 | Higiene do CLAUDE | `Prumo/cowork-plugin/skills/prumo/references/modules/claude-hygiene.md` |
 | Runtime do Cowork | `Prumo/cowork-plugin/skills/prumo/references/modules/cowork-runtime-maintenance.md` |
 | Bridge do runtime no Cowork | `Prumo/cowork-plugin/skills/prumo/references/modules/cowork-runtime-bridge.md` |
-| Contrato de interface | `Prumo/cowork-plugin/skills/prumo/references/modules/interaction-format.md` |
-| Governança de arquivos | `Prumo/cowork-plugin/skills/prumo/references/modules/runtime-file-governance.md` |
-| Política de leitura | `Prumo/cowork-plugin/skills/prumo/references/modules/load-policy.md` |
+| Contrato de interface | `Prumo/canon/contracts/interaction-format.md` |
+| Governança de arquivos | `Prumo/canon/governance/file-governance.md` |
+| Política de leitura | `Prumo/canon/governance/load-policy.md` |
 | Runtime paths | `Prumo/cowork-plugin/skills/prumo/references/modules/runtime-paths.md` |
 | Feedback do produto | `Prumo/cowork-plugin/skills/prumo/references/feedback-loop.md` |
 
@@ -192,7 +192,7 @@ Sempre que houver mais de um caminho razoável, oferecer alternativas curtas e r
 
 Ler e seguir:
 
-- `Prumo/cowork-plugin/skills/prumo/references/modules/briefing-procedure.md`
+- `Prumo/canon/orchestration/briefing.md`
 
 Esse módulo cobre:
 
@@ -211,7 +211,7 @@ Esse módulo cobre:
 
 Ler e seguir:
 
-- `Prumo/cowork-plugin/skills/prumo/references/modules/inbox-processing.md`
+- `Prumo/canon/operations/inbox-processing.md`
 
 Esse módulo cobre:
 

@@ -3,6 +3,8 @@
 > **module_version: 4.16.6**
 >
 > Política canônica de leitura incremental do Prumo.
+>
+> A partir de 2026-03-28, a casa canônica compartilhada passou a ser `Prumo/canon/governance/load-policy.md`. Este arquivo permanece como espelho legado enquanto o bundle antigo ainda respira.
 
 ## Princípios
 

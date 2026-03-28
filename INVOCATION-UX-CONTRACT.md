@@ -1,5 +1,9 @@
 # Contrato de Invocação do Prumo
 
+> Fonte canônica atual: [canon/contracts/invocation.md](/Users/tharsovieira/Documents/DailyLife/Prumo/canon/contracts/invocation.md)
+>
+> Este arquivo continua útil como explicação de produto e contexto de migração. A regra viva, porém, já não deveria morar só aqui.
+
 Este documento existe para impedir que o produto volte a escorregar para o erro clássico: um runtime bom com cinco portas tortas, uma por host, e nenhuma que o usuário consiga achar sem mapa.
 
 ## Regra-mãe

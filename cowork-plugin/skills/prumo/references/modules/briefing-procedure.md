@@ -5,6 +5,8 @@
 > Fonte canônica do procedimento de `/prumo:briefing`.
 > Se este módulo conflitar com um resumo em `SKILL.md`, este módulo vence.
 > Se este módulo conflitar com um `ASSERT:` do `PRUMO-CORE.md`, o `ASSERT:` vence.
+>
+> A partir de 2026-03-28, a partitura compartilhada do briefing passou a morar em `Prumo/canon/orchestration/briefing.md`. Este arquivo segue como procedimento legado do bundle Cowork, com detalhes de bridge e fallback ainda específicos desse host.
 
 ## Pré-carga obrigatória
 
@@ -12,7 +14,7 @@ Antes de executar o briefing:
 
 1. Ler `CLAUDE.md`.
 2. Ler `PRUMO-CORE.md`.
-3. Ler `Prumo/cowork-plugin/skills/prumo/references/modules/load-policy.md` quando o repo local estiver disponível.
+3. Ler `Prumo/canon/governance/load-policy.md` quando o repo local estiver disponível.
 4. Ler `Prumo/cowork-plugin/skills/prumo/references/modules/version-update.md`.
 5. Ler `Prumo/cowork-plugin/skills/prumo/references/modules/runtime-paths.md` quando houver shell.
 

@@ -10,7 +10,7 @@ Em português simples: briefing continua importante, mas não pode continuar sen
 
 A direcao estrutural para Google no runtime agora esta formalizada em [ADR-001-GOOGLE-INTEGRATION.md](/Users/tharsovieira/Documents/DailyLife/Prumo/ADR-001-GOOGLE-INTEGRATION.md): Google APIs diretas como destino, snapshots como ponte.
 
-O contrato de invocação do produto agora também está explícito em [INVOCATION-UX-CONTRACT.md](/Users/tharsovieira/Documents/DailyLife/Prumo/INVOCATION-UX-CONTRACT.md). Serve para impedir que cada host invente uma porta diferente e depois jure que isso era estratégia.
+O contrato de invocação do produto agora também está explícito em [INVOCATION-UX-CONTRACT.md](/Users/tharsovieira/Documents/DailyLife/Prumo/INVOCATION-UX-CONTRACT.md). E a nova casa do canon compartilhado começou a sair do papel em [canon/](/Users/tharsovieira/Documents/DailyLife/Prumo/canon). Já era hora de parar de usar README como cartório improvisado.
 
 Também ficou registrada, sem nostalgia boba e sem maquiagem de benchmark, a comparação entre o legado plugin-first e o runtime atual em [PRUMO-PLUGIN-VS-RUNTIME-COMPARISON.md](/Users/tharsovieira/Documents/DailyLife/Prumo/PRUMO-PLUGIN-VS-RUNTIME-COMPARISON.md). Esse documento existe para fixar o objetivo certo: recuperar a fluidez antiga sem recuperar o acoplamento antigo.
 
