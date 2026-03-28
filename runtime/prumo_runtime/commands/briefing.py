@@ -617,6 +617,68 @@ def build_inbox_line(workspace: Path, inbox_text: str, preview: dict) -> str:
     return f"Inbox4Mobile: {preview_count} item(ns). {summary}.{note}{preview_hint}"
 
 
+def build_briefing_degradation(
+    *,
+    core_outdated: bool,
+    snapshot: dict,
+    overview: dict,
+    next_move: dict[str, object] | None,
+) -> dict[str, object]:
+    alerts: list[dict[str, object]] = []
+    if core_outdated:
+        alerts.append(
+            {
+                "id": "core-outdated",
+                "level": "warning",
+                "summary": "O core do workspace está defasado em relação ao runtime.",
+                "action_id": "align-core",
+            }
+        )
+
+    snapshot_status = str(snapshot.get("status") or "")
+    snapshot_note = str(snapshot.get("note") or "").strip()
+    if snapshot_status in {"partial", "cache", "needs_reauth", "timeout", "unavailable", "disabled"}:
+        alerts.append(
+            {
+                "id": f"snapshot-{snapshot_status}",
+                "level": "warning",
+                "summary": snapshot_note or f"Snapshot em estado {snapshot_status}.",
+                "action_id": next_move["id"] if next_move and next_move["id"] in {"briefing", "auth-google", "auth-google-help"} else None,
+            }
+        )
+    elif snapshot_status == "error":
+        alerts.append(
+            {
+                "id": "snapshot-error",
+                "level": "error",
+                "summary": snapshot_note or "A coleta principal do briefing falhou sem fallback útil.",
+                "action_id": next_move["id"] if next_move else None,
+            }
+        )
+
+    google_status = str(overview["google_integration"]["active_profile_status"] or "")
+    if google_status == "needs_reauth":
+        alerts.append(
+            {
+                "id": "google-needs-reauth",
+                "level": "warning",
+                "summary": "Google pede reautenticação; briefing segue, mas a integração direta está manca.",
+                "action_id": "auth-google",
+            }
+        )
+
+    status = "ok"
+    if any(alert["level"] == "error" for alert in alerts):
+        status = "error"
+    elif alerts:
+        status = "partial"
+
+    return {
+        "status": status,
+        "alerts": alerts,
+    }
+
+
 def choose_proposal(quente: list[str], agendado: list[str], andamento: list[str], snapshot: dict) -> str:
     if quente:
         return quente[0]
@@ -691,6 +753,12 @@ def build_briefing_payload(workspace: Path, refresh_snapshot: bool = False) -> d
     next_move = next_move_payload(actions)
     proposal = choose_proposal(quente, agendado, andamento, snapshot)
     daily_operation = daily_operation_payload(workspace)
+    degradation = build_briefing_degradation(
+        core_outdated=core_outdated,
+        snapshot=snapshot,
+        overview=overview,
+        next_move=next_move,
+    )
 
     sections = [
         {"id": "preflight", "label": "Preflight", "text": preflight_text},
@@ -783,6 +851,17 @@ def build_briefing_payload(workspace: Path, refresh_snapshot: bool = False) -> d
             "email_note": str(snapshot.get("email_note") or ""),
             "email_display": str(snapshot.get("email_display") or ""),
         },
+        "integration_status": {
+            "google": {
+                "status": str(overview["google_integration"]["active_profile_status"] or ""),
+                "summary": google_text,
+            },
+            "apple_reminders": {
+                "status": str(overview["apple_reminders"]["status"] or ""),
+                "summary": apple_text,
+            },
+        },
+        "degradation": degradation,
         "canonical_refs": canonical_refs_from(Path(__file__)),
         "message": "\n".join(lines),
     }

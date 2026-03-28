@@ -131,11 +131,16 @@ class BriefingSnapshotTests(unittest.TestCase):
             self.assertIn("actions", payload)
             self.assertIn("next_move", payload)
             self.assertIn("selection_contract", payload)
+            self.assertIn("integration_status", payload)
+            self.assertIn("degradation", payload)
             self.assertEqual(payload["platform"]["label"], platform_label())
             self.assertFalse(any(section["id"] == "workflow_scaffolding" for section in payload["sections"]))
             self.assertTrue(any("documentation_targets" in action for action in payload["actions"]))
             self.assertEqual(payload["selection_contract"]["accepts_next_move"], "continue")
             self.assertIn("aceitar", payload["selection_contract"]["accept_tokens"])
+            self.assertEqual(payload["integration_status"]["google"]["status"], "disconnected")
+            self.assertEqual(payload["degradation"]["status"], "partial")
+            self.assertTrue(any(alert["id"] == "snapshot-disabled" for alert in payload["degradation"]["alerts"]))
 
     def test_write_and_load_snapshot_cache_preserves_notes(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

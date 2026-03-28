@@ -245,6 +245,74 @@ def _render_start_text(workspace: Path, overview: dict) -> str:
     return "\n".join(lines)
 
 
+def _build_state_flags(
+    overview: dict,
+    *,
+    has_briefed_today: bool,
+    continue_item: str | None,
+    inbox_count: int,
+) -> dict[str, object]:
+    missing = overview["missing"]
+    return {
+        "needs_repair": bool(missing["generated"] or missing["derived"]),
+        "missing_authorial": bool(missing["authorial"]),
+        "needs_core_alignment": bool(overview.get("core_outdated")),
+        "has_briefed_today": has_briefed_today,
+        "has_continue_item": bool(continue_item),
+        "inbox_count": inbox_count,
+        "google_connected": overview["google_integration"]["active_profile_status"] == "connected",
+        "apple_reminders_status": overview["apple_reminders"]["status"],
+    }
+
+
+def _build_start_degradation(
+    overview: dict,
+    actions: list[dict[str, object]],
+    state_flags: dict[str, object],
+) -> dict[str, object]:
+    alerts: list[dict[str, object]] = []
+    actions_by_id = {str(action["id"]): action for action in actions}
+    if state_flags["needs_repair"]:
+        alerts.append(
+            {
+                "id": "workspace-structure-broken",
+                "level": "error",
+                "summary": "Faltam arquivos recriáveis do workspace; produtividade sem repair aqui é teatro.",
+                "action_id": "repair",
+            }
+        )
+    if state_flags["needs_core_alignment"]:
+        alerts.append(
+            {
+                "id": "core-outdated",
+                "level": "warning",
+                "summary": "O core do workspace está defasado em relação ao runtime.",
+                "action_id": "align-core" if "align-core" in actions_by_id else None,
+            }
+        )
+    google_status = str(overview["google_integration"]["active_profile_status"] or "")
+    if google_status == "needs_reauth":
+        alerts.append(
+            {
+                "id": "google-needs-reauth",
+                "level": "warning",
+                "summary": "Google pede reautenticação; a integração direta não está inteira.",
+                "action_id": "auth-google" if "auth-google" in actions_by_id else "auth-google-help" if "auth-google-help" in actions_by_id else None,
+            }
+        )
+
+    status = "ok"
+    if any(alert["level"] == "error" for alert in alerts):
+        status = "error"
+    elif alerts:
+        status = "partial"
+
+    return {
+        "status": status,
+        "alerts": alerts,
+    }
+
+
 def run_start(args) -> int:
     workspace = (
         Path(args.workspace).expanduser().resolve()
@@ -272,12 +340,21 @@ def run_start(args) -> int:
         str(load_json(workspace / "_state" / "briefing-state.json").get("last_briefing_at") or "").strip(),
         overview["timezone"],
     )
+    continue_item = choose_continue_item(workspace)
+    inbox_count = inbox_item_count(workspace)
     actions = build_daily_actions(
         workspace,
         overview,
         has_briefed_today=has_briefed_today,
     )
     next_move = next_move_payload(actions)
+    state_flags = _build_state_flags(
+        overview,
+        has_briefed_today=has_briefed_today,
+        continue_item=continue_item,
+        inbox_count=inbox_count,
+    )
+    degradation = _build_start_degradation(overview, actions, state_flags)
 
     payload = {
         "adapter_contract_version": ADAPTER_CONTRACT_VERSION,
@@ -297,6 +374,8 @@ def run_start(args) -> int:
         "google_status": overview["google_integration"]["active_profile_status"],
         "apple_reminders_status": overview["apple_reminders"]["status"],
         "missing": overview["missing"],
+        "state_flags": state_flags,
+        "degradation": degradation,
         "adapter_hints": _build_adapter_hints(workspace),
         "actions": actions,
         "message": _render_start_text(workspace, overview),
