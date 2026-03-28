@@ -27,7 +27,9 @@ def _render_workspace_runtime_rules() -> str:
 11. Não escreva arquivos em `_state/` fingindo ser o runtime.
 12. Não fabrique JSON de `prumo start --format json` ou `prumo briefing --format json`. Ou retorna a saída real, ou assume que falhou.
 13. Não rode comando extra só porque ficou curioso. Execute o que foi pedido ou o que o runtime sugeriu.
-14. Se um comando falhar por uso ou argumento inválido, não repita a mesma linha cegamente."""
+14. Se um comando falhar por uso ou argumento inválido, não repita a mesma linha cegamente.
+15. Se houver falha parcial, preservar o que ainda presta e avisar em uma linha curta, sem despejar jargão técnico.
+16. Quando houver escolha, prefira uma pergunta por vez e opções curtas. Produto não é formulário com perfume."""
 
 
 def _render_wrapper_runtime_rules() -> str:
@@ -41,7 +43,9 @@ def _render_wrapper_runtime_rules() -> str:
 8. Não leia arquivo para simular briefing ou start. Primeiro execute o comando real.
 9. Não escreva `_state/` fingindo ser o runtime.
 10. Não rode comando extra sem necessidade.
-11. Se um comando falhar por uso ou argumento inválido, não repita a mesma linha como disco riscado."""
+11. Se um comando falhar por uso ou argumento inválido, não repita a mesma linha como disco riscado.
+12. Em falha parcial, preserve o que ainda serve e explique o tropeço em uma linha curta, sem vazar stack trace.
+13. Quando houver escolha real, faça uma pergunta por vez e ofereça opções curtas em vez de cardápio burocrático."""
 
 
 def render_agent_md(
