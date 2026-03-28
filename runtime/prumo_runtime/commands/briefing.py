@@ -9,10 +9,6 @@ from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from prumo_runtime.apple_reminders import (
-    apple_reminders_summary,
-    fetch_apple_reminders_today,
-)
 from prumo_runtime.constants import RUNTIME_VERSION, repo_root_from
 from prumo_runtime.constants import ADAPTER_CONTRACT_VERSION, canonical_refs_from
 from prumo_runtime.daily_operator import (
@@ -28,7 +24,6 @@ from prumo_runtime.google_api import (
 )
 from prumo_runtime.google_integration import google_integration_summary
 from prumo_runtime.inbox_preview import find_existing_path, load_inbox_preview, summarize_inbox_entry
-from prumo_runtime.platform_support import is_macos, platform_label
 from prumo_runtime.workspace import (
     build_config_from_existing,
     extract_section,
@@ -274,12 +269,6 @@ def resolve_snapshot_data(
                 timezone_name,
                 profile=connected_profile,
             )
-            direct_snapshot = enrich_snapshot_with_apple_reminders(
-                workspace,
-                timezone_name,
-                direct_snapshot,
-                refresh_snapshot=refresh_snapshot,
-            )
             write_snapshot_cache(workspace, timezone_name, direct_snapshot)
             direct_snapshot["cached_at"] = now_iso(timezone_name)
             return direct_snapshot
@@ -288,12 +277,6 @@ def resolve_snapshot_data(
                 cached["note"] = f"{cached['note']} Google API falhou ({exc}); usei cache."
                 return cached
             fallback_snapshot = run_dual_snapshot(workspace, repo_root)
-            fallback_snapshot = enrich_snapshot_with_apple_reminders(
-                workspace,
-                timezone_name,
-                fallback_snapshot,
-                refresh_snapshot=refresh_snapshot,
-            )
             if fallback_snapshot.get("ok_profiles", 0):
                 fallback_snapshot["note"] = (
                     f"Google API falhou ({exc}). "
@@ -310,12 +293,7 @@ def resolve_snapshot_data(
                 "source": "google-direct-api",
             }
     fallback_snapshot = run_dual_snapshot(workspace, repo_root)
-    return enrich_snapshot_with_apple_reminders(
-        workspace,
-        timezone_name,
-        fallback_snapshot,
-        refresh_snapshot=refresh_snapshot,
-    )
+    return fallback_snapshot
 
 
 def run_dual_snapshot(workspace: Path, repo_root: Path | None) -> dict:
@@ -498,102 +476,6 @@ def summarize_google_status(workspace: Path, timezone_name: str) -> str:
     return f"{status}. Rode `prumo context-dump --workspace ... --format json` antes de chutar a parede."
 
 
-def summarize_apple_reminders_status(workspace: Path, timezone_name: str) -> str:
-    payload = apple_reminders_summary(workspace)
-    status = str(payload.get("status") or "disconnected")
-    auth_status = str(payload.get("authorization_status") or "unknown")
-    lists = [str(item).strip() for item in payload.get("lists", []) if str(item).strip()]
-    observed_lists = [str(item).strip() for item in payload.get("observed_lists", []) if str(item).strip()]
-    last_refresh = short_clock(str(payload.get("last_refresh_at") or ""), timezone_name)
-    last_refresh_age = age_in_minutes(str(payload.get("last_refresh_at") or ""), timezone_name)
-    last_error = str(payload.get("last_error") or "").strip()
-
-    if status == "connected":
-        scope = (
-            f"observando {len(observed_lists)} lista(s)"
-            if observed_lists
-            else f"{len(lists)} lista(s)"
-            if lists
-            else "sem listas visíveis"
-        )
-        suffix = f" ({scope})"
-        if last_refresh:
-            age_text = humanize_age_minutes(last_refresh_age)
-            if age_text:
-                return f"conectado{suffix}, ultimo refresh {last_refresh} ({age_text}). fora do foco desta fase, mas não está atrapalhando."
-            return f"conectado{suffix}, ultimo refresh {last_refresh}. fora do foco desta fase, mas de pé."
-        return f"conectado{suffix}. fora do foco desta fase, mas de pé."
-
-    if not is_macos():
-        return f"indisponível em {platform_label()}. Apple Reminders ficou fora desta fase e não bloqueia o produto."
-
-    if status in {"denied", "disconnected", "unsupported"}:
-        base = "desconectado"
-        if auth_status in {"denied", "restricted"}:
-            base = f"{base}; a Apple negou acesso"
-        message = f"{base}. Apple Reminders ficou no backlog desta fase e não deve sequestrar a conversa."
-        if last_error:
-            return f"{message} {last_error}"
-        return message
-
-    if status == "error":
-        if last_error:
-            return f"erro lendo Apple Reminders. {last_error} Como isso ficou fora desta fase, trate como degradação tolerável."
-        return "erro lendo Apple Reminders. Como isso ficou fora desta fase, trate como degradação tolerável."
-
-    if status == "ok":
-        return "ok. Isso ficou com cheiro de estado intermediário demais, mas pelo menos não caiu."
-
-    return f"{status}. Rode `prumo context-dump --workspace ... --format json` antes de xingar a Apple."
-
-
-def enrich_snapshot_with_apple_reminders(
-    workspace: Path,
-    timezone_name: str,
-    snapshot: dict,
-    *,
-    refresh_snapshot: bool = False,
-) -> dict:
-    apple_state = apple_reminders_summary(workspace)
-    apple_status = str(apple_state.get("status") or "disconnected")
-    if apple_status not in {"connected", "ok"}:
-        return snapshot
-
-    try:
-        apple_payload = fetch_apple_reminders_today(
-            workspace,
-            timezone_name,
-            refresh=refresh_snapshot,
-        )
-    except Exception as exc:
-        note = f"Apple Reminders falhou ({exc}); ignorei o tropeço."
-        previous = str(snapshot.get("note") or "").strip()
-        snapshot["note"] = f"{previous} {note}".strip() if previous else note
-        return snapshot
-
-    items = list(apple_payload.get("items") or [])
-    note = str(apple_payload.get("note") or "").strip()
-    if items:
-        profiles = snapshot.setdefault("profiles", {})
-        profiles["apple-reminders"] = {
-            "status": "OK",
-            "account": "EventKit local",
-            "agenda_today": items,
-            "agenda_tomorrow": [],
-            "emails_total": 0,
-            "triage_reply": [],
-            "triage_view": [],
-            "triage_no_action": [],
-            "errors": [],
-        }
-        snapshot["ok_profiles"] = int(snapshot.get("ok_profiles") or 0) + 1
-
-    if note:
-        previous = str(snapshot.get("note") or "").strip()
-        snapshot["note"] = f"{previous} {note}".strip() if previous else note
-    return snapshot
-
-
 def build_inbox_line(workspace: Path, inbox_text: str, preview: dict) -> str:
     inbox_count = count_inbox_items(inbox_text)
     preview_count = int(preview.get("count") or 0)
@@ -734,7 +616,6 @@ def build_briefing_payload(workspace: Path, refresh_snapshot: bool = False) -> d
         else "runtime e workspace parecem minimamente alinhados."
     )
     google_text = summarize_google_status(workspace, config.timezone_name)
-    apple_text = summarize_apple_reminders_status(workspace, config.timezone_name)
     agenda_text = summarize_agenda(snapshot)
     inbox_mobile_text = build_inbox_line(workspace, inbox_text, preview)
     emails_text = summarize_emails(snapshot)
@@ -785,9 +666,6 @@ def build_briefing_payload(workspace: Path, refresh_snapshot: bool = False) -> d
             ),
         },
     ]
-
-    if overview["apple_reminders"]["status"] == "connected":
-        sections.insert(2, {"id": "apple_reminders", "label": "Apple Reminders", "text": apple_text})
 
     lines: list[str] = []
     for index, section in enumerate(sections, start=1):
@@ -855,10 +733,6 @@ def build_briefing_payload(workspace: Path, refresh_snapshot: bool = False) -> d
             "google": {
                 "status": str(overview["google_integration"]["active_profile_status"] or ""),
                 "summary": google_text,
-            },
-            "apple_reminders": {
-                "status": str(overview["apple_reminders"]["status"] or ""),
-                "summary": apple_text,
             },
         },
         "degradation": degradation,

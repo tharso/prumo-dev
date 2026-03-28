@@ -77,7 +77,7 @@ Estas premissas ficam explícitas para ninguém voltar a escorregar:
 2. `Gemini CLI` e `Antigravity` são hosts diferentes e merecem adapters diferentes, mesmo quando usarem a mesma família Gemini.
 3. `Codex` é host próprio e não deve ser tratado como benchmark universal. Ele é só o primeiro trilho de implementação porque já mostrou o comportamento mais promissor.
 4. A ordem de implementação não define host favorito. Define apenas por onde começamos a asfaltar a estrada.
-5. Permissões locais são por app. `Codex.app` autorizado para Apple Reminders não implica `Cowork.app` ou `Antigravity.app` autorizados.
+5. Permissões locais e integrações opcionais são por app. Não use detalhe de host como bússola do produto.
 
 ## 3.1. Mapa de documentação oficial por host
 
@@ -284,7 +284,7 @@ Estado atual:
 1. shell explícito validado;
 2. `start --format json` validado;
 3. invocação curta ainda fora do trilho;
-4. `Apple Reminders` bloqueado por limitação operacional de TCC/app no host.
+4. invocação natural ainda fora do trilho.
 
 ### 6.3. Slice 3: Cowork
 
@@ -359,7 +359,7 @@ Estado atual:
 3. `start --format json` passou;
 4. o host respeitou o runtime, sem improvisar briefing por leitura de arquivo nem escrever `_state/` na unha;
 5. ainda tropeça em disciplina de execução (comando extra e repetição de flag inválida);
-6. `Apple Reminders` segue pendente por permissão por app.
+6. a disciplina de execução ainda merece vigilância.
 
 ## 7. Critério de aceite por host
 
@@ -468,10 +468,10 @@ Status de campo:
 ### 8.6. Fotografia atual dos hosts
 
 1. `Codex` -> aprovado como primeiro adapter implementado.
-2. `Claude Code` -> shell explícito aprovado; invocação curta e `Apple Reminders` ainda pendentes.
+2. `Claude Code` -> shell explícito aprovado; invocação curta ainda pendente.
 3. `Cowork` -> serve como casca fina quando executa `prumo`; invocação curta/nativa falhou e o ecossistema plugin-first continua pouco confiável.
 4. `Gemini CLI` -> reprovado como adapter nesta rodada.
-5. `Antigravity` -> validado para rota curta e uso do runtime; `Apple Reminders` ainda pendente por permissão por app e a disciplina operacional ainda merece vigilância.
+5. `Antigravity` -> validado para rota curta e uso do runtime; a disciplina operacional ainda merece vigilância.
 
 ## 9. Entregáveis deste novo bloco
 

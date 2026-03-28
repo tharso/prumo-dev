@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from prumo_runtime.platform_support import is_macos, runtime_platform_summary
+from prumo_runtime.platform_support import runtime_platform_summary
 
 
 def workflow_registry_path(workspace: Path) -> Path:
@@ -17,12 +17,7 @@ def workflow_scaffolding_summary(workspace: Path) -> dict[str, str]:
     }
 
 
-def runtime_capabilities(workspace: Path, google_summary: dict, apple_summary: dict) -> dict:
-    apple_supported = is_macos()
-    apple_status = str(apple_summary.get("status") or "disconnected")
-    if not apple_supported:
-        apple_status = "unsupported"
-
+def runtime_capabilities(workspace: Path, google_summary: dict) -> dict:
     return {
         "platform": runtime_platform_summary(),
         "providers": {
@@ -33,13 +28,6 @@ def runtime_capabilities(workspace: Path, google_summary: dict, apple_summary: d
                 "token_storage_supported": bool(google_summary.get("token_storage_supported", False)),
                 "token_storage_secure": bool(google_summary.get("token_storage_secure", False)),
                 "token_storage_backend": str(google_summary.get("token_storage_backend") or "unknown"),
-            },
-            "apple_reminders": {
-                "supported": apple_supported,
-                "status": apple_status,
-                "strategy": str(apple_summary.get("strategy") or "eventkit-local"),
-                "phase_status": "backlog",
-                "platform_scope": "macos-only",
             },
         },
         "daily_operation": {

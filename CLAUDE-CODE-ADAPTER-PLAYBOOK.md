@@ -12,7 +12,7 @@ Hoje, a situação do `Claude Code` é esta:
 
 1. a base documental oficial é boa;
 2. o contrato do runtime já está pronto para ele;
-3. a validação de campo neste projeto já provou shell explícito, mas ainda não fechou invocação natural nem Apple Reminders por app.
+3. a validação de campo neste projeto já provou shell explícito, mas ainda não fechou invocação natural de modo consistente.
 
 Traduzindo sem maquiagem: aqui o terreno é melhor documentado do que no `Cowork`, mas ainda menos testado em produção do que no `Codex`.
 
@@ -25,14 +25,11 @@ O teste real no `Claude Code` mostrou um retrato misto:
    - `prumo --version`
    - `prumo start --workspace . --format json`
    - `prumo briefing --workspace . --refresh-snapshot`
-3. `Apple Reminders` continuou bloqueado no host, mesmo depois de reset de TCC e auth repetido;
-4. o painel de `Privacidade e Segurança > Lembretes` mostrou apenas `Terminal.app`, não `Claude Code`.
-
 Conclusão prática:
 
 1. `Claude Code` está aprovado como host com shell;
 2. `Claude Code` está reprovado, por enquanto, em invocação natural;
-3. `Claude Code` está bloqueado, por enquanto, em `Apple Reminders` por limitação operacional do app/TCC.
+3. `Claude Code` ainda precisa provar disciplina melhor fora do caminho explícito.
 
 ## 2. Fontes oficiais que importam
 
@@ -82,7 +79,7 @@ O adapter do `Claude Code` deve respeitar:
 
 Em português simples:
 
-1. `state_flags` serve para decisão rápida; `google_status` e `apple_reminders_status` servem para detalhe
+1. `state_flags` serve para decisão rápida; `google_status` e `integration_status` servem para detalhe
 2. `degradation` existe para evitar pânico burro ou otimismo igualmente burro
 3. `selection_contract` manda no aceite curto; não reabra menu depois de aceitação explícita
 4. `kind = shell` -> executar `shell_command`
@@ -106,7 +103,7 @@ Ao consumir JSON:
 2. Respeitar `AGENT.md`, `AGENTS.md` e `CLAUDE.md` como wrappers do runtime.
 3. Não cair no reflexo "já que é Claude, vou usar o fluxo do Cowork". Isso seria preguiça com gravata.
 4. Não depender de plugin store, registry local ou slash command do `Cowork`.
-5. Tratar permissões locais por app. `Claude Code` precisa das próprias permissões para Apple Reminders se quiser usar essa integração.
+5. Tratar integrações opcionais e permissões locais como detalhe do host, não como bússola do produto.
 
 ## 7. Checklist de aceite
 
@@ -138,5 +135,4 @@ Esta é a parte que precisa ficar tatuada no plano:
 
 1. manter registrado que `shell explícito` já passou;
 2. tratar `invocação curta` como pendência real do adapter;
-3. tratar `Apple Reminders` como bloqueio operacional do host/TCC, não como bug central do Prumo;
-4. não deixar essa limitação sequestrar a sequência do roadmap.
+3. não deixar detalhes opcionais de integração sequestrarem a sequência do roadmap.

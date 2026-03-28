@@ -1,12 +1,12 @@
-# Bridge: Google Apps Script snapshots multi-conta
+# Bridge arquivada: Google Apps Script snapshots
 
-Este material existe para uma coisa específica: manter a ponte multi-conta viva sem fingir que ela virou a direção principal da integração Google no runtime.
+Este material existe como arquivo de referência. Não é direção do MVP atual nem prioridade do produto neste momento.
 
 Pelo [ADR-001-GOOGLE-INTEGRATION.md](/Users/tharsovieira/Documents/DailyLife/Prumo/ADR-001-GOOGLE-INTEGRATION.md), a direção estrutural do runtime é Google APIs diretas. Apps Script + Drive continua valendo como:
 
 1. ponte pragmática;
 2. fallback host-neutral;
-3. saída de curto prazo para multi-conta sem depender de MCP temperamental.
+3. trilha histórica caso o projeto precise reabrir esse caminho no futuro.
 
 Não vale tratá-lo como:
 
@@ -16,13 +16,12 @@ Não vale tratá-lo como:
 
 ## Status de produto
 
-Para o MVP atual, esta ponte fica fora da primeira entrega.
+Para o MVP atual, esta ponte fica fora do horizonte ativo.
 
 Em português direto:
 
 1. uma conta Google bem integrada já compra valor suficiente para o piloto;
-2. multi-conta continua documentada e rastreável;
-3. mas não entra agora como requisito do MVP, porque seria um ótimo jeito de trocar foco por cobertura ornamental.
+2. mas não entra agora como requisito do MVP, porque seria um ótimo jeito de trocar foco por cobertura ornamental.
 
 ## Artefatos rastreáveis
 
@@ -34,4 +33,4 @@ Em português direto:
 
 Se a pergunta for “isso substitui a integração Google do runtime?”, a resposta é não.
 
-Se a pergunta for “isso ainda é uma ponte útil para multi-conta hoje?”, a resposta é sim.
+Se a pergunta for “isso orienta a arquitetura atual?”, a resposta é não.

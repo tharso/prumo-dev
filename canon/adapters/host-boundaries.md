@@ -20,7 +20,7 @@ Este arquivo separa o que e regra de produto do que e detalhe de host. Sem essa 
 2. manutencao especifica de plugin;
 3. runtime paths historicos;
 4. marketplace e manifestos;
-5. permissao de Apple Reminders por app;
+5. permissao local e detalhes de integracao opcional por app;
 6. affordance visual e politica de autonomia de cada host;
 7. detalhes de transporte seguro de update.
 

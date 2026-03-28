@@ -8,11 +8,9 @@ from prumo_runtime.workspace import workspace_overview
 
 def render_markdown(payload: dict) -> str:
     google = payload["google_integration"]
-    apple = payload["apple_reminders"]
     platform = payload["platform"]
     capabilities = payload["capabilities"]
     connected = ", ".join(google["connected_profiles"]) or "nenhum"
-    observed = ", ".join(apple.get("observed_lists") or []) or "todas"
     lines = [
         "# Prumo context-dump",
         "",
@@ -29,8 +27,6 @@ def render_markdown(payload: dict) -> str:
         f"- Perfil Google ativo: `{google['active_profile']}`",
         f"- Perfis Google conectados: `{connected}`",
         f"- Google token storage: `{google.get('token_storage_backend', 'desconhecido')}`",
-        f"- Apple Reminders: `{apple['status']}`",
-        f"- Apple listas observadas: `{observed}`",
         "",
         "## Capacidades",
         "",

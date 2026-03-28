@@ -261,7 +261,6 @@ def _build_state_flags(
         "has_continue_item": bool(continue_item),
         "inbox_count": inbox_count,
         "google_connected": overview["google_integration"]["active_profile_status"] == "connected",
-        "apple_reminders_connected": overview["apple_reminders"]["status"] == "connected",
     }
 
 
@@ -372,7 +371,6 @@ def run_start(args) -> int:
         "next_move": next_move,
         "selection_contract": selection_contract_payload(next_move),
         "google_status": overview["google_integration"]["active_profile_status"],
-        "apple_reminders_status": overview["apple_reminders"]["status"],
         "missing": overview["missing"],
         "state_flags": state_flags,
         "degradation": degradation,

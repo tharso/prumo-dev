@@ -6,8 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+### Scope
+- MVP limpo de fumaça: multi-conta e Apple Reminders saem do horizonte ativo do produto. Continuam como história e código legado onde já existirem, mas deixam de aparecer no contrato principal, nos playbooks e na conversa do dia.
+
 ### Changed
-- O `start --format json` ficou menos torto para adapters: `state_flags` agora usa flags coerentes para conectividade (`google_connected`, `apple_reminders_connected`) sem misturar boolean com status textual na mesma gaveta.
+- O `start --format json` ficou mais seco para adapters: `state_flags` agora carrega só o que move decisão do MVP, sem puxar Apple Reminders de volta para a mesa.
 - Os templates do workspace ficaram mais explícitos sobre a ordem correta de consumo do JSON: primeiro `degradation`, `next_move`, `selection_contract` e `state_flags`; a prosa vem depois.
 
 ### Docs

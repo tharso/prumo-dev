@@ -58,7 +58,7 @@ O adapter do Codex deve respeitar:
 
 Traduzindo sem perfume:
 
-1. `state_flags` decide fluxo rápido; `google_status` e `apple_reminders_status` contam o detalhe da integração
+1. `state_flags` decide fluxo rápido; `google_status` e `integration_status` contam o detalhe operacional
 2. `degradation.status != ok` significa "preserve o que ainda funciona e trate a avaria sem teatro"
 3. `selection_contract` governa aceite curto; não abra menu novo depois de `1`, `a`, `aceitar`, `seguir` ou equivalente
 4. `kind = shell` -> executar `shell_command`
@@ -85,7 +85,7 @@ Se começar pelo textão, o host vira leitor de bula tentando pilotar avião.
 2. Respeitar `AGENT.md`, `AGENTS.md` e `CLAUDE.md` como wrappers do runtime, não como desculpa para inventar outro produto.
 3. Não chamar `briefing` por reflexo quando o runtime já ofereceu alternativa melhor.
 4. Não sugerir `setup`, `migrate`, `repair` ou `auth` por conta própria se o runtime já devolveu ação explícita.
-5. Tratar permissões locais como coisa por app. `Codex.app` precisa da própria permissão para Apple Reminders.
+5. Tratar integrações opcionais e permissões locais como detalhe do host, não como critério do MVP.
 
 ## 6. Checklist de aceite
 
@@ -94,8 +94,7 @@ Um teste de campo do adapter `Codex` passa quando:
 1. `Prumo` vira `prumo`;
 2. briefing explícito vira `prumo briefing --workspace . --refresh-snapshot`;
 3. `prumo start --format json` volta com estrutura íntegra e o host não a distorce;
-4. Apple Reminders, quando autorizados para `Codex.app`, aparecem no briefing;
-5. o usuário não precisa decorar subcomando para começar a conversa.
+4. o usuário não precisa decorar subcomando para começar a conversa.
 
 ## 7. O que não fazer
 

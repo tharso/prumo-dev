@@ -45,7 +45,7 @@ O retrato de campo dos hosts, hoje, ficou assim:
 4. `Cowork` fica em backlog preparado. Em modo atual, ele mora numa sandbox/VM que não enxerga o runtime local do host. Insistir nisso agora seria hobby caro.
 5. `Gemini CLI` foi reprovado como adapter porque tentou improvisar runtime e até mexeu em `_state/`.
 
-Para o MVP, a aposta honesta é mais estreita: uma conta Google bem integrada já resolve muito do valor do produto sem transformar setup em burocracia. A ponte multi-conta via Google Apps Script continua documentada, mas fica fora da primeira entrega. O motor do Prumo também saiu do formato armário de acumulador: o core agora é índice + guardrails, com procedimento detalhado em módulos canônicos. E a sanitização deixou de ser só “compactar handover”: o sistema agora já consegue arquivar frio seguro com índice global, sem brincar de sumiço.
+Para o MVP, a aposta honesta é mais estreita: uma conta Google bem integrada já resolve muito do valor do produto sem transformar setup em burocracia. O motor do Prumo também saiu do formato armário de acumulador: o core agora é índice + guardrails, com procedimento detalhado em módulos canônicos. E a sanitização deixou de ser só “compactar handover”: o sistema agora já consegue arquivar frio seguro com índice global, sem brincar de sumiço.
 
 Seus dados ficam em arquivos Markdown no seu computador. Sem cloud, sem conta, sem lock-in.
 E, a partir de agora, com um pouco mais de governo: o Prumo começou a explicitar o que pertence a `CLAUDE.md`, `PAUTA.md`, `REGISTRO.md` e histórico, em vez de fingir que tudo cabe no mesmo armário.
@@ -133,7 +133,6 @@ prumo start
 prumo migrate --workspace /caminho/do/workspace
 prumo auth google --workspace /caminho/do/workspace --client-secrets /caminho/do/client_secret.json
 prumo auth google --workspace /caminho/do/workspace --client-id SEU_CLIENT_ID --client-secret SEU_CLIENT_SECRET
-prumo auth apple-reminders --workspace /caminho/do/workspace
 prumo snapshot-refresh --workspace /caminho/do/workspace
 prumo snapshot-refresh --workspace /caminho/do/workspace --profile pessoal
 prumo context-dump --workspace /caminho/do/workspace --format json
@@ -181,43 +180,10 @@ Esses wrappers já não são só placa de "veja o balcão ao lado". Agora també
 E agora também deixa uma fundação decente para integrações e plataforma:
 
 1. `_state/google-integration.json` guarda estado e metadado da conexão;
-2. `_state/apple-reminders-integration.json` faz o mesmo para Apple Reminders;
-3. token sensível fica fora do workspace;
-4. no macOS, o runtime usa o Keychain;
-5. fora do macOS, o runtime cai para storage local próprio do runtime, fora do workspace;
-6. `context-dump` e `start --format json` agora expõem plataforma e capacidades de forma explícita.
-
-Apple Reminders continua existindo no runtime, mas saiu do foco desta fase. Não é critério de sucesso do produto agora:
-
-```bash
-prumo auth apple-reminders --workspace /caminho/do/workspace
-prumo auth apple-reminders --workspace /caminho/do/workspace --list "A vida..."
-prumo config apple-reminders --workspace /caminho/do/workspace
-prumo config apple-reminders --workspace /caminho/do/workspace --list "A vida..."
-prumo config apple-reminders --workspace /caminho/do/workspace --all
-```
-
-Hoje ele já consegue:
-
-1. pedir permissão local no macOS;
-2. registrar estado e listas visíveis no workspace;
-3. limitar listas observadas quando você quiser parar de vasculhar o universo inteiro;
-4. expor esse estado no `briefing` e no `context-dump`;
-5. reaproveitar cache local de Apple Reminders.
-
-Se quiser ajustar isso depois, sem reencenar autenticação:
-
-```bash
-prumo config apple-reminders --workspace /caminho/do/workspace
-prumo config apple-reminders --workspace /caminho/do/workspace --list "A vida..."
-prumo config apple-reminders --workspace /caminho/do/workspace --all
-```
-
-O ponto importante é outro:
-
-1. Apple Reminders não bloqueia esta fase;
-2. se estiver ausente, negado ou fora da plataforma, o produto deve degradar com clareza e seguir em frente;
-3. o foco agora é briefing bom, continuação útil, documentação viva e estrutura para workflows.
+2. token sensível fica fora do workspace;
+3. no macOS, o runtime usa o Keychain;
+4. fora do macOS, o runtime cai para storage local próprio do runtime, fora do workspace;
+5. `context-dump` e `start --format json` agora expõem plataforma e capacidades de forma explícita.
 
 E deixa uma coisa explícita, porque software adora esconder isso em rodapé: se você desinstalar o Prumo, seus arquivos continuam seus, legíveis e no mesmo lugar.
 
@@ -245,7 +211,7 @@ Se houver conta Google conectada via `prumo auth google`, o `snapshot-refresh` p
 
 Agora ele também sabe quando `Tasks API` ainda não entrou na festa. Se faltarem os escopos novos, o briefing avisa que alguns lembretes do Google podem ficar de fora, em vez de jurar completude com a serenidade de um impostor bem vestido.
 
-Na Fase 1, o runtime assume um perfil Google principal (`pessoal`) por padrão. Multi-conta ficou para depois. Antes de querer dois fogões, convém fazer um acender sem drama.
+Na Fase 1, o runtime assume um perfil Google principal (`pessoal`) por padrão. Antes de querer dois fogões, convém fazer um acender sem drama.
 
 Para conectar Google direto no runtime:
 

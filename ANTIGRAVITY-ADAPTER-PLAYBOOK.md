@@ -35,13 +35,13 @@ Depois que o runtime ganhou `prumo briefing --workspace ... --refresh-snapshot -
 2. devolveu a saída real do runtime, já com `briefing_structured_entrypoint`;
 3. não mostrou leitura de arquivos para improvisar resposta;
 4. não mostrou comandos extras ou repetição burra de flag inválida;
-5. `Apple Reminders` continuou em `denied/notDetermined`, então a integração local ainda não passou neste host.
+5. a rota estruturada passou sem precisar pescar prosa.
 
 Conclusão prática:
 
 1. `Antigravity` está aprovado, por enquanto, como host que respeita o runtime e a rota curta melhor do que o `Gemini CLI`;
 2. `Antigravity` melhorou materialmente depois da rota estruturada de briefing;
-3. `Antigravity` continua pendente em `Apple Reminders` por permissão por app.
+3. `Antigravity` ainda merece vigilância em disciplina de execução quando a conversa se alonga.
 
 ## 2. Fontes oficiais que importam
 
@@ -94,7 +94,7 @@ O risco aqui é simples:
 
 1. tratar `Antigravity` como host validado para rota curta e uso do runtime;
 2. manter vigilância sobre disciplina de execução em conversas mais longas;
-3. manter `Apple Reminders` como pendência específica deste app até o TCC se comportar como gente.
+3. consolidar consumo disciplinado do contrato estruturado em sessões mais longas.
 
 ## 6.1. Como consumir o JSON sem virar procissão de tool-call
 
@@ -103,7 +103,7 @@ Para `Antigravity`, a ordem certa é:
 1. olhar `degradation` e resolver se há avaria que muda a jogada;
 2. olhar `next_move` e `selection_contract`;
 3. usar `state_flags` para decidir rápido se a cena é de `repair`, `briefing`, `continue` ou triagem;
-4. usar `google_status` e `apple_reminders_status` só para detalhe operacional;
+4. usar `google_status` e `integration_status` só para detalhe operacional;
 5. só então olhar `message` e `sections`.
 
 Se começar pela prosa e depois for descendo para o payload, o host fica lento, redundante e com cara de quem precisa de três reuniões para abrir uma porta.
@@ -118,4 +118,3 @@ Status atual do checklist:
 4. o host não improvisa briefing fora do runtime -> `SIM`
 5. o host não executa comandos extras sem necessidade -> `PARCIAL`, porque o reteste melhorou, mas a primeira rodada deixou ficha corrida
 6. o host não repete comando inválido depois de erro explícito -> `PARCIAL`, pelo mesmo motivo
-7. `Apple Reminders` funciona no próprio app -> `NAO`

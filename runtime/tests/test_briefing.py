@@ -13,11 +13,9 @@ from unittest.mock import patch
 from prumo_runtime.commands.briefing import (
     build_briefing_payload,
     choose_proposal,
-    enrich_snapshot_with_apple_reminders,
     load_snapshot_cache,
     run_briefing,
     resolve_snapshot_data,
-    summarize_apple_reminders_status,
     summarize_google_status,
     summarize_emails,
     write_snapshot_cache,
@@ -135,10 +133,12 @@ class BriefingSnapshotTests(unittest.TestCase):
             self.assertIn("degradation", payload)
             self.assertEqual(payload["platform"]["label"], platform_label())
             self.assertFalse(any(section["id"] == "workflow_scaffolding" for section in payload["sections"]))
+            self.assertFalse(any(section["id"] == "apple_reminders" for section in payload["sections"]))
             self.assertTrue(any("documentation_targets" in action for action in payload["actions"]))
             self.assertEqual(payload["selection_contract"]["accepts_next_move"], "continue")
             self.assertIn("aceitar", payload["selection_contract"]["accept_tokens"])
             self.assertEqual(payload["integration_status"]["google"]["status"], "disconnected")
+            self.assertEqual(set(payload["integration_status"].keys()), {"google"})
             self.assertEqual(payload["degradation"]["status"], "partial")
             self.assertTrue(any(alert["id"] == "snapshot-disabled" for alert in payload["degradation"]["alerts"]))
 
@@ -325,121 +325,6 @@ class BriefingSnapshotTests(unittest.TestCase):
             rendered = summarize_google_status(workspace, "America/Sao_Paulo")
             self.assertIn("precisa reautenticar", rendered)
             self.assertIn("prumo auth google", rendered)
-
-    def test_summarize_apple_reminders_status_reports_connected_and_disconnected(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            workspace = Path(tmpdir)
-            state_dir = workspace / "_state"
-            state_dir.mkdir(parents=True, exist_ok=True)
-            (state_dir / "apple-reminders-integration.json").write_text(
-                json.dumps(
-                    {
-                        "status": "connected",
-                        "authorization_status": "fullAccess",
-                        "last_refresh_at": "2026-03-20T15:13:00-03:00",
-                        "lists": ["A vida...", "Família"],
-                    }
-                ),
-                encoding="utf-8",
-            )
-            rendered = summarize_apple_reminders_status(workspace, "America/Sao_Paulo")
-            self.assertIn("conectado", rendered)
-            self.assertIn("2 lista(s)", rendered)
-            self.assertIn("15:13", rendered)
-            self.assertIn("fora do foco desta fase", rendered)
-
-            (state_dir / "apple-reminders-integration.json").write_text(
-                json.dumps(
-                    {
-                        "status": "disconnected",
-                        "authorization_status": "denied",
-                        "last_error": "Apple negou acesso",
-                        "lists": [],
-                    }
-                ),
-                encoding="utf-8",
-            )
-            rendered = summarize_apple_reminders_status(workspace, "America/Sao_Paulo")
-            self.assertIn("desconectado", rendered)
-            self.assertIn("backlog desta fase", rendered)
-            self.assertIn("Apple negou acesso", rendered)
-
-    @patch(
-        "prumo_runtime.commands.briefing.fetch_apple_reminders_today",
-        return_value={
-            "status": "ok",
-            "items": ["16:00 | [Apple Reminders] Teste Prumo (A vida...)"],
-            "note": "Apple Reminders via EventKit.",
-        },
-    )
-    @patch(
-        "prumo_runtime.commands.briefing.apple_reminders_summary",
-        return_value={"status": "connected"},
-    )
-    def test_enrich_snapshot_with_apple_reminders_adds_local_profile(
-        self,
-        _mock_summary,
-        _mock_fetch,
-    ) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            workspace = Path(tmpdir)
-            snapshot = {
-                "ok_profiles": 1,
-                "profiles": {
-                    "pessoal": {
-                        "status": "OK",
-                        "account": "tharso@gmail.com",
-                        "agenda_today": [],
-                        "agenda_tomorrow": [],
-                        "emails_total": 0,
-                        "triage_reply": [],
-                        "triage_view": [],
-                        "triage_no_action": [],
-                        "errors": [],
-                    }
-                },
-                "note": "agenda veio direto da Google Calendar API.",
-            }
-            enriched = enrich_snapshot_with_apple_reminders(workspace, "America/Sao_Paulo", snapshot)
-            self.assertIn("apple-reminders", enriched["profiles"])
-            self.assertEqual(enriched["ok_profiles"], 2)
-            self.assertEqual(
-                enriched["profiles"]["apple-reminders"]["agenda_today"],
-                ["16:00 | [Apple Reminders] Teste Prumo (A vida...)"],
-            )
-
-    @patch(
-        "prumo_runtime.commands.briefing.fetch_apple_reminders_today",
-        return_value={
-            "status": "cache",
-            "items": [],
-            "note": "Cache local de Apple Reminders reaproveitado (4 min atrás).",
-        },
-    )
-    @patch(
-        "prumo_runtime.commands.briefing.apple_reminders_summary",
-        return_value={"status": "connected"},
-    )
-    def test_enrich_snapshot_with_apple_reminders_preserves_note_and_refresh_flag(
-        self,
-        _mock_summary,
-        mock_fetch,
-    ) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            workspace = Path(tmpdir)
-            snapshot = {"ok_profiles": 0, "profiles": {}, "note": "agenda veio do Google."}
-            enriched = enrich_snapshot_with_apple_reminders(
-                workspace,
-                "America/Sao_Paulo",
-                snapshot,
-                refresh_snapshot=True,
-            )
-            self.assertIn("Cache local de Apple Reminders reaproveitado", enriched["note"])
-            mock_fetch.assert_called_once_with(
-                workspace,
-                "America/Sao_Paulo",
-                refresh=True,
-            )
 
     def test_choose_proposal_ignores_low_signal_email_before_andamento(self) -> None:
         proposal = choose_proposal(

@@ -21,8 +21,6 @@ from prumo_runtime.constants import (
 )
 from prumo_runtime.apple_reminders import (
     apple_reminders_summary,
-    render_apple_reminders_json,
-    render_apple_reminders_snapshot_json,
 )
 from prumo_runtime.capabilities import runtime_capabilities
 from prumo_runtime import templates
@@ -111,8 +109,6 @@ def render_files(config: WorkspaceConfig) -> dict[str, str]:
         "Referencias/WORKFLOWS.md": templates.render_workflows_md(setup_date),
         "_state/briefing-state.json": templates.render_briefing_state_json(),
         "_state/google-integration.json": render_google_integration_json(config.workspace),
-        "_state/apple-reminders-integration.json": render_apple_reminders_json(),
-        "_state/apple-reminders-snapshot.json": render_apple_reminders_snapshot_json(),
         "Inbox4Mobile/_processed.json": templates.render_inbox_processed_json(),
     }
 
@@ -420,7 +416,7 @@ def workspace_overview(workspace: Path) -> dict:
     core_key = semantic_version_key(core_version or "0")
     google_summary = google_integration_summary(workspace)
     apple_summary = apple_reminders_summary(workspace)
-    capabilities = runtime_capabilities(workspace, google_summary, apple_summary)
+    capabilities = runtime_capabilities(workspace, google_summary)
     return {
         "workspace_path": str(workspace.resolve()),
         "user_name": config.user_name,

@@ -20,7 +20,7 @@ Ao consumir o payload estruturado, o host deve seguir esta ordem:
 3. `selection_contract`
 4. `state_flags`
 5. `actions[]`
-6. `google_status` e `apple_reminders_status`
+6. `google_status` e `integration_status`
 7. `message` e `sections`, apenas para acabamento humano
 
 Se o host inverter isso e comecar pela prosa, a validacao ja falhou.
@@ -67,7 +67,7 @@ Esperado:
 
 1. `degradation.status = partial`
 2. o host preserva o que ainda funciona
-3. `google_status` e `apple_reminders_status` entram como estado operacional, nao como drama central
+3. `google_status` e `integration_status` entram como estado operacional, nao como drama central
 
 ## Sinais de consumo ruim
 
@@ -78,7 +78,7 @@ A validacao falha quando o host:
 3. ignora `degradation` e segue como se nada tivesse acontecido;
 4. concatena a propria liturgia com a prosa do runtime e vira duplicata de cartorio;
 5. executa comando extra por ansiedade;
-6. usa `google_status` ou `apple_reminders_status` para decidir fluxo que deveria sair de `state_flags` e `next_move`.
+6. usa `google_status` ou `integration_status` para decidir fluxo que deveria sair de `state_flags` e `next_move`.
 
 ## Resultado minimo aceitavel
 

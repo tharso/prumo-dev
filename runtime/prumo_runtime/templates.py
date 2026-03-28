@@ -24,7 +24,7 @@ def _render_workspace_runtime_rules() -> str:
 8. Se o host conseguir renderizar ações próprias, preferir `prumo start --format json` em vez de reinventar onboarding na unha.
 9. Ao consumir JSON estruturado, o host deve ler `adapter_contract_version`, `workspace_resolution` e `adapter_hints` antes de bancar o esperto.
 10. Em `start` e `briefing` estruturados, o host deve olhar primeiro para `state_flags`, `degradation`, `next_move` e `selection_contract`. A prosa vem depois.
-11. `google_status` e `apple_reminders_status` servem para estado detalhado da integração. `state_flags` serve para decisão rápida de fluxo. Não misture os dois como se fossem a mesma gaveta.
+11. `google_status` e `integration_status` servem para detalhe operacional. `state_flags` serve para decisão rápida de fluxo. Não misture as gavetas.
 12. Se `degradation.status` vier `error` ou `partial`, preserve o que ainda presta, mostre o tropeço em uma linha curta e, se houver `action_id` útil, priorize essa recuperação antes de inventar novo ritual.
 13. Não leia arquivo para simular `prumo`, `briefing` ou `start`. Primeiro execute o comando.
 14. Não escreva arquivos em `_state/` fingindo ser o runtime.
@@ -43,7 +43,7 @@ def _render_wrapper_runtime_rules() -> str:
 5. Se o host souber trabalhar com JSON, prefira `prumo start --format json`.
 6. Se usar JSON, leia `adapter_hints` e respeite `kind`, `shell_command` e `host_prompt`.
 7. Antes de olhar `message`, leia `state_flags`, `degradation`, `next_move` e `selection_contract`.
-8. Use `google_status` e `apple_reminders_status` para narrar integração. Use `state_flags` para decidir fluxo.
+8. Use `google_status` e `integration_status` para narrar integração. Use `state_flags` para decidir fluxo.
 9. Se `degradation.status` vier `error` ou `partial`, preserve o que ainda funciona e priorize a ação de recuperação quando ela existir.
 10. Não reinvente `setup`, `migrate`, `repair` ou `auth`. Deixe o runtime tomar a primeira decisão.
 11. Não leia arquivo para simular briefing ou start. Primeiro execute o comando real.
