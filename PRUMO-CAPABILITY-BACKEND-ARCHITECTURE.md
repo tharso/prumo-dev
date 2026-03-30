@@ -217,24 +217,86 @@ Dentro dessa raiz, o usuario pode ter quantas subdivisoes fizerem sentido:
 
 Mas a unidade canonica do sistema e uma so: o `Workspace` raiz do Prumo.
 
-### 6.2. O que mora na raiz
+### 6.2. A topologia alvo do workspace
 
-Na raiz devem morar os arquivos de orientacao e navegacao do sistema:
+O runtime atual ainda cria um workspace flat de transicao. Isso resolve carpintaria, mas piora UX: a raiz fica com cara de bancada de oficina e o usuario nao sabe o que e interfone, o que e sala e o que e casa de maquinas.
+
+A topologia alvo passa a ser esta:
+
+1. **raiz minima** para wrappers de descoberta por host
+2. **`Prumo/`** para memoria viva e arquivos autorais
+3. **`/.prumo/`** para infraestrutura atualizavel do sistema
+
+Em portugues simples:
+
+1. a raiz vira campainha;
+2. `Prumo/` vira a parte habitada;
+3. `/.prumo/` vira a casa de maquinas.
+
+O plano detalhado dessa transicao esta em [WORKSPACE-LAYOUT-AND-ADOPTION-PLAN.md](/Users/tharsovieira/Documents/DailyLife/Prumo/WORKSPACE-LAYOUT-AND-ADOPTION-PLAN.md).
+
+### 6.3. O que fica na raiz
+
+Na raiz devem ficar apenas os wrappers de descoberta:
 
 1. `CLAUDE.md`
 2. `AGENTS.md`
 3. `AGENT.md`
-4. `PAUTA.md`
-5. `INBOX.md`
-6. `REGISTRO.md`
-7. `Referencias/`
-8. `_state/`
+
+Esses arquivos devem ser:
+
+1. curtos
+2. regeneraveis
+3. apontadores para `/Prumo/AGENT.md`
+4. claros sobre a porta curta de invocacao
 
 Observacao importante:
 
 `AGENT.md` continua sendo a direcao arquitetural desejada, mas nao deve bloquear a transicao se os hosts reais ainda estiverem consumindo melhor `CLAUDE.md` ou wrappers equivalentes. O ganho dessa camada de indirecao precisa ser provado em campo, nao presumido por elegancia.
 
-### 6.3. Funcao de cada arquivo-raiz
+### 6.4. Funcao de cada camada visivel
+
+#### Raiz minima
+
+Serve para:
+
+1. descoberta por host
+2. invocacao curta
+3. orientacao inicial
+
+Nao deve carregar memoria operacional, estado tecnico e scaffolding de sistema como se a raiz fosse deposito municipal.
+
+#### `Prumo/`
+
+E a area de memoria viva do usuario.
+
+Aqui devem morar:
+
+1. `AGENT.md` canonico do workspace
+2. `PAUTA.md`
+3. `INBOX.md`
+4. `REGISTRO.md`
+5. `IDEIAS.md`
+6. `Agente/`
+7. `Referencias/`
+8. `Inbox4Mobile/`
+9. `Custom/`
+
+#### `/.prumo/`
+
+E a area de sistema local.
+
+Aqui devem morar:
+
+1. `state/`
+2. `cache/`
+3. `logs/`
+4. `manifests/`
+5. `system/skills/`
+6. `system/workflows/`
+7. `system/scripts/`
+
+### 6.5. Funcao de cada arquivo-raiz
 
 #### `AGENT.md`
 
@@ -328,6 +390,24 @@ Importante:
 1. neste documento, `_state/` significa **estado tecnico do Workspace do usuario**
 2. artefatos internos de desenvolvimento, handover e revisoes cruzadas nao pertencem a esse territorio
 3. a oficina do repo deve ser tratada como `.workbench/` (mesmo que o path fisico legado ainda nao tenha sido renomeado)
+
+### 6.6. Area cinzenta: skills e workflows
+
+Skills e workflows tem duas naturezas ao mesmo tempo:
+
+1. parte deles e motor do sistema
+2. parte deles pode virar personalizacao do usuario
+
+O desenho correto nao e escolher um dos lados. E usar overlay.
+
+Regra:
+
+1. base do sistema em `/.prumo/system/`
+2. overrides do usuario em `/Prumo/Custom/`
+3. precedencia sempre `custom > system`
+4. update nunca pisa em customizacao do usuario
+
+Isso evita que cada update do produto vire reforma em apartamento alugado.
 
 ## 7. O que fica em cada camada
 

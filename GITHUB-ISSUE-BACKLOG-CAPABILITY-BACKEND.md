@@ -20,6 +20,10 @@ Observacao de escopo:
 
 Para o MVP atual, Gmail, Google Calendar e Google Drive entram preferencialmente via conectores oficiais/MCP do host. Integracao Google direta dentro do runtime saiu do centro do backlog e fica rebaixada para fallback/infra futura.
 
+Observacao de topologia:
+
+O proximo slice estrutural do produto nao e mais sobre Google nem sobre plugin. E sobre o workspace parar de nascer como bancada de oficina. A topologia alvo passa a ser **raiz minima + `/Prumo/` + `/.prumo/` + overlay em `/Prumo/Custom/`**, com `setup` capaz de criar pasta nova ou adotar pasta existente sem invadir a casa do usuario.
+
 ## 1. Como usar este backlog
 
 Este arquivo nao e o backlog do usuario final. E um rascunho de execucao para abrir issues no GitHub com escopo claro.

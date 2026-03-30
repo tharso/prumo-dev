@@ -12,6 +12,8 @@ A decisao de MVP para Google agora e mais seca: os hosts usam seus conectores of
 
 O contrato de invocação do produto agora também está explícito em [INVOCATION-UX-CONTRACT.md](/Users/tharsovieira/Documents/DailyLife/Prumo/INVOCATION-UX-CONTRACT.md). E a nova casa do canon compartilhado começou a sair do papel em [canon/](/Users/tharsovieira/Documents/DailyLife/Prumo/canon). Já era hora de parar de usar README como cartório improvisado.
 
+O proximo corte do produto tambem ja ganhou planta propria em [WORKSPACE-LAYOUT-AND-ADOPTION-PLAN.md](/Users/tharsovieira/Documents/DailyLife/Prumo/WORKSPACE-LAYOUT-AND-ADOPTION-PLAN.md). Motivo simples: o `setup` atual ainda cria um workspace flat de transicao, com memoria viva e estado tecnico dividindo a mesma raiz como se isso fosse boa etiqueta.
+
 Também ficou registrada, sem nostalgia boba e sem maquiagem de benchmark, a comparação entre o legado plugin-first e o runtime atual em [PRUMO-PLUGIN-VS-RUNTIME-COMPARISON.md](/Users/tharsovieira/Documents/DailyLife/Prumo/PRUMO-PLUGIN-VS-RUNTIME-COMPARISON.md). Esse documento existe para fixar o objetivo certo: recuperar a fluidez antiga sem recuperar o acoplamento antigo.
 
 O próximo bloco operacional também já foi explicitado em [HOST-ADAPTER-IMPLEMENTATION-PLAN.md](/Users/tharsovieira/Documents/DailyLife/Prumo/HOST-ADAPTER-IMPLEMENTATION-PLAN.md). O ponto central ali é simples: mesma família de modelo não significa mesmo host. `Cowork` e `Claude Code` são adapters diferentes. `Gemini CLI` e `Antigravity` também.
@@ -167,6 +169,13 @@ Esse trilho cria:
 1. `AGENT.md` como índice canônico do workspace;
 2. `CLAUDE.md` e `AGENTS.md` como wrappers regeneráveis;
 3. `Agente/` como diretório modular do contexto do usuário.
+
+Importante, para nao vender a maquete como se ja fosse predio entregue:
+
+1. o layout gerado hoje ainda e **flat e de transicao**;
+2. a topologia alvo do produto passa a ser **raiz minima + `/Prumo/` + `/.prumo/`**;
+3. o plano dessa migracao esta em [WORKSPACE-LAYOUT-AND-ADOPTION-PLAN.md](/Users/tharsovieira/Documents/DailyLife/Prumo/WORKSPACE-LAYOUT-AND-ADOPTION-PLAN.md);
+4. o `setup` atual funciona, mas ainda nao oferece a experiencia final de adotar pasta existente, escolher modo de raiz e inaugurar a casa sem briefing de apartamento vazio.
 
 Esses wrappers já não são só placa de "veja o balcão ao lado". Agora também carregam o contrato curto de invocação para hosts que leem arquivo antes de pensar:
 

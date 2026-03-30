@@ -99,6 +99,24 @@ O GitHub do produto pode guardar:
 
 Mas nao os dados vivos do usuario.
 
+## 3.2.1 Jurisdicao interna do workspace
+
+Dentro do workspace do usuario tambem precisa haver fronteira. Deixar tudo na raiz foi util como etapa bruta de transicao, mas em UX isso parece mudanca feita com as caixas ainda no corredor.
+
+A topologia alvo passa a ser:
+
+1. **raiz minima** para `AGENT.md`, `AGENTS.md` e `CLAUDE.md`
+2. **`Prumo/`** para memoria viva do usuario
+3. **`/.prumo/`** para estado tecnico e assets atualizaveis do sistema
+
+O detalhamento dessa planta fica em [WORKSPACE-LAYOUT-AND-ADOPTION-PLAN.md](/Users/tharsovieira/Documents/DailyLife/Prumo/WORKSPACE-LAYOUT-AND-ADOPTION-PLAN.md).
+
+Regra seca:
+
+1. raiz nao e almoxarifado
+2. `/Prumo/` nao e lugar para update meter a mao sem pedir licenca
+3. `/.prumo/` nao e lugar para memoria autoral do usuario
+
 ## 3.3 Oficina de desenvolvimento
 
 Esta e a camada que mais gerou confusao.
