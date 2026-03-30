@@ -131,16 +131,27 @@ def kickoff_contract_payload(workspace: Path) -> dict[str, object]:
             "inbox": docs["inbox"],
             "registro": docs["registro"],
         },
+        "first_reflection_contract": {
+            "reflect_back_before_classifying_deeply": True,
+            "max_blocks": 4,
+            "prefer_concrete_labels": True,
+            "end_with_one_follow_up_question": True,
+            "avoid_menu_before_reflection": True,
+            "avoid_long_recap": True,
+        },
         "suggested_flow": [
             "abrir explicando em uma linha que o workspace ainda esta cru, mas a sessao vai montar o primeiro mapa util",
             "convidar o usuario a fazer um despejo mental curto, sem exigir classificacao previa",
-            "organizar o material em blocos ou frentes e refletir isso de volta de forma curta",
+            "organizar o material em blocos ou frentes e refletir isso de volta de forma curta, em no maximo 4 blocos",
             "fazer uma pergunta de afunilamento so depois da primeira devolucao",
             "registrar o minimo util em documentacao viva",
             "encerrar com um proximo movimento plausivel",
         ],
         "success_definition": (
             "deixar o workspace com alguma frente, prioridade ou nota inicial registrada, mostrando que o Prumo consegue organizar o caos antes de pedir formulario"
+        ),
+        "follow_up_rule": (
+            "depois da primeira devolucao organizada, fazer uma unica pergunta curta para afunilar prioridade, urgencia ou foco"
         ),
     }
 
@@ -374,7 +385,7 @@ def build_daily_actions(
                     f"Conduza uma sessao curta de arranque usando `{docs['pauta']}`, `{docs['inbox']}` e "
                     f"`{docs['registro']}` como destino. Nao comece pedindo classificacao. Comece por: "
                     f"\"{kickoff_contract['initial_invitation']}\". Organize o material em blocos curtos, "
-                    "devolva o que entendeu e so depois afunile com uma pergunta por vez."
+                    "devolva o que entendeu em no maximo quatro blocos e so depois afunile com uma pergunta por vez."
                 ),
                 category="onboarding",
                 documentation_targets=[docs["pauta"], docs["inbox"], docs["registro"]],

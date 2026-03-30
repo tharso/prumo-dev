@@ -99,6 +99,14 @@ Depois do primeiro despejo:
 1. o Prumo agrupa o material em frentes ou blocos uteis;
 2. devolve esse espelho em linguagem curta;
 3. mostra que esta organizando em vez de so coletar.
+4. evita resumo prolixo ou taxonomia escolar.
+
+Uma primeira devolucao boa tende a:
+
+1. nomear de 2 a 4 blocos no maximo;
+2. usar linguagem concreta;
+3. refletir urgencias, pendencias e projetos em vez de recitar tudo de volta;
+4. terminar com uma pergunta de afunilamento curta.
 
 ### 4. Afunilamento
 

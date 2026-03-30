@@ -214,7 +214,12 @@ class StartCommandTests(unittest.TestCase):
             kickoff_action = next(action for action in payload["actions"] if action["id"] == "kickoff")
             self.assertIn("kickoff_contract", kickoff_action)
             self.assertIn("capture_targets", kickoff_action["kickoff_contract"])
+            self.assertIn("first_reflection_contract", kickoff_action["kickoff_contract"])
+            self.assertTrue(kickoff_action["kickoff_contract"]["first_reflection_contract"]["reflect_back_before_classifying_deeply"])
+            self.assertEqual(kickoff_action["kickoff_contract"]["first_reflection_contract"]["max_blocks"], 4)
+            self.assertTrue(kickoff_action["kickoff_contract"]["first_reflection_contract"]["end_with_one_follow_up_question"])
             self.assertIn("despejo mental curto", " ".join(kickoff_action["kickoff_contract"]["suggested_flow"]))
+            self.assertIn("afunilar prioridade", kickoff_action["kickoff_contract"]["follow_up_rule"])
             self.assertEqual(
                 kickoff_action["kickoff_contract"]["capture_targets"]["pauta"],
                 str((workspace / "Prumo" / "PAUTA.md").resolve()),
