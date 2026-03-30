@@ -33,7 +33,8 @@ def _render_workspace_runtime_rules() -> str:
 17. Se um comando falhar por uso ou argumento inválido, não repita a mesma linha cegamente.
 18. Se houver falha parcial, preservar o que ainda presta e avisar em uma linha curta, sem despejar jargão técnico.
 19. Se `next_move.id == kickoff`, prefira uma segue curta em vez de menu de confirmação.
-20. Quando houver escolha, prefira uma pergunta por vez e opções curtas. Produto não é formulário com perfume."""
+20. Na invocação curta, não anuncie que vai rodar comando, ler JSON ou abrir arquivo. Execute primeiro e fale depois.
+21. Quando houver escolha, prefira uma pergunta por vez e opções curtas. Produto não é formulário com perfume."""
 
 
 def _render_wrapper_runtime_rules(*, state_path: str = "_state/") -> str:
@@ -53,7 +54,8 @@ def _render_wrapper_runtime_rules(*, state_path: str = "_state/") -> str:
 14. Se um comando falhar por uso ou argumento inválido, não repita a mesma linha como disco riscado.
 15. Em falha parcial, preserve o que ainda serve e explique o tropeço em uma linha curta, sem vazar stack trace.
 16. Se `next_move.id == kickoff`, não abra cardápio de aeroporto. Faça uma segue curta e convide ao despejo inicial.
-17. Quando houver escolha real, faça uma pergunta por vez e ofereça opções curtas em vez de cardápio burocrático."""
+17. Na invocação curta, não narre o backstage ("vou rodar", "vou ler", "vou seguir o JSON"). Execute primeiro e fale depois.
+18. Quando houver escolha real, faça uma pergunta por vez e ofereça opções curtas em vez de cardápio burocrático."""
 
 
 def render_agent_md(

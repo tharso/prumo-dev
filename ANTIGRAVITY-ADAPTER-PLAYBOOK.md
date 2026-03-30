@@ -107,7 +107,8 @@ Para `Antigravity`, a ordem certa é:
 3. usar `state_flags` para decidir rápido se a cena é de `repair`, `briefing`, `continue` ou triagem;
 4. usar `google_status` e `integration_status` só para detalhe operacional;
 5. se `next_move.id == kickoff`, fazer uma segue curta e convidar ao despejo inicial, sem menu de confirmação;
-6. só então olhar `message` e `sections`.
+6. na invocação curta, não anunciar shell, JSON ou leitura de arquivo antes do resultado; execute primeiro e fale depois;
+7. só então olhar `message` e `sections`.
 
 Se começar pela prosa e depois for descendo para o payload, o host fica lento, redundante e com cara de quem precisa de três reuniões para abrir uma porta.
 

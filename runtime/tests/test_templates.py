@@ -21,6 +21,7 @@ class TemplateAdapterTests(unittest.TestCase):
         self.assertIn("Não escreva `_state/`", rendered)
         self.assertIn("Não rode comando extra sem necessidade", rendered)
         self.assertIn("next_move.id == kickoff", rendered)
+        self.assertIn("Execute primeiro e fale depois", rendered)
 
     def test_nested_wrapper_points_to_real_core_and_state_paths(self) -> None:
         rendered = templates.render_claude_wrapper(
@@ -35,6 +36,7 @@ class TemplateAdapterTests(unittest.TestCase):
         self.assertIn("Use `.prumo/system/PRUMO-CORE.md`", rendered)
         self.assertIn("Não escreva `.prumo/state/`", rendered)
         self.assertIn("next_move.id == kickoff", rendered)
+        self.assertIn("Execute primeiro e fale depois", rendered)
 
     def test_agent_md_mentions_host_invocation_rules(self) -> None:
         rendered = templates.render_agent_md(
@@ -54,6 +56,7 @@ class TemplateAdapterTests(unittest.TestCase):
         self.assertIn("Não leia arquivo para simular", rendered)
         self.assertIn("Não escreva arquivos em `_state/`", rendered)
         self.assertIn("Não rode comando extra só porque ficou curioso", rendered)
+        self.assertIn("Execute primeiro e fale depois", rendered)
 
     def test_workflows_template_exposes_structure_only_phase(self) -> None:
         rendered = templates.render_workflows_md("22/03/2026")

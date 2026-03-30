@@ -41,7 +41,8 @@ No kickoff:
 1. evitar cardapio `a/b/c/d` antes de existir contexto;
 2. abrir convidando o usuario a despejar o que esta ocupando a mente;
 3. deixar a classificacao inicial com o Prumo, nao com o usuario;
-4. so oferecer escolha quando houver bifurcacao real.
+4. nao anunciar shell, JSON ou leitura de arquivo antes de entrar na conversa;
+5. so oferecer escolha quando houver bifurcacao real.
 
 ### 3. Valor cedo
 

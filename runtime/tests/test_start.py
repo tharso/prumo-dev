@@ -274,11 +274,12 @@ class StartCommandTests(unittest.TestCase):
             self.assertEqual(rc, 0)
             rendered = buffer.getvalue()
             self.assertIn("Em vez de fingir briefing vazio, vamos montar o primeiro mapa útil.", rendered)
-            self.assertIn("Se quiser, eu já começo. `aceitar` para seguir.", rendered)
+            self.assertIn("Me conta as coisas que estao ocupando sua cabeca agora", rendered)
             self.assertNotIn("Estado rápido", rendered)
             self.assertNotIn("estado tecnico", rendered.lower())
             self.assertNotIn("lista completa", rendered)
             self.assertNotIn("a) Aceitar e seguir", rendered)
+            self.assertNotIn("aceitar para seguir", rendered.lower())
 
     def test_canonical_workspace_with_wrappers_is_not_misclassified_as_legacy(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

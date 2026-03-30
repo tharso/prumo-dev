@@ -85,9 +85,10 @@ Em português simples:
 4. `kind = shell` -> executar `shell_command`
 5. `kind = host-prompt` -> usar `host_prompt` como continuação conversacional
 6. se `next_move.id = kickoff`, não abra cardápio de confirmação; faça uma segue curta e convide ao despejo inicial
-6. `adapter_hints.preferred_entrypoint` -> porta curta
-7. `adapter_hints.briefing_entrypoint` -> briefing explícito
-8. `adapter_hints.structured_entrypoint` -> rota estruturada
+7. na invocação curta, não narre bastidor ("vou rodar", "vou ler", "vou seguir o JSON"). Execute primeiro e fale depois
+8. `adapter_hints.preferred_entrypoint` -> porta curta
+9. `adapter_hints.briefing_entrypoint` -> briefing explícito
+10. `adapter_hints.structured_entrypoint` -> rota estruturada
 
 ## 5.1. Ordem mínima de leitura
 

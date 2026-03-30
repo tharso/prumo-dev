@@ -17,9 +17,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 - `prumo migrate` deixou de ser maquiagem de workspace legado. Agora ele faz o transplante flat→nested, move memória viva para `Prumo/`, estado técnico para `/.prumo/`, recria wrappers mínimos na raiz e guarda backup antes de trocar as placas de lugar.
 - `prumo` em workspace recém-nascido deixou de sugerir briefing de apartamento vazio. Quando ainda não existe tração real, a primeira ação passa a ser uma sessão de arranque guiada em vez de panorama ornamental do nada.
 - O `kickoff` deixou de ser bilhete vago para host improvisar. `start --format json` agora expõe `kickoff_contract`, `initial_question` e regras para a primeira devolução organizada. O contrato passou a ser dump-first: primeiro o usuário despeja o caos, depois o Prumo organiza em poucos blocos e só então afunila.
+- A entrada do kickoff ficou mais limpa: `prumo` em workspace recém-nascido já entra no convite de despejo inicial, sem gate artificial de `aceitar` antes da conversa começar.
 
 ### Docs
 - Os playbooks de `Codex`, `Claude Code`, `Antigravity` e `Gemini CLI` agora registram, sem charada, como consumir `start/briefing` estruturados sem voltar ao vício de pescar string.
+- Wrappers e playbooks agora também proíbem um vício mais específico e igualmente chato: narrar bastidor na invocação curta (`vou acionar o runtime`, `vou ler o JSON`, `vou abrir arquivo`). O host executa primeiro e fala depois.
 - O canon agora ganhou um contrato explícito para contexto externo via host em [canon/contracts/host-external-context.md](/Users/tharsovieira/Documents/DailyLife/Prumo/canon/contracts/host-external-context.md). Em português menos solene: Gmail, Calendar e Drive entram preferencialmente pelo conector oficial do host, e o Prumo continua dono do sentido do dia.
 - O canon agora também ganhou [canon/contracts/host-context-normalization.md](/Users/tharsovieira/Documents/DailyLife/Prumo/canon/contracts/host-context-normalization.md), para impedir que cada host despeje seu próprio dialeto cru no briefing e chame isso de integração.
 - O canon agora ganhou [canon/orchestration/kickoff.md](/Users/tharsovieira/Documents/DailyLife/Prumo/canon/orchestration/kickoff.md), separando briefing de sessão de arranque e impedindo que workspace virgem receba panorama ornamental como presente de boas-vindas.
