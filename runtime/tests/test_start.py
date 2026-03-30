@@ -274,9 +274,9 @@ class StartCommandTests(unittest.TestCase):
             self.assertEqual(rc, 0)
             rendered = buffer.getvalue()
             self.assertIn("Em vez de fingir briefing vazio, vamos montar o primeiro mapa útil.", rendered)
-            self.assertIn("Se quiser, eu já começo.", rendered)
-            self.assertIn("`aceitar` para seguir", rendered)
+            self.assertIn("Se quiser, eu já começo. `aceitar` para seguir.", rendered)
             self.assertNotIn("Estado rápido", rendered)
+            self.assertNotIn("estado tecnico", rendered.lower())
             self.assertNotIn("lista completa", rendered)
             self.assertNotIn("a) Aceitar e seguir", rendered)
 

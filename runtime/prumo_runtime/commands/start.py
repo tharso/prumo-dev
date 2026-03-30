@@ -183,9 +183,7 @@ def _render_start_text(workspace: Path, overview: dict) -> str:
         lines = [
             f"1. {overview['user_name']}, o workspace `{workspace}` acabou de nascer.",
             "2. Em vez de fingir briefing vazio, vamos montar o primeiro mapa útil.",
-            "3. Se quiser, eu já começo.",
-            "4. `aceitar` para seguir",
-            "5. `estado tecnico` se quiser inspecionar o motor antes",
+            "3. Se quiser, eu já começo. `aceitar` para seguir.",
         ]
         return "\n".join(lines)
 
