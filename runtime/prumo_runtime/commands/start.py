@@ -175,6 +175,20 @@ def _render_start_text(workspace: Path, overview: dict) -> str:
     inbox_count = inbox_item_count(workspace)
     workflow_registry = capabilities["workflow_scaffolding"]["registry_path"]
 
+    if (
+        not (missing["generated"] or missing["derived"] or missing["authorial"])
+        and next_move
+        and next_move.get("id") == "kickoff"
+    ):
+        lines = [
+            f"1. {overview['user_name']}, o workspace `{workspace}` acabou de nascer.",
+            "2. Em vez de fingir briefing vazio, vamos montar o primeiro mapa útil.",
+            "3. Se quiser, eu já começo.",
+            "4. `aceitar` para seguir",
+            "5. `estado tecnico` se quiser inspecionar o motor antes",
+        ]
+        return "\n".join(lines)
+
     if missing["generated"] or missing["derived"]:
         suggestion = "consertar a estrutura antes de brincar de produtividade."
     elif next_move and next_move.get("id") == "kickoff":

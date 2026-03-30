@@ -32,7 +32,8 @@ def _render_workspace_runtime_rules() -> str:
 16. Não rode comando extra só porque ficou curioso. Execute o que foi pedido ou o que o runtime sugeriu.
 17. Se um comando falhar por uso ou argumento inválido, não repita a mesma linha cegamente.
 18. Se houver falha parcial, preservar o que ainda presta e avisar em uma linha curta, sem despejar jargão técnico.
-19. Quando houver escolha, prefira uma pergunta por vez e opções curtas. Produto não é formulário com perfume."""
+19. Se `next_move.id == kickoff`, prefira uma segue curta em vez de menu de confirmação.
+20. Quando houver escolha, prefira uma pergunta por vez e opções curtas. Produto não é formulário com perfume."""
 
 
 def _render_wrapper_runtime_rules(*, state_path: str = "_state/") -> str:
@@ -51,7 +52,8 @@ def _render_wrapper_runtime_rules(*, state_path: str = "_state/") -> str:
 13. Não rode comando extra sem necessidade.
 14. Se um comando falhar por uso ou argumento inválido, não repita a mesma linha como disco riscado.
 15. Em falha parcial, preserve o que ainda serve e explique o tropeço em uma linha curta, sem vazar stack trace.
-16. Quando houver escolha real, faça uma pergunta por vez e ofereça opções curtas em vez de cardápio burocrático."""
+16. Se `next_move.id == kickoff`, não abra cardápio de aeroporto. Faça uma segue curta e convide ao despejo inicial.
+17. Quando houver escolha real, faça uma pergunta por vez e ofereça opções curtas em vez de cardápio burocrático."""
 
 
 def render_agent_md(

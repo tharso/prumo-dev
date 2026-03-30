@@ -63,6 +63,7 @@ Traduzindo sem perfume:
 3. `selection_contract` governa aceite curto; não abra menu novo depois de `1`, `a`, `aceitar`, `seguir` ou equivalente
 4. `kind = shell` -> executar `shell_command`
 5. `kind = host-prompt` -> usar `host_prompt` como continuação conversacional
+6. se `next_move.id = kickoff`, não abra menu de confirmação; faça uma segue curta e convide ao despejo inicial
 6. `adapter_hints.preferred_entrypoint` -> porta curta
 7. `adapter_hints.briefing_entrypoint` -> briefing explícito
 8. `adapter_hints.structured_entrypoint` -> rota estruturada

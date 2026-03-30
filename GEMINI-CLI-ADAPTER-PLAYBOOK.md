@@ -83,6 +83,7 @@ Em português curto:
 2. `selection_contract` manda no aceite curto
 3. `kind = shell` -> executar `shell_command`
 4. `kind = host-prompt` -> usar `host_prompt`
+5. se `next_move.id = kickoff`, não abrir menu de confirmação; fazer segue curta e convite ao despejo inicial
 5. `adapter_hints.preferred_entrypoint` -> porta curta
 6. `adapter_hints.briefing_entrypoint` -> briefing explícito
 7. `adapter_hints.structured_entrypoint` -> rota estruturada

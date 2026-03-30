@@ -76,7 +76,11 @@ class StartCommandTests(unittest.TestCase):
                 os.chdir(previous_cwd)
             self.assertEqual(rc, 0)
             rendered = buffer.getvalue()
-            self.assertIn("o Prumo está de pé no workspace", rendered)
+            self.assertIn(str(workspace), rendered)
+            self.assertTrue(
+                "o Prumo está de pé no workspace" in rendered
+                or "Em vez de fingir briefing vazio, vamos montar o primeiro mapa útil." in rendered
+            )
             self.assertIn(str(workspace), rendered)
 
     def test_workspace_discovery_stops_before_far_parent_match(self) -> None:
@@ -225,6 +229,57 @@ class StartCommandTests(unittest.TestCase):
                 str((workspace / "Prumo" / "PAUTA.md").resolve()),
             )
 
+    def test_fresh_nested_workspace_text_start_is_short_and_menu_free(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = Path(tmpdir)
+            (workspace / "Prumo" / "Agente").mkdir(parents=True, exist_ok=True)
+            (workspace / "Prumo" / "Referencias").mkdir(parents=True, exist_ok=True)
+            (workspace / ".prumo" / "state").mkdir(parents=True, exist_ok=True)
+            (workspace / ".prumo" / "system").mkdir(parents=True, exist_ok=True)
+            (workspace / "AGENT.md").write_text("# wrapper\n", encoding="utf-8")
+            (workspace / "CLAUDE.md").write_text("# wrapper\n", encoding="utf-8")
+            (workspace / "AGENTS.md").write_text("# wrapper\n", encoding="utf-8")
+            (workspace / "Prumo" / "AGENT.md").write_text("# canonical\n", encoding="utf-8")
+            (workspace / "Prumo" / "PAUTA.md").write_text("# Pauta\n\n## Quente (precisa de atenção agora)\n\n_Nada ainda._\n", encoding="utf-8")
+            (workspace / "Prumo" / "INBOX.md").write_text("# Inbox\n\n_Inbox limpo._\n", encoding="utf-8")
+            (workspace / "Prumo" / "REGISTRO.md").write_text(
+                "# Registro\n\n| Data | Origem | Resumo | Ação | Destino |\n|------|--------|--------|------|---------|\n",
+                encoding="utf-8",
+            )
+            (workspace / "Prumo" / "IDEIAS.md").write_text("# Ideias\n\n_Nenhuma ideia registrada ainda._\n", encoding="utf-8")
+            (workspace / "Prumo" / "Referencias" / "WORKFLOWS.md").write_text("# Workflows\n", encoding="utf-8")
+            (workspace / ".prumo" / "system" / "PRUMO-CORE.md").write_text(
+                f"> **prumo_version: {__version__}**\n",
+                encoding="utf-8",
+            )
+            (workspace / ".prumo" / "state" / "workspace-schema.json").write_text(
+                json.dumps(
+                    {
+                        "user_name": "Batata",
+                        "agent_name": "Prumo",
+                        "timezone": "America/Sao_Paulo",
+                        "briefing_time": "09:00",
+                        "layout_mode": "nested",
+                        "files": {"generated": [], "authorial": [], "derived": []},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (workspace / ".prumo" / "state" / "briefing-state.json").write_text('{"last_briefing_at": ""}', encoding="utf-8")
+            (workspace / ".prumo" / "state" / "google-integration.json").write_text("{}", encoding="utf-8")
+            args = Namespace(workspace=str(workspace), format="text")
+            buffer = io.StringIO()
+            with redirect_stdout(buffer):
+                rc = run_start(args)
+            self.assertEqual(rc, 0)
+            rendered = buffer.getvalue()
+            self.assertIn("Em vez de fingir briefing vazio, vamos montar o primeiro mapa útil.", rendered)
+            self.assertIn("Se quiser, eu já começo.", rendered)
+            self.assertIn("`aceitar` para seguir", rendered)
+            self.assertNotIn("Estado rápido", rendered)
+            self.assertNotIn("lista completa", rendered)
+            self.assertNotIn("a) Aceitar e seguir", rendered)
+
     def test_canonical_workspace_with_wrappers_is_not_misclassified_as_legacy(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             workspace = Path(tmpdir)
@@ -257,7 +312,10 @@ class StartCommandTests(unittest.TestCase):
             self.assertEqual(rc, 0)
             rendered = buffer.getvalue()
             self.assertNotIn("workspace legado", rendered)
-            self.assertIn("o Prumo está de pé no workspace", rendered)
+            self.assertTrue(
+                "o Prumo está de pé no workspace" in rendered
+                or "Em vez de fingir briefing vazio, vamos montar o primeiro mapa útil." in rendered
+            )
 
     def test_actions_keep_context_and_drop_google_placeholder_path(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
