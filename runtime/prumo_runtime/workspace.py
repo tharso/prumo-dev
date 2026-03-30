@@ -48,6 +48,7 @@ class WorkspaceConfig:
     timezone_name: str = DEFAULT_TIMEZONE
     briefing_time: str = DEFAULT_BRIEFING_TIME
     layout_mode: str = "flat"
+    wrapper_policy: str = "replace"
 
 
 class WorkspaceError(RuntimeError):
@@ -82,6 +83,48 @@ def write_json(path: Path, payload: dict) -> None:
     path.write_text(json.dumps(payload, ensure_ascii=True, indent=2) + "\n", encoding="utf-8")
 
 
+ROOT_WRAPPERS = ("AGENT.md", "CLAUDE.md", "AGENTS.md")
+WRAPPER_BLOCK_BEGIN = "<!-- prumo:begin -->"
+WRAPPER_BLOCK_END = "<!-- prumo:end -->"
+
+
+def backup_root_for(config: WorkspaceConfig, scope: str = "setup") -> Path:
+    return config.workspace / ".prumo" / "backups" / scope / now_stamp(config.timezone_name)
+
+
+def render_wrapper_merge_block(relative: str, rendered: str, config: WorkspaceConfig) -> str:
+    canonical_target = "Prumo/AGENT.md" if config.layout_mode == "nested" else "AGENT.md"
+    lines = [
+        WRAPPER_BLOCK_BEGIN,
+        f"Prumo detectado neste workspace. Para o canon, leia `{canonical_target}`.",
+        'Se o usuário disser "Prumo", rode `prumo` neste diretório.',
+        "Abaixo fica o bloco gerado pelo runtime. Se ele mudar, atualize só este trecho.",
+        "",
+        rendered.strip(),
+        WRAPPER_BLOCK_END,
+    ]
+    return "\n".join(lines) + "\n"
+
+
+def merge_wrapper_content(existing: str, relative: str, rendered: str, config: WorkspaceConfig) -> str:
+    block = render_wrapper_merge_block(relative, rendered, config).rstrip()
+    existing = existing.rstrip()
+    if WRAPPER_BLOCK_BEGIN in existing and WRAPPER_BLOCK_END in existing:
+        before, remainder = existing.split(WRAPPER_BLOCK_BEGIN, 1)
+        _, after = remainder.split(WRAPPER_BLOCK_END, 1)
+        rebuilt = before.rstrip()
+        if rebuilt:
+            rebuilt += "\n\n"
+        rebuilt += block
+        after = after.strip()
+        if after:
+            rebuilt += "\n\n" + after
+        return rebuilt + "\n"
+    if not existing:
+        return block + "\n"
+    return existing + "\n\n" + block + "\n"
+
+
 def render_files(config: WorkspaceConfig) -> dict[str, str]:
     repo_root = repo_root_from(Path(__file__))
     setup_date = templates.now_display(config.timezone_name)
@@ -111,12 +154,16 @@ def render_files(config: WorkspaceConfig) -> dict[str, str]:
             config.agent_name,
             canonical_target=canonical_target,
             context_root=paths.relative(paths.agente_root) + "/",
+            core_path=core_relative,
+            state_path=state_relative,
         ),
         paths.relative(paths.wrappers["AGENTS.md"]): templates.render_agents_wrapper(
             config.user_name,
             config.agent_name,
             canonical_target=canonical_target,
             context_root=paths.relative(paths.agente_root) + "/",
+            core_path=core_relative,
+            state_path=state_relative,
         ),
         paths.relative(paths.core): templates.load_prumo_core_text(repo_root),
         paths.relative(paths.canonical_agent): templates.render_agent_md(
@@ -199,10 +246,38 @@ def create_missing_files(config: WorkspaceConfig) -> dict[str, list[str]]:
     paths = workspace_paths(config.workspace, layout_mode=config.layout_mode)
     created: list[str] = []
     preserved: list[str] = []
+    overwritten: list[str] = []
+    merged: list[str] = []
+    backed_up: list[str] = []
+    backup_root: Path | None = None
     for relative, content in rendered.items():
         target = config.workspace / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         if target.exists():
+            if relative in ROOT_WRAPPERS and config.layout_mode == "nested":
+                policy = config.wrapper_policy
+                if policy in {"replace", "merge"}:
+                    if backup_root is None:
+                        backup_root = backup_root_for(config)
+                        backup_root.mkdir(parents=True, exist_ok=True)
+                    backup_target = backup_root / relative.replace("/", "__")
+                    shutil.copy2(target, backup_target)
+                    backed_up.append(relative)
+                    if policy == "replace":
+                        target.write_text(content, encoding="utf-8")
+                        overwritten.append(relative)
+                    else:
+                        merged_content = merge_wrapper_content(
+                            target.read_text(encoding="utf-8"),
+                            relative,
+                            content,
+                            config,
+                        )
+                        target.write_text(merged_content, encoding="utf-8")
+                        merged.append(relative)
+                    continue
+                preserved.append(relative)
+                continue
             preserved.append(relative)
             continue
         target.write_text(content, encoding="utf-8")
@@ -216,7 +291,16 @@ def create_missing_files(config: WorkspaceConfig) -> dict[str, list[str]]:
     write_schema(config, preserve_created_at=created_at)
     if not schema_path.exists():
         created.append(paths.relative(schema_path))
-    return {"created": created, "preserved": preserved}
+    result = {
+        "created": created,
+        "preserved": preserved,
+        "overwritten": overwritten,
+        "merged": merged,
+        "backed_up": backed_up,
+    }
+    if backup_root is not None:
+        result["backup_root"] = str(backup_root)
+    return result
 
 
 def detect_missing(workspace: Path) -> dict[str, list[str]]:

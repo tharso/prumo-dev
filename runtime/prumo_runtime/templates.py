@@ -35,8 +35,8 @@ def _render_workspace_runtime_rules() -> str:
 19. Quando houver escolha, prefira uma pergunta por vez e opções curtas. Produto não é formulário com perfume."""
 
 
-def _render_wrapper_runtime_rules() -> str:
-    return """1. Se o usuário disser "Prumo", "bom dia, Prumo" ou equivalente, rode `prumo`.
+def _render_wrapper_runtime_rules(*, state_path: str = "_state/") -> str:
+    return f"""1. Se o usuário disser "Prumo", "bom dia, Prumo" ou equivalente, rode `prumo`.
 2. Se `prumo` não estiver no PATH do host, tente o caminho absoluto de instalação do runtime neste sistema antes de concluir que ele sumiu.
 3. Se o pedido for briefing explícito, rode `prumo briefing --workspace . --refresh-snapshot`.
 4. Se precisar de briefing estruturado, rode `prumo briefing --workspace . --refresh-snapshot --format json`.
@@ -47,7 +47,7 @@ def _render_wrapper_runtime_rules() -> str:
 9. Se `degradation.status` vier `error` ou `partial`, preserve o que ainda funciona e priorize a ação de recuperação quando ela existir.
 10. Não reinvente `setup`, `migrate`, `repair` ou `auth`. Deixe o runtime tomar a primeira decisão.
 11. Não leia arquivo para simular briefing ou start. Primeiro execute o comando real.
-12. Não escreva `_state/` fingindo ser o runtime.
+12. Não escreva `{state_path}` fingindo ser o runtime.
 13. Não rode comando extra sem necessidade.
 14. Se um comando falhar por uso ou argumento inválido, não repita a mesma linha como disco riscado.
 15. Em falha parcial, preserve o que ainda serve e explique o tropeço em uma linha curta, sem vazar stack trace.
@@ -112,7 +112,7 @@ def render_agent_root_wrapper(
 
 ## Porta curta
 
-{_render_wrapper_runtime_rules()}
+{_render_wrapper_runtime_rules(state_path=system_root)}
 
 ## Instrução primária
 
@@ -130,6 +130,8 @@ def render_claude_wrapper(
     *,
     canonical_target: str = "AGENT.md",
     context_root: str = "Agente/",
+    core_path: str = "PRUMO-CORE.md",
+    state_path: str = "_state/",
 ) -> str:
     return f"""# Prumo Adapter — {user_name}
 
@@ -138,12 +140,12 @@ def render_claude_wrapper(
 
 ## Porta curta
 
-{_render_wrapper_runtime_rules()}
+{_render_wrapper_runtime_rules(state_path=state_path)}
 
 ## Instrução primária
 
 1. Leia `{canonical_target}`.
-2. Use `PRUMO-CORE.md` para regras do sistema.
+2. Use `{core_path}` para regras do sistema.
 3. Contexto pessoal e estável mora em `{context_root}`.
 
 Agente: **{agent_name}**
@@ -156,6 +158,8 @@ def render_agents_wrapper(
     *,
     canonical_target: str = "AGENT.md",
     context_root: str = "Agente/",
+    core_path: str = "PRUMO-CORE.md",
+    state_path: str = "_state/",
 ) -> str:
     return f"""# Prumo Adapter — {user_name}
 
@@ -164,12 +168,12 @@ def render_agents_wrapper(
 
 ## Porta curta
 
-{_render_wrapper_runtime_rules()}
+{_render_wrapper_runtime_rules(state_path=state_path)}
 
 ## Instrução primária
 
 1. Leia `{canonical_target}`.
-2. Leia `PRUMO-CORE.md`.
+2. Leia `{core_path}`.
 3. Contexto vivo do usuário mora em `{context_root}`.
 
 Agente: **{agent_name}**

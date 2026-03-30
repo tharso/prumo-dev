@@ -46,6 +46,21 @@ def detect_setup_mode(workspace: Path, explicit_mode: str | None) -> str:
     return "adopt"
 
 
+def ask_wrapper_policy(mode: str) -> str:
+    if mode != "adopt":
+        return "replace"
+    choice = prompt_choice(
+        "Se a raiz já tiver `AGENT.md`, `AGENTS.md` ou `CLAUDE.md`, como o Prumo deve agir?",
+        {
+            "a": "Mesclar um bloco curto do Prumo nos arquivos existentes (recomendado)",
+            "b": "Fazer backup e substituir pelos wrappers do Prumo",
+            "c": "Não tocar nesses arquivos agora",
+        },
+        default="a",
+    )
+    return {"a": "merge", "b": "replace", "c": "skip"}[choice]
+
+
 def run_setup(args) -> int:
     print("Etapa 1 de 3: identidade")
     user_name = ask_if_missing(args.user_name, "Como você prefere ser chamado? ")
@@ -79,6 +94,7 @@ def run_setup(args) -> int:
         if target_choice != "a":
             raise SystemExit("setup cancelado pelo usuario")
         ensure_workspace_exists(workspace)
+    wrapper_policy = ask_wrapper_policy(mode)
 
     print("")
     print("Etapa 3 de 3: materializar a estrutura")
@@ -93,6 +109,7 @@ def run_setup(args) -> int:
         timezone_name=timezone_name,
         briefing_time=briefing_time,
         layout_mode="nested",
+        wrapper_policy=wrapper_policy,
     )
     result = create_missing_files(config)
 
@@ -109,6 +126,20 @@ def run_setup(args) -> int:
         print(f"Arquivos preservados: {len(result['preserved'])}")
         for relative in sorted(set(result["preserved"])):
             print(f"- preservado: {relative}")
+    if result["merged"]:
+        print(f"Wrappers mesclados: {len(result['merged'])}")
+        for relative in sorted(set(result["merged"])):
+            print(f"- mesclado com bloco do Prumo: {relative}")
+    if result["overwritten"]:
+        print(f"Wrappers substituidos: {len(result['overwritten'])}")
+        for relative in sorted(set(result["overwritten"])):
+            print(f"- substituido com backup: {relative}")
+    if result["backed_up"]:
+        print(f"Backups criados: {len(result['backed_up'])}")
+        for relative in sorted(set(result["backed_up"])):
+            print(f"- backup: {relative}")
+    if result.get("backup_root"):
+        print(f"Backup root: {result['backup_root']}")
     print("")
     print("Próximos passos:")
     print("1. Entre no workspace e rode `prumo`.")

@@ -21,6 +21,19 @@ class TemplateAdapterTests(unittest.TestCase):
         self.assertIn("Não escreva `_state/`", rendered)
         self.assertIn("Não rode comando extra sem necessidade", rendered)
 
+    def test_nested_wrapper_points_to_real_core_and_state_paths(self) -> None:
+        rendered = templates.render_claude_wrapper(
+            "Batata",
+            "Prumo",
+            canonical_target="Prumo/AGENT.md",
+            context_root="Prumo/Agente/",
+            core_path=".prumo/system/PRUMO-CORE.md",
+            state_path=".prumo/state/",
+        )
+        self.assertIn("Leia `Prumo/AGENT.md`", rendered)
+        self.assertIn("Use `.prumo/system/PRUMO-CORE.md`", rendered)
+        self.assertIn("Não escreva `.prumo/state/`", rendered)
+
     def test_agent_md_mentions_host_invocation_rules(self) -> None:
         rendered = templates.render_agent_md(
             user_name="Batata",
