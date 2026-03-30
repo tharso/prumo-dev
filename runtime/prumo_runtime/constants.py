@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from prumo_runtime import __version__
+from prumo_runtime.workspace_paths import workspace_paths
 
 RUNTIME_VERSION = __version__
 SCHEMA_VERSION = "1.0"
@@ -11,13 +12,7 @@ DEFAULT_AGENT_NAME = "Prumo"
 DEFAULT_TIMEZONE = "America/Sao_Paulo"
 DEFAULT_BRIEFING_TIME = "09:00"
 
-GENERATED_FILES = (
-    "AGENT.md",
-    "CLAUDE.md",
-    "AGENTS.md",
-    "PRUMO-CORE.md",
-)
-
+GENERATED_FILES = ("AGENT.md", "CLAUDE.md", "AGENTS.md", "PRUMO-CORE.md")
 AUTHORIAL_FILES = (
     "Agente/INDEX.md",
     "Agente/PESSOAS.md",
@@ -33,21 +28,30 @@ AUTHORIAL_FILES = (
     "Referencias/INDICE.md",
     "Referencias/WORKFLOWS.md",
 )
-
 DERIVED_FILES = (
     "_state/workspace-schema.json",
     "_state/briefing-state.json",
     "_state/google-integration.json",
     "Inbox4Mobile/_processed.json",
 )
+DIRECTORIES = ("Agente", "Inbox4Mobile", "Referencias", "_logs", "_state")
 
-DIRECTORIES = (
-    "Agente",
-    "Inbox4Mobile",
-    "Referencias",
-    "_logs",
-    "_state",
-)
+
+def generated_files_for(workspace: Path) -> tuple[str, ...]:
+    return workspace_paths(workspace).generated_relative_paths()
+
+
+def authorial_files_for(workspace: Path) -> tuple[str, ...]:
+    return workspace_paths(workspace).authorial_relative_paths()
+
+
+def derived_files_for(workspace: Path) -> tuple[str, ...]:
+    return workspace_paths(workspace).derived_relative_paths()
+
+
+def directories_for(workspace: Path) -> tuple[str, ...]:
+    paths = workspace_paths(workspace)
+    return tuple(paths.relative(directory) for directory in paths.directories())
 
 
 def repo_root_from(start: Path) -> Path | None:

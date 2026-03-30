@@ -19,9 +19,12 @@ from prumo_runtime.workspace import (
     load_json,
     workspace_overview,
 )
+from prumo_runtime.workspace_paths import workspace_paths
 
 LEGACY_MARKERS = ("CLAUDE.md", "PRUMO-CORE.md", "PAUTA.md", "INBOX.md", "REGISTRO.md")
 DEFAULT_DISCOVERY_DEPTH = 8
+
+
 def _parse_iso(value: str | None) -> datetime | None:
     if not value:
         return None
@@ -47,7 +50,8 @@ def _short_clock(value: str | None, timezone_name: str) -> str | None:
 
 
 def _has_runtime_identity(workspace: Path) -> bool:
-    return (workspace / "AGENT.md").exists() and (workspace / "_state" / "workspace-schema.json").exists()
+    paths = workspace_paths(workspace)
+    return paths.canonical_agent.exists() and paths.workspace_schema.exists()
 
 
 def _looks_legacy(workspace: Path) -> bool:
@@ -160,7 +164,8 @@ def _render_start_text(workspace: Path, overview: dict) -> str:
     google = overview["google_integration"]
     platform = overview["platform"]
     capabilities = overview["capabilities"]
-    briefing_state = load_json(workspace / "_state" / "briefing-state.json")
+    paths = workspace_paths(workspace)
+    briefing_state = load_json(paths.briefing_state)
     last_briefing_at = str(briefing_state.get("last_briefing_at") or "").strip()
     has_briefed_today = _same_local_day(last_briefing_at, timezone_name)
     last_briefing_clock = _short_clock(last_briefing_at, timezone_name)
@@ -336,7 +341,7 @@ def run_start(args) -> int:
         raise
 
     has_briefed_today = _same_local_day(
-        str(load_json(workspace / "_state" / "briefing-state.json").get("last_briefing_at") or "").strip(),
+        str(load_json(workspace_paths(workspace).briefing_state).get("last_briefing_at") or "").strip(),
         overview["timezone"],
     )
     continue_item = choose_continue_item(workspace)

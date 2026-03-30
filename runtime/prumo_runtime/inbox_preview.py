@@ -6,6 +6,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from prumo_runtime.workspace import load_json
+from prumo_runtime.workspace_paths import workspace_paths
 
 
 def find_existing_path(candidates: list[Path]) -> Path | None:
@@ -16,7 +17,7 @@ def find_existing_path(candidates: list[Path]) -> Path | None:
 
 
 def load_processed_filenames(workspace: Path) -> set[str]:
-    payload = load_json(workspace / "Inbox4Mobile" / "_processed.json")
+    payload = load_json(workspace_paths(workspace).inbox_processed)
     items = payload.get("items", [])
     names: set[str] = set()
     if isinstance(items, list):
@@ -90,9 +91,10 @@ def summarize_inbox_entry(entry: dict) -> str:
 
 
 def load_inbox_preview(workspace: Path, repo_root: Path | None) -> dict:
-    inbox_dir = workspace / "Inbox4Mobile"
+    paths = workspace_paths(workspace)
+    inbox_dir = paths.inbox4mobile_root
     preview_path = inbox_dir / "inbox-preview.html"
-    index_path = inbox_dir / "_preview-index.json"
+    index_path = paths.inbox_preview_index
     processed = load_processed_filenames(workspace)
     preview_status = "ausente"
     preview_note = ""

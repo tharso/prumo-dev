@@ -35,6 +35,7 @@ from prumo_runtime.workspace import (
     workspace_overview,
     write_json,
 )
+from prumo_runtime.workspace_paths import workspace_paths
 
 
 def list_or_placeholder(items: list[str], fallback: str) -> str:
@@ -75,7 +76,7 @@ def snapshot_script_path(workspace: Path, repo_root: Path | None) -> Path | None
 
 
 def snapshot_cache_path(workspace: Path) -> Path:
-    return workspace / "_state" / "google-dual-snapshot.json"
+    return workspace_paths(workspace).google_dual_snapshot
 
 
 def now_iso(timezone_name: str) -> str:
@@ -322,7 +323,7 @@ def run_dual_snapshot(workspace: Path, repo_root: Path | None) -> dict:
 
     env = os.environ.copy()
     env["TZ_NAME"] = env.get("TZ_NAME", "America/Sao_Paulo")
-    env["STATE_FILE"] = str(workspace / "_state" / "briefing-state.json")
+    env["STATE_FILE"] = str(workspace_paths(workspace).briefing_state)
     env["GEMINI_TIMEOUT_SEC"] = env.get("GEMINI_TIMEOUT_SEC", "15")
     process_timeout = int(env.get("PRUMO_SNAPSHOT_PROCESS_TIMEOUT_SEC", "25"))
 
@@ -375,7 +376,7 @@ def run_dual_snapshot(workspace: Path, repo_root: Path | None) -> dict:
 
 
 def infer_timezone_name(workspace: Path) -> str:
-    schema = load_json(workspace / "_state" / "workspace-schema.json")
+    schema = load_json(workspace_paths(workspace).workspace_schema)
     value = schema.get("timezone")
     return str(value) if value else "America/Sao_Paulo"
 
@@ -588,8 +589,9 @@ def build_briefing_payload(workspace: Path, refresh_snapshot: bool = False) -> d
     repo_root = repo_root_from(Path(__file__))
     overview = workspace_overview(workspace)
 
-    pauta_text = read_text(workspace / "PAUTA.md")
-    inbox_text = read_text(workspace / "INBOX.md")
+    paths = workspace_paths(workspace)
+    pauta_text = read_text(paths.pauta)
+    inbox_text = read_text(paths.inbox)
     quente = extract_section(pauta_text, "Quente (precisa de atenção agora)")
     andamento = extract_section(pauta_text, "Em andamento")
     agendado = extract_section(pauta_text, "Agendado / Lembretes")
@@ -602,7 +604,7 @@ def build_briefing_payload(workspace: Path, refresh_snapshot: bool = False) -> d
     )
 
     update_briefing_state(workspace, config.timezone_name)
-    briefing_state = load_json(workspace / "_state" / "briefing-state.json")
+    briefing_state = load_json(paths.briefing_state)
     last_briefing_at = str(briefing_state.get("last_briefing_at") or "").strip()
     has_briefed_today = same_local_day(last_briefing_at, config.timezone_name)
 

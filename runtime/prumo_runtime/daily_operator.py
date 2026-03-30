@@ -5,6 +5,7 @@ import shlex
 from pathlib import Path
 
 from prumo_runtime.workspace import extract_section, read_text, load_json
+from prumo_runtime.workspace_paths import workspace_paths
 
 
 DEFAULT_GOOGLE_CLIENT_SECRETS = Path("~/Documents/_secrets/prumo/google-oauth-client.json").expanduser()
@@ -109,7 +110,7 @@ def selection_contract_payload(next_move: dict[str, object] | None) -> dict[str,
 
 
 def pauta_candidates(workspace: Path) -> tuple[list[str], list[str]]:
-    pauta = read_text(workspace / "PAUTA.md")
+    pauta = read_text(workspace_paths(workspace).pauta)
     hot = extract_section(pauta, "Quente (precisa de atenção agora)")
     ongoing = extract_section(pauta, "Em andamento")
     clean_hot = [item for item in hot if "_Nada ainda._" not in item and "Nada ainda." not in item]
@@ -134,11 +135,12 @@ def choose_continue_item(workspace: Path) -> str | None:
 
 
 def documentation_targets(workspace: Path) -> dict[str, str]:
+    paths = workspace_paths(workspace)
     return {
-        "pauta": str((workspace / "PAUTA.md").resolve()),
-        "inbox": str((workspace / "INBOX.md").resolve()),
-        "registro": str((workspace / "REGISTRO.md").resolve()),
-        "workflow_registry": str((workspace / "Referencias" / "WORKFLOWS.md").resolve()),
+        "pauta": str(paths.pauta.resolve()),
+        "inbox": str(paths.inbox.resolve()),
+        "registro": str(paths.registro.resolve()),
+        "workflow_registry": str(paths.workflows_index.resolve()),
     }
 
 
@@ -156,11 +158,12 @@ def count_markdown_items(markdown: str) -> int:
 
 
 def inbox_item_count(workspace: Path) -> int:
-    preview_payload = load_json(workspace / "Inbox4Mobile" / "_preview-index.json")
+    paths = workspace_paths(workspace)
+    preview_payload = load_json(paths.inbox_preview_index)
     preview_items = preview_payload.get("items")
     if isinstance(preview_items, list) and preview_items:
         return len(preview_items)
-    return count_markdown_items(read_text(workspace / "INBOX.md"))
+    return count_markdown_items(read_text(paths.inbox))
 
 
 def suggest_google_auth_action(workspace: Path) -> dict[str, str]:

@@ -19,6 +19,7 @@ from prumo_runtime.google_integration import (
     update_profile_state,
 )
 from prumo_runtime.workspace import WorkspaceError, load_json, now_iso
+from prumo_runtime.workspace_paths import workspace_paths
 
 GOOGLE_CALENDAR_EVENTS_URL = "https://www.googleapis.com/calendar/v3/calendars/primary/events"
 GOOGLE_GMAIL_MESSAGES_URL = "https://gmail.googleapis.com/gmail/v1/users/me/messages"
@@ -284,7 +285,7 @@ def fetch_tasks_today(
 
 
 def gmail_since_query(workspace: Path, timezone_name: str) -> str:
-    state = load_json(workspace / "_state" / "briefing-state.json")
+    state = load_json(workspace_paths(workspace).briefing_state)
     last_briefing_at = str(state.get("last_briefing_at") or "").strip()
     if not last_briefing_at:
         return "in:inbox newer_than:2d -category:promotions -category:social"

@@ -17,6 +17,10 @@ from prumo_runtime.constants import (
     GENERATED_FILES,
     RUNTIME_VERSION,
     SCHEMA_VERSION,
+    authorial_files_for,
+    derived_files_for,
+    directories_for,
+    generated_files_for,
     repo_root_from,
 )
 from prumo_runtime.apple_reminders import (
@@ -25,6 +29,7 @@ from prumo_runtime.apple_reminders import (
 from prumo_runtime.capabilities import runtime_capabilities
 from prumo_runtime import templates
 from prumo_runtime.google_integration import google_integration_summary, render_google_integration_json
+from prumo_runtime.workspace_paths import workspace_paths
 
 
 def now_iso(timezone_name: str) -> str:
@@ -114,6 +119,7 @@ def render_files(config: WorkspaceConfig) -> dict[str, str]:
 
 
 def schema_payload(config: WorkspaceConfig) -> dict:
+    paths = workspace_paths(config.workspace)
     return {
         "schema_version": SCHEMA_VERSION,
         "runtime_version": RUNTIME_VERSION,
@@ -123,32 +129,34 @@ def schema_payload(config: WorkspaceConfig) -> dict:
         "timezone": config.timezone_name,
         "briefing_time": config.briefing_time,
         "files": {
-            "generated": list(GENERATED_FILES),
-            "authorial": list(AUTHORIAL_FILES),
-            "derived": list(DERIVED_FILES),
+            "generated": list(paths.generated_relative_paths()),
+            "authorial": list(paths.authorial_relative_paths()),
+            "derived": list(paths.derived_relative_paths()),
         },
     }
 
 
 def ensure_directories(workspace: Path) -> None:
-    for relative in DIRECTORIES:
-        (workspace / relative).mkdir(parents=True, exist_ok=True)
+    paths = workspace_paths(workspace)
+    for directory in paths.directories():
+        directory.mkdir(parents=True, exist_ok=True)
 
 
 def read_schema(workspace: Path) -> dict:
-    return load_json(workspace / "_state" / "workspace-schema.json")
+    return load_json(workspace_paths(workspace).workspace_schema)
 
 
 def write_schema(config: WorkspaceConfig, preserve_created_at: str | None = None) -> None:
     payload = schema_payload(config)
     if preserve_created_at:
         payload["created_at"] = preserve_created_at
-    write_json(config.workspace / "_state" / "workspace-schema.json", payload)
+    write_json(workspace_paths(config.workspace).workspace_schema, payload)
 
 
 def create_missing_files(config: WorkspaceConfig) -> dict[str, list[str]]:
     ensure_directories(config.workspace)
     rendered = render_files(config)
+    paths = workspace_paths(config.workspace)
     created: list[str] = []
     preserved: list[str] = []
     for relative, content in rendered.items():
@@ -160,23 +168,23 @@ def create_missing_files(config: WorkspaceConfig) -> dict[str, list[str]]:
         target.write_text(content, encoding="utf-8")
         created.append(relative)
 
-    schema_path = config.workspace / "_state" / "workspace-schema.json"
+    schema_path = paths.workspace_schema
     existing_schema = read_schema(config.workspace)
     created_at = existing_schema.get("created_at")
     if schema_path.exists():
-        preserved.append("_state/workspace-schema.json")
+        preserved.append(paths.relative(schema_path))
     write_schema(config, preserve_created_at=created_at)
     if not schema_path.exists():
-        created.append("_state/workspace-schema.json")
+        created.append(paths.relative(schema_path))
     return {"created": created, "preserved": preserved}
 
 
 def detect_missing(workspace: Path) -> dict[str, list[str]]:
     schema = read_schema(workspace)
     files = schema.get("files") or {
-        "generated": list(GENERATED_FILES),
-        "authorial": list(AUTHORIAL_FILES),
-        "derived": list(DERIVED_FILES),
+        "generated": list(generated_files_for(workspace)),
+        "authorial": list(authorial_files_for(workspace)),
+        "derived": list(derived_files_for(workspace)),
     }
     missing = {"generated": [], "authorial": [], "derived": []}
     for group in ("generated", "authorial", "derived"):
@@ -190,7 +198,7 @@ def infer_user_name(workspace: Path) -> str | None:
     schema = read_schema(workspace)
     if schema.get("user_name"):
         return str(schema["user_name"])
-    index_path = workspace / "Agente" / "INDEX.md"
+    index_path = workspace_paths(workspace).agent_index
     if not index_path.exists():
         return None
     for line in index_path.read_text(encoding="utf-8").splitlines():
@@ -200,7 +208,7 @@ def infer_user_name(workspace: Path) -> str | None:
 
 
 def infer_user_name_from_legacy_claude(workspace: Path) -> str | None:
-    claude_path = workspace / "CLAUDE.md"
+    claude_path = workspace_paths(workspace).wrappers["CLAUDE.md"]
     if not claude_path.exists():
         return None
     text = claude_path.read_text(encoding="utf-8")
@@ -250,7 +258,7 @@ def looks_like_wrapper(text: str) -> bool:
 
 def backup_path_for(workspace: Path, relative: str, stamp: str) -> Path:
     safe_name = relative.replace("/", "__")
-    return workspace / "_backup" / "runtime-migrate" / stamp / safe_name
+    return workspace / ".prumo" / "backups" / "runtime-migrate" / stamp / safe_name
 
 
 def build_config_from_existing(workspace: Path) -> WorkspaceConfig:
@@ -273,16 +281,17 @@ def migrate_legacy_workspace(config: WorkspaceConfig) -> dict[str, list[str] | s
     ensure_directories(config.workspace)
     rendered = render_files(config)
     stamp = now_stamp(config.timezone_name)
-    backup_root = config.workspace / "_backup" / "runtime-migrate" / stamp
+    backup_root = config.workspace / ".prumo" / "backups" / "runtime-migrate" / stamp
     backup_root.mkdir(parents=True, exist_ok=True)
+    paths = workspace_paths(config.workspace)
 
     backed_up: list[str] = []
     created: list[str] = []
     overwritten: list[str] = []
     preserved: list[str] = []
 
-    claude_path = config.workspace / "CLAUDE.md"
-    legacy_import_path = config.workspace / "Agente" / "LEGADO-CLAUDE.md"
+    claude_path = paths.wrappers["CLAUDE.md"]
+    legacy_import_path = paths.agente_root / "LEGADO-CLAUDE.md"
     if claude_path.exists():
         current = claude_path.read_text(encoding="utf-8")
         if current.strip() and not looks_like_wrapper(current) and not legacy_import_path.exists():
@@ -314,17 +323,17 @@ def migrate_legacy_workspace(config: WorkspaceConfig) -> dict[str, list[str] | s
         target.write_text(content, encoding="utf-8")
         created.append(relative)
 
-    schema_path = config.workspace / "_state" / "workspace-schema.json"
+    schema_path = paths.workspace_schema
     existing_schema = read_schema(config.workspace)
     created_at = existing_schema.get("created_at")
     if schema_path.exists():
-        backed_up.append("_state/workspace-schema.json")
-        backup_target = backup_path_for(config.workspace, "_state/workspace-schema.json", stamp)
+        backed_up.append(paths.relative(schema_path))
+        backup_target = backup_path_for(config.workspace, paths.relative(schema_path), stamp)
         backup_target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(schema_path, backup_target)
     write_schema(config, preserve_created_at=created_at)
     if not schema_path.exists():
-        created.append("_state/workspace-schema.json")
+        created.append(paths.relative(schema_path))
 
     return {
         "backup_root": str(backup_root),
@@ -340,12 +349,13 @@ def repair_workspace(workspace: Path) -> dict[str, list[str]]:
     ensure_directories(workspace)
     rendered = render_files(config)
     missing = detect_missing(workspace)
+    paths = workspace_paths(workspace)
     recreated: list[str] = []
     reported_authorial = list(missing["authorial"])
 
     for relative in [*missing["generated"], *missing["derived"]]:
         content = rendered.get(relative)
-        if content is None and relative == "_state/workspace-schema.json":
+        if content is None and relative == paths.relative(paths.workspace_schema):
             write_schema(config, preserve_created_at=read_schema(workspace).get("created_at"))
             recreated.append(relative)
             continue
@@ -389,7 +399,7 @@ def extract_section(markdown: str, heading: str) -> list[str]:
 
 
 def parse_core_version(workspace: Path) -> str | None:
-    core_path = workspace / "PRUMO-CORE.md"
+    core_path = workspace_paths(workspace).core
     if not core_path.exists():
         return None
     for line in core_path.read_text(encoding="utf-8").splitlines():
@@ -399,7 +409,7 @@ def parse_core_version(workspace: Path) -> str | None:
 
 
 def update_briefing_state(workspace: Path, timezone_name: str) -> None:
-    state_path = workspace / "_state" / "briefing-state.json"
+    state_path = workspace_paths(workspace).briefing_state
     state = load_json(state_path)
     state["last_briefing_at"] = now_iso(timezone_name)
     state.pop("interrupted_at", None)
@@ -411,6 +421,7 @@ def workspace_overview(workspace: Path) -> dict:
     config = build_config_from_existing(workspace)
     schema = read_schema(workspace)
     missing = detect_missing(workspace)
+    paths = workspace_paths(workspace)
     core_version = parse_core_version(workspace)
     runtime_key = semantic_version_key(RUNTIME_VERSION)
     core_key = semantic_version_key(core_version or "0")
@@ -433,14 +444,14 @@ def workspace_overview(workspace: Path) -> dict:
         "google_integration": google_summary,
         "apple_reminders": apple_summary,
         "missing": missing,
-        "pauta_exists": (workspace / "PAUTA.md").exists(),
-        "inbox_exists": (workspace / "INBOX.md").exists(),
-        "registro_exists": (workspace / "REGISTRO.md").exists(),
+        "pauta_exists": paths.pauta.exists(),
+        "inbox_exists": paths.inbox.exists(),
+        "registro_exists": paths.registro.exists(),
     }
 
 
 def append_registro(workspace: Path, origin: str, summary: str, action: str, destination: str) -> None:
-    registro_path = workspace / "REGISTRO.md"
+    registro_path = workspace_paths(workspace).registro
     if not registro_path.exists():
         return
     today = datetime.now().strftime("%d/%m")

@@ -1,0 +1,175 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+
+
+@dataclass(frozen=True)
+class WorkspacePaths:
+    root: Path
+    nested_layout: bool
+
+    @property
+    def user_root(self) -> Path:
+        return self.root / "Prumo" if self.nested_layout else self.root
+
+    @property
+    def system_root(self) -> Path:
+        return self.root / ".prumo" if self.nested_layout else self.root
+
+    @property
+    def state_root(self) -> Path:
+        return self.system_root / "state" if self.nested_layout else self.root / "_state"
+
+    @property
+    def logs_root(self) -> Path:
+        return self.system_root / "logs" if self.nested_layout else self.root / "_logs"
+
+    @property
+    def custom_root(self) -> Path:
+        return self.user_root / "Custom"
+
+    @property
+    def wrappers(self) -> dict[str, Path]:
+        return {
+            "AGENT.md": self.root / "AGENT.md",
+            "AGENTS.md": self.root / "AGENTS.md",
+            "CLAUDE.md": self.root / "CLAUDE.md",
+        }
+
+    @property
+    def canonical_agent(self) -> Path:
+        return self.user_root / "AGENT.md"
+
+    @property
+    def core_candidates(self) -> tuple[Path, ...]:
+        candidates: list[Path] = []
+        if self.nested_layout:
+            candidates.extend(
+                [
+                    self.system_root / "system" / "PRUMO-CORE.md",
+                    self.system_root / "PRUMO-CORE.md",
+                ]
+            )
+        candidates.append(self.root / "PRUMO-CORE.md")
+        return tuple(candidates)
+
+    @property
+    def core(self) -> Path:
+        for candidate in self.core_candidates:
+            if candidate.exists():
+                return candidate
+        return self.core_candidates[0]
+
+    @property
+    def agente_root(self) -> Path:
+        return self.user_root / "Agente"
+
+    @property
+    def referencias_root(self) -> Path:
+        return self.user_root / "Referencias"
+
+    @property
+    def inbox4mobile_root(self) -> Path:
+        return self.user_root / "Inbox4Mobile"
+
+    @property
+    def pauta(self) -> Path:
+        return self.user_root / "PAUTA.md"
+
+    @property
+    def inbox(self) -> Path:
+        return self.user_root / "INBOX.md"
+
+    @property
+    def registro(self) -> Path:
+        return self.user_root / "REGISTRO.md"
+
+    @property
+    def ideias(self) -> Path:
+        return self.user_root / "IDEIAS.md"
+
+    @property
+    def agent_index(self) -> Path:
+        return self.agente_root / "INDEX.md"
+
+    @property
+    def workflows_index(self) -> Path:
+        return self.referencias_root / "WORKFLOWS.md"
+
+    @property
+    def referencias_index(self) -> Path:
+        return self.referencias_root / "INDICE.md"
+
+    @property
+    def briefing_state(self) -> Path:
+        return self.state_root / "briefing-state.json"
+
+    @property
+    def workspace_schema(self) -> Path:
+        return self.state_root / "workspace-schema.json"
+
+    @property
+    def google_integration(self) -> Path:
+        return self.state_root / "google-integration.json"
+
+    @property
+    def google_dual_snapshot(self) -> Path:
+        return self.state_root / "google-dual-snapshot.json"
+
+    @property
+    def inbox_processed(self) -> Path:
+        return self.inbox4mobile_root / "_processed.json"
+
+    @property
+    def inbox_preview_index(self) -> Path:
+        return self.inbox4mobile_root / "_preview-index.json"
+
+    def generated_relative_paths(self) -> tuple[str, ...]:
+        return tuple(self.relative(path) for path in self.wrappers.values()) + (self.relative(self.core),)
+
+    def authorial_relative_paths(self) -> tuple[str, ...]:
+        return (
+            self.relative(self.agent_index),
+            self.relative(self.agente_root / "PESSOAS.md"),
+            self.relative(self.agente_root / "SAUDE.md"),
+            self.relative(self.agente_root / "ROTINA.md"),
+            self.relative(self.agente_root / "INFRA.md"),
+            self.relative(self.agente_root / "PROJETOS.md"),
+            self.relative(self.agente_root / "RELACOES.md"),
+            self.relative(self.pauta),
+            self.relative(self.inbox),
+            self.relative(self.registro),
+            self.relative(self.ideias),
+            self.relative(self.referencias_index),
+            self.relative(self.workflows_index),
+        )
+
+    def derived_relative_paths(self) -> tuple[str, ...]:
+        return (
+            self.relative(self.workspace_schema),
+            self.relative(self.briefing_state),
+            self.relative(self.google_integration),
+            self.relative(self.inbox_processed),
+        )
+
+    def directories(self) -> tuple[Path, ...]:
+        return (
+            self.agente_root,
+            self.inbox4mobile_root,
+            self.referencias_root,
+            self.logs_root,
+            self.state_root,
+        )
+
+    def relative(self, path: Path) -> str:
+        return str(path.relative_to(self.root))
+
+
+def detect_nested_layout(workspace: Path) -> bool:
+    return (workspace / "Prumo").exists() or (workspace / ".prumo").exists()
+
+
+def workspace_paths(workspace: Path) -> WorkspacePaths:
+    root = workspace.expanduser().resolve()
+    return WorkspacePaths(root=root, nested_layout=detect_nested_layout(root))

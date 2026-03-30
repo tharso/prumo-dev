@@ -3,10 +3,11 @@ from __future__ import annotations
 from pathlib import Path
 
 from prumo_runtime.platform_support import runtime_platform_summary
+from prumo_runtime.workspace_paths import workspace_paths
 
 
 def workflow_registry_path(workspace: Path) -> Path:
-    return workspace / "Referencias" / "WORKFLOWS.md"
+    return workspace_paths(workspace).workflows_index
 
 
 def workflow_scaffolding_summary(workspace: Path) -> dict[str, str]:

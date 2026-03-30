@@ -8,8 +8,8 @@ from pathlib import Path
 from typing import Any
 
 from prumo_runtime.platform_support import is_macos, platform_label, runtime_app_dir
+from prumo_runtime.workspace_paths import workspace_paths
 
-GOOGLE_INTEGRATION_RELATIVE = "_state/google-integration.json"
 DEFAULT_GOOGLE_PROFILE = "pessoal"
 DEFAULT_GOOGLE_SCOPES = (
     "openid",
@@ -59,7 +59,7 @@ def default_token_storage(workspace: Path, profile: str) -> dict:
 
 
 def resolve_token_storage(workspace: Path, profile: str) -> dict:
-    target = workspace / GOOGLE_INTEGRATION_RELATIVE
+    target = workspace_paths(workspace).google_integration
     if target.exists():
         try:
             payload = json.loads(target.read_text(encoding="utf-8"))
@@ -114,7 +114,7 @@ def render_google_integration_json(workspace: Path) -> str:
 
 
 def load_google_integration(workspace: Path) -> dict:
-    target = workspace / GOOGLE_INTEGRATION_RELATIVE
+    target = workspace_paths(workspace).google_integration
     if not target.exists():
         return default_google_integration_payload(workspace)
     try:
@@ -143,7 +143,7 @@ def load_google_integration(workspace: Path) -> dict:
 
 
 def write_google_integration(workspace: Path, payload: dict) -> None:
-    target = workspace / GOOGLE_INTEGRATION_RELATIVE
+    target = workspace_paths(workspace).google_integration
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(payload, ensure_ascii=True, indent=2) + "\n", encoding="utf-8")
 
