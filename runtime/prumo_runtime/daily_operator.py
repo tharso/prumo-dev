@@ -8,7 +8,6 @@ from prumo_runtime.workspace import extract_section, read_text, load_json
 from prumo_runtime.workspace_paths import workspace_paths
 
 
-DEFAULT_GOOGLE_CLIENT_SECRETS = Path("~/Documents/_secrets/prumo/google-oauth-client.json").expanduser()
 SHORT_ACCEPTANCE_TOKENS = ["1", "a", "aceitar", "aceitar e seguir", "seguir", "ok"]
 
 
@@ -238,45 +237,6 @@ def is_fresh_workspace(workspace: Path) -> bool:
     return True
 
 
-def suggest_google_auth_action(workspace: Path) -> dict[str, str]:
-    workspace_str = str(workspace)
-    client_secrets_env = str(os.environ.get("PRUMO_GOOGLE_CLIENT_SECRETS") or "").strip()
-    client_id = str(os.environ.get("PRUMO_GOOGLE_CLIENT_ID") or "").strip()
-    client_secret = str(os.environ.get("PRUMO_GOOGLE_CLIENT_SECRET") or "").strip()
-    if client_secrets_env:
-        candidate = Path(client_secrets_env).expanduser()
-        if candidate.exists():
-            return shell_action(
-                "auth-google",
-                "Conectar Google",
-                f"prumo auth google --workspace {workspace_str} --client-secrets {candidate}",
-                category="integration",
-            )
-    if DEFAULT_GOOGLE_CLIENT_SECRETS.exists():
-        return shell_action(
-            "auth-google",
-            "Conectar Google",
-            f"prumo auth google --workspace {workspace_str} --client-secrets {DEFAULT_GOOGLE_CLIENT_SECRETS}",
-            category="integration",
-        )
-    if client_id and client_secret:
-        return shell_action(
-            "auth-google",
-            "Conectar Google",
-            (
-                f'prumo auth google --workspace {workspace_str} --client-id "{client_id}" '
-                f'--client-secret "{client_secret}"'
-            ),
-            category="integration",
-        )
-    return shell_action(
-        "auth-google-help",
-        "Ver como conectar Google sem chute cego",
-        f"prumo auth google --workspace {workspace_str} --help",
-        category="integration",
-    )
-
-
 def suggest_core_alignment_action(workspace: Path, overview: dict) -> dict[str, object]:
     workspace_str = shlex.quote(str(workspace))
     user_name = shlex.quote(str(overview["user_name"]))
@@ -346,7 +306,6 @@ def build_daily_actions(
     workspace_str = str(workspace)
     missing = overview["missing"]
     continue_item = clean_pauta_item(choose_continue_item(workspace))
-    google_connected = overview["google_integration"]["active_profile_status"] == "connected"
     docs = documentation_targets(workspace)
     inbox_count = inbox_item_count(workspace)
     fresh_workspace = is_fresh_workspace(workspace)
@@ -462,9 +421,6 @@ def build_daily_actions(
         )
     )
 
-    if not google_connected:
-        register(suggest_google_auth_action(workspace))
-
     if os.environ.get("PRUMO_ENABLE_WORKFLOW_SCAFFOLD_ACTIONS") == "1":
         register(
             host_prompt_action(
@@ -507,8 +463,6 @@ def build_daily_actions(
         order.extend(["organize-day", "briefing"])
     if "align-core" in actions_by_id:
         order.append("align-core")
-    if not google_connected:
-        order.extend(["auth-google", "auth-google-help"])
     order.extend(["workflow-scaffold", "context"])
 
     ordered: list[dict[str, object]] = []

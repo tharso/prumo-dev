@@ -161,7 +161,6 @@ def _render_text_for_unknown_directory(workspace: Path) -> str:
 def _render_start_text(workspace: Path, overview: dict) -> str:
     timezone_name = overview["timezone"]
     missing = overview["missing"]
-    google = overview["google_integration"]
     platform = overview["platform"]
     capabilities = overview["capabilities"]
     paths = workspace_paths(workspace)
@@ -204,7 +203,6 @@ def _render_start_text(workspace: Path, overview: dict) -> str:
         f"1. {overview['user_name']}, o Prumo está de pé no workspace `{workspace}`.",
         (
             "2. Estado rápido: "
-            f"Google `{google['active_profile_status']}`, "
             f"core `{overview['core_version'] or 'ausente'}`."
         ),
         (
@@ -283,12 +281,10 @@ def _build_state_flags(
         "has_briefed_today": has_briefed_today,
         "has_continue_item": bool(continue_item),
         "inbox_count": inbox_count,
-        "google_connected": overview["google_integration"]["active_profile_status"] == "connected",
     }
 
 
 def _build_start_degradation(
-    overview: dict,
     actions: list[dict[str, object]],
     state_flags: dict[str, object],
 ) -> dict[str, object]:
@@ -310,16 +306,6 @@ def _build_start_degradation(
                 "level": "warning",
                 "summary": "O core do workspace está defasado em relação ao runtime.",
                 "action_id": "align-core" if "align-core" in actions_by_id else None,
-            }
-        )
-    google_status = str(overview["google_integration"]["active_profile_status"] or "")
-    if google_status == "needs_reauth":
-        alerts.append(
-            {
-                "id": "google-needs-reauth",
-                "level": "warning",
-                "summary": "Google pede reautenticação; a integração direta não está inteira.",
-                "action_id": "auth-google" if "auth-google" in actions_by_id else "auth-google-help" if "auth-google-help" in actions_by_id else None,
             }
         )
 
@@ -376,7 +362,7 @@ def run_start(args) -> int:
         continue_item=continue_item,
         inbox_count=inbox_count,
     )
-    degradation = _build_start_degradation(overview, actions, state_flags)
+    degradation = _build_start_degradation(actions, state_flags)
 
     payload = {
         "adapter_contract_version": ADAPTER_CONTRACT_VERSION,
@@ -393,7 +379,6 @@ def run_start(args) -> int:
         "daily_operation": daily_operation_payload(workspace),
         "next_move": next_move,
         "selection_contract": selection_contract_payload(next_move),
-        "google_status": overview["google_integration"]["active_profile_status"],
         "missing": overview["missing"],
         "state_flags": state_flags,
         "degradation": degradation,

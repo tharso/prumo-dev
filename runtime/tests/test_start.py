@@ -64,8 +64,6 @@ class StartCommandTests(unittest.TestCase):
                 encoding="utf-8",
             )
             (state_dir / "briefing-state.json").write_text('{"last_briefing_at": ""}', encoding="utf-8")
-            (state_dir / "google-integration.json").write_text("{}", encoding="utf-8")
-            (state_dir / "apple-reminders-integration.json").write_text("{}", encoding="utf-8")
             os.chdir(workspace)
             try:
                 args = Namespace(workspace=None, format="text")
@@ -146,14 +144,6 @@ class StartCommandTests(unittest.TestCase):
                 encoding="utf-8",
             )
             (state_dir / "briefing-state.json").write_text('{"last_briefing_at": ""}', encoding="utf-8")
-            (state_dir / "google-integration.json").write_text(
-                '{"status":"connected","active_profile":"pessoal","profiles":{"pessoal":{"status":"connected","account_email":"tharso@gmail.com"}}}',
-                encoding="utf-8",
-            )
-            (state_dir / "apple-reminders-integration.json").write_text(
-                '{"status":"connected","authorization_status":"fullAccess","lists":["A vida..."],"observed_lists":["A vida..."]}',
-                encoding="utf-8",
-            )
             args = Namespace(workspace=str(workspace), format="text")
             buffer = io.StringIO()
             with redirect_stdout(buffer):
@@ -201,7 +191,6 @@ class StartCommandTests(unittest.TestCase):
                 encoding="utf-8",
             )
             (workspace / ".prumo" / "state" / "briefing-state.json").write_text('{"last_briefing_at": ""}', encoding="utf-8")
-            (workspace / ".prumo" / "state" / "google-integration.json").write_text("{}", encoding="utf-8")
             args = Namespace(workspace=str(workspace), format="json")
             buffer = io.StringIO()
             with redirect_stdout(buffer):
@@ -266,7 +255,6 @@ class StartCommandTests(unittest.TestCase):
                 encoding="utf-8",
             )
             (workspace / ".prumo" / "state" / "briefing-state.json").write_text('{"last_briefing_at": ""}', encoding="utf-8")
-            (workspace / ".prumo" / "state" / "google-integration.json").write_text("{}", encoding="utf-8")
             args = Namespace(workspace=str(workspace), format="text")
             buffer = io.StringIO()
             with redirect_stdout(buffer):
@@ -304,8 +292,6 @@ class StartCommandTests(unittest.TestCase):
                 encoding="utf-8",
             )
             (state_dir / "briefing-state.json").write_text('{"last_briefing_at": ""}', encoding="utf-8")
-            (state_dir / "google-integration.json").write_text("{}", encoding="utf-8")
-            (state_dir / "apple-reminders-integration.json").write_text("{}", encoding="utf-8")
             args = Namespace(workspace=str(workspace), format="text")
             buffer = io.StringIO()
             with redirect_stdout(buffer):
@@ -343,8 +329,6 @@ class StartCommandTests(unittest.TestCase):
                 encoding="utf-8",
             )
             (state_dir / "briefing-state.json").write_text('{"last_briefing_at": ""}', encoding="utf-8")
-            (state_dir / "google-integration.json").write_text("{}", encoding="utf-8")
-            (state_dir / "apple-reminders-integration.json").write_text("{}", encoding="utf-8")
             args = Namespace(workspace=str(workspace), format="json")
             buffer = io.StringIO()
             with redirect_stdout(buffer):
@@ -353,60 +337,14 @@ class StartCommandTests(unittest.TestCase):
             payload = json.loads(buffer.getvalue())
             action_ids = [action["id"] for action in payload["actions"]]
             self.assertIn("context", action_ids)
-            self.assertTrue(any(action_id.startswith("auth-google") for action_id in action_ids))
-            self.assertNotIn("auth-apple-reminders", action_ids)
             self.assertIn("state_flags", payload)
             self.assertIn("degradation", payload)
             self.assertTrue(payload["state_flags"]["needs_repair"])
-            self.assertFalse(payload["state_flags"]["google_connected"])
             self.assertEqual(payload["degradation"]["status"], "error")
             self.assertTrue(any(alert["id"] == "workspace-structure-broken" for alert in payload["degradation"]["alerts"]))
             commands = " ".join(action["command"] for action in payload["actions"])
             self.assertNotIn("/caminho/do/client_secret.json", commands)
             self.assertLessEqual(len(payload["actions"]), 8)
-
-    def test_google_auth_action_prefers_env_override_for_client_secrets(self) -> None:
-        previous = os.environ.get("PRUMO_GOOGLE_CLIENT_SECRETS")
-        with tempfile.TemporaryDirectory() as tmpdir:
-            workspace = Path(tmpdir) / "ws"
-            state_dir = workspace / "_state"
-            workspace.mkdir(parents=True, exist_ok=True)
-            state_dir.mkdir(parents=True, exist_ok=True)
-            secrets_file = Path(tmpdir) / "custom-google-oauth.json"
-            secrets_file.write_text("{}", encoding="utf-8")
-            (workspace / "AGENT.md").write_text("# AGENT\n", encoding="utf-8")
-            (workspace / "PRUMO-CORE.md").write_text(f"> **prumo_version: {__version__}**\n", encoding="utf-8")
-            (workspace / "PAUTA.md").write_text("# Pauta\n", encoding="utf-8")
-            (state_dir / "workspace-schema.json").write_text(
-                json.dumps(
-                    {
-                        "user_name": "Batata",
-                        "agent_name": "Prumo",
-                        "timezone": "America/Sao_Paulo",
-                        "briefing_time": "09:00",
-                        "files": {"generated": [], "authorial": [], "derived": []},
-                    }
-                ),
-                encoding="utf-8",
-            )
-            (state_dir / "briefing-state.json").write_text('{"last_briefing_at": ""}', encoding="utf-8")
-            (state_dir / "google-integration.json").write_text("{}", encoding="utf-8")
-            (state_dir / "apple-reminders-integration.json").write_text("{}", encoding="utf-8")
-            os.environ["PRUMO_GOOGLE_CLIENT_SECRETS"] = str(secrets_file)
-            try:
-                args = Namespace(workspace=str(workspace), format="json")
-                buffer = io.StringIO()
-                with redirect_stdout(buffer):
-                    rc = run_start(args)
-            finally:
-                if previous is None:
-                    os.environ.pop("PRUMO_GOOGLE_CLIENT_SECRETS", None)
-                else:
-                    os.environ["PRUMO_GOOGLE_CLIENT_SECRETS"] = previous
-            self.assertEqual(rc, 0)
-            payload = json.loads(buffer.getvalue())
-            commands = [action["command"] for action in payload["actions"]]
-            self.assertTrue(any(str(secrets_file) in command for command in commands))
 
     def test_json_output_exposes_actions(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -429,8 +367,6 @@ class StartCommandTests(unittest.TestCase):
                 encoding="utf-8",
             )
             (state_dir / "briefing-state.json").write_text('{"last_briefing_at": ""}', encoding="utf-8")
-            (state_dir / "google-integration.json").write_text("{}", encoding="utf-8")
-            (state_dir / "apple-reminders-integration.json").write_text("{}", encoding="utf-8")
             args = Namespace(workspace=str(workspace), format="json")
             buffer = io.StringIO()
             with redirect_stdout(buffer):
@@ -462,8 +398,6 @@ class StartCommandTests(unittest.TestCase):
             self.assertIn("capabilities", payload)
             self.assertTrue(payload["capabilities"]["daily_operation"]["workflow_scaffolding"])
             self.assertTrue(payload["actions"])
-            self.assertFalse(payload["state_flags"]["google_connected"])
-            self.assertEqual(payload["google_status"], "disconnected")
             self.assertEqual(payload["actions"][0]["id"], "briefing")
             self.assertEqual(payload["actions"][0]["kind"], "shell")
             self.assertIn("shell_command", payload["actions"][0])
@@ -511,8 +445,6 @@ class StartCommandTests(unittest.TestCase):
                 json.dumps({"last_briefing_at": yesterday.isoformat()}),
                 encoding="utf-8",
             )
-            (state_dir / "google-integration.json").write_text("{}", encoding="utf-8")
-            (state_dir / "apple-reminders-integration.json").write_text("{}", encoding="utf-8")
             args = Namespace(workspace=str(workspace), format="json")
             buffer = io.StringIO()
             with redirect_stdout(buffer):
@@ -560,8 +492,6 @@ class StartCommandTests(unittest.TestCase):
                 json.dumps({"last_briefing_at": same_day.isoformat()}),
                 encoding="utf-8",
             )
-            (state_dir / "google-integration.json").write_text("{}", encoding="utf-8")
-            (state_dir / "apple-reminders-integration.json").write_text("{}", encoding="utf-8")
             args = Namespace(workspace=str(workspace), format="json")
             buffer = io.StringIO()
             with redirect_stdout(buffer):
@@ -594,8 +524,6 @@ class StartCommandTests(unittest.TestCase):
                 encoding="utf-8",
             )
             (state_dir / "briefing-state.json").write_text('{"last_briefing_at": ""}', encoding="utf-8")
-            (state_dir / "google-integration.json").write_text("{}", encoding="utf-8")
-            (state_dir / "apple-reminders-integration.json").write_text("{}", encoding="utf-8")
             os.chdir(workspace)
             try:
                 args = Namespace(workspace=None, format="json")

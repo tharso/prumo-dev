@@ -126,14 +126,6 @@ class WorkspacePaths:
         return self.state_root / "workspace-schema.json"
 
     @property
-    def google_integration(self) -> Path:
-        return self.state_root / "google-integration.json"
-
-    @property
-    def google_dual_snapshot(self) -> Path:
-        return self.state_root / "google-dual-snapshot.json"
-
-    @property
     def inbox_processed(self) -> Path:
         return self.inbox4mobile_root / "_processed.json"
 
@@ -169,7 +161,6 @@ class WorkspacePaths:
         return (
             self.relative(self.workspace_schema),
             self.relative(self.briefing_state),
-            self.relative(self.google_integration),
             self.relative(self.inbox_processed),
         )
 

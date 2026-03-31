@@ -23,12 +23,8 @@ from prumo_runtime.constants import (
     generated_files_for,
     repo_root_from,
 )
-from prumo_runtime.apple_reminders import (
-    apple_reminders_summary,
-)
 from prumo_runtime.capabilities import runtime_capabilities
 from prumo_runtime import templates
-from prumo_runtime.google_integration import google_integration_summary, render_google_integration_json
 from prumo_runtime.workspace_paths import workspace_paths
 
 
@@ -194,7 +190,6 @@ def render_files(config: WorkspaceConfig) -> dict[str, str]:
         paths.relative(paths.referencias_index): templates.render_referencias_md(setup_date),
         paths.relative(paths.workflows_index): templates.render_workflows_md(setup_date),
         paths.relative(paths.briefing_state): templates.render_briefing_state_json(),
-        paths.relative(paths.google_integration): render_google_integration_json(config.workspace),
         paths.relative(paths.inbox_processed): templates.render_inbox_processed_json(),
     }
 
@@ -667,9 +662,7 @@ def workspace_overview(workspace: Path) -> dict:
     core_version = parse_core_version(workspace)
     runtime_key = semantic_version_key(RUNTIME_VERSION)
     core_key = semantic_version_key(core_version or "0")
-    google_summary = google_integration_summary(workspace)
-    apple_summary = apple_reminders_summary(workspace)
-    capabilities = runtime_capabilities(workspace, google_summary)
+    capabilities = runtime_capabilities(workspace)
     return {
         "workspace_path": str(workspace.resolve()),
         "user_name": config.user_name,
@@ -683,8 +676,6 @@ def workspace_overview(workspace: Path) -> dict:
         "core_outdated": bool(core_version and core_key < runtime_key),
         "platform": capabilities["platform"],
         "capabilities": capabilities,
-        "google_integration": google_summary,
-        "apple_reminders": apple_summary,
         "missing": missing,
         "pauta_exists": paths.pauta.exists(),
         "inbox_exists": paths.inbox.exists(),

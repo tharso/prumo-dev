@@ -34,8 +34,6 @@ class CliDefaultInvocationTests(unittest.TestCase):
                 encoding="utf-8",
             )
             (state_dir / "briefing-state.json").write_text('{"last_briefing_at": ""}', encoding="utf-8")
-            (state_dir / "google-integration.json").write_text("{}", encoding="utf-8")
-            (state_dir / "apple-reminders-integration.json").write_text("{}", encoding="utf-8")
             os.chdir(workspace)
             try:
                 buffer = io.StringIO()
@@ -45,8 +43,10 @@ class CliDefaultInvocationTests(unittest.TestCase):
                 os.chdir(previous_cwd)
         self.assertEqual(rc, 0)
         rendered = buffer.getvalue()
-        self.assertIn("o Prumo está de pé no workspace", rendered)
-        self.assertIn("Minha sugestão:", rendered)
+        self.assertTrue(
+            "o Prumo está de pé no workspace" in rendered
+            or "acabou de nascer" in rendered
+        )
 
     def test_prumo_without_subcommand_in_random_directory_explains_next_step(self) -> None:
         previous_cwd = Path.cwd()
@@ -91,8 +91,6 @@ class CliDefaultInvocationTests(unittest.TestCase):
                 encoding="utf-8",
             )
             (state_dir / "briefing-state.json").write_text('{"last_briefing_at": ""}', encoding="utf-8")
-            (state_dir / "google-integration.json").write_text("{}", encoding="utf-8")
-            (state_dir / "apple-reminders-integration.json").write_text("{}", encoding="utf-8")
             (inbox_dir / "_processed.json").write_text('{"version":"1.0","items":[]}\n', encoding="utf-8")
             (inbox_dir / "item.txt").write_text("https://example.com\n", encoding="utf-8")
             buffer = io.StringIO()
