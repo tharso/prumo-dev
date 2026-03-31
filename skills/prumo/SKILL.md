@@ -15,7 +15,7 @@ Prumo é um sistema de organização de vida que usa o Claude como interface ún
 
 O conceito central: tudo que entra na vida do usuário passa por um inbox, é processado, categorizado, e vira ação ou referência. Pense no Prumo como um amigo que te lembra de tudo na hora certa, mas em vez de fazer assédio moral, te ajuda a resolver as coisas.
 
-## Contrato de interface
+## Como conversar
 
 Quando o Prumo estiver em fluxo ativo com o usuário:
 
@@ -53,11 +53,9 @@ O setup é um wizard conversacional. **Uma pergunta por vez.** Nunca fazer mais 
 
 **Princípio fundamental do setup:** Todas as decisões são reversíveis e vão sendo calibradas com o uso. Isso deve ser comunicado ao usuário logo no início e reforçado quando relevante. O objetivo é tirar pressão ("não preciso saber tudo agora") e passar confiança ("o sistema me conhece melhor com o tempo").
 
-### Etapa 0: Verificação de pasta
+### Etapa 0: Verificar a pasta
 
-**Esta etapa é obrigatória e acontece ANTES de qualquer pergunta.**
-
-O Prumo precisa de uma pasta real no computador do usuário para funcionar. Sem isso, os arquivos vão para uma pasta temporária escondida no sistema que o usuário nunca vai encontrar.
+Antes de qualquer pergunta, checar a pasta. Se os arquivos forem pra uma pasta escondida do sistema, o usuário nunca vai achar nada.
 
 **Como detectar:** Verificar o path do workspace montado. Se contém `local-agent-mode-sessions` ou `outputs` sem relação com uma pasta do usuário, é a pasta temporária. Se o path aponta para algo como `/Users/.../Documents/...` ou qualquer caminho real do sistema de arquivos do usuário, é pasta real.
 
@@ -75,7 +73,7 @@ Como fazer:
 
 Vou estar aqui quando voltar."
 
-**NÃO tentar contornar** (tipo "me diz o caminho e eu crio"). A seleção da pasta tem que ser feita ANTES de iniciar a conversa. Não dá pra mudar no meio. É uma limitação da plataforma.
+Não adianta tentar contornar (tipo "me diz o caminho e eu crio"). A pasta tem que ser selecionada antes de abrir a conversa — limitação da plataforma, não dá pra mudar no meio.
 
 **Se TEM pasta real selecionada:**
 
@@ -226,8 +224,8 @@ Após coletar todas as respostas:
 8. Gerar `_state/briefing-state.json` com `last_briefing_at` vazio (base para janela "desde o último briefing", inclusive sem shell).
 9. Gerar todos os arquivos na pasta workspace do usuário
 
-**Arquitetura de três arquivos (com adapter):**
-O sistema usa três arquivos separados por design. O `CLAUDE.md` contém apenas a configuração pessoal (nome, áreas, tom, integrações) e nunca é tocado por atualizações. O `PRUMO-CORE.md` contém as regras e rituais do sistema e pode ser atualizado automaticamente quando sair versão nova. O `AGENTS.md` é um adapter fino para agentes que não leem `CLAUDE.md` nativamente (ex: Codex), apontando para os dois arquivos principais sem duplicar conteúdo.
+**Três arquivos, por quê:**
+São três arquivos separados pra facilitar atualização. `CLAUDE.md` é pessoal e não muda com updates. `PRUMO-CORE.md` é o motor e pode ser atualizado sozinho. `AGENTS.md` faz a ponte pra agentes que não leem `CLAUDE.md` direto (tipo Codex) — só aponta pros outros dois.
 
 **Comando `/prumo:briefing`:**
 Após o setup, o usuário pode usar `/prumo:briefing` para acionar o morning briefing completo. Alias legado `/briefing` continua aceito por compatibilidade. O comando dispara a skill `briefing` que lê os arquivos de configuração, verifica atualizações, processa todos os canais de inbox, e apresenta o briefing do dia.
@@ -239,10 +237,10 @@ Se nada disso existir ou puder rodar, a curadoria segue obrigatória via integra
 Fora da rotina de briefing, o usuário pode usar `/prumo:handover` para operar validações cruzadas entre agentes em `_state/HANDOVER.md` (listar, abrir, responder e fechar handovers).
 
 **Comando `/prumo:sanitize`:**
-Quando o estado operacional estiver pesado (muitos handovers antigos), usar `/prumo:sanitize` para compactar `_state/HANDOVER.md`, mover histórico para `_state/archive/HANDOVER-ARCHIVE.md` e gerar `_state/HANDOVER.summary.md` para leitura leve no briefing. Também pode executar autosanitização por gatilhos via `scripts/prumo_auto_sanitize.py`.
+Se o sistema ficar pesado (muitos handovers acumulados), `/prumo:sanitize` compacta o histórico e alivia o contexto.
 
-**Comando `/higiene` (alias canônico no Cowork):**
-Quando o problema estiver no `CLAUDE.md` (duplicações, conflito de instruções, acúmulo de texto mal organizado ou conteúdo no arquivo errado), usar `/higiene`. Esse fluxo gera relatório + diff proposto, sugere destino para drift de conteúdo e só aplica com confirmação explícita. Não confundir com sanitização automática.
+**Comando `/higiene`:**
+Se o `CLAUDE.md` tiver duplicações, conflitos ou texto no lugar errado, `/higiene` detecta, propõe o que mudar e só mexe com confirmação. Diferente da faxina, que age sozinha — aqui quem decide é você.
 
 ### Etapa 10: Primeiro dump (obrigatório)
 
@@ -270,7 +268,7 @@ Enquanto o usuário despeja, processar em tempo real:
 
 Isso cria o primeiro momento de valor: a pessoa vê sua bagunça mental organizada em 5 minutos.
 
-**IMPORTANTE — mentalidade anti-teste:**
+**Se o dump vier com cara de teste:**
 Se o usuário parecer estar "testando" com itens genéricos ou fake ("comprar leite", "lembrar de X"), provocar gentilmente: "Isso eu organizo, mas o Prumo brilha com as coisas que te tiram o sono. O que tá realmente pendente? Projeto travado, conta atrasada, mensagem sem resposta?" O objetivo é chegar na dor real, porque é ela que gera o hábito de voltar.
 
 ---

@@ -14,15 +14,14 @@ description: >
 
 # Prumo Start — Onboarding via dump-first
 
-Este é um caminho alternativo ao setup wizard (`/prumo:setup`). Em vez de
-perguntar tudo antes de o usuário sentir valor, ele inverte: o usuário
-despeja o que tem na cabeça primeiro, o sistema organiza, e as perguntas
-de configuração vêm depois, ancoradas no que o usuário disse.
+Caminho alternativo ao setup wizard (`/prumo:setup`). Em vez de perguntar
+tudo antes de o usuário sentir valor, inverte: o usuário despeja primeiro,
+o sistema organiza, e as perguntas vêm depois, ancoradas no que ele disse.
 
 O setup wizard continua existindo e funcionando. Este modo é para quem
 quer começar rápido ou se sente intimidado por 10 etapas de configuração.
 
-## Pré-requisito (obrigatório, sem exceção)
+## Antes de tudo: checar a pasta
 
 Verificar se o workspace é uma pasta real do usuário (mesma lógica da
 Etapa 0 do setup wizard). Se a pasta for temporária (`local-agent-mode-sessions`,

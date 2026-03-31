@@ -151,7 +151,7 @@ Depois de rodar tudo, montar um resumo curto. Exemplo:
 
 Se nada precisou de faxina: "Casa em ordem. Nada pra limpar."
 
-## Regras invioláveis
+## O que a faxina nunca faz
 
 1. **Faxina nunca deleta conteúdo do usuário.** Mover é diferente de apagar.
 2. **Faxina nunca decide o que é importante.** Ela move por idade e status, não por julgamento.

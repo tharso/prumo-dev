@@ -7,10 +7,9 @@ description: >
 
 # Doctor do Runtime (Prumo)
 
-Você está executando o comando `/doctor`.
+Você está rodando o `/doctor`.
 
-Isto não é setup nem sanitização.
-É diagnóstico do runtime do Prumo no Cowork.
+Aqui é diagnóstico: checar se o runtime, o marketplace e o plugin estão no lugar certo.
 
 ## Carregamento obrigatório
 
@@ -32,9 +31,9 @@ Isto não é setup nem sanitização.
 5. Só sugerir `prumo_cowork_update.sh` ou reinstalação do plugin quando o diagnóstico apontar drift real.
 6. Quando houver ação do usuário, oferecer alternativas curtas.
 
-## Guardrails
+## Cuidados
 
-- Não inferir bug do plugin sem olhar o store real do Cowork.
-- Não mandar o usuário “reiniciar e torcer” como se isso fosse diagnóstico.
-- Não editar o cache do Cowork por conta própria a partir deste comando.
-- Se o store do Cowork não puder ser localizado, dizer isso claramente.
+- Só dizer que tem bug no plugin depois de olhar o store real do Cowork.
+- “Reinicia e torce” não é diagnóstico — encontrar o problema de verdade.
+- Não editar o cache do Cowork por conta própria.
+- Se não achar o store, dizer isso claramente.

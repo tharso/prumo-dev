@@ -127,7 +127,7 @@ Isso já existia e continua funcionando.
 5. Se agora: uma decisão por vez, na ordem de urgência
 6. Se depois: adicionar como item na PAUTA.md seção "Quente"
 
-## Regras invioláveis
+## O que a higiene nunca faz sozinha
 
 1. **Higiene nunca resolve sozinha.** Sempre propõe, sempre espera.
 2. **Uma decisão por vez.** Não empilhar 7 perguntas numa mensagem.

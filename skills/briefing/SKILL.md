@@ -9,9 +9,9 @@ description: >
 
 # Briefing do Prumo
 
-Você está executando o morning briefing do sistema Prumo.
+Você está rodando o morning briefing do Prumo.
 
-O fluxo detalhado não mora mais aqui. A fonte canônica agora é modular, porque o desenho antigo transformava `SKILL.md`, core e referência em versões concorrentes do mesmo ritual.
+O procedimento completo está nos módulos. Aqui só tem o mapa de onde cada coisa mora e as regras que não podem ser puladas.
 
 ## Carregamento obrigatório
 
@@ -26,35 +26,29 @@ O fluxo detalhado não mora mais aqui. A fonte canônica agora é modular, porqu
    - `skills/prumo/references/modules/runtime-paths.md`
    - `skills/prumo/references/modules/cowork-runtime-bridge.md`
 
-Se o workspace não expuser o repo `Prumo/`, use a referência equivalente do bundle instalado. O que não vale é inventar um atalho novo e chamar isso de interpretação.
+Se o repo `Prumo/` não estiver acessível, use o bundle instalado. O que não vale é inventar atalho e chamar de interpretação.
 
-## Preflight do runtime experimental
+## Tentar o runtime novo primeiro
 
-Antes de entrar no procedimento legado do briefing:
+Se tiver shell e o workspace estiver no formato novo (`AGENT.md` + `_state/workspace-schema.json`):
 
-1. Se houver shell, verificar se o workspace já está no trilho novo (`AGENT.md` + `_state/workspace-schema.json`).
-2. Se estiver, carregar `cowork-runtime-bridge.md` e tentar o bridge experimental para `briefing`.
-3. Se o bridge sair com código `0`, devolver a saída do runtime como resposta final e encerrar.
-4. Se o bridge sair com código `12`, seguir silenciosamente para o fluxo legado.
-5. Se o bridge falhar com outro código, avisar em uma linha curta que o runtime experimental falhou e seguir para o fluxo legado.
+1. Tentar rodar o briefing pelo runtime.
+2. Se funcionar, entregar a resposta e pronto.
+3. Se não funcionar, seguir pro fluxo normal sem drama.
 
-O Cowork não deve reescrever a resposta do runtime como se estivesse melhorando literatura. Aqui ele é interface, não ghostwriter.
+A resposta do runtime vai como veio. Não reescrever, não enfeitar.
 
-## Ponte para a UX final
+## Quando o briefing roda
 
-O briefing não é a única porta possível. A direção do produto agora é mais simples:
+1. Se o usuário disser "bom dia" ou invocar o Prumo de forma curta, tentar `start` primeiro.
+2. Se pedir briefing explicitamente, ir direto pro briefing.
+3. Não inventar onboarding ou repair por conta própria — o runtime sabe fazer isso.
 
-1. se o usuário invocar o Prumo de forma curta (`/prumo`, `@Prumo`, "bom dia, Prumo" ou equivalente do host), o adapter deve tentar `start` primeiro;
-2. se o usuário pedir briefing explicitamente, aí sim o host pode ir direto para `briefing`;
-3. o host não deve improvisar onboarding, migrate ou repair na própria cabeça quando o runtime já sabe fazer isso.
-
-## Fonte de autoridade
-
-Em caso de conflito:
+## Quem manda em caso de conflito
 
 1. `ASSERT:` do `PRUMO-CORE.md`
-2. módulo canônico
-3. este `SKILL.md`
+2. O módulo do briefing
+3. Este arquivo
 
 ## Módulos operacionais do briefing
 
@@ -71,16 +65,16 @@ Em caso de conflito:
 - contrato de interface:
   - `skills/prumo/references/modules/interaction-format.md`
 
-## Guardrails que não podem ser pulados
+## Regras que não podem ser puladas
 
 - Antes de Gmail MCP ou Calendar MCP, tentar snapshots no Google Drive.
 - Se existir `_preview-index.json`, linkar `inbox-preview.html` antes de abrir bruto.
 - Persistir `last_briefing_at` antes da primeira resposta.
-- `interrupted_at` e `resume_point` só existem se o usuário acionou escape hatch.
-- Update sem transporte seguro de aplicação não bloqueia briefing.
+- `interrupted_at` e `resume_point` só existem se o usuário pediu pra parar.
+- Update que não consegue se aplicar sozinho não trava o briefing.
 - Se houver versão nova detectável, o briefing deve avisar antes do panorama e oferecer alternativas curtas.
 - Se o `PRUMO-CORE.md` do workspace estiver atrás do `Prumo/VERSION` local, isso deve ser tratado como core defasado do workspace, não como detalhe invisível.
-- Quando o workspace já estiver no trilho novo e houver shell, tentar o bridge do runtime antes do fluxo legado.
+- Se tiver shell e o workspace estiver no formato novo, tentar o runtime antes.
 - Quando isso acontecer, preferir:
   - `a) atualizar agora`
   - `b) seguir mesmo assim`
@@ -99,6 +93,6 @@ O briefing continua entregando:
 - fallback com shell via script dual quando necessário;
 - fallback sem shell com a mesma taxonomia.
 
-## Observação
+## Aviso
 
-Se o runtime “economizar leitura” e pular o módulo canônico, ele só repete o bug que motivou essa refatoração. A economia aí é de palito de fósforo.
+Se pular a leitura do módulo do briefing pra “economizar”, só repete o bug que causou essa refatoração. A economia aí é de palito de fósforo.
