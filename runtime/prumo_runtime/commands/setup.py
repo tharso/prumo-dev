@@ -3,7 +3,13 @@ from __future__ import annotations
 from pathlib import Path
 
 from prumo_runtime.constants import DEFAULT_AGENT_NAME, DEFAULT_BRIEFING_TIME, DEFAULT_TIMEZONE
-from prumo_runtime.workspace import WorkspaceConfig, create_missing_files, ensure_workspace_exists
+from prumo_runtime.workspace import (
+    WorkspaceConfig,
+    create_missing_files,
+    ensure_workspace_exists,
+    install_custom_readme,
+    install_skills,
+)
 
 
 def ask_if_missing(value: str | None, prompt: str) -> str:
@@ -112,6 +118,8 @@ def run_setup(args) -> int:
         wrapper_policy=wrapper_policy,
     )
     result = create_missing_files(config)
+    installed_skills = install_skills(workspace, layout_mode="nested")
+    install_custom_readme(workspace, layout_mode="nested")
 
     print(f"{user_name}, o workspace do Prumo agora mora em: {workspace}")
     print("O que isso significa:")

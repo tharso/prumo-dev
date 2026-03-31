@@ -8,6 +8,8 @@ from prumo_runtime.workspace import (
     ensure_workspace_exists,
     infer_user_name,
     infer_user_name_from_legacy_claude,
+    install_custom_readme,
+    install_skills,
     migrate_legacy_workspace,
 )
 
@@ -39,6 +41,8 @@ def run_migrate(args) -> int:
         briefing_time=briefing_time,
     )
     result = migrate_legacy_workspace(config)
+    install_skills(workspace, layout_mode="nested")
+    install_custom_readme(workspace, layout_mode="nested")
 
     print(f"{user_name}, o workspace legado foi migrado para o layout novo em: {workspace}")
     print("O que isso significa:")

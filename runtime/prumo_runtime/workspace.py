@@ -304,6 +304,55 @@ def create_missing_files(config: WorkspaceConfig) -> dict[str, list[str]]:
     return result
 
 
+def install_skills(workspace: Path, *, layout_mode: str = "nested") -> list[str]:
+    """Copy base skills from repo into .prumo/system/skills/ in the workspace."""
+    from prumo_runtime.workspace_paths import workspace_paths as ws_paths
+
+    paths = ws_paths(workspace, layout_mode=layout_mode)
+    if not paths.nested_layout:
+        return []
+    repo = repo_root_from(Path(__file__))
+    source = repo / "skills"
+    if not source.is_dir():
+        return []
+    target = paths.system_skills_root
+    installed: list[str] = []
+    for skill_dir in sorted(source.iterdir()):
+        if not skill_dir.is_dir() or skill_dir.name.startswith("."):
+            continue
+        dest = target / skill_dir.name
+        if dest.exists():
+            shutil.rmtree(dest)
+        shutil.copytree(skill_dir, dest)
+        installed.append(skill_dir.name)
+    return installed
+
+
+def install_custom_readme(workspace: Path, *, layout_mode: str = "nested") -> None:
+    """Create a README in Prumo/Custom/ explaining what it's for."""
+    from prumo_runtime.workspace_paths import workspace_paths as ws_paths
+
+    paths = ws_paths(workspace, layout_mode=layout_mode)
+    if not paths.nested_layout:
+        return
+    readme = paths.custom_root / "README.md"
+    if readme.exists():
+        return
+    readme.parent.mkdir(parents=True, exist_ok=True)
+    readme.write_text(
+        "# Custom\n\n"
+        "Personalizações do Prumo moram aqui. "
+        "Regras, preferências, overrides de skills.\n\n"
+        "O que estiver aqui tem precedência sobre o sistema base "
+        "(`.prumo/system/`). Updates do Prumo nunca tocam nesta pasta.\n\n"
+        "## Estrutura\n\n"
+        "- `skills/` — overrides de skills (ex: briefing customizado)\n"
+        "- `rules/` — regras e preferências leves "
+        "(ex: mostrar agenda da família primeiro)\n",
+        encoding="utf-8",
+    )
+
+
 def detect_missing(workspace: Path) -> dict[str, list[str]]:
     schema = read_schema(workspace)
     files = schema.get("files") or {

@@ -30,6 +30,22 @@ class WorkspacePaths:
         return self.user_root / "Custom"
 
     @property
+    def custom_skills_root(self) -> Path:
+        return self.custom_root / "skills"
+
+    @property
+    def custom_rules_root(self) -> Path:
+        return self.custom_root / "rules"
+
+    @property
+    def system_skills_root(self) -> Path:
+        return self.system_root / "system" / "skills" if self.nested_layout else self.root
+
+    @property
+    def arquivo_root(self) -> Path:
+        return self.user_root / "Arquivo"
+
+    @property
     def wrappers(self) -> dict[str, Path]:
         return {
             "AGENT.md": self.root / "AGENT.md",
@@ -158,13 +174,22 @@ class WorkspacePaths:
         )
 
     def directories(self) -> tuple[Path, ...]:
-        return (
+        dirs = [
             self.agente_root,
             self.inbox4mobile_root,
             self.referencias_root,
             self.logs_root,
             self.state_root,
-        )
+        ]
+        if self.nested_layout:
+            dirs.extend([
+                self.custom_root,
+                self.custom_skills_root,
+                self.custom_rules_root,
+                self.arquivo_root,
+                self.system_skills_root,
+            ])
+        return tuple(dirs)
 
     def relative(self, path: Path) -> str:
         return str(path.relative_to(self.root))
