@@ -23,7 +23,7 @@
    - `_state/HANDOVER.summary.md`
    - `Inbox4Mobile/_preview-index.json`
    - `Inbox4Mobile/inbox-preview.html`
-   - Google Docs `Prumo/snapshots/email-snapshot`
+   - Gmail MCP / Calendar MCP direto
 3. **Profunda (sob demanda):**
    - `_state/HANDOVER.md`
    - binários e arquivos longos

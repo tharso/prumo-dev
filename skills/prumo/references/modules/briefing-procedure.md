@@ -94,48 +94,17 @@ Se houver `Inbox4Mobile/`, delegar a triagem para:
 
 Esse módulo é a fonte canônica de preview, commit, `_processed.json`, deleção e roteamento.
 
-### 3.3 Snapshots no Google Drive (fonte primária)
+### 3.3 Email e calendário via MCP direto
 
-Antes de qualquer fallback de Gmail/Calendar:
+Usar integração nativa de Gmail MCP e Calendar MCP como fonte primária.
 
-1. Buscar Google Docs `Prumo/snapshots/email-snapshot` das contas conectadas via MCP Google Drive.
-2. Ler o texto de cada Doc.
-3. Parsear o JSON contido no texto.
-4. Tratar cada snapshot como fonte por conta (`pessoal`/`trabalho`) para agenda e emails crus.
-5. Validar `generated_at`:
-   - se estiver acima de 30 minutos, usar mesmo assim e avisar explicitamente a defasagem;
-   - se a leitura exceder 45 segundos no total, seguir para fallback sem bloquear o briefing.
-6. Respeitar o `since` gravado no próprio snapshot. Não recalcular essa janela por cima.
-7. Se houver `emails_error` ou `calendar_error`, preservar dados parciais e reportar o erro em uma linha.
-8. Curadoria continua no Prumo:
-   - classificar emails em `Responder`, `Ver` e `Sem ação`;
-   - atribuir `P1/P2/P3` com motivo objetivo;
-   - consolidar agenda por conta.
-
-### 3.4 Fallback com shell
-
-Se os snapshots estiverem ausentes, inválidos ou inacessíveis e houver shell:
-
-1. Tentar `scripts/prumo_google_dual_snapshot.sh`.
-2. Usar a saída como fonte principal para agenda e triagem das contas `pessoal` e `trabalho`.
-3. Respeitar a janela temporal reportada pelo próprio script.
-4. Se uma conta falhar, manter a outra e avisar objetivamente.
-
-Os paths válidos do script são definidos em `runtime-paths.md`.
-
-### 3.5 Fallback sem shell
-
-Se não houver snapshot válido e o script dual não puder rodar:
-
-1. Usar integração nativa de Gmail/Calendar.
-2. Janela de email:
+1. Janela de email:
    - `last_briefing_at` anterior, quando existir;
    - fallback de 24h quando não existir.
-3. Manter a mesma taxonomia:
-   - `Responder`
-   - `Ver`
-   - `Sem ação`
-   - `P1/P2/P3`
+2. Curadoria no Prumo:
+   - classificar emails em `Responder`, `Ver` e `Sem ação`;
+   - atribuir `P1/P2/P3` com motivo objetivo;
+   - consolidar agenda por conta quando houver mais de um calendário.
 
 ## Passo 5: Persistir início do briefing
 

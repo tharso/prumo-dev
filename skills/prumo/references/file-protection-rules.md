@@ -40,7 +40,7 @@ Ao final da geração de arquivos, mostrar resumo claro:
 | _logs/ | Criar pasta vazia | Para registros semanais de revisão. |
 | _state/ | Criar pasta vazia | Estado operacional (lock + handover). |
 | _state/briefing-state.json | Gerar JSON inicial | Estado de referência temporal do briefing (`last_briefing_at`). |
-| scripts/prumo_google_dual_snapshot.sh | prumo-google-dual-snapshot.sh | Script opcional para briefing Google dual. |
+
 | scripts/prumo_sanitize_state.py | Gerar arquivo | Sanitização de estado operacional (`HANDOVER`). |
 | scripts/prumo_auto_sanitize.py | Gerar arquivo | Autosanitização por gatilhos com cooldown e calibração. |
 | scripts/prumo_archive_cold_files.py | Gerar arquivo | Archive conservador de arquivos frios com índice global. |

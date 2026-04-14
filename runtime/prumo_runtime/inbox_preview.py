@@ -36,7 +36,6 @@ def preview_script_path(repo_root: Path | None) -> Path | None:
     if repo_root is not None:
         candidates.extend(
             [
-                repo_root / "cowork-plugin" / "scripts" / "generate_inbox_preview.py",
                 repo_root / "scripts" / "generate_inbox_preview.py",
             ]
         )

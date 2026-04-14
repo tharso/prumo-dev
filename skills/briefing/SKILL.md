@@ -67,7 +67,7 @@ A resposta do runtime vai como veio. Não reescrever, não enfeitar.
 
 ## Regras que não podem ser puladas
 
-- Antes de Gmail MCP ou Calendar MCP, tentar snapshots no Google Drive.
+- Usar Gmail MCP e Calendar MCP como fonte primária de email e calendário.
 - Se existir `_preview-index.json`, linkar `inbox-preview.html` antes de abrir bruto.
 - Persistir `last_briefing_at` antes da primeira resposta.
 - `interrupted_at` e `resume_point` só existem se o usuário pediu pra parar.
@@ -89,9 +89,8 @@ O briefing continua entregando:
 - contexto completo apenas em `c` ou `/prumo:briefing --detalhe`;
 - curadoria de email em `Responder`, `Ver`, `Sem ação`;
 - prioridade `P1/P2/P3`;
-- snapshots do Google Drive como fonte primária quando houver Google Docs `Prumo/snapshots/email-snapshot`;
-- fallback com shell via script dual quando necessário;
-- fallback sem shell com a mesma taxonomia.
+- email e calendário via Gmail/Calendar MCP direto;
+- curadoria em `Responder`, `Ver`, `Sem ação` com `P1/P2/P3`.
 
 ## Aviso
 

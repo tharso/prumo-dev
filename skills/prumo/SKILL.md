@@ -163,23 +163,6 @@ Verificar quais integrações estão disponíveis no ambiente atual:
 
 **Google Calendar:** Se disponível, listar calendários com `list_gcal_calendars` e perguntar quais incluir no briefing diário.
 
-**Google Apps Script + Google Drive (preferencial para multi-conta):**
-- Oferecer como caminho recomendado para quem quer unir `@gmail.com` e Google Workspace no mesmo briefing.
-- Explicar o racional sem perfume: é mais confiável que depender só de MCP beta e não expõe endpoint público.
-- Se o usuário aceitar, marcar que o setup deve orientar a configuração manual de dois Apps Scripts (um por conta) que gravam `Prumo/snapshots/email-snapshot` como Google Doc contendo JSON texto no Drive de cada conta.
-- Apontar para o guia [`references/apps-script-setup.md`](./references/apps-script-setup.md) quando o workspace tiver o repositório completo. Se não tiver, resumir o fluxo: criar projeto no Apps Script, colar o `.gs` da conta certa, rodar `runSnapshot()`, autorizar, e instalar trigger de 15 min.
-- Explicar também o contrato de consumo do briefing:
-  - o briefing vai procurar esses Docs primeiro no Drive;
-  - vai ler o texto e parsear o JSON contido neles;
-  - se `generated_at` tiver mais de 30 min, ele avisa defasagem;
-  - se o Doc faltar, o briefing cai para Gemini/native sem quebrar.
-
-**Google dual via Gemini CLI (opcional, avançado, fallback):**
-- Se o ambiente tiver Gemini CLI local, oferecer modo dual-profile (`pessoal` e `trabalho`) como fallback de cobertura.
-- Explicar tradeoff: melhora cobertura de múltiplas contas, mas depende de autenticação e MCP local funcionando no runtime.
-- Se o usuário aceitar, marcar que o setup deve gerar o script `scripts/prumo_google_dual_snapshot.sh` (a partir de `references/prumo-google-dual-snapshot.sh`).
-- Mesmo sem Gemini CLI/shell, o briefing deve manter a curadoria por ação via snapshots do Drive quando existirem, ou por integrações nativas como fallback final.
-
 **Outras integrações:** Se não disponíveis, informar que o inbox manual funciona perfeitamente — basta o usuário fazer dumps no chat ou colocar arquivos na pasta Inbox4Mobile/.
 
 ### Etapa 6: Tom
@@ -219,19 +202,14 @@ Após coletar todas as respostas:
 3. Copiar `references/prumo-core.md` → gerar PRUMO-CORE.md (motor do sistema, cópia direta)
 4. Ler `references/agents-md-template.md` → gerar AGENTS.md (adapter para agentes não-Cowork)
 5. Ler `references/file-templates.md` → gerar arquivos auxiliares
-6. Se Google dual via Gemini CLI foi habilitado na Etapa 5: ler `references/prumo-google-dual-snapshot.sh` e gerar `scripts/prumo_google_dual_snapshot.sh` no workspace (permissão de execução).
-7. Se Google Apps Script snapshots foi habilitado na Etapa 5: registrar no setup final que o usuário precisa concluir a configuração manual dos dois Apps Scripts antes de esperar cobertura multi-conta estável no briefing.
-8. Gerar `_state/briefing-state.json` com `last_briefing_at` vazio (base para janela "desde o último briefing", inclusive sem shell).
+6. Gerar `_state/briefing-state.json` com `last_briefing_at` vazio (base para janela "desde o último briefing", inclusive sem shell).
 9. Gerar todos os arquivos na pasta workspace do usuário
 
 **Três arquivos, por quê:**
 São três arquivos separados pra facilitar atualização. `CLAUDE.md` é pessoal e não muda com updates. `PRUMO-CORE.md` é o motor e pode ser atualizado sozinho. `AGENTS.md` faz a ponte pra agentes que não leem `CLAUDE.md` direto (tipo Codex) — só aponta pros outros dois.
 
 **Comando `/prumo:briefing`:**
-Após o setup, o usuário pode usar `/prumo:briefing` para acionar o morning briefing completo. Alias legado `/briefing` continua aceito por compatibilidade. O comando dispara a skill `briefing` que lê os arquivos de configuração, verifica atualizações, processa todos os canais de inbox, e apresenta o briefing do dia.
-Se existirem Google Docs `Prumo/snapshots/email-snapshot` no Drive das contas conectadas, eles viram a fonte primária para agenda e emails multi-conta.
-Se esses Docs faltarem, estiverem inválidos ou indisponíveis, o script `scripts/prumo_google_dual_snapshot.sh` pode assumir como fallback com shell.
-Se nada disso existir ou puder rodar, a curadoria segue obrigatória via integrações nativas com a mesma taxonomia e usando `_state/briefing-state.json`.
+Após o setup, o usuário pode usar `/prumo:briefing` para acionar o morning briefing completo. Alias legado `/briefing` continua aceito por compatibilidade. O comando dispara a skill `briefing` que lê os arquivos de configuração, verifica atualizações, processa todos os canais de inbox, e apresenta o briefing do dia via Gmail/Calendar MCP direto, com curadoria obrigatória e usando `_state/briefing-state.json`.
 
 **Comando `/prumo:handover`:**
 Fora da rotina de briefing, o usuário pode usar `/prumo:handover` para operar validações cruzadas entre agentes em `_state/HANDOVER.md` (listar, abrir, responder e fechar handovers).

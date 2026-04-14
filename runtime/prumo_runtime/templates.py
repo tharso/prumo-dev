@@ -401,7 +401,7 @@ def render_inbox_processed_json() -> str:
 
 def load_prumo_core_text(repo_root: Path | None) -> str:
     if repo_root:
-        candidate = repo_root / "cowork-plugin" / "skills" / "prumo" / "references" / "prumo-core.md"
+        candidate = repo_root / "skills" / "prumo" / "references" / "prumo-core.md"
         if candidate.exists():
             text = candidate.read_text(encoding="utf-8")
             return re.sub(

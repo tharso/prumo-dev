@@ -16,7 +16,7 @@ Resolver scripts nesta ordem:
 
 Observação importante:
 
-1. alguns scripts existem como artefato gerado no workspace do usuário (ex.: `scripts/prumo_google_dual_snapshot.sh`);
+1. alguns scripts existem como artefato gerado no workspace do usuário;
 2. o repo também pode carregar um template/fallback canônico do mesmo script em `skills/prumo/references/`.
 
 - `prumo_auto_sanitize.py`
@@ -29,7 +29,7 @@ Observação importante:
 - `prumo_briefing_state.py`
 - `safe_core_update.sh`
 - `generate_inbox_preview.py`
-- `prumo_google_dual_snapshot.sh`
+
 
 ## Regra
 

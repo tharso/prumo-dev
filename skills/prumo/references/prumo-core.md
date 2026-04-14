@@ -86,7 +86,7 @@ Se o runtime não expuser o repositório local `Prumo/`, ele deve usar a referê
    - `_state/HANDOVER.summary.md`
    - `Inbox4Mobile/_preview-index.json`
    - `Inbox4Mobile/inbox-preview.html`
-   - Google Docs `Prumo/snapshots/email-snapshot`
+   - Gmail MCP / Calendar MCP direto
 4. Abrir conteúdo bruto apenas quando houver:
    - item `P1`;
    - risco legal/financeiro/documental;
@@ -158,7 +158,7 @@ Sempre que houver mais de um caminho razoável, oferecer alternativas curtas e r
 
 ## Guardrails
 
-`ASSERT: Antes de usar Gmail MCP ou Calendar MCP, tentar snapshots no Google Drive e registrar o resultado.`
+`ASSERT: Usar Gmail MCP e Calendar MCP como fonte primária de email e calendário.`
 
 `ASSERT: Se existir Inbox4Mobile/_preview-index.json, linkar inbox-preview.html antes de abrir qualquer arquivo bruto.`
 
@@ -199,11 +199,8 @@ Esse módulo cobre:
 - `last_briefing_at`, `interrupted_at`, `resume_point`
 - antes da primeira resposta do briefing, persistir `last_briefing_at`
 - capturar em memória o `last_briefing_at` anterior para usar como janela da sessão
-- snapshots no Google Drive
-- alerta de defasagem acima de 30 minutos
-- `emails_error` e `calendar_error`
-- timeout de 45 segundos para leitura dos snapshots
-- fallback com shell e fallback sem shell
+- Gmail MCP e Calendar MCP como fonte primária
+- janela temporal via `last_briefing_at` ou fallback 24h
 - `Bloco 1`, `Bloco 2`, `--detalhe`
 - regra de 24h quando não houver estado
 

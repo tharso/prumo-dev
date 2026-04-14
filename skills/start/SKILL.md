@@ -302,7 +302,6 @@ Usar os mesmos templates do setup wizard:
 7. Gerar scripts operacionais (mesmos do setup wizard):
    - `scripts/prumo_sanitize_state.py`
    - `scripts/prumo_auto_sanitize.py`
-   - Se Google dual habilitado: `scripts/prumo_google_dual_snapshot.sh`
 
 **Proteção de arquivos existentes:** consultar `../prumo/references/file-protection-rules.md` para regras detalhadas. Se algum arquivo já existir, não sobrescrever.
 

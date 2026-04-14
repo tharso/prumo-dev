@@ -31,7 +31,6 @@ AUTHORIAL_FILES = (
 DERIVED_FILES = (
     "_state/workspace-schema.json",
     "_state/briefing-state.json",
-    "_state/google-integration.json",
     "Inbox4Mobile/_processed.json",
 )
 DIRECTORIES = ("Agente", "Inbox4Mobile", "Referencias", "_logs", "_state")
@@ -57,7 +56,7 @@ def directories_for(workspace: Path) -> tuple[str, ...]:
 def repo_root_from(start: Path) -> Path | None:
     current = start.resolve()
     for candidate in (current, *current.parents):
-        if (candidate / "VERSION").exists() and (candidate / "cowork-plugin").exists():
+        if (candidate / "VERSION").exists() and (candidate / "plugin.json").exists():
             return candidate
     return None
 
