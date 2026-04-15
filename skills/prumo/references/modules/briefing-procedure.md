@@ -8,6 +8,12 @@
 >
 > Este módulo é o procedimento do bundled Cowork, com detalhes de bridge e fallback específicos desse host.
 
+## REGRA DE NUMERAÇÃO (obrigatória, sem exceção)
+
+Todo item acionável do briefing recebe um número sequencial único, do primeiro ao último, sem reiniciar entre seções. Se há 5 emails, 3 eventos de calendário e 4 pendências, os números vão de 1 a 12. Emails: 1-5. Agenda: 6-8. Pendências: 9-12. Isso permite ao usuário responder "3, 7, 12" para despachar múltiplos itens de uma vez.
+
+Nunca reiniciar a contagem ao mudar de seção. Nunca usar sub-numeração (1.1, 1.2). Nunca omitir a numeração em itens que pedem decisão ou atenção.
+
 ## Pré-carga obrigatória
 
 Antes de executar o briefing:
@@ -104,6 +110,7 @@ Usar integração nativa de Gmail MCP e Calendar MCP como fonte primária.
 2. Curadoria no Prumo:
    - classificar emails em `Responder`, `Ver` e `Sem ação`;
    - atribuir `P1/P2/P3` com motivo objetivo;
+   - cada email é um item numerado (continuar do último número usado, não reiniciar);
    - consolidar agenda por conta quando houver mais de um calendário.
 
 ## Passo 5: Persistir início do briefing
@@ -129,7 +136,8 @@ Entregar automaticamente:
 3. link para `Inbox4Mobile/inbox-preview.html` quando `_preview-index.json` existir;
 4. contagem silenciosa de agendados;
 5. pendências de handover em uma linha objetiva.
-6. numeração contínua mesmo ao passar do panorama para proposta e detalhe.
+
+**Numeração:** cada email, evento de calendário, pendência e item de inbox é um item numerado sequencial. A contagem começa em 1 no primeiro item do briefing e nunca reinicia (ver REGRA DE NUMERAÇÃO no topo deste módulo).
 
 Na primeira resposta do briefing, é proibido abrir arquivos brutos de `Inbox4Mobile/*` (preferir sempre `_preview-index.json` se existir).
 

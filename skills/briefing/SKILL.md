@@ -67,6 +67,7 @@ A resposta do runtime vai como veio. Não reescrever, não enfeitar.
 
 ## Regras que não podem ser puladas
 
+- **Numeração sequencial obrigatória**: todo item acionável (email, evento, pendência, item de inbox) recebe número sequencial único do 1 ao N, sem reiniciar entre seções. Se o panorama tem 5 emails (1-5), a agenda continua do 6. Isso permite ao usuário despachar vários itens de uma vez ("3, 7, 12").
 - Usar Gmail MCP e Calendar MCP como fonte primária de email e calendário.
 - Se existir `_preview-index.json`, linkar `inbox-preview.html` antes de abrir bruto.
 - Persistir `last_briefing_at` antes da primeira resposta.
