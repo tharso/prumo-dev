@@ -221,11 +221,16 @@ _Última atualização: {{DATA_SETUP}}_
 Este arquivo está vazio porque a curadoria aprende com o uso. No primeiro briefing com email:
 
 1. **Verificar acesso ao Gmail MCP.** Tentar `gmail_get_profile` pra confirmar que a conta está conectada. Se não estiver, orientar o usuário a configurar o conector de Gmail no Cowork (Settings → Connectors → Gmail) ou no Claude Code (MCP config).
-2. **Identificar as contas.** Perguntar ao usuário quais endereços chegam na caixa (direto, redirect, fetch). Registrar abaixo em "Contas monitoradas".
-3. **Rodar a primeira curadoria com viés amplo.** Trazer tudo que parecer minimamente relevante. Numerar os itens. Ao final, pedir feedback: "Algum desses era ruído? Faltou algum?"
-4. **Registrar as primeiras regras** a partir do feedback. A partir daqui, o agente consulta este arquivo em todo briefing.
+2. **Identificar as contas.** Perguntar ao usuário quantas contas de email ele usa e quais endereços. Entender como chegam na caixa: direto, redirect, fetch ou alias.
+3. **Verificar cobertura.** Se o Gmail MCP acessa uma conta principal mas o usuário tem outras, o agente deve guiar a consolidação:
+   - Perguntar: "Todas as contas já chegam nessa caixa, ou tem alguma separada?"
+   - Se houver contas separadas, pesquisar na web (proativamente, sem esperar o usuário pedir) as instruções atualizadas do Gmail para configurar fetch de outras contas (Gmail → Settings → Accounts → Check mail from other accounts) ou redirecionamento.
+   - Guiar o setup passo a passo, de forma didática, adaptando ao nível técnico do usuário.
+   - Se o usuário preferir manter contas separadas, registrar a limitação em "Contas monitoradas" e ajustar a curadoria para cobrir apenas o que é acessível.
+4. **Rodar a primeira curadoria com viés amplo.** Trazer tudo que parecer minimamente relevante. Numerar os itens. Ao final, pedir feedback: "Algum desses era ruído? Faltou algum?"
+5. **Registrar as primeiras regras** a partir do feedback. A partir daqui, o agente consulta este arquivo em todo briefing.
 
-Após o primeiro ciclo de feedback, apagar esta seção de setup.
+Após o primeiro ciclo de feedback, apagar esta seção de setup e manter apenas as regras aprendidas.
 
 ## Contas monitoradas
 
