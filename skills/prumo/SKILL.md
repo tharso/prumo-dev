@@ -43,7 +43,7 @@ Triggers: `/prumo:setup`, "configurar prumo", "setup", "montar sistema", "começ
 Quando o sistema já existe e o usuário quer ajustar.
 Triggers: "adicionar área", "mudar tom", "reconfigurar", "nova área".
 
-Para determinar o modo: verificar se já existe um CLAUDE.md na pasta workspace do usuário. Se existir, é reconfiguração. Se não, é setup.
+Para determinar o modo: verificar se já existe um `Prumo/AGENT.md` na pasta workspace do usuário. Se existir, é reconfiguração. Se não, é setup. (Workspaces legados podem ter CLAUDE.md na raiz sem `Prumo/` — nesse caso, oferecer migração.)
 
 ---
 
@@ -198,27 +198,43 @@ Usar AskUserQuestion:
 Após coletar todas as respostas:
 
 1. Ler `references/file-protection-rules.md` → aplicar regras de proteção
-2. Ler `references/claude-md-template.md` → gerar CLAUDE.md (configuração pessoal)
-3. Copiar `references/prumo-core.md` → gerar PRUMO-CORE.md (motor do sistema, cópia direta)
-4. Ler `references/agents-md-template.md` → gerar AGENTS.md (adapter para agentes não-Cowork)
-5. Ler `references/file-templates.md` → gerar arquivos auxiliares
-6. Gerar `_state/briefing-state.json` com `last_briefing_at` vazio (base para janela "desde o último briefing", inclusive sem shell).
-9. Gerar todos os arquivos na pasta workspace do usuário
+2. Criar estrutura de diretórios:
+   - `Prumo/` (dados operacionais)
+   - `Prumo/Agente/` (contexto pessoal)
+   - `Prumo/Referencias/` (material de referência)
+   - `Prumo/Inbox4Mobile/` (captura mobile)
+   - `.prumo/state/` (estado técnico)
+   - `.prumo/system/` (motor do sistema)
+   - `.prumo/logs/` (registros)
+   - `.prumo/backup/` (backups)
+3. Ler `references/agent-md-template.md` → gerar `Prumo/AGENT.md` (fonte canônica do workspace)
+4. Ler `references/perfil-template.md` → gerar `Prumo/Agente/PERFIL.md` (configuração pessoal)
+5. Copiar `references/prumo-core.md` → gerar `.prumo/system/PRUMO-CORE.md` (motor do sistema)
+6. Ler `references/claude-md-template.md` → gerar `CLAUDE.md` na raiz (ponteiro)
+7. Gerar `AGENT.md` na raiz (ponteiro, mesmo conteúdo adaptado)
+8. Ler `references/agents-md-template.md` → gerar `AGENTS.md` na raiz (ponteiro)
+9. Ler `references/file-templates.md` → gerar arquivos auxiliares em `Prumo/`
+10. Gerar `.prumo/state/briefing-state.json` com `last_briefing_at` vazio
+11. Copiar skills para `Prumo/skills/` (cópia completa do diretório `skills/` do repo)
 
-**Três arquivos, por quê:**
-São três arquivos separados pra facilitar atualização. `CLAUDE.md` é pessoal e não muda com updates. `PRUMO-CORE.md` é o motor e pode ser atualizado sozinho. `AGENTS.md` faz a ponte pra agentes que não leem `CLAUDE.md` direto (tipo Codex) — só aponta pros outros dois.
+**Separação de responsabilidades:**
+- Raiz: ponteiros de compatibilidade (CLAUDE.md, AGENT.md, AGENTS.md). Todos apontam para `Prumo/AGENT.md`.
+- `Prumo/`: dados operacionais do usuário + skills portáveis. `Prumo/AGENT.md` é a fonte canônica.
+- `Prumo/Agente/PERFIL.md`: configuração pessoal (áreas, tom, lembretes). Nunca atualizado automaticamente.
+- `.prumo/system/PRUMO-CORE.md`: motor do sistema. Atualizável automaticamente.
+- `.prumo/state/`: estado técnico do runtime. Agente humano não mexe aqui.
 
 **Comando `/prumo:briefing`:**
-Após o setup, o usuário pode usar `/prumo:briefing` para acionar o morning briefing completo. Alias legado `/briefing` continua aceito por compatibilidade. O comando dispara a skill `briefing` que lê os arquivos de configuração, verifica atualizações, processa todos os canais de inbox, e apresenta o briefing do dia via Gmail/Calendar MCP direto, com curadoria obrigatória e usando `_state/briefing-state.json`.
+Após o setup, o usuário pode usar `/prumo:briefing` para acionar o morning briefing completo. Alias legado `/briefing` continua aceito por compatibilidade. O comando dispara a skill `briefing` que lê os arquivos de configuração, verifica atualizações, processa todos os canais de inbox, e apresenta o briefing do dia via Gmail/Calendar MCP direto, com curadoria obrigatória e usando `.prumo/state/briefing-state.json`.
 
 **Comando `/prumo:handover`:**
-Fora da rotina de briefing, o usuário pode usar `/prumo:handover` para operar validações cruzadas entre agentes em `_state/HANDOVER.md` (listar, abrir, responder e fechar handovers).
+Fora da rotina de briefing, o usuário pode usar `/prumo:handover` para operar validações cruzadas entre agentes em `.prumo/state/HANDOVER.md` (listar, abrir, responder e fechar handovers).
 
 **Comando `/prumo:sanitize`:**
 Se o sistema ficar pesado (muitos handovers acumulados), `/prumo:sanitize` compacta o histórico e alivia o contexto.
 
 **Comando `/higiene`:**
-Se o `CLAUDE.md` tiver duplicações, conflitos ou texto no lugar errado, `/higiene` detecta, propõe o que mudar e só mexe com confirmação. Diferente da faxina, que age sozinha — aqui quem decide é você.
+Se o `Prumo/Agente/PERFIL.md` tiver duplicações, conflitos ou texto no lugar errado, `/higiene` detecta, propõe o que mudar e só mexe com confirmação. Diferente da faxina, que age sozinha — aqui quem decide é você.
 
 ### Etapa 10: Primeiro dump (obrigatório)
 
@@ -240,7 +256,7 @@ Após gerar os arquivos:
 Enquanto o usuário despeja, processar em tempo real:
 - Categorizar cada item na área certa
 - Identificar o que é urgente vs. horizonte
-- Popular a PAUTA.md com itens reais
+- Popular a Prumo/PAUTA.md com itens reais
 - Separar ideias de ações
 - Ao final, mostrar: "Pronto. X itens na pauta, Y urgentes, Z ideias guardadas. Amanhã de manhã, diz 'bom dia' e eu te conto o que precisa de atenção."
 
@@ -259,22 +275,22 @@ Se o usuário mencionar feedback, bug, sugestão ou melhoria sobre o Prumo em si
 
 ## Reconfiguração
 
-Se o CLAUDE.md já existe na pasta, o sistema já está configurado. Oferecer:
+Se `Prumo/AGENT.md` já existe na pasta, o sistema já está configurado. Oferecer:
 
-1. **Adicionar área/projeto**: Perguntar nome e descrição, criar pasta + README, atualizar CLAUDE.md
-2. **Mudar tom**: Atualizar a seção de tom no CLAUDE.md
-3. **Ajustar rituais**: Atualizar horários/dias no CLAUDE.md
-4. **Adicionar integração**: Atualizar seção de integrações no CLAUDE.md
-5. **Reset completo**: Reconfigurar do zero. Ler `references/file-protection-rules.md` antes de regenerar: CLAUDE.md e PRUMO-CORE.md são regenerados (com backup do CLAUDE.md), todos os outros arquivos com dados acumulados são preservados.
+1. **Adicionar área/projeto**: Perguntar nome e descrição, criar pasta + README, atualizar `Prumo/Agente/PERFIL.md`
+2. **Mudar tom**: Atualizar a seção de tom em `Prumo/Agente/PERFIL.md`
+3. **Ajustar rituais**: Atualizar horários/dias em `Prumo/Agente/PERFIL.md` e `Prumo/AGENT.md`
+4. **Adicionar integração**: Atualizar seção de integrações em `Prumo/Agente/PERFIL.md`
+5. **Reset completo**: Reconfigurar do zero. Ler `references/file-protection-rules.md` antes de regenerar: ponteiros, AGENT.md e PRUMO-CORE.md são regenerados (com backups em `.prumo/backup/`), todos os outros arquivos com dados acumulados são preservados.
 
-Sempre atualizar o changelog no final do CLAUDE.md após qualquer reconfiguração.
+Sempre atualizar o changelog no final de `Prumo/Agente/PERFIL.md` após qualquer reconfiguração.
 
 ---
 
 ## Notas técnicas
 
 - Os placeholders nos templates usam formato `{{VARIAVEL}}`
-- O CLAUDE.md gerado deve ser escrito em português
+- Os arquivos gerados devem ser escritos em português
 - Todas as datas no formato DD/MM/AAAA
 - Tags usam formato `[Area]` ou `[Area/Subarea]`
 - O fuso padrão é o do usuário (perguntar se necessário, default: América/São_Paulo)

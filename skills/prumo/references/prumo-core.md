@@ -1,6 +1,6 @@
 # Prumo Core — Motor do sistema
 
-> **prumo_version: 4.17.0**
+> **prumo_version: 4.18.0**
 >
 > Este arquivo é o núcleo estável do Prumo.
 > Ele define regras, guardrails e a localização dos módulos canônicos.
@@ -11,24 +11,34 @@
 
 ---
 
-## Estrutura mínima do workspace
+## Estrutura do workspace
 
 ```text
 [Workspace]/
-├── CLAUDE.md
-├── PRUMO-CORE.md
-├── AGENTS.md
-├── PAUTA.md
-├── INBOX.md
-├── REGISTRO.md
-├── IDEIAS.md
-├── Inbox4Mobile/
-├── Referencias/
-├── _logs/
-└── _state/
+├── CLAUDE.md              ← ponteiro → Prumo/AGENT.md
+├── AGENT.md               ← ponteiro → Prumo/AGENT.md
+├── AGENTS.md              ← ponteiro → Prumo/AGENT.md
+├── Prumo/
+│   ├── AGENT.md           ← fonte canônica (navegação, fallback, regras)
+│   ├── PAUTA.md
+│   ├── INBOX.md
+│   ├── REGISTRO.md
+│   ├── IDEIAS.md
+│   ├── Agente/
+│   │   ├── INDEX.md
+│   │   ├── PERFIL.md
+│   │   └── PESSOAS.md
+│   ├── Referencias/
+│   ├── Inbox4Mobile/
+│   └── skills/            ← cópia das skills do repo
+└── .prumo/
+    ├── state/
+    ├── system/
+    │   └── PRUMO-CORE.md  ← este arquivo
+    └── logs/
 ```
 
-Arquivos de estado esperados em `_state/`:
+Arquivos de estado esperados em `.prumo/state/`:
 
 - `briefing-state.json`
 - `HANDOVER.md`
@@ -48,12 +58,14 @@ Arquivos de estado esperados em `_state/`:
 | `/doctor` | Diagnóstico do runtime do Prumo no Cowork |
 | `/handover` | Operar handovers |
 | `/sanitize` | Sanitizar estado operacional |
-| `/higiene` | Higiene assistida do `CLAUDE.md` |
+| `/higiene` | Higiene assistida do `Prumo/Agente/PERFIL.md` |
 | `/start` | Captura inicial e onboarding rápido |
 | `/prumo` | Alias legado de setup |
 
 No Cowork, os comandos canônicos aparecem sem prefixo do plugin.
 Alias legado ainda pode existir por compatibilidade, mas documentação nova deve usar o formato curto.
+
+Se o runtime CLI não estiver disponível, usar a cadeia de fallback definida em `Prumo/AGENT.md` (skill direto).
 
 ## Módulos canônicos
 
@@ -61,31 +73,31 @@ Quando um comando específico for executado, o agente deve ler o módulo corresp
 
 | Assunto | Módulo canônico |
 |---|---|
-| Briefing | `Prumo/canon/orchestration/briefing.md` |
-| Inbox | `Prumo/canon/operations/inbox-processing.md` |
-| Revisão semanal | `skills/prumo/references/modules/weekly-review.md` |
-| Update de versão | `skills/prumo/references/modules/version-update.md` |
-| Multiagente | `skills/prumo/references/modules/multiagent.md` |
-| Sanitização | `skills/prumo/references/modules/sanitization.md` |
-| Higiene do CLAUDE | `skills/prumo/references/modules/claude-hygiene.md` |
-| Runtime do Cowork | `skills/prumo/references/modules/cowork-runtime-maintenance.md` |
-| Bridge do runtime no Cowork | `skills/prumo/references/modules/cowork-runtime-bridge.md` |
-| Contrato de interface | `Prumo/canon/contracts/interaction-format.md` |
-| Governança de arquivos | `Prumo/canon/governance/file-governance.md` |
-| Política de leitura | `Prumo/canon/governance/load-policy.md` |
-| Runtime paths | `skills/prumo/references/modules/runtime-paths.md` |
-| Feedback do produto | `skills/prumo/references/feedback-loop.md` |
+| Briefing | `Prumo/skills/prumo/references/modules/briefing-procedure.md` |
+| Inbox | `Prumo/skills/prumo/references/modules/inbox-processing.md` |
+| Revisão semanal | `Prumo/skills/prumo/references/modules/weekly-review.md` |
+| Update de versão | `Prumo/skills/prumo/references/modules/version-update.md` |
+| Multiagente | `Prumo/skills/prumo/references/modules/multiagent.md` |
+| Sanitização | `Prumo/skills/prumo/references/modules/sanitization.md` |
+| Higiene do perfil | `Prumo/skills/prumo/references/modules/claude-hygiene.md` |
+| Runtime do Cowork | `Prumo/skills/prumo/references/modules/cowork-runtime-maintenance.md` |
+| Bridge do runtime no Cowork | `Prumo/skills/prumo/references/modules/cowork-runtime-bridge.md` |
+| Contrato de interface | `Prumo/skills/prumo/references/modules/interaction-format.md` |
+| Governança de arquivos | `Prumo/skills/prumo/references/modules/runtime-file-governance.md` |
+| Política de leitura | `Prumo/skills/prumo/references/modules/load-policy.md` |
+| Runtime paths | `Prumo/skills/prumo/references/modules/runtime-paths.md` |
+| Feedback do produto | `Prumo/skills/prumo/references/feedback-loop.md` |
 
-Se o runtime não expuser o repositório local `Prumo/`, ele deve usar a referência equivalente do bundle instalado. O que não pode é improvisar uma terceira versão do procedimento.
+Se o runtime não expuser o repositório local `Prumo/skills/`, ele deve usar a referência equivalente do bundle instalado. O que não pode é improvisar uma terceira versão do procedimento.
 
 ## Política de leitura
 
-1. Sempre ler `CLAUDE.md`, `PRUMO-CORE.md`, `PAUTA.md` e `INBOX.md`.
+1. Sempre ler `Prumo/AGENT.md`, `.prumo/system/PRUMO-CORE.md`, `Prumo/PAUTA.md` e `Prumo/INBOX.md`.
 2. Para comando específico, ler também o módulo canônico correspondente.
 3. Preferir leitura leve quando disponível:
-   - `_state/HANDOVER.summary.md`
-   - `Inbox4Mobile/_preview-index.json`
-   - `Inbox4Mobile/inbox-preview.html`
+   - `.prumo/state/HANDOVER.summary.md`
+   - `Prumo/Inbox4Mobile/_preview-index.json`
+   - `Prumo/Inbox4Mobile/inbox-preview.html`
    - Gmail MCP / Calendar MCP direto
 4. Abrir conteúdo bruto apenas quando houver:
    - item `P1`;
@@ -110,15 +122,15 @@ Quando referenciar arquivo do sistema, usar link clicável. Caminho cru é pregu
 
 ### 4. Cobrar itens parados
 
-Tom vem de `CLAUDE.md`, mas item parado continua merecendo cobrança. O que muda é a faca, não o corte.
+Tom vem de `Prumo/Agente/PERFIL.md`, mas item parado continua merecendo cobrança. O que muda é a faca, não o corte.
 
 ### 5. Ideias não são ações
 
-Sem próxima ação concreta, vai para `IDEIAS.md`, não para `PAUTA.md`.
+Sem próxima ação concreta, vai para `Prumo/IDEIAS.md`, não para `Prumo/PAUTA.md`.
 
 ### 6. Registro antes do sumiço
 
-Se um item vai ser movido, arquivado ou deletado, isso precisa passar por `REGISTRO.md`.
+Se um item vai ser movido, arquivado ou deletado, isso precisa passar por `Prumo/REGISTRO.md`.
 
 ### 7. Revisão semanal é poda
 
@@ -134,11 +146,11 @@ O Prumo deve mirar ação concreta, não listinha passiva. Nível 3 ou 4 sempre 
 
 ### 10. Multiagente exige cooperação explícita
 
-Sem lock ou handover, não existe “colaboração”. Existe bagunça com log bonito.
+Sem lock ou handover, não existe "colaboração". Existe bagunça com log bonito.
 
 ### 11. Atualização segura só toca o motor
 
-Update pode mexer em `PRUMO-CORE.md` e backup. O resto é área do usuário. Mão fora.
+Update pode mexer em `.prumo/system/PRUMO-CORE.md` e backup. O resto é área do usuário. Mão fora.
 
 ### 12. Briefing é progressivo
 
@@ -146,7 +158,7 @@ Primeiro panorama, depois proposta, detalhe só sob demanda.
 
 ### 13. Feedback do produto é comportamento do sistema
 
-Se o usuário der feedback, bug ou sugestão sobre o Prumo em si, capturar isso e usar `skills/prumo/references/feedback-loop.md` como procedimento canônico.
+Se o usuário der feedback, bug ou sugestão sobre o Prumo em si, capturar isso e usar `Prumo/skills/prumo/references/feedback-loop.md` como procedimento canônico.
 
 ### 14. Fluxo não perde contagem
 
@@ -160,19 +172,19 @@ Sempre que houver mais de um caminho razoável, oferecer alternativas curtas e r
 
 `ASSERT: Usar Gmail MCP e Calendar MCP como fonte primária de email e calendário.`
 
-`ASSERT: Se existir Inbox4Mobile/_preview-index.json, linkar inbox-preview.html antes de abrir qualquer arquivo bruto.`
+`ASSERT: Se existir Prumo/Inbox4Mobile/_preview-index.json, linkar inbox-preview.html antes de abrir qualquer arquivo bruto.`
 
 `ASSERT: Antes de deletar item de inbox, confirmar com o usuário o plano único de commit.`
 
-`ASSERT: Registrar no REGISTRO.md antes de remover o original do inbox.`
+`ASSERT: Registrar no Prumo/REGISTRO.md antes de remover o original do inbox.`
 
 `ASSERT: last_briefing_at deve ser persistido antes da primeira resposta do briefing.`
 
-`ASSERT: Na primeira resposta do briefing, é proibido abrir arquivo bruto de Inbox4Mobile/*.`
+`ASSERT: Na primeira resposta do briefing, é proibido abrir arquivo bruto de Prumo/Inbox4Mobile/*.`
 
 `ASSERT: interrupted_at e resume_point só existem quando o usuário acionou escape hatch.`
 
-`ASSERT: No update, a allowlist de escrita é apenas PRUMO-CORE.md e _backup/PRUMO-CORE.md.*`
+`ASSERT: No update, a allowlist de escrita é apenas .prumo/system/PRUMO-CORE.md e .prumo/backup/PRUMO-CORE.md.*`
 
 `ASSERT: Antes do panorama do briefing, o sistema deve tentar preflight de versão e avisar quando detectar versão nova.`
 
@@ -180,11 +192,11 @@ Sempre que houver mais de um caminho razoável, oferecer alternativas curtas e r
 
 `ASSERT: Handover PENDING_VALIDATION ou REJECTED não pode ser ignorado no briefing.`
 
-`ASSERT: Arquivo frio só pode ser movido para archive se houver entrada correspondente em _state/archive/ARCHIVE-INDEX.*`
+`ASSERT: Arquivo frio só pode ser movido para archive se houver entrada correspondente em .prumo/state/archive/ARCHIVE-INDEX.*`
 
-`ASSERT: CLAUDE.md nunca entra em autosanitização; higiene só acontece com confirmação explícita do usuário.`
+`ASSERT: Prumo/Agente/PERFIL.md nunca entra em autosanitização; higiene só acontece com confirmação explícita do usuário.`
 
-`ASSERT: Pendência viva, registro resolvido e histórico não devem disputar espaço em CLAUDE.md como se fossem a mesma espécie de informação.`
+`ASSERT: Pendência viva, registro resolvido e histórico não devem disputar espaço em Prumo/Agente/PERFIL.md como se fossem a mesma espécie de informação.`
 
 ## Rituais e procedimentos
 
@@ -192,7 +204,7 @@ Sempre que houver mais de um caminho razoável, oferecer alternativas curtas e r
 
 Ler e seguir:
 
-- `Prumo/canon/orchestration/briefing.md`
+- `Prumo/skills/prumo/references/modules/briefing-procedure.md`
 
 Esse módulo cobre:
 
@@ -208,7 +220,7 @@ Esse módulo cobre:
 
 Ler e seguir:
 
-- `Prumo/canon/operations/inbox-processing.md`
+- `Prumo/skills/prumo/references/modules/inbox-processing.md`
 
 Esse módulo cobre:
 
@@ -223,13 +235,13 @@ Esse módulo cobre:
 
 Ler e seguir:
 
-- `skills/prumo/references/modules/weekly-review.md`
+- `Prumo/skills/prumo/references/modules/weekly-review.md`
 
 ### Update de versão
 
 Ler e seguir:
 
-- `skills/prumo/references/modules/version-update.md`
+- `Prumo/skills/prumo/references/modules/version-update.md`
 
 Esse módulo é a fonte canônica para:
 
@@ -242,25 +254,25 @@ Esse módulo é a fonte canônica para:
 
 Ler e seguir:
 
-- `skills/prumo/references/modules/multiagent.md`
+- `Prumo/skills/prumo/references/modules/multiagent.md`
 
 ### Sanitização
 
 Ler e seguir:
 
-- `skills/prumo/references/modules/sanitization.md`
+- `Prumo/skills/prumo/references/modules/sanitization.md`
 
-### Higiene do CLAUDE
+### Higiene do perfil
 
 Ler e seguir:
 
-- `skills/prumo/references/modules/claude-hygiene.md`
+- `Prumo/skills/prumo/references/modules/claude-hygiene.md`
 
 ### Runtime paths
 
 Ler e seguir:
 
-- `skills/prumo/references/modules/runtime-paths.md`
+- `Prumo/skills/prumo/references/modules/runtime-paths.md`
 
 ## Durante o dia
 
@@ -278,8 +290,8 @@ Histórico completo de versão vive em `CHANGELOG.md`.
 
 Versão atual deste core:
 
-- `4.17.0`
+- `4.18.0`
 
 ---
 
-*Prumo Core v4.17.0 — https://github.com/tharso/prumo*
+*Prumo Core v4.18.0 — https://github.com/tharso/prumo*

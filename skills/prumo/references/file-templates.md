@@ -2,10 +2,53 @@
 
 > Cada seção abaixo é um arquivo separado a ser gerado no workspace do usuário.
 > Copiar o conteúdo entre as marcações `--- INÍCIO ---` e `--- FIM ---`.
+>
+> **Estrutura de workspace v2 (2026-04):** Raiz é território do usuário com ponteiros.
+> `Prumo/` contém dados operacionais + skills. `.prumo/` contém infraestrutura do sistema.
 
 ---
 
-## PAUTA.md
+## Estrutura de workspace
+
+```text
+[Workspace]/
+├── CLAUDE.md              ← ponteiro → Prumo/AGENT.md
+├── AGENT.md               ← ponteiro → Prumo/AGENT.md
+├── AGENTS.md              ← ponteiro → Prumo/AGENT.md
+├── Prumo/
+│   ├── AGENT.md           ← fonte canônica (navegação, fallback, regras)
+│   ├── PAUTA.md
+│   ├── INBOX.md
+│   ├── REGISTRO.md
+│   ├── IDEIAS.md
+│   ├── Agente/
+│   │   ├── INDEX.md       ← índice do contexto modular
+│   │   ├── PERFIL.md      ← config pessoal (áreas, tom, lembretes)
+│   │   └── PESSOAS.md
+│   ├── Referencias/
+│   │   └── INDICE.md
+│   ├── Inbox4Mobile/
+│   │   └── _processed.json
+│   └── skills/            ← cópia das skills do repo (portáveis)
+└── .prumo/
+    ├── state/
+    │   ├── briefing-state.json
+    │   ├── agent-lock.json
+    │   ├── auto-sanitize-state.json
+    │   ├── auto-sanitize-history.json
+    │   ├── HANDOVER.md
+    │   ├── HANDOVER.summary.md
+    │   └── archive/
+    │       ├── ARCHIVE-INDEX.json
+    │       └── ARCHIVE-INDEX.md
+    ├── system/
+    │   └── PRUMO-CORE.md  ← motor do sistema (atualizável)
+    └── logs/
+```
+
+---
+
+## Prumo/PAUTA.md
 
 --- INÍCIO ---
 
@@ -54,7 +97,7 @@ _Concluídos da semana anterior. Limpo automaticamente na revisão semanal._
 
 ---
 
-## INBOX.md
+## Prumo/INBOX.md
 
 --- INÍCIO ---
 
@@ -69,7 +112,7 @@ _Inbox limpo._
 
 ---
 
-## REGISTRO.md
+## Prumo/REGISTRO.md
 
 --- INÍCIO ---
 
@@ -84,7 +127,7 @@ _Inbox limpo._
 
 ---
 
-## IDEIAS.md
+## Prumo/IDEIAS.md
 
 --- INÍCIO ---
 
@@ -99,7 +142,7 @@ _Nenhuma ideia registrada ainda._
 
 ---
 
-## Agente/PESSOAS.md
+## Prumo/Agente/PESSOAS.md
 
 --- INÍCIO ---
 
@@ -123,7 +166,7 @@ _Quem precisa de resposta, retorno, ou atenção._
 
 ---
 
-## Agente/INDEX.md
+## Prumo/Agente/INDEX.md
 
 --- INÍCIO ---
 
@@ -134,16 +177,17 @@ _Quem precisa de resposta, retorno, ou atenção._
 
 ## Onde procurar o quê
 
-1. `Agente/PESSOAS.md`: pessoas-chave e pendências de relacionamento
-2. `PAUTA.md`: pendência viva
-3. `INBOX.md`: captura ainda não processada
-4. `REGISTRO.md`: trilha do que já aconteceu
+1. `Prumo/Agente/PERFIL.md`: configuração pessoal (áreas, tom, lembretes)
+2. `Prumo/Agente/PESSOAS.md`: pessoas-chave e pendências de relacionamento
+3. `Prumo/PAUTA.md`: pendência viva
+4. `Prumo/INBOX.md`: captura ainda não processada
+5. `Prumo/REGISTRO.md`: trilha do que já aconteceu
 
 --- FIM ---
 
 ---
 
-## Referencias/INDICE.md
+## Prumo/Referencias/INDICE.md
 
 --- INÍCIO ---
 
@@ -161,7 +205,7 @@ _Última atualização: {{DATA_SETUP}}_
 
 ---
 
-## _state/briefing-state.json
+## .prumo/state/briefing-state.json
 
 --- INÍCIO ---
 
@@ -175,7 +219,7 @@ _Última atualização: {{DATA_SETUP}}_
 
 ---
 
-## Inbox4Mobile/_processed.json
+## Prumo/Inbox4Mobile/_processed.json
 
 --- INÍCIO ---
 
