@@ -382,9 +382,8 @@ class StartCommandTests(unittest.TestCase):
                 f"prumo briefing --workspace {workspace.resolve()} --refresh-snapshot --format json",
             )
             self.assertIn("canonical_refs", payload["adapter_hints"])
-            self.assertTrue(payload["adapter_hints"]["canonical_refs"]["invocation_contract"].endswith("canon/contracts/invocation.md"))
-            self.assertTrue(payload["adapter_hints"]["canonical_refs"]["briefing_orchestration"].endswith("canon/orchestration/briefing.md"))
-            self.assertTrue(payload["adapter_hints"]["canonical_refs"]["kickoff_orchestration"].endswith("canon/orchestration/kickoff.md"))
+            self.assertTrue(payload["adapter_hints"]["canonical_refs"]["briefing_procedure"].endswith("modules/briefing-procedure.md"))
+            self.assertTrue(payload["adapter_hints"]["canonical_refs"]["inbox_processing"].endswith("modules/inbox-processing.md"))
             self.assertIn("Prumo", payload["adapter_hints"]["short_invocations"])
             self.assertIn("short_acceptance", payload["adapter_hints"]["behavior"])
             self.assertEqual(payload["platform"]["label"], platform_label())

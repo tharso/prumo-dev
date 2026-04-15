@@ -58,6 +58,25 @@ def _render_wrapper_runtime_rules(*, state_path: str = "_state/") -> str:
 18. Quando houver escolha real, faça uma pergunta por vez e ofereça opções curtas em vez de cardápio burocrático."""
 
 
+def _render_fallback_chain(skills_path: str) -> str:
+    return f"""## Cadeia de resolução de comandos
+
+Ordem de tentativa: slash command → runtime CLI → skill direto.
+
+Se o slash command não funcionar, tentar `prumo <comando>` no terminal.
+Se o runtime não estiver no PATH, ler a skill correspondente no workspace:
+
+| Comando | Skill |
+|---|---|
+| briefing | `{skills_path}briefing/SKILL.md` |
+| setup | `{skills_path}prumo/SKILL.md` |
+| start | `{skills_path}start/SKILL.md` |
+| faxina | `{skills_path}faxina/SKILL.md` |
+| higiene | `{skills_path}higiene/SKILL.md` |
+| sanitize | `{skills_path}sanitize/SKILL.md` |
+| doctor | `{skills_path}doctor/SKILL.md` |"""
+
+
 def render_agent_md(
     user_name: str,
     agent_name: str,
@@ -66,11 +85,44 @@ def render_agent_md(
     *,
     core_path: str = "PRUMO-CORE.md",
     state_path: str = "_state/",
+    skills_path: str | None = None,
 ) -> str:
+    fallback_section = ""
+    if skills_path:
+        fallback_section = "\n" + _render_fallback_chain(skills_path) + "\n"
+
+    reading_order_items = ["1. `Agente/INDEX.md`"]
+    if skills_path:
+        reading_order_items.append("2. `Agente/PERFIL.md`")
+        reading_order_items.append("3. `PAUTA.md`")
+        reading_order_items.append("4. `INBOX.md`")
+        reading_order_items.append(f"5. `{core_path}`")
+        reading_order_items.append("6. `REGISTRO.md` (quando precisar histórico)")
+    else:
+        reading_order_items.append("2. `PAUTA.md`")
+        reading_order_items.append("3. `INBOX.md`")
+        reading_order_items.append(f"4. `{core_path}`")
+        reading_order_items.append("5. `REGISTRO.md` (quando precisar histórico)")
+    reading_order = "\n".join(reading_order_items)
+
+    map_items = [
+        "- `Agente/`: contexto modular do usuário",
+        "- `PAUTA.md`: estado vivo e pendências",
+        "- `INBOX.md`: itens ainda não processados",
+        "- `REGISTRO.md`: rastro do que aconteceu",
+    ]
+    if skills_path:
+        map_items.append(f"- `{skills_path}`: skills do Prumo (fallback quando CLI não existe)")
+    map_items.extend([
+        f"- `{core_path}`: regras do motor e guardrails do sistema",
+        f"- `{state_path}`: estado técnico e metadados do runtime",
+    ])
+    workspace_map = "\n".join(map_items)
+
     return f"""# AGENT.md
 
 > Arquivo canônico de navegação do workspace de {user_name}.
-> Se você é um agente, comece aqui. Não chute porta em arquivo aleatório como se estivesse num galpão escuro.
+> Se você é um agente, comece aqui.
 
 ## Identidade rápida
 
@@ -78,23 +130,14 @@ def render_agent_md(
 - Nome do agente: {agent_name}
 - Fuso: {timezone_name}
 - Briefing preferencial: {briefing_time}
-
+{fallback_section}
 ## Ler nesta ordem
 
-1. `Agente/INDEX.md`
-2. `PAUTA.md`
-3. `INBOX.md`
-4. `{core_path}`
-5. `REGISTRO.md` (quando precisar histórico)
+{reading_order}
 
 ## Mapa do workspace
 
-- `Agente/`: contexto modular do usuário
-- `PAUTA.md`: estado vivo e pendências
-- `INBOX.md`: itens ainda não processados
-- `REGISTRO.md`: rastro do que aconteceu
-- `{core_path}`: regras do motor e guardrails do sistema
-- `{state_path}`: estado técnico e metadados do runtime
+{workspace_map}
 
 ## Regras rápidas
 

@@ -169,6 +169,7 @@ def render_files(config: WorkspaceConfig) -> dict[str, str]:
             briefing_time=config.briefing_time,
             core_path=core_relative,
             state_path=state_relative,
+            skills_path=paths.relative(paths.skills_root) + "/" if paths.nested_layout else None,
         ),
         paths.relative(paths.agent_index): templates.render_agente_index(
             user_name=config.user_name,

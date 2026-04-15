@@ -38,8 +38,14 @@ class WorkspacePaths:
         return self.custom_root / "rules"
 
     @property
+    def skills_root(self) -> Path:
+        """Skills portáveis copiadas do repo. Fallback quando CLI não está disponível."""
+        return self.user_root / "skills" if self.nested_layout else self.root
+
+    @property
     def system_skills_root(self) -> Path:
-        return self.system_root / "system" / "skills" if self.nested_layout else self.root
+        """Alias legado. Usar skills_root."""
+        return self.skills_root
 
     @property
     def arquivo_root(self) -> Path:
@@ -178,7 +184,7 @@ class WorkspacePaths:
                 self.custom_skills_root,
                 self.custom_rules_root,
                 self.arquivo_root,
-                self.system_skills_root,
+                self.skills_root,
             ])
         return tuple(dirs)
 
