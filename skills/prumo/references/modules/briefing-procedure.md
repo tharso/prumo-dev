@@ -104,14 +104,91 @@ Esse módulo é a fonte canônica de preview, commit, `_processed.json`, deleç�
 
 Usar integração nativa de Gmail MCP e Calendar MCP como fonte primária.
 
-1. Janela de email:
-   - `last_briefing_at` anterior, quando existir;
-   - fallback de 24h quando não existir.
-2. Curadoria no Prumo:
-   - classificar emails em `Responder`, `Ver` e `Sem ação`;
-   - atribuir `P1/P2/P3` com motivo objetivo;
-   - cada email é um item numerado (continuar do último número usado, não reiniciar);
-   - consolidar agenda por conta quando houver mais de um calendário.
+#### Taxonomia de prioridade
+
+- **P1 — Ação necessária hoje.** Deadline iminente, blocker, resposta esperada por alguém, decisão pendente. Se não tratar hoje, tem consequência concreta.
+- **P2 — Ação necessária esta semana.** Importante mas não urgente. Pode esperar o próximo briefing sem consequência.
+- **P3 — Informativo.** Vale saber que existe, mas não exige ação. Newsletter relevante, notificação de status, FYI.
+
+#### Janela temporal
+
+- `last_briefing_at` anterior, quando existir;
+- fallback de 24h quando não existir.
+- Usar formato `after:YYYY/MM/DD` na query do Gmail MCP.
+
+#### Pipeline de curadoria em camadas
+
+Antes de executar as queries, ler `Prumo/Referencias/EMAIL-CURADORIA.md` (se existir) para carregar regras aprendidas, remetentes conhecidos e patterns de exclusão/inclusão.
+
+**Camada 1 — Canal prioritário (P1 automático):**
+```
+label:Prumo after:{last_briefing_date}
+```
+```
+(subject:PRUMO OR subject:INBOX:) after:{last_briefing_date}
+```
+Tudo que chega por esses canais é P1 e entra direto no briefing.
+
+**Camada 2 — Emails diretos e threads ativas:**
+```
+is:unread after:{last_briefing_date}
+```
+A inbox agrega 4 contas (tharso@gmail.com, tharso@brise.cloud, tharso@brise.science, tharso@tharso.com). Uma query cobre todas. Emails em CC/BCC são válidos quando vêm de pessoas reais.
+
+**Filtragem em dois estágios:**
+
+*Estágio 1 — Metadata (rápido, sem ler corpo):*
+Eliminar por padrão de remetente: `noreply@`, `no-reply@`, `notifications@`, `mailer-daemon@`, `marketing@`, `news@`, `updates@`, e patterns de serviço automatizado. Consultar `EMAIL-CURADORIA.md` para regras aprendidas (remetentes marcados como ruído ou como sempre-relevante).
+
+*Estágio 2 — Leitura seletiva (só emails que passaram o estágio 1):*
+Ler o corpo via `gmail_read_message`. Cruzar com contexto vivo:
+- Ler `Prumo/PAUTA.md` para saber o que está quente.
+- Usar o conhecimento de `Prumo/Agente/PERFIL.md` (áreas, projetos ativos, pessoas).
+- Se o email se relaciona com algo da pauta ou de um projeto ativo, sobe de prioridade.
+- Exemplo: email do contador é P1 se há item de CNPJ na pauta. Newsletter sobre IA é P3 mas sobe pra P2 se o usuário está escrevendo artigo sobre o tema.
+
+**Camada 3 — Roteamento de conteúdo:**
+Se o email é conteúdo pra consumir (artigo, vídeo, podcast, thread, newsletter curada), rotear para `Projetos/Revue/INBOX_Revue/` em vez de tratar como email de ação. Marcar como roteado no briefing mas não cobrar ação.
+
+#### Classificação final
+
+Classificar cada email que passou a filtragem em:
+- `Responder` — exige resposta escrita do usuário.
+- `Ver` — exige leitura ou ciência, mas não resposta.
+- `Sem ação` — informativo puro, pode só ser mencionado.
+
+Atribuir P1/P2/P3 com motivo objetivo em uma frase curta. Cada email é um item numerado (ver REGRA DE NUMERAÇÃO no topo deste módulo).
+
+#### Feedback loop
+
+Quando o usuário corrigir a curadoria ("esse era ruído", "faltou aquele email do fulano", "isso não era P1"):
+1. Registrar a regra em `Prumo/Referencias/EMAIL-CURADORIA.md`.
+2. Formato: data, remetente/pattern, regra aprendida, motivo.
+3. Viés explícito: na dúvida, trazer. Melhor ruído que perda.
+
+Se `EMAIL-CURADORIA.md` não existir, criar com estrutura:
+```markdown
+# Curadoria de email — regras aprendidas
+
+> Atualizado pelo agente com feedback do usuário.
+> Consultado a cada briefing antes de filtrar emails.
+
+## Remetentes sempre relevantes
+(lista vazia até primeiro feedback)
+
+## Remetentes sempre ruído
+(lista vazia até primeiro feedback)
+
+## Regras contextuais
+(lista vazia até primeiro feedback)
+
+## Log de feedback
+(entradas com data, o que aconteceu, regra derivada)
+```
+
+#### Calendário
+
+Consolidar agenda por conta quando houver mais de um calendário. Cada evento do dia é um item numerado (continuar da numeração dos emails).
 
 ## Passo 5: Persistir início do briefing
 

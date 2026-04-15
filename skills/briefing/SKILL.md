@@ -68,7 +68,8 @@ A resposta do runtime vai como veio. Não reescrever, não enfeitar.
 ## Regras que não podem ser puladas
 
 - **Numeração sequencial obrigatória**: todo item acionável (email, evento, pendência, item de inbox) recebe número sequencial único do 1 ao N, sem reiniciar entre seções. Se o panorama tem 5 emails (1-5), a agenda continua do 6. Isso permite ao usuário despachar vários itens de uma vez ("3, 7, 12").
-- Usar Gmail MCP e Calendar MCP como fonte primária de email e calendário.
+- Usar Gmail MCP e Calendar MCP como fonte primária de email e calendário. Seguir o pipeline de curadoria em camadas definido em `briefing-procedure.md` (camada 1: canais prioritários, camada 2: emails diretos com filtragem pessoa/sistema, camada 3: roteamento de conteúdo).
+- Antes de curar emails, ler `Prumo/Referencias/EMAIL-CURADORIA.md` (se existir) para carregar regras aprendidas. Quando o usuário corrigir a curadoria, registrar a regra nesse arquivo.
 - Se existir `_preview-index.json`, linkar `inbox-preview.html` antes de abrir bruto.
 - Persistir `last_briefing_at` antes da primeira resposta.
 - `interrupted_at` e `resume_point` só existem se o usuário pediu pra parar.
@@ -83,15 +84,13 @@ A resposta do runtime vai como veio. Não reescrever, não enfeitar.
 
 ## Resultado esperado
 
-O briefing continua entregando:
+O briefing entrega:
 
-- `Bloco 1` de panorama;
+- `Bloco 1` de panorama (agenda + emails curados + pendências, tudo numerado sequencialmente);
 - `Bloco 2` de proposta do dia;
 - contexto completo apenas em `c` ou `/prumo:briefing --detalhe`;
-- curadoria de email em `Responder`, `Ver`, `Sem ação`;
-- prioridade `P1/P2/P3`;
-- email e calendário via Gmail/Calendar MCP direto;
-- curadoria em `Responder`, `Ver`, `Sem ação` com `P1/P2/P3`.
+- curadoria de email: classificação em `Responder` / `Ver` / `Sem ação` com prioridade P1 (ação hoje) / P2 (ação esta semana) / P3 (informativo);
+- email e calendário via Gmail/Calendar MCP direto.
 
 ## Aviso
 
