@@ -216,17 +216,36 @@ _Última atualização: {{DATA_SETUP}}_
 > Consultado a cada briefing antes de filtrar emails.
 > Viés explícito: na dúvida, trazer. Melhor ruído que perda.
 
+## Setup inicial
+
+Este arquivo está vazio porque a curadoria aprende com o uso. No primeiro briefing com email:
+
+1. **Verificar acesso ao Gmail MCP.** Tentar `gmail_get_profile` pra confirmar que a conta está conectada. Se não estiver, orientar o usuário a configurar o conector de Gmail no Cowork (Settings → Connectors → Gmail) ou no Claude Code (MCP config).
+2. **Identificar as contas.** Perguntar ao usuário quais endereços chegam na caixa (direto, redirect, fetch). Registrar abaixo em "Contas monitoradas".
+3. **Rodar a primeira curadoria com viés amplo.** Trazer tudo que parecer minimamente relevante. Numerar os itens. Ao final, pedir feedback: "Algum desses era ruído? Faltou algum?"
+4. **Registrar as primeiras regras** a partir do feedback. A partir daqui, o agente consulta este arquivo em todo briefing.
+
+Após o primeiro ciclo de feedback, apagar esta seção de setup.
+
+## Contas monitoradas
+
+(preencher no primeiro briefing)
+
 ## Remetentes sempre relevantes
 
+(ex: `fulano@contador.com` → P1 quando há item fiscal na PAUTA)
 
 ## Remetentes sempre ruído
 
+(ex: `noreply@github.com`, `marketing@servico.com`)
 
 ## Regras contextuais
 
+(ex: "Newsletter sobre IA sobe pra P2 se há artigo em andamento na PAUTA")
 
 ## Log de feedback
 
+(formato: data | o que aconteceu | regra derivada)
 
 --- FIM ---
 
