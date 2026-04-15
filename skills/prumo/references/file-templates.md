@@ -26,7 +26,8 @@
 │   │   ├── PERFIL.md      ← config pessoal (áreas, tom, lembretes)
 │   │   └── PESSOAS.md
 │   ├── Referencias/
-│   │   └── INDICE.md
+│   │   ├── INDICE.md
+│   │   └── EMAIL-CURADORIA.md  ← regras aprendidas de curadoria de email
 │   ├── Inbox4Mobile/
 │   │   └── _processed.json
 │   └── skills/            ← cópia das skills do repo (portáveis)
@@ -200,6 +201,32 @@ _Quem precisa de resposta, retorno, ou atenção._
 |---|--------|---------|------|-----------|----------|
 
 _Última atualização: {{DATA_SETUP}}_
+
+--- FIM ---
+
+---
+
+## Prumo/Referencias/EMAIL-CURADORIA.md
+
+--- INÍCIO ---
+
+# Curadoria de email — regras aprendidas
+
+> Atualizado pelo agente com feedback do usuário.
+> Consultado a cada briefing antes de filtrar emails.
+> Viés explícito: na dúvida, trazer. Melhor ruído que perda.
+
+## Remetentes sempre relevantes
+
+
+## Remetentes sempre ruído
+
+
+## Regras contextuais
+
+
+## Log de feedback
+
 
 --- FIM ---
 

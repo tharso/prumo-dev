@@ -13,7 +13,7 @@ Antes de gerar QUALQUER arquivo, verificar se ele já existe na pasta do usuári
 | .prumo/system/PRUMO-CORE.md | **Sobrescrever** apenas em atualização de motor ou setup explícito. Sempre criar backup em `.prumo/backup/PRUMO-CORE.md.YYYY-MM-DD-HHMMSS` antes da troca. |
 | Prumo/Agente/PERFIL.md | **Não sobrescrever silenciosamente.** Em setup inicial pode criar; em reconfiguração, pedir confirmação explícita. Conteúdo histórico e drift de governança devem ser tratados pela higiene assistida, com backup em `.prumo/backup/PERFIL.md.YYYY-MM-DD-HHMMSS`. |
 | Prumo/PAUTA.md, Prumo/INBOX.md, Prumo/REGISTRO.md, Prumo/IDEIAS.md | **NÃO sobrescrever.** Informar: "Encontrei [arquivo] com conteúdo existente. Mantendo o atual." |
-| Prumo/Agente/INDEX.md, Prumo/Agente/PESSOAS.md, Prumo/Referencias/INDICE.md | **NÃO sobrescrever.** Informar: "Encontrei [arquivo] com conteúdo existente. Mantendo o atual." |
+| Prumo/Agente/INDEX.md, Prumo/Agente/PESSOAS.md, Prumo/Referencias/INDICE.md, Prumo/Referencias/EMAIL-CURADORIA.md | **NÃO sobrescrever.** Informar: "Encontrei [arquivo] com conteúdo existente. Mantendo o atual." |
 | [Area]/README.md | **NÃO sobrescrever.** Informar: "A pasta [Area] já tem um README com contexto. Mantendo." |
 | Pastas (.prumo/logs/, .prumo/state/, Prumo/Inbox4Mobile/, Prumo/Referencias/) | **Criar apenas se não existirem.** |
 
@@ -41,6 +41,7 @@ Ao final da geração de arquivos, mostrar resumo claro:
 | Prumo/Agente/INDEX.md | file-templates.md | Índice modular do contexto vivo do usuário. |
 | Prumo/Agente/PESSOAS.md | file-templates.md | Tracking de pessoas e pendências de relacionamento. |
 | Prumo/Referencias/INDICE.md | file-templates.md | Índice de material de referência. |
+| Prumo/Referencias/EMAIL-CURADORIA.md | file-templates.md | Regras aprendidas de curadoria de email (feedback loop). |
 | [Area]/README.md | Gerar dinamicamente | Um README por área/projeto com nome e descrição breve. |
 | .prumo/state/briefing-state.json | file-templates.md | Estado de referência temporal do briefing. |
 | .prumo/state/ | Criar pasta | Estado operacional (lock, handover, sanitize). |
