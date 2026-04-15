@@ -4,6 +4,19 @@ Log de decisoes arquiteturais e de processo. Cada entrada registra o contexto, a
 
 ---
 
+## 2026-04-15 — Nova estrutura de workspace com fallback skills-first (issue #65)
+
+**Contexto:** Quando o runtime CLI nao esta disponivel (Cowork sandbox, maquina sem instalacao), o agente trava porque o AGENT.md proibe ler arquivos para "simular" e nao oferece fallback. As skills nao sao copiadas para o workspace durante a instalacao, entao mesmo a rota de fallback nao tem material para operar.
+
+**Decisao:** Adotar a estrutura PrumoPilot como padrao: raiz e territorio do usuario, `Prumo/` contem dados operacionais + copia das skills, `.prumo/` contem infraestrutura do sistema (state, logs, PRUMO-CORE.md). AGENT.md ganha cadeia de fallback: slash command -> runtime CLI -> skill direto. A regra "nao leia arquivo para simular" e substituida pela cadeia de fallback (skill direto e operacao legitima, nao simulacao).
+
+**Alternativas consideradas:**
+- Symlink de skills para o repo de dev -> rejeitado, acopla workspace de usuario ao repo de desenvolvimento. Mudancas no repo quebram o workspace instantaneamente.
+- Manter tudo na raiz (estrutura DailyLife atual) -> rejeitado, mistura arquivos do sistema com arquivos do usuario e nao escala.
+- Depender exclusivamente do plugin para carregar skills -> rejeitado, amarra a uma plataforma (Cowork) e contradiz skills-first.
+
+---
+
 ## 2026-04-14 — Skills-first: descontinuar cowork-plugin/ e consolidar skills/ como fonte canonica
 
 **Contexto:** O Prumo evoluiu de skill para plugin para runtime. Cada transicao criou uma copia das skills (`cowork-plugin/skills/`) que foi divergindo da fonte original (`skills/`). O resultado: duas copias quase identicas com versoes diferentes (4.17.0 vs 4.16.6), confusao sobre qual editar, e agentes sem saber qual e a fonte canonica.
