@@ -15,8 +15,8 @@ O procedimento completo está nos módulos. Aqui só tem o mapa de onde cada coi
 
 ## Carregamento obrigatório
 
-1. Leia `CLAUDE.md`.
-2. Leia `PRUMO-CORE.md`.
+1. Leia `Prumo/Agente/PERFIL.md`.
+2. Leia `.prumo/system/PRUMO-CORE.md`.
 3. Leia o módulo canônico:
    - `skills/prumo/references/modules/briefing-procedure.md`
 4. Quando disponíveis, carregue também:
@@ -30,7 +30,7 @@ Se o repo `Prumo/` não estiver acessível, use o bundle instalado. O que não v
 
 ## Tentar o runtime novo primeiro
 
-Se tiver shell e o workspace estiver no formato novo (`AGENT.md` + `_state/workspace-schema.json`):
+Se tiver shell e o workspace estiver no formato novo (`AGENT.md` + `.prumo/state/workspace-schema.json`):
 
 1. Tentar rodar o briefing pelo runtime.
 2. Se funcionar, entregar a resposta e pronto.
@@ -46,7 +46,7 @@ A resposta do runtime vai como veio. Não reescrever, não enfeitar.
 
 ## Quem manda em caso de conflito
 
-1. `ASSERT:` do `PRUMO-CORE.md`
+1. `ASSERT:` do `.prumo/system/PRUMO-CORE.md`
 2. O módulo do briefing
 3. Este arquivo
 
@@ -73,7 +73,7 @@ A resposta do runtime vai como veio. Não reescrever, não enfeitar.
 - `interrupted_at` e `resume_point` só existem se o usuário pediu pra parar.
 - Update que não consegue se aplicar sozinho não trava o briefing.
 - Se houver versão nova detectável, o briefing deve avisar antes do panorama e oferecer alternativas curtas.
-- Se o `PRUMO-CORE.md` do workspace estiver atrás do `Prumo/VERSION` local, isso deve ser tratado como core defasado do workspace, não como detalhe invisível.
+- Se o `.prumo/system/PRUMO-CORE.md` do workspace estiver atrás do `Prumo/VERSION` local, isso deve ser tratado como core defasado do workspace, não como detalhe invisível.
 - Se tiver shell e o workspace estiver no formato novo, tentar o runtime antes.
 - Quando isso acontecer, preferir:
   - `a) atualizar agora`

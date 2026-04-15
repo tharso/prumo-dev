@@ -1,12 +1,12 @@
-# Claude Hygiene
+# Perfil Hygiene
 
 > **module_version: 4.17.0**
 >
-> Fonte canônica da higiene assistida do `CLAUDE.md`.
+> Fonte canônica da higiene assistida do `Prumo/Agente/PERFIL.md`.
 
 ## Princípio
 
-`CLAUDE.md` é configuração viva do usuário. Não entra em autosanitização.
+`Prumo/Agente/PERFIL.md` é configuração viva do usuário. Não entra em autosanitização.
 
 Higiene aqui significa:
 
@@ -18,8 +18,8 @@ Higiene aqui significa:
 
 ### Passo 1: Ler contexto
 
-1. Ler `CLAUDE.md`.
-2. Ler `PRUMO-CORE.md`.
+1. Ler `Prumo/Agente/PERFIL.md`.
+2. Ler `.prumo/system/PRUMO-CORE.md`.
 3. Ler `runtime-file-governance.md`.
 4. Se houver shell, ler `runtime-paths.md`.
 
@@ -32,7 +32,7 @@ O diagnóstico deve gerar:
 1. relatório JSON;
 2. relatório Markdown;
 3. patch proposto;
-4. cópia proposta do `CLAUDE.md`.
+4. cópia proposta do `Prumo/Agente/PERFIL.md`.
 
 Além da limpeza estrutural, o diagnóstico deve classificar drift de conteúdo:
 
@@ -43,10 +43,10 @@ Além da limpeza estrutural, o diagnóstico deve classificar drift de conteúdo:
 
 Destino padrão:
 
-- `_state/claude-hygiene/claude-hygiene-report.json`
-- `_state/claude-hygiene/claude-hygiene-report.md`
-- `_state/claude-hygiene/claude-hygiene.patch`
-- `_state/claude-hygiene/CLAUDE.proposed.md`
+- `.prumo/state/perfil-hygiene/perfil-hygiene-report.json`
+- `.prumo/state/perfil-hygiene/perfil-hygiene-report.md`
+- `.prumo/state/perfil-hygiene/perfil-hygiene.patch`
+- `.prumo/state/perfil-hygiene/PERFIL.proposed.md`
 
 ### Passo 3: Mostrar proposta
 
@@ -82,14 +82,14 @@ Quando houver decisão para o usuário, preferir algo do tipo:
 Se o usuário aprovar explicitamente:
 
 1. rodar o script com `--apply`;
-2. criar backup em `_backup/CLAUDE.md.YYYY-MM-DD-HHMMSS`;
+2. criar backup em `.prumo/backup/PERFIL.md.YYYY-MM-DD-HHMMSS`;
 3. atualizar `REGISTRO.md`.
 
 ## Guardrails
 
-1. `CLAUDE.md` nunca entra em autosanitização.
+1. `Prumo/Agente/PERFIL.md` nunca entra em autosanitização.
 2. Sem confirmação explícita, nada é escrito no arquivo.
 3. Se o diagnóstico não encontrar mudança segura, o arquivo fica como está.
 4. Conflitos potenciais podem ser reportados sem serem resolvidos automaticamente.
 5. Conteúdo no arquivo errado deve virar sugestão de destino, não mudança silenciosa.
-6. Se o `PRUMO-CORE.md` do workspace estiver atrás da versão do runtime, isso deve aparecer no relatório como observação de governança.
+6. Se o `.prumo/system/PRUMO-CORE.md` do workspace estiver atrás da versão do runtime, isso deve aparecer no relatório como observação de governança.

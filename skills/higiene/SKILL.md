@@ -25,18 +25,18 @@ A faxina age. A higiene conversa.
 
 ## O que a higiene detecta
 
-### 1. CLAUDE.md pesado ou bagunçado
+### 1. PERFIL.md pesado ou bagunçado
 
 Isso já existia e continua funcionando.
 
 **Verificar:**
-- Duplicações, redundâncias, conflitos dentro do CLAUDE.md
-- Conteúdo que deveria estar em outro arquivo (pendências no CLAUDE.md
+- Duplicações, redundâncias, conflitos dentro do PERFIL.md
+- Conteúdo que deveria estar em outro arquivo (pendências no PERFIL.md
   que pertencem à PAUTA.md, histórico que pertence ao REGISTRO.md)
-- PRUMO-CORE.md defasado em relação ao runtime
+- `.prumo/system/PRUMO-CORE.md` defasado em relação ao runtime
 
 **Como funciona:**
-- Ler `skills/prumo/references/modules/claude-hygiene.md` para o procedimento detalhado
+- Ler `skills/prumo/references/modules/perfil-hygiene.md` para o procedimento detalhado
 - Apresentar em 3 blocos fixos: mudanças seguras, confirmações factuais, decisões de governança
 - Só aplicar com confirmação explícita
 
@@ -97,7 +97,7 @@ Isso já existia e continua funcionando.
 ### 6. Arquivos grandes demais
 
 **Verificar:**
-- AGENT.md ou PRUMO-CORE.md > 500 linhas
+- AGENT.md ou `.prumo/system/PRUMO-CORE.md` > 500 linhas
 - PAUTA.md > 200 linhas
 - Qualquer arquivo em Agente/ > 300 linhas
 
@@ -131,7 +131,7 @@ Isso já existia e continua funcionando.
 
 1. **Higiene nunca resolve sozinha.** Sempre propõe, sempre espera.
 2. **Uma decisão por vez.** Não empilhar 7 perguntas numa mensagem.
-3. **Backup antes de mudar.** Se vai editar CLAUDE.md ou mover arquivo, backup primeiro.
+3. **Backup antes de mudar.** Se vai editar PERFIL.md ou mover arquivo, backup primeiro.
 4. **Registrar em REGISTRO.md.** Toda mudança aplicada vira linha no registro.
 5. **Nunca reescrever preferências subjetivas.** Se o usuário escreveu de um jeito, é de um jeito.
 6. **Custom/ é sagrado.** Não propor mudanças em Custom/ — só avisar incompatibilidade.

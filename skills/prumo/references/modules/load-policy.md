@@ -3,8 +3,6 @@
 > **module_version: 4.17.0**
 >
 > Política canônica de leitura incremental do Prumo.
->
-> A partir de 2026-03-28, a casa canônica compartilhada passou a ser `Prumo/canon/governance/load-policy.md`. Este arquivo permanece como espelho legado enquanto o bundle antigo ainda respira.
 
 ## Princípios
 
@@ -15,17 +13,17 @@
 ## Camadas
 
 1. **Base (sempre):**
-   - `CLAUDE.md`
-   - `PRUMO-CORE.md`
+   - `Prumo/Agente/PERFIL.md`
+   - `.prumo/system/PRUMO-CORE.md`
    - `PAUTA.md`
    - `INBOX.md`
 2. **Leve (preferencial):**
-   - `_state/HANDOVER.summary.md`
+   - `.prumo/state/HANDOVER.summary.md`
    - `Inbox4Mobile/_preview-index.json`
    - `Inbox4Mobile/inbox-preview.html`
    - Gmail MCP / Calendar MCP direto
 3. **Profunda (sob demanda):**
-   - `_state/HANDOVER.md`
+   - `.prumo/state/HANDOVER.md`
    - binários e arquivos longos
    - transcrições extensas
 

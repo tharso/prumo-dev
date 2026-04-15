@@ -12,9 +12,9 @@
 
 ## Arquivos de estado
 
-1. `_state/agent-lock.json`
-2. `_state/HANDOVER.md`
-3. `_state/HANDOVER.summary.md`
+1. `.prumo/state/agent-lock.json`
+2. `.prumo/state/HANDOVER.md`
+3. `.prumo/state/HANDOVER.summary.md`
 
 ## Lock
 
@@ -35,7 +35,7 @@ Regras:
 
 Abrir handover quando houver:
 
-1. mudança no `PRUMO-CORE.md`;
+1. mudança no `.prumo/system/PRUMO-CORE.md`;
 2. mudança em setup, comandos, inbox, auditoria ou integrações;
 3. correção de bug sistêmico;
 4. refatoração que altere comportamento de briefing ou revisão.
@@ -44,8 +44,8 @@ Abrir handover quando houver:
 
 Durante `/prumo:briefing`:
 
-1. preferir `_state/HANDOVER.summary.md`;
-2. fallback para `_state/HANDOVER.md`;
+1. preferir `.prumo/state/HANDOVER.summary.md`;
+2. fallback para `.prumo/state/HANDOVER.md`;
 3. destacar itens `PENDING_VALIDATION` e `REJECTED`;
 4. se o handover estiver endereçado ao agente atual, propor ação explícita.
 

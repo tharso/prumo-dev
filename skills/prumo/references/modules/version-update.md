@@ -17,7 +17,7 @@ Ela deve acontecer como preflight antes do panorama principal.
 
 ## Passo 1: descobrir a versão local
 
-1. Ler `prumo_version` no topo do `PRUMO-CORE.md`.
+1. Ler `prumo_version` no topo do `.prumo/system/PRUMO-CORE.md`.
 2. Ler `VERSION` do repositório quando existir no runtime.
 3. Se `VERSION` do repo local for maior que `prumo_version` do workspace, tratar como motor do workspace defasado.
 4. Se `prumo_version` do workspace for maior que `VERSION` do repo local, tratar como inconsistência de ambiente e avisar isso explicitamente.
@@ -31,7 +31,7 @@ Fonte remota permitida para comparação:
 
 Regra dura:
 
-- Nunca use WebFetch, preview remoto, leitor inteligente ou resumo interpretado para reescrever `PRUMO-CORE.md`.
+- Nunca use WebFetch, preview remoto, leitor inteligente ou resumo interpretado para reescrever `.prumo/system/PRUMO-CORE.md`.
 
 ## Passo 3: descobrir transporte seguro de aplicação
 
@@ -76,7 +76,7 @@ Se houver versão nova, mas não houver transporte seguro:
 Se o caso for `workspace core defasado`:
 
 1. dizer isso com nome e sobrenome;
-2. mencionar a diferença entre `PRUMO-CORE.md` do workspace e `Prumo/VERSION` local;
+2. mencionar a diferença entre `.prumo/system/PRUMO-CORE.md` do workspace e `Prumo/VERSION` local;
 3. tratar isso como condição operacional esperável, não como release corrompida;
 4. no briefing, parar antes do panorama e pedir decisão do usuário.
 
@@ -84,8 +84,8 @@ Se o caso for `workspace core defasado`:
 
 ### Se houver fonte local válida
 
-1. criar backup em `_backup/PRUMO-CORE.md.YYYY-MM-DD-HHMMSS`;
-2. substituir somente `PRUMO-CORE.md`;
+1. criar backup em `.prumo/backup/PRUMO-CORE.md.YYYY-MM-DD-HHMMSS`;
+2. substituir somente `.prumo/system/PRUMO-CORE.md`;
 3. reler o core atualizado;
 4. confirmar que a nova `prumo_version` é a esperada.
 
@@ -99,7 +99,7 @@ Se o caso for `workspace core defasado`:
 
 Durante atualização, os únicos destinos permitidos são:
 
-1. `PRUMO-CORE.md`
-2. `_backup/PRUMO-CORE.md.*`
+1. `.prumo/system/PRUMO-CORE.md`
+2. `.prumo/backup/PRUMO-CORE.md.*`
 
-Qualquer tentativa de tocar `CLAUDE.md`, `PAUTA.md`, `INBOX.md`, `REGISTRO.md`, `IDEIAS.md`, `AGENTS.md` ou arquivos de áreas do usuário deve abortar o update.
+Qualquer tentativa de tocar `Prumo/Agente/PERFIL.md`, `PAUTA.md`, `INBOX.md`, `REGISTRO.md`, `IDEIAS.md`, `AGENT.md` ou arquivos de áreas do usuário deve abortar o update.

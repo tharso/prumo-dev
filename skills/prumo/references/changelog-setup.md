@@ -7,18 +7,18 @@
 
 ### v3.4 (19/02/2026)
 - **Paridade sem shell no briefing**: fallback oficial para runtimes sem shell/Gemini CLI mantendo curadoria por ação (`Responder`, `Ver`, `Sem ação`) com prioridade `P1/P2/P3`.
-- **Estado temporal explícito**: setup passa a gerar `_state/briefing-state.json` para suportar janela "desde o último briefing" em qualquer runtime.
+- **Estado temporal explícito**: setup passa a gerar `.prumo/state/briefing-state.json` para suportar janela "desde o último briefing" em qualquer runtime.
 - **Template de automação local**: `references/prumo-google-dual-snapshot.sh` incorporado como ativo de produto (modo avançado opcional).
 
 ### v3.3 (19/02/2026)
 - **Curadoria de email no briefing**: troca do critério "não lidos mais recentes" por triagem orientada à ação (`Responder`, `Ver`, `Sem ação`) com justificativa objetiva.
-- **Janela temporal de briefing**: integração com estado `_state/briefing-state.json` para analisar emails desde o último briefing concluído.
+- **Janela temporal de briefing**: integração com estado `.prumo/state/briefing-state.json` para analisar emails desde o último briefing concluído.
 - **Integração Google dual opcional**: suporte a script local (`scripts/prumo_google_dual_snapshot.sh`) gerado via setup quando o usuário habilitar modo avançado com Gemini CLI.
 
 ### v3.2 (19/02/2026)
-- **Adapter AGENTS.md**: Setup agora gera `AGENTS.md` como ponteiro para `CLAUDE.md` + `PRUMO-CORE.md` (sem duplicação de conteúdo).
+- **Adapter AGENT.md**: Setup agora gera `AGENT.md` como ponteiro para `Prumo/Agente/PERFIL.md` + `.prumo/system/PRUMO-CORE.md` (sem duplicação de conteúdo).
 - **Comando canônico**: `/prumo:briefing` definido como padrão; `/briefing` mantido como alias legado.
-- **Estado operacional**: setup cria pasta `_state/` para lock e handover entre agentes.
+- **Estado operacional**: setup cria pasta `.prumo/state/` para lock e handover entre agentes.
 - **Comando manual de handover**: `/prumo:handover` para validação cruzada fora do briefing.
 
 ### v3.1 (14/02/2026)
@@ -37,7 +37,7 @@
 - **Proteção de arquivos no setup**: Etapa 9 agora verifica se arquivos já existem antes de gerar. Dados acumulados (PAUTA, REGISTRO, IDEIAS, READMEs) nunca são sobrescritos. CLAUDE.md ganha backup automático antes de regenerar. Seguro para re-setup, migração e reconfiguração.
 
 ### v2.0 (13/02/2026)
-- **Arquitetura de dois arquivos**: CLAUDE.md (pessoal, imutável) + PRUMO-CORE.md (sistema, atualizável). Permite updates sem perder personalizações.
+- **Arquitetura de dois arquivos**: PERFIL.md (pessoal, imutável) + PRUMO-CORE.md (sistema, atualizável). Permite updates sem perder personalizações.
 - **Auto-update**: PRUMO-CORE.md verifica versão no GitHub e oferece atualização automática. Mensagem explícita de que dados/personalizações não são afetados.
 - **Comando /briefing**: Skill dedicada que executa o morning briefing completo (7 passos). Legado; atual canônico é `/prumo:briefing`.
 - **Arquivo VERSION no repo**: Controle de versão simplificado para o mecanismo de update.

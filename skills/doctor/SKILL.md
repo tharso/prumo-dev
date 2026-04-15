@@ -13,7 +13,7 @@ Aqui é diagnóstico: checar se o runtime, o marketplace e o plugin estão no lu
 
 ## Carregamento obrigatório
 
-1. Leia `PRUMO-CORE.md` se existir no workspace.
+1. Leia `.prumo/system/PRUMO-CORE.md` se existir no workspace.
 2. Leia:
    - `skills/prumo/references/modules/cowork-runtime-maintenance.md`
    - `skills/prumo/references/modules/runtime-paths.md`

@@ -4,17 +4,17 @@
 >
 > Fonte canônica do procedimento de `/prumo:briefing`.
 > Se este módulo conflitar com um resumo em `SKILL.md`, este módulo vence.
-> Se este módulo conflitar com um `ASSERT:` do `PRUMO-CORE.md`, o `ASSERT:` vence.
+> Se este módulo conflitar com um `ASSERT:` do `.prumo/system/PRUMO-CORE.md`, o `ASSERT:` vence.
 >
-> A partir de 2026-03-28, a partitura compartilhada do briefing passou a morar em `Prumo/canon/orchestration/briefing.md`. Este arquivo segue como procedimento legado do bundle Cowork, com detalhes de bridge e fallback ainda específicos desse host.
+> Este módulo é o procedimento do bundled Cowork, com detalhes de bridge e fallback específicos desse host.
 
 ## Pré-carga obrigatória
 
 Antes de executar o briefing:
 
-1. Ler `CLAUDE.md`.
-2. Ler `PRUMO-CORE.md`.
-3. Ler `Prumo/canon/governance/load-policy.md` quando o repo local estiver disponível.
+1. Ler `Prumo/Agente/PERFIL.md`.
+2. Ler `.prumo/system/PRUMO-CORE.md`.
+3. Ler `skills/prumo/references/modules/load-policy.md` quando o repo local estiver disponível.
 4. Ler `skills/prumo/references/modules/version-update.md`.
 5. Ler `skills/prumo/references/modules/runtime-paths.md` quando houver shell.
 
@@ -22,7 +22,7 @@ Antes de executar o briefing:
 
 Antes de montar o briefing legado dentro do host:
 
-1. Se houver shell e o workspace expuser `AGENT.md` + `_state/workspace-schema.json`, tentar o procedimento de `cowork-runtime-bridge.md`.
+1. Se houver shell e o workspace expuser `AGENT.md` + `.prumo/state/workspace-schema.json`, tentar o procedimento de `cowork-runtime-bridge.md`.
 2. Se o bridge devolver saída com código `0`, usar essa saída como briefing final e encerrar.
 3. Se o bridge devolver `12`, seguir silenciosamente para o briefing legado.
 4. Se o bridge falhar por outro motivo, registrar isso em uma linha curta e seguir.
@@ -31,13 +31,13 @@ O objetivo aqui não é heroísmo. É só deixar o Cowork fazer papel de interfa
 
 ## Passo 1: Configuração e data local
 
-1. Extrair timezone do `CLAUDE.md` (default: `America/Sao_Paulo`).
+1. Extrair timezone do `Prumo/Agente/PERFIL.md` (default: `America/Sao_Paulo`).
 2. Resolver data local por fonte verificável:
    - ferramenta de tempo com timezone;
    - relógio do sistema com TZ explícito;
    - APIs de calendário no mesmo fuso.
 3. Se não houver fonte confiável, não anunciar dia/data textual no cabeçalho.
-4. Se `CLAUDE.md` ou `PRUMO-CORE.md` não existirem, interromper e orientar o usuário a rodar o setup.
+4. Se `Prumo/Agente/PERFIL.md` ou `.prumo/system/PRUMO-CORE.md` não existirem, interromper e orientar o usuário a rodar o setup.
 
 ## Passo 2: Preflight de versão
 
@@ -57,7 +57,7 @@ Antes do panorama, o briefing deve tentar checar atualização do Prumo.
    - avisar a limitação;
    - não bloquear o briefing;
    - permitir seguir com `b)`.
-5. Se `Prumo/VERSION` local for maior que o `prumo_version` do `PRUMO-CORE.md` do workspace:
+5. Se `Prumo/VERSION` local for maior que o `prumo_version` do `.prumo/system/PRUMO-CORE.md` do workspace:
    - tratar isso como motor do workspace defasado;
    - avisar explicitamente antes do panorama;
    - não fingir briefing normal em cima de core velho.
@@ -68,11 +68,11 @@ Antes do panorama, o briefing deve tentar checar atualização do Prumo.
 1. Ler `PAUTA.md`.
 2. Ler `INBOX.md`.
 3. Verificar handovers:
-   - preferir `_state/HANDOVER.summary.md`;
-   - fallback para `_state/HANDOVER.md`;
+   - preferir `.prumo/state/HANDOVER.summary.md`;
+   - fallback para `.prumo/state/HANDOVER.md`;
    - destacar itens `PENDING_VALIDATION` e `REJECTED`.
-4. Se existir `_state/auto-sanitize-state.json`, usar como telemetria de manutenção.
-5. Se existir `_state/briefing-state.json`:
+4. Se existir `.prumo/state/auto-sanitize-state.json`, usar como telemetria de manutenção.
+5. Se existir `.prumo/state/briefing-state.json`:
    - capturar em memória o `last_briefing_at` anterior antes de qualquer escrita nova;
    - se houver `interrupted_at` + `resume_point` no mesmo dia local, oferecer `a) retomar` ou `b) recomeçar`;
    - se `interrupted_at` for de dia anterior, expirar silenciosamente.
@@ -110,7 +110,7 @@ Usar integração nativa de Gmail MCP e Calendar MCP como fonte primária.
 
 Antes da primeira resposta com panorama + proposta:
 
-1. Persistir `_state/briefing-state.json` com `last_briefing_at` no timestamp ISO local atual.
+1. Persistir `.prumo/state/briefing-state.json` com `last_briefing_at` no timestamp ISO local atual.
 2. Limpar `interrupted_at` e `resume_point`.
 3. Com shell, preferir `prumo_briefing_state.py`.
 4. Sem shell, escrever o JSON diretamente.
@@ -131,7 +131,7 @@ Entregar automaticamente:
 5. pendências de handover em uma linha objetiva.
 6. numeração contínua mesmo ao passar do panorama para proposta e detalhe.
 
-Na primeira resposta do briefing, é proibido abrir arquivos brutos de `Inbox4Mobile/*`.
+Na primeira resposta do briefing, é proibido abrir arquivos brutos de `Inbox4Mobile/*` (preferir sempre `_preview-index.json` se existir).
 
 ### Bloco 2 — Proposta do dia
 
@@ -175,7 +175,7 @@ Depois do briefing:
 
 1. atualizar `PAUTA.md` se algo mudou;
 2. registrar ações no `REGISTRO.md`;
-3. atualizar `_state/HANDOVER.md` se houve validação;
+3. atualizar `.prumo/state/HANDOVER.md` se houve validação;
 4. manter `Inbox4Mobile/_processed.json` sincronizado quando houver fallback sem deleção física.
 
 Se o briefing concluiu normalmente:

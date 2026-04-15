@@ -6,7 +6,7 @@
 
 ## Objetivo
 
-Quando o workspace já estiver no trilho novo (`AGENT.md` + `_state/workspace-schema.json`) e houver shell, o Cowork deve preferir delegar o comando ao runtime local em vez de reexecutar a lógica inteira dentro do host.
+Quando o workspace já estiver no trilho novo (`AGENT.md` + `.prumo/state/workspace-schema.json`) e houver shell, o Cowork deve preferir delegar o comando ao runtime local em vez de reexecutar a lógica inteira dentro do host.
 
 Isso não é culto ao subprocesso. É parar de fingir que o plugin ainda precisa ser o motor.
 
@@ -48,7 +48,7 @@ Isso vale inclusive para workspace legado. O `start` existe justamente para orie
 Antes de carregar o procedimento legado:
 
 1. verificar se existe `AGENT.md` no workspace;
-2. verificar se existe `_state/workspace-schema.json`;
+2. verificar se existe `.prumo/state/workspace-schema.json`;
 3. verificar se há shell;
 4. tentar rodar:
 

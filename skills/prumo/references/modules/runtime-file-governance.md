@@ -3,8 +3,6 @@
 > **module_version: 4.17.0**
 >
 > Política canônica de ciclo de vida dos arquivos vivos do Prumo.
->
-> A partir de 2026-03-28, a casa canônica compartilhada passou a ser `Prumo/canon/governance/file-governance.md`. Este arquivo permanece como espelho legado e referência de transição.
 
 ## Princípio
 

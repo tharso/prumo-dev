@@ -3,8 +3,6 @@
 > **module_version: 4.17.0**
 >
 > Fonte canônica do contrato de interface do Prumo no chat.
->
-> A partir de 2026-03-28, a casa canônica compartilhada passou a ser `Prumo/canon/contracts/interaction-format.md`. Este arquivo permanece como espelho legado para o bundle do Cowork enquanto a migração termina de secar.
 
 ## Princípio
 

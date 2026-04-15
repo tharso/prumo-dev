@@ -17,9 +17,9 @@ CLAUDE.md pesado), use `/higiene`.
 
 ## O que o sanitize faz
 
-1. Compacta `_state/HANDOVER.md` — arquiva handovers CLOSED antigos
-2. Gera `_state/HANDOVER.summary.md` — versão leve pro briefing
-3. Mantém `_state/archive/ARCHIVE-INDEX.json` — rastreabilidade
+1. Compacta `.prumo/state/HANDOVER.md` — arquiva handovers CLOSED antigos
+2. Gera `.prumo/state/HANDOVER.summary.md` — versão leve pro briefing
+3. Mantém `.prumo/state/archive/ARCHIVE-INDEX.json` — rastreabilidade
 
 ## Como rodar
 

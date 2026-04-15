@@ -43,7 +43,7 @@ Vou estar aqui quando voltar."
 Se a pasta for real, confirmar brevemente ("Vou usar a pasta [nome]. Certo?")
 e seguir.
 
-Se já existir CLAUDE.md na pasta, este NÃO é o fluxo correto. Informar:
+Se já existir PERFIL.md na pasta, este NÃO é o fluxo correto. Informar:
 "Você já tem o Prumo configurado. Quer dizer 'bom dia' pro briefing ou
 despejar algo novo?" Não entrar no fluxo de start.
 
@@ -108,6 +108,8 @@ deixar despejar. Perguntas vêm DEPOIS de organizar e devolver.
 
 Se o dump vier em múltiplas mensagens ("espera, tem mais"), esperar.
 Dizer "Vai, tô ouvindo." ou algo equivalente. Não processar parcial.
+
+Nunca mencionar detalhes técnicos nesta fase (PERFIL.md, .prumo/, etc).
 
 ---
 
@@ -292,12 +294,12 @@ A partir do dump + discovery, montar a lista de áreas. Regras:
 
 Usar os mesmos templates do setup wizard:
 
-1. Ler `../prumo/references/claude-md-template.md` → gerar CLAUDE.md com dados inferidos
-2. Copiar `../prumo/references/prumo-core.md` → gerar PRUMO-CORE.md
-3. Ler `../prumo/references/agents-md-template.md` → gerar AGENTS.md
+1. Ler `../prumo/references/perfil-template.md` → gerar PERFIL.md com dados inferidos
+2. Copiar `../prumo/references/prumo-core.md` → gerar `.prumo/system/PRUMO-CORE.md`
+3. Ler `../prumo/references/agent-md-template.md` → gerar AGENT.md
 4. Ler `../prumo/references/file-templates.md` → gerar arquivos auxiliares
-5. Gerar `_state/briefing-state.json` com `last_briefing_at` vazio
-6. Criar pastas: uma por área inferida (com README.md), `_logs/`, `_state/`,
+5. Gerar `.prumo/state/briefing-state.json` com `last_briefing_at` vazio
+6. Criar pastas: uma por área inferida (com README.md), `.prumo/logs/`, `.prumo/state/`,
    `Inbox4Mobile/`, `Referencias/`
 7. Gerar scripts operacionais (mesmos do setup wizard):
    - `scripts/prumo_sanitize_state.py`
@@ -400,7 +402,7 @@ Antes de considerar o fluxo completo, verificar:
 - [ ] O tom pareceu conversa ou formulário?
 - [ ] A PAUTA.md nasceu com itens reais (não vazia)?
 - [ ] A captura mobile foi oferecida no fechamento?
-- [ ] Nenhum artefato técnico foi mencionado ao usuário (PRUMO-CORE.md, _state/, etc.)?
+- [ ] Nenhum artefato técnico foi mencionado ao usuário (.prumo/system/PRUMO-CORE.md, .prumo/state/, etc.)?
 - [ ] O fechamento foi curto e com link clicável pra pauta?
 
 ---

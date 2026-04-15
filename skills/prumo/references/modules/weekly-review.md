@@ -31,7 +31,7 @@ Revisar a pauta inteira sem a miopia do briefing diário.
    - item mais antigo parado.
 8. Mover "Semana atual — Concluídos" para "Semana passada — Concluídos".
 9. Limpar semana passada anterior.
-10. Registrar resumo em `_logs/YYYY-WXX.md`.
+10. Registrar resumo em `.prumo/logs/YYYY-WXX.md`.
 
 ## Tom
 

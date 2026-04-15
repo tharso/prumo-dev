@@ -10,10 +10,10 @@ Objetivo: manter arquivos operacionais enxutos sem apagar histórico.
 
 ## O que faz
 
-1. Compacta `_state/HANDOVER.md` mantendo apenas handovers `CLOSED` recentes.
-2. Move handovers antigos para `_state/archive/HANDOVER-ARCHIVE.md`.
-3. Gera backup antes de escrever: `_state/archive/backups/HANDOVER.md.<timestamp>`.
-4. Gera `_state/HANDOVER.summary.md` para leitura leve no briefing.
+1. Compacta `.prumo/state/HANDOVER.md` mantendo apenas handovers `CLOSED` recentes.
+2. Move handovers antigos para `.prumo/state/archive/HANDOVER-ARCHIVE.md`.
+3. Gera backup antes de escrever: `.prumo/state/archive/backups/HANDOVER.md.<timestamp>`.
+4. Gera `.prumo/state/HANDOVER.summary.md` para leitura leve no briefing.
 5. (auto) Aplica gatilhos por tamanho/volume e respeita cooldown para não rodar em loop.
 
 ## Gatilhos padrão (auto)
@@ -24,7 +24,7 @@ Objetivo: manter arquivos operacionais enxutos sem apagar histórico.
 
 ## Estado persistido (auto)
 
-`_state/auto-sanitize-state.json` guarda:
+`.prumo/state/auto-sanitize-state.json` guarda:
 
 1. `last_run_at` e `last_apply_at`
 2. métricas observadas
@@ -34,10 +34,10 @@ Objetivo: manter arquivos operacionais enxutos sem apagar histórico.
 
 Histórico por workspace (base para calibração adaptativa):
 
-- `_state/auto-sanitize-history.json`
+- `.prumo/state/auto-sanitize-history.json`
 
 ## Segurança
 
 1. Sem `--apply`, roda em dry-run.
 2. Não remove histórico; apenas move para arquivo de archive.
-3. Não altera `CLAUDE.md`, `PAUTA.md`, `INBOX.md`, `REGISTRO.md`, `IDEIAS.md`.
+3. Não altera `PERFIL.md`, `PAUTA.md`, `INBOX.md`, `REGISTRO.md`, `IDEIAS.md`.
