@@ -29,7 +29,7 @@ bootstrap_source_archive() {
   local archive_path="$TEMP_SOURCE_DIR/prumo.tar.gz"
   echo "Repo local não encontrado. Vou baixar um snapshot do repositório para instalar o runtime."
   echo "Archive: $ARCHIVE_URL"
-  curl -fsSL "$ARCHIVE_URL" -o "$archive_path"
+  curl -fsSL --proto =https --tlsv1.2 "$ARCHIVE_URL" -o "$archive_path"
   tar -xzf "$archive_path" -C "$TEMP_SOURCE_DIR"
   ROOT_DIR="$(find "$TEMP_SOURCE_DIR" -mindepth 1 -maxdepth 1 -type d -name 'prumo-*' | head -n 1)"
   if [ -z "$ROOT_DIR" ] || [ ! -f "$ROOT_DIR/VERSION" ] || [ ! -f "$ROOT_DIR/pyproject.toml" ]; then
