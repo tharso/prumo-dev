@@ -41,8 +41,6 @@
 Arquivos de estado esperados em `.prumo/state/`:
 
 - `briefing-state.json`
-- `HANDOVER.md`
-- `HANDOVER.summary.md`
 - `agent-lock.json`
 - `auto-sanitize-state.json`
 - `auto-sanitize-history.json`
@@ -56,7 +54,6 @@ Arquivos de estado esperados em `.prumo/state/`:
 | `/setup` | Configuração inicial e reconfiguração |
 | `/briefing` | Briefing diário em blocos progressivos |
 | `/doctor` | Diagnóstico do runtime do Prumo no Cowork |
-| `/handover` | Operar handovers |
 | `/sanitize` | Sanitizar estado operacional |
 | `/higiene` | Higiene assistida do `Prumo/Agente/PERFIL.md` |
 | `/start` | Captura inicial e onboarding rápido |
@@ -95,7 +92,6 @@ Se o runtime não expuser o repositório local `Prumo/skills/`, ele deve usar a 
 1. Sempre ler `Prumo/AGENT.md`, `.prumo/system/PRUMO-CORE.md`, `Prumo/PAUTA.md` e `Prumo/INBOX.md`.
 2. Para comando específico, ler também o módulo canônico correspondente.
 3. Preferir leitura leve quando disponível:
-   - `.prumo/state/HANDOVER.summary.md`
    - `Prumo/Inbox4Mobile/_preview-index.json`
    - `Prumo/Inbox4Mobile/inbox-preview.html`
    - Gmail MCP / Calendar MCP direto
@@ -146,7 +142,7 @@ O Prumo deve mirar ação concreta, não listinha passiva. Nível 3 ou 4 sempre 
 
 ### 10. Multiagente exige cooperação explícita
 
-Sem lock ou handover, não existe "colaboração". Existe bagunça com log bonito.
+Sem lock ativo, escrita simultânea em estado compartilhado vira corrida. Dois agentes tocando o mesmo arquivo sem coordenação é bagunça com log bonito.
 
 ### 11. Atualização segura só toca o motor
 
@@ -189,8 +185,6 @@ Sempre que houver mais de um caminho razoável, oferecer alternativas curtas e r
 `ASSERT: Antes do panorama do briefing, o sistema deve tentar preflight de versão e avisar quando detectar versão nova.`
 
 `ASSERT: Se Prumo/VERSION local for maior que prumo_version do workspace, o briefing deve acusar core defasado antes de seguir.`
-
-`ASSERT: Handover PENDING_VALIDATION ou REJECTED não pode ser ignorado no briefing.`
 
 `ASSERT: Arquivo frio só pode ser movido para archive se houver entrada correspondente em .prumo/state/archive/ARCHIVE-INDEX.*`
 
@@ -276,7 +270,7 @@ Ler e seguir:
 
 ## Durante o dia
 
-O usuário pode fazer dump, check-in, pedir cobrança futura, abrir handover ou rodar sanitização. A regra continua a mesma: ler o módulo certo, atualizar o estado certo e não fingir que lembrou tudo de cabeça.
+O usuário pode fazer dump, check-in, pedir cobrança futura ou rodar sanitização. A regra continua a mesma: ler o módulo certo, atualizar o estado certo e não fingir que lembrou tudo de cabeça.
 
 ## Observações de runtime
 

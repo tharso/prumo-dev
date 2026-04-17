@@ -73,16 +73,12 @@ Antes do panorama, o briefing deve tentar checar atualização do Prumo.
 
 1. Ler `PAUTA.md`.
 2. Ler `INBOX.md`.
-3. Verificar handovers:
-   - preferir `.prumo/state/HANDOVER.summary.md`;
-   - fallback para `.prumo/state/HANDOVER.md`;
-   - destacar itens `PENDING_VALIDATION` e `REJECTED`.
-4. Se existir `.prumo/state/auto-sanitize-state.json`, usar como telemetria de manutenção.
-5. Se existir `.prumo/state/briefing-state.json`:
+3. Se existir `.prumo/state/auto-sanitize-state.json`, usar como telemetria de manutenção.
+4. Se existir `.prumo/state/briefing-state.json`:
    - capturar em memória o `last_briefing_at` anterior antes de qualquer escrita nova;
    - se houver `interrupted_at` + `resume_point` no mesmo dia local, oferecer `a) retomar` ou `b) recomeçar`;
    - se `interrupted_at` for de dia anterior, expirar silenciosamente.
-6. Janela temporal de email:
+5. Janela temporal de email:
    - usar o `last_briefing_at` anterior quando existir;
    - sem esse estado, usar fallback de 24h.
 
@@ -211,8 +207,7 @@ Entregar automaticamente:
 1. abertura com data correta no fuso do usuário;
 2. agenda do dia, consolidada por conta quando aplicável;
 3. link para `Inbox4Mobile/inbox-preview.html` quando `_preview-index.json` existir;
-4. contagem silenciosa de agendados;
-5. pendências de handover em uma linha objetiva.
+4. contagem silenciosa de agendados.
 
 **Numeração:** cada email, evento de calendário, pendência e item de inbox é um item numerado sequencial. A contagem começa em 1 no primeiro item do briefing e nunca reinicia (ver REGRA DE NUMERAÇÃO no topo deste módulo).
 
@@ -260,8 +255,7 @@ Depois do briefing:
 
 1. atualizar `PAUTA.md` se algo mudou;
 2. registrar ações no `REGISTRO.md`;
-3. atualizar `.prumo/state/HANDOVER.md` se houve validação;
-4. manter `Inbox4Mobile/_processed.json` sincronizado quando houver fallback sem deleção física.
+3. manter `Inbox4Mobile/_processed.json` sincronizado quando houver fallback sem deleção física.
 
 Se o briefing concluiu normalmente:
 

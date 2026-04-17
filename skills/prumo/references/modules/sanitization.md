@@ -1,8 +1,10 @@
 # Sanitization
 
-> **module_version: 4.17.0**
+> **module_version: 4.19.0**
 >
-> Fonte canônica de sanitização manual e automática do estado operacional.
+> Fonte canônica de sanitização manual e automática do estado técnico do sistema.
+> Escopo: `.prumo/` — backups velhos, cache expirado, arquivos de estado que crescem demais.
+> Nunca toca em arquivos pessoais do usuário.
 
 ## Sanitização manual
 
@@ -10,13 +12,12 @@ Quando houver shell, usar `prumo_sanitize_state.py` resolvendo os caminhos pela 
 
 O processo deve:
 
-1. compactar handovers `CLOSED` antigos;
-2. mover histórico para `.prumo/state/archive/HANDOVER-ARCHIVE.md`;
-3. regenerar `.prumo/state/HANDOVER.summary.md`;
-4. registrar movimentos no índice global:
+1. remover backups antigos de `.prumo/backups/` (> 90 dias);
+2. limpar cache expirado de `.prumo/cache/`;
+3. registrar qualquer movimento no índice global:
    - `.prumo/state/archive/ARCHIVE-INDEX.json`
    - `.prumo/state/archive/ARCHIVE-INDEX.md`
-5. nunca tocar arquivos pessoais.
+4. nunca tocar arquivos pessoais.
 
 ## Autosanitização
 
@@ -30,8 +31,9 @@ Regras:
 4. sem histórico suficiente, usar defaults seguros;
 5. arquivar frio só com política explícita;
 6. política inicial segura:
-   - compactação de handovers `CLOSED`;
+   - remoção de backups em `.prumo/backups/` acima do threshold de idade;
+   - limpeza de cache expirado em `.prumo/cache/`;
    - arquivos de `Inbox4Mobile/` marcados como processados em `_processed.json` e acima do threshold de idade;
 7. nunca apagar histórico sem archive;
-8. nunca mover sem registrar no `ARCHIVE-INDEX`.
+8. nunca mover sem registrar no `ARCHIVE-INDEX`;
 9. `PERFIL.md` está fora do escopo deste comando; para isso existe higiene assistida.

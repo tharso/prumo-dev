@@ -1,20 +1,19 @@
 # Multiagent
 
-> **module_version: 4.17.0**
+> **module_version: 4.19.0**
 >
 > Fonte canônica da convivência entre agentes no Prumo.
+> Escopo: coordenação de escrita simultânea em estado compartilhado via lock.
 
 ## Princípios
 
 1. Cooperação explícita, não competição.
 2. Um agente altera estado por vez em cada escopo crítico.
-3. Mudança estrutural relevante pede validação cruzada rastreável.
+3. Lock é infraestrutura: existe pra evitar corrida, não pra documentar trabalho.
 
-## Arquivos de estado
+## Arquivo de estado
 
-1. `.prumo/state/agent-lock.json`
-2. `.prumo/state/HANDOVER.md`
-3. `.prumo/state/HANDOVER.summary.md`
+- `.prumo/state/agent-lock.json`
 
 ## Lock
 
@@ -29,45 +28,14 @@ Regras:
 
 1. sem lock ativo no escopo, o agente pode operar;
 2. com lock ativo de outro agente, não escrever;
-3. lock expirado pode ser assumido, registrando o motivo no handover.
+3. lock expirado pode ser assumido, registrando o motivo em nota curta.
 
-## Handover
+## Quando usar lock
 
-Abrir handover quando houver:
+Casos em que faz sentido segurar lock antes de escrever:
 
 1. mudança no `.prumo/system/PRUMO-CORE.md`;
-2. mudança em setup, comandos, inbox, auditoria ou integrações;
-3. correção de bug sistêmico;
-4. refatoração que altere comportamento de briefing ou revisão.
+2. mudança estrutural em arquivos do `Prumo/Agente/`;
+3. operação longa que toca múltiplos arquivos do workspace.
 
-## Checagem no briefing
-
-Durante `/prumo:briefing`:
-
-1. preferir `.prumo/state/HANDOVER.summary.md`;
-2. fallback para `.prumo/state/HANDOVER.md`;
-3. destacar itens `PENDING_VALIDATION` e `REJECTED`;
-4. se o handover estiver endereçado ao agente atual, propor ação explícita.
-
-## Comando `/prumo:handover`
-
-Operações esperadas:
-
-1. `abrir`
-2. `responder`
-3. `fechar`
-4. `listar pendentes`
-
-## Formato mínimo
-
-1. `ID`, `Data`, `De`, `Para`, `Status`
-2. resumo da mudança
-3. arquivos tocados
-4. checklist objetivo de validação
-5. resultado: `APPROVED` ou `REJECTED`
-
-## Fechamento
-
-Fluxo recomendado:
-
-`PENDING_VALIDATION -> APPROVED/REJECTED -> CLOSED`
+Operações rápidas e locais (atualizar PAUTA.md, registrar no REGISTRO.md) não precisam de lock.

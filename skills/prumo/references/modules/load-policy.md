@@ -18,12 +18,10 @@
    - `PAUTA.md`
    - `INBOX.md`
 2. **Leve (preferencial):**
-   - `.prumo/state/HANDOVER.summary.md`
    - `Inbox4Mobile/_preview-index.json`
    - `Inbox4Mobile/inbox-preview.html`
    - Gmail MCP / Calendar MCP direto
 3. **Profunda (sob demanda):**
-   - `.prumo/state/HANDOVER.md`
    - binários e arquivos longos
    - transcrições extensas
 
