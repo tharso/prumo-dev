@@ -121,22 +121,6 @@ de 14 dias são lixo residual.
 
 **Reportar:** "Limpei X entrada(s) antiga(s) do inbox processado."
 
-### 6. Estado técnico — limpeza de .prumo/state/
-
-**Verificar:**
-- Arquivos de estado com timestamps antigos (> 30 dias sem update)
-- Backups de sanitize com mais de 90 dias
-
-**Executar:**
-- Remover backups velhos de `.prumo/backups/` (> 90 dias)
-- Limpar cache expirado de `.prumo/cache/`
-
-**Não fazer:**
-- Nunca tocar em `workspace-schema.json` ou `briefing-state.json`
-- Nunca remover estado que o runtime usa ativamente
-
-**Reportar:** "Limpei X arquivo(s) de cache/backup expirado(s)."
-
 ## Relatório da faxina
 
 Depois de rodar tudo, montar um resumo curto. Exemplo:
@@ -162,5 +146,5 @@ Se nada precisou de faxina: "Casa em ordem. Nada pra limpar."
 ## Relação com outras skills
 
 - **higiene** — o que a faxina detecta mas não pode resolver sozinha vai pra higiene
-- **sanitize** — a faxina absorve e expande o que o sanitize fazia
+- **sanitize** — faxina cuida de arquivos do usuário; sanitize cuida de `.prumo/` (sistema)
 - **briefing** — a faxina roda antes do briefing pra manter a casa limpa

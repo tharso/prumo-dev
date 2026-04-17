@@ -37,8 +37,6 @@
     │   ├── agent-lock.json
     │   ├── auto-sanitize-state.json
     │   ├── auto-sanitize-history.json
-    │   ├── HANDOVER.md
-    │   ├── HANDOVER.summary.md
     │   └── archive/
     │       ├── ARCHIVE-INDEX.json
     │       └── ARCHIVE-INDEX.md

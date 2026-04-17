@@ -1,25 +1,26 @@
 ---
 name: sanitize
 description: >
-  Compacta estado operacional (handovers). Se o pedido for limpeza
-  de arquivos do workspace, use /faxina. Se for revisão assistida
-  de conteúdo pessoal, use /higiene.
+  Compacta estado técnico do sistema (backups velhos, cache expirado,
+  arquivos de estado que crescem demais em .prumo/). Se o pedido for
+  limpeza de arquivos do workspace do usuário, use /faxina. Se for
+  revisão assistida de conteúdo pessoal, use /higiene.
 ---
 
-# Sanitização Operacional
+# Sanitização de sistema
 
-O sanitize cuida de estado técnico do Prumo — especificamente,
-handovers antigos que pesam o contexto.
+O sanitize cuida do território técnico do Prumo. Escopo exclusivo: `.prumo/`.
 
 Para limpeza geral do workspace (registro, índices, inbox), use `/faxina`.
 Para revisão assistida de conteúdo pessoal (pauta velha, contradições,
-CLAUDE.md pesado), use `/higiene`.
+PERFIL.md pesado), use `/higiene`.
 
 ## O que o sanitize faz
 
-1. Compacta `.prumo/state/HANDOVER.md` — arquiva handovers CLOSED antigos
-2. Gera `.prumo/state/HANDOVER.summary.md` — versão leve pro briefing
-3. Mantém `.prumo/state/archive/ARCHIVE-INDEX.json` — rastreabilidade
+1. Remove backups antigos de `.prumo/backups/` (> 90 dias)
+2. Limpa cache expirado de `.prumo/cache/`
+3. Arquiva arquivos de estado em `.prumo/state/` que crescerem além de threshold
+4. Registra qualquer movimento em `.prumo/state/archive/ARCHIVE-INDEX.json`
 
 ## Como rodar
 
@@ -41,7 +42,7 @@ Consultar `references/sanitization.md` para regras detalhadas.
 
 ## Regras
 
-- Nunca toca em arquivos pessoais (CLAUDE.md, PAUTA.md, INBOX.md, etc.)
-- Backup antes de qualquer compactação
-- Se o pedido for limpeza de CLAUDE.md → redirecionar pra `/higiene`
-- Se o pedido for limpeza geral de arquivos → redirecionar pra `/faxina`
+- Escopo exclusivo é `.prumo/`. Nunca tocar em arquivos pessoais do usuário.
+- Backup antes de qualquer remoção ou arquivamento.
+- Se o pedido for limpeza de CLAUDE.md, PERFIL.md ou PAUTA.md → redirecionar pra `/higiene`.
+- Se o pedido for limpeza de registro, inbox ou índices → redirecionar pra `/faxina`.

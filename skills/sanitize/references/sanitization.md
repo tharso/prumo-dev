@@ -1,26 +1,29 @@
-# Sanitização Operacional
+# Sanitização de sistema
 
-Objetivo: manter arquivos operacionais enxutos sem apagar histórico.
+Objetivo: manter o território técnico do Prumo (`.prumo/`) enxuto sem apagar histórico.
 
 ## Comando
 
-- `if [ -f scripts/prumo_sanitize_state.py ]; then python3 scripts/prumo_sanitize_state.py --workspace . --apply; elif [ -f scripts/prumo_sanitize_state.py ]; then python3 scripts/prumo_sanitize_state.py --workspace . --apply; else python3 Prumo/scripts/prumo_sanitize_state.py --workspace . --apply; fi`
-- `if [ -f scripts/prumo_auto_sanitize.py ]; then python3 scripts/prumo_auto_sanitize.py --workspace . --apply; elif [ -f scripts/prumo_auto_sanitize.py ]; then python3 scripts/prumo_auto_sanitize.py --workspace . --apply; else python3 Prumo/scripts/prumo_auto_sanitize.py --workspace . --apply; fi`
-- `if [ -f scripts/prumo_auto_sanitize.py ]; then python3 scripts/prumo_auto_sanitize.py --workspace . --adaptive auto; elif [ -f scripts/prumo_auto_sanitize.py ]; then python3 scripts/prumo_auto_sanitize.py --workspace . --adaptive auto; else python3 Prumo/scripts/prumo_auto_sanitize.py --workspace . --adaptive auto; fi`
+- `if [ -f scripts/prumo_sanitize_state.py ]; then python3 scripts/prumo_sanitize_state.py --workspace . --apply; else python3 Prumo/scripts/prumo_sanitize_state.py --workspace . --apply; fi`
+- `if [ -f scripts/prumo_auto_sanitize.py ]; then python3 scripts/prumo_auto_sanitize.py --workspace . --apply; else python3 Prumo/scripts/prumo_auto_sanitize.py --workspace . --apply; fi`
+- `if [ -f scripts/prumo_auto_sanitize.py ]; then python3 scripts/prumo_auto_sanitize.py --workspace . --adaptive auto; else python3 Prumo/scripts/prumo_auto_sanitize.py --workspace . --adaptive auto; fi`
 
 ## O que faz
 
-1. Compacta `.prumo/state/HANDOVER.md` mantendo apenas handovers `CLOSED` recentes.
-2. Move handovers antigos para `.prumo/state/archive/HANDOVER-ARCHIVE.md`.
-3. Gera backup antes de escrever: `.prumo/state/archive/backups/HANDOVER.md.<timestamp>`.
-4. Gera `.prumo/state/HANDOVER.summary.md` para leitura leve no briefing.
+1. Remove backups em `.prumo/backups/` acima do threshold de idade (default: 90 dias).
+2. Limpa cache expirado em `.prumo/cache/`.
+3. Arquiva arquivos de estado em `.prumo/state/` que cresceram além de threshold, movendo o excedente para `.prumo/state/archive/`.
+4. Registra qualquer movimento nos índices:
+   - `.prumo/state/archive/ARCHIVE-INDEX.json`
+   - `.prumo/state/archive/ARCHIVE-INDEX.md`
 5. (auto) Aplica gatilhos por tamanho/volume e respeita cooldown para não rodar em loop.
 
 ## Gatilhos padrão (auto)
 
-1. `HANDOVER.md` com tamanho >= `120000` bytes ou >= `350` linhas, com `CLOSED` acima de `handover_keep_closed`.
-2. `Inbox4Mobile/` com >= `8` arquivos totais ou >= `4` itens multimídia.
-3. `inbox-preview.html` / `_preview-index.json` ausentes ou defasados em relação ao arquivo mais novo do inbox.
+1. Backups em `.prumo/backups/` com idade > 90 dias.
+2. Arquivos em `.prumo/cache/` com idade > threshold configurado.
+3. Arquivos de estado em `.prumo/state/` acima de tamanho/linhas (definido por arquivo).
+4. `Inbox4Mobile/` com itens processados antigos (ver `faxina` para gestão de inbox — sanitize só toca o que está em `.prumo/`).
 
 ## Estado persistido (auto)
 
@@ -38,6 +41,8 @@ Histórico por workspace (base para calibração adaptativa):
 
 ## Segurança
 
-1. Sem `--apply`, roda em dry-run.
-2. Não remove histórico; apenas move para arquivo de archive.
-3. Não altera `PERFIL.md`, `PAUTA.md`, `INBOX.md`, `REGISTRO.md`, `IDEIAS.md`.
+1. Escopo exclusivo é `.prumo/`. Nunca toca em arquivos pessoais do usuário.
+2. Sem `--apply`, roda em dry-run.
+3. Não remove histórico; sempre move para archive antes de limpar.
+4. Não altera `PERFIL.md`, `PAUTA.md`, `INBOX.md`, `REGISTRO.md`, `IDEIAS.md`.
+5. Preserva `briefing-state.json`, `workspace-schema.json` e `agent-lock.json` — estado ativo do runtime não entra em sanitização.

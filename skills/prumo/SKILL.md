@@ -227,11 +227,8 @@ Após coletar todas as respostas:
 **Comando `/prumo:briefing`:**
 Após o setup, o usuário pode usar `/prumo:briefing` para acionar o morning briefing completo. Alias legado `/briefing` continua aceito por compatibilidade. O comando dispara a skill `briefing` que lê os arquivos de configuração, verifica atualizações, processa todos os canais de inbox, e apresenta o briefing do dia via Gmail/Calendar MCP direto, com curadoria obrigatória e usando `.prumo/state/briefing-state.json`.
 
-**Comando `/prumo:handover`:**
-Fora da rotina de briefing, o usuário pode usar `/prumo:handover` para operar validações cruzadas entre agentes em `.prumo/state/HANDOVER.md` (listar, abrir, responder e fechar handovers).
-
 **Comando `/prumo:sanitize`:**
-Se o sistema ficar pesado (muitos handovers acumulados), `/prumo:sanitize` compacta o histórico e alivia o contexto.
+Se o território técnico do sistema ficar pesado (backups velhos em `.prumo/backups/`, cache expirado em `.prumo/cache/`, estado inchado em `.prumo/state/`), `/prumo:sanitize` compacta e alivia o contexto. Escopo é exclusivamente `.prumo/` — arquivos do usuário ficam intactos.
 
 **Comando `/higiene`:**
 Se o `Prumo/Agente/PERFIL.md` tiver duplicações, conflitos ou texto no lugar errado, `/higiene` detecta, propõe o que mudar e só mexe com confirmação. Diferente da faxina, que age sozinha — aqui quem decide é você.
