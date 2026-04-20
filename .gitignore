@@ -28,6 +28,9 @@ trab/
 # Oficina interna de desenvolvimento (handover, reviews e aprendizado local)
 .workbench/
 
+# Arquivo morto do desenvolvimento (histórico preservado, fora do produto)
+dev-archive/
+
 # Artefatos internos de desenvolvimento (fora da distribuição pública)
 .github/
 .claude-plugin/*

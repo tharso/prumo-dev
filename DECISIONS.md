@@ -4,6 +4,19 @@ Log de decisoes arquiteturais e de processo. Cada entrada registra o contexto, a
 
 ---
 
+## 2026-04-20 — HANDOVER sai do produto do usuario (issue #68)
+
+**Contexto:** `HANDOVER.md` nasceu como ferramenta de coordenacao entre agentes no desenvolvimento do proprio Prumo (Codex, Cowork, Gemini validando codigo um do outro). A pratica vazou pro produto final: cada workspace de usuario carregava um artefato narrativo pesado, com status `PENDING_VALIDATION`/`APPROVED`/`REJECTED`/`CLOSED`, logica de validacao cruzada, comando `/prumo:handover`, regras de briefing que chamavam handover e politicas de leitura que carregavam o arquivo todo. Usuario final nao orquestra dois agentes validando codigo um do outro. O artefato era peso morto no briefing e no contexto.
+
+**Decisao:** Remover HANDOVER.md e `/prumo:handover` do produto do usuario. Coordenacao entre agentes no produto final passa a acontecer exclusivamente via `.prumo/state/agent-lock.json` (lock curto, sem narrativa). Handover como pratica de dev continua existindo, mas restrita a `dev-archive/` (gitignored) no repositorio de desenvolvimento. Triade de limpeza ficou clara: `sanitize` cuida de sistema (`.prumo/`, automatico com cooldown), `faxina` cuida de arquivos do usuario (`Prumo/`, automatica no briefing), `higiene` cuida de manutencao assistida do workspace do usuario (pergunta antes de mexer).
+
+**Alternativas consideradas:**
+- Manter HANDOVER como feature avancada opcional → rejeitado, peso morto na leitura de briefing e violacao do principio de que o produto e agnostico de multiagente no nivel de produto final.
+- Matar sanitize junto com HANDOVER (achavam que `sanitize` era so sobre compactar handover) → rejeitado, verificacao do codigo mostrou que sanitize cuida de todo o territorio tecnico do sistema (`.prumo/backups/`, `.prumo/cache/`, `.prumo/state/`). Descobriu-se sobreposicao com faxina; solucao foi refocalizar sanitize em `.prumo/` e faxina em `Prumo/`.
+- Deletar todo o historico de validacoes cruzadas de marco/2026 → rejeitado, 122KB com 30 validacoes reais entre agentes sao valor historico do desenvolvimento. Preservados em `DEV_Prumo/dev-archive/HANDOVER-2026-03.md` fora do produto e fora do repo publico.
+
+---
+
 ## 2026-04-15 — Nova estrutura de workspace com fallback skills-first (issue #65)
 
 **Contexto:** Quando o runtime CLI nao esta disponivel (Cowork sandbox, maquina sem instalacao), o agente trava porque o AGENT.md proibe ler arquivos para "simular" e nao oferece fallback. As skills nao sao copiadas para o workspace durante a instalacao, entao mesmo a rota de fallback nao tem material para operar.

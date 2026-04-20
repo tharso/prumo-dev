@@ -113,6 +113,17 @@ Os seguintes diretórios e arquivos foram removidos em abril/2026 durante a cons
 - Quando apontarem código ou conteúdo existente como referência: estudar e replicar os padrões.
 - Trabalhar a partir de dados concretos. Não chutar. Se falta informação, perguntar.
 
+## Comunicação entre agentes (ambiente de desenvolvimento)
+
+Handover é ferramenta de coordenação entre agentes **dentro do desenvolvimento do Prumo**. Não é feature do produto do usuário final (ver issue #68 e DECISIONS.md de 2026-04-20).
+
+Regras:
+
+- **Artefatos de handover vivem em `dev-archive/`** (gitignored). Nada de handover deve aparecer em `skills/`, `runtime/` ou `scripts/`.
+- **Lock entre agentes no produto final**: coordenação no workspace do usuário acontece exclusivamente via `.prumo/state/agent-lock.json`. Sem narrativa, sem PENDING_VALIDATION.
+- **Validações cruzadas entre Codex/Cowork/Gemini/Claude durante dev**: podem usar os artefatos em `dev-archive/` como registro histórico ou continuar a prática localmente, desde que não vaze nada disso pra dentro das skills ou do runtime.
+- Se uma próxima geração do produto precisar de um contrato de handover de volta, vira issue nova e decisão arquitetural explícita. Não é "reverter a remoção".
+
 ## Decisões arquiteturais
 
 Ver DECISIONS.md para o log completo. Ao tomar uma decisão relevante, registrar lá com data, contexto, decisão e alternativas consideradas. Antes de tomar uma decisão que possa contradizer algo já registrado, consultar DECISIONS.md.
