@@ -1,6 +1,6 @@
 # Interaction Format
 
-> **module_version: 4.17.0**
+> **module_version: 4.19.0**
 >
 > Fonte canônica do contrato de interface do Prumo no chat.
 
@@ -75,9 +75,8 @@ Quando o usuário pedir detalhe dentro de um fluxo já numerado:
 Este contrato vale especialmente para:
 
 1. `briefing`
-2. `handover`
-3. `higiene`
-4. `start`
-5. `doctor`
+2. `higiene`
+3. `start`
+4. `doctor`
 
 Se um desses fluxos responder sem continuidade ou sem alternativas úteis, isso é regressão de interface, não “variação de estilo”.

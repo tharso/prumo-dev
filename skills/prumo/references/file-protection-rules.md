@@ -44,7 +44,7 @@ Ao final da geração de arquivos, mostrar resumo claro:
 | Prumo/Referencias/EMAIL-CURADORIA.md | file-templates.md | Regras aprendidas de curadoria de email (feedback loop). |
 | [Area]/README.md | Gerar dinamicamente | Um README por área/projeto com nome e descrição breve. |
 | .prumo/state/briefing-state.json | file-templates.md | Estado de referência temporal do briefing. |
-| .prumo/state/ | Criar pasta | Estado operacional (lock, handover, sanitize). |
+| .prumo/state/ | Criar pasta | Estado operacional (lock, briefing-state, sanitize). |
 | .prumo/logs/ | Criar pasta | Registros de revisão. |
 | .prumo/backup/ | Criar pasta | Backups de arquivos sobrescritos. |
 | Prumo/Inbox4Mobile/ | Criar pasta | Para notas/arquivos do celular. |

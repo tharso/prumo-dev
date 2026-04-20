@@ -4,6 +4,17 @@ Este arquivo registra mudanças públicas do produto Prumo.
 
 O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamento semântico.
 
+## [4.19.0] - 2026-04-20
+
+### Removed
+- **HANDOVER sai do produto do usuário (issue #68).** `HANDOVER.md`, `HANDOVER.summary.md` e o comando `/prumo:handover` deixam de fazer parte do contrato do usuário final. A prática era ferramenta de desenvolvimento do Prumo vazando pro produto. A coordenação entre múltiplos agentes agora acontece exclusivamente via `.prumo/state/agent-lock.json` (lock curto, sem narrativa).
+- Referências a handover removidas de `prumo-core.md`, `briefing-procedure.md`, `load-policy.md`, `multiagent.md`, `interaction-format.md`, `file-protection-rules.md`, `changelog-setup.md`, `file-templates.md` e `skills/prumo/SKILL.md`.
+
+### Changed
+- **Sanitize refocalizada**: escopo passou a ser exclusivamente `.prumo/` (sistema). Cuida de backups velhos, cache expirado e arquivos de estado que crescem demais. Não toca em arquivos do usuário.
+- **Faxina sem duplicação**: a limpeza de estado técnico saiu da faxina. Agora a triade é clara: `sanitize` cuida do sistema (`.prumo/`, automático, cooldown), `faxina` cuida de arquivos do usuário (`Prumo/`, automático no briefing), `higiene` cuida de manutenção assistida do workspace do usuário (pergunta antes de mexer).
+- Multiagente (`multiagent.md`) reescrito como lock-only. Sem handover narrativo, sem validação cruzada PENDING/REJECTED.
+
 ## [Unreleased]
 
 ### Scope

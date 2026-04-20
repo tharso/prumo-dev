@@ -1,5 +1,9 @@
 # Changelog — skill de setup
 
+### v4.19.0 (20/04/2026)
+- **HANDOVER sai do produto (issue #68)**: remoção do artefato `HANDOVER.md` e do comando `/prumo:handover` do escopo do usuário. Coordenação entre agentes continua via `agent-lock.json`. Handover como prática fica restrito ao desenvolvimento do próprio Prumo.
+- **Sanitize refocalizada**: escopo agora é exclusivamente `.prumo/` (sistema). Arquivos do usuário ficam com faxina e higiene. Triade limpa: `sanitize` (sistema, automático), `faxina` (usuário, automático), `higiene` (usuário, assistida).
+
 ### v4.0 (26/02/2026)
 - **Progressive discovery**: SKILL.md refatorado de 487 para ~300 linhas. Feedback loop, regras de proteção de arquivos e changelog extraídos para `references/`.
 - **Estrutura de plugin**: skills reorganizadas em `skills/<nome>/SKILL.md` compatível com deploy no Cowork.
@@ -18,8 +22,7 @@
 ### v3.2 (19/02/2026)
 - **Adapter AGENT.md**: Setup agora gera `AGENT.md` como ponteiro para `Prumo/Agente/PERFIL.md` + `.prumo/system/PRUMO-CORE.md` (sem duplicação de conteúdo).
 - **Comando canônico**: `/prumo:briefing` definido como padrão; `/briefing` mantido como alias legado.
-- **Estado operacional**: setup cria pasta `.prumo/state/` para lock e handover entre agentes.
-- **Comando manual de handover**: `/prumo:handover` para validação cruzada fora do briefing.
+- **Estado operacional**: setup cria pasta `.prumo/state/` para lock entre agentes e estado temporal do briefing.
 
 ### v3.1 (14/02/2026)
 - **Trigger `/Prumo`**: Comando principal de ativação trocado de "quero organizar minha vida" para `/Prumo`. Mais claro, sem soar autoajuda.
