@@ -4,6 +4,32 @@ Log de decisoes arquiteturais e de processo. Cada entrada registra o contexto, a
 
 ---
 
+## 2026-04-21 — Despacho por intencao substitui bootstrap just-in-case (issue #69)
+
+**Contexto:** O bootstrap do Prumo lia na abertura `AGENT.md`, `PRUMO-CORE.md` inteiro, `PERFIL.md`, `EMAIL-CURADORIA.md`, `briefing-procedure.md`, `PAUTA.md` e `REGISTRO.md` presumindo que a tarefa e briefing matinal. Tres problemas: (1) Prumo virou ferramenta quase exclusiva de briefing, subutilizado para projetos, artigos, brainstorms e analises; (2) cada sessao nascia com ~10-15K tokens gastos em leitura especulativa; (3) abertura passiva ("bom dia, como posso ajudar?") sem se invocar como Prumo.
+
+**Decisao:** Substituir bootstrap just-in-case por despacho por intencao (just-in-time). Abertura carrega so o minimo (AGENT.md + PRUMO-CORE Parte 1) e faz scan leve de PAUTA (cabecalhos) e REGISTRO (ultimas 5-10 linhas). Agente cumprimenta proativamente com 2-4 opcoes concretas ancoradas no scan + fuga explicita (`outra coisa`). Modulos operacionais (briefing, curar email, analise, etc.) sao carregados sob demanda conforme a intencao do usuario. Dispatch hibrido: tabela de gatilhos + pergunta de refinamento em caso de zero match ou dois matches. Zero adivinhacao silenciosa. "Bom dia" sozinho nao dispara briefing.
+
+**Alternativas consideradas:**
+- Manter bootstrap e so enxugar leitura inicial -> rejeitado, o problema nao e tamanho da leitura, e a presuncao de intencao. Briefing como default bloqueia os outros usos.
+- Dispatch puramente por tabela de palavras-chave -> rejeitado, fragil com linguagem natural. Ambiguidade resolvida com pergunta curta vence heuristica sofisticada.
+- Abertura minimalista sem scan ("bom dia. sobre o que vamos trabalhar?") -> rejeitado, regressao de interface. Parceiro de trabalho real usa o contexto que tem para sugerir, nao fica esperando comando. Scan leve (nao briefing) ancora as opcoes na realidade.
+
+---
+
+## 2026-04-21 — tharso-voice nao distribuido com produto publico
+
+**Contexto:** Durante o design do modulo de dispatch (issue #69), a intencao "escrever artigo" naturalmente precisa ativar alguma skill de voz editorial. No workspace do Tharso existe `tharso-voice` (skill pessoal que captura o estilo editorial dele). Risco: referenciar `tharso-voice` dentro do produto publico do Prumo significaria que todo usuario que instalar o plugin receberia uma skill especifica do Tharso, seja via bundle, seja via dependencia declarada em `plugin.json`/`marketplace.json`.
+
+**Decisao:** Skills pessoais ficam categoricamente separadas do produto publico. No modulo de dispatch, a intencao "escrever artigo" referencia a capacidade genericamente ("se existir skill pessoal de voz no workspace, ativa-la"), nunca nomeando `tharso-voice` ou qualquer outra skill pessoal especifica. Nenhuma skill pessoal entra em `skills/`, `plugin.json`, `marketplace.json` ou como dependencia declarada. Cada usuario traz sua propria skill de voz (ou nenhuma) para o workspace dele.
+
+**Alternativas consideradas:**
+- Incluir `tharso-voice` como skill opcional do bundle com flag de ativacao -> rejeitado, opcional instalado por padrao ainda e distribuicao. Resolve nada.
+- Renomear `tharso-voice` para algo generico ("personal-voice") e distribuir vazia -> rejeitado, skill vazia nao tem utilidade e confunde usuarios. Cada pessoa precisa construir a propria.
+- Documentar em README que usuarios podem adicionar skill de voz propria -> aceito como complemento, nao como substituto da regra. O produto tem que funcionar sem skill de voz instalada.
+
+---
+
 ## 2026-04-20 — HANDOVER sai do produto do usuario (issue #68)
 
 **Contexto:** `HANDOVER.md` nasceu como ferramenta de coordenacao entre agentes no desenvolvimento do proprio Prumo (Codex, Cowork, Gemini validando codigo um do outro). A pratica vazou pro produto final: cada workspace de usuario carregava um artefato narrativo pesado, com status `PENDING_VALIDATION`/`APPROVED`/`REJECTED`/`CLOSED`, logica de validacao cruzada, comando `/prumo:handover`, regras de briefing que chamavam handover e politicas de leitura que carregavam o arquivo todo. Usuario final nao orquestra dois agentes validando codigo um do outro. O artefato era peso morto no briefing e no contexto.

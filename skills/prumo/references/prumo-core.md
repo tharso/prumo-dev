@@ -123,6 +123,7 @@ Quando um comando específico for executado, o agente deve ler o módulo corresp
 
 | Assunto | Módulo canônico |
 |---|---|
+| Dispatch (abertura por intenção) | `Prumo/skills/prumo/references/modules/dispatch.md` |
 | Briefing | `Prumo/skills/prumo/references/modules/briefing-procedure.md` |
 | Inbox | `Prumo/skills/prumo/references/modules/inbox-processing.md` |
 | Revisão semanal | `Prumo/skills/prumo/references/modules/weekly-review.md` |
