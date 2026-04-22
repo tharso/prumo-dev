@@ -74,6 +74,7 @@ Os seguintes diretórios e arquivos foram removidos em abril/2026 durante a cons
 - **Nunca** commitar direto na main sem CI verde.
 - **Nunca** deletar arquivos sem verificar referências.
 - **Nunca** mudar configs de produção sem explicação na issue.
+- **Nunca** commitar, abrir PR ou criar tag em `tharso/prumo` (repo público). Esse repo é espelho gerado automaticamente a partir de `prumo-dev/main` via workflow `.github/workflows/mirror-to-prumo.yml`. Qualquer coisa empurrada direto lá é sobrescrita no próximo push do dev. Todo desenvolvimento acontece em `tharso/prumo-dev`.
 
 ## Edit Safety (código)
 

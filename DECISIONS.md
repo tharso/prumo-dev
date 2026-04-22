@@ -4,6 +4,26 @@ Log de decisoes arquiteturais e de processo. Cada entrada registra o contexto, a
 
 ---
 
+## 2026-04-22 — Split dev/dist: `tharso/prumo-dev` desenvolve, `tharso/prumo` distribui
+
+**Contexto:** O repositorio `tharso/prumo` acumulava dois contratos incompativeis: (1) repo de desenvolvimento com issues, history completo, documentos internos (DECISIONS.md, CLAUDE.md, AGENT.md, gotchas.md, `.github/`, `dev-archive/`, HANDOVER historico) e (2) repo publico instalavel via marketplace Cowork, Claude Code e `pip install prumo-runtime`. Consequencia: quem clonava ou instalava recebia um pacote poluido com arquivos de trabalho interno, dificil de auditar, com muitos sinais que nao sao contrato do produto. Auditoria mostrou: o `source: url` do marketplace do Cowork clona o repo inteiro, sem filtro. Arquivos sensiveis de desenvolvimento ficavam visiveis no cache do usuario.
+
+**Decisao:** Separar desenvolvimento e distribuicao em dois repositorios distintos. O repo existente foi renomeado para `tharso/prumo-dev` (preserva issues, stars, URL redirects) e virou o repo de desenvolvimento. Um novo `tharso/prumo` vazio foi criado pra ser o espelho publico limpo, populado automaticamente por GitHub Action (`.github/workflows/mirror-to-prumo.yml`) a cada push em `prumo-dev/main`. O workflow faz force-push do subset distribuivel (`skills/`, `runtime/prumo_runtime/`, `.claude-plugin/`, README, LICENSE, CHANGELOG, VERSION, pyproject, 4 scripts de runtime) pra `tharso/prumo/main`. URL publica nao muda: quem instalava via `tharso/prumo` continua apontando pra la.
+
+**Regras:**
+- Desenvolvimento acontece exclusivamente em `tharso/prumo-dev`. PRs, issues, commits, reviews, tudo la.
+- `tharso/prumo` e so-leitura pra humanos. Qualquer commit, PR ou tag nesse repo e sobrescrito no proximo espelhamento. Nao tem merito, so perde tempo.
+- O espelho usa `git init` + force-push (nao preserva history publica). Se alguem quiser ver o history do desenvolvimento, vai em `prumo-dev`.
+- Major bump justificado (4.20 -> 5.0): quebra contrato apenas pra quem tinha clone direto de `tharso/prumo.git` antes do split (history reescrita via force-push). Instalacao via plugin manager e `pip` continua transparente.
+
+**Alternativas consideradas:**
+- Manter um repo so e filtrar via `.gitignore` ou `.gitattributes` no marketplace -> rejeitado. O Cowork `source: url` clona tudo. `.gitignore` nao filtra o que ja foi commitado. Filtro em tempo de build exigiria infraestrutura no cliente, nao no autor.
+- Usar `git-subdir` pra expor so um subdiretorio do mesmo repo -> rejeitado como escopo desta fase. Overhead de manter a estrutura `/dist/` no repo de dev nao compensa agora. O vazamento nao era critico de seguranca, so de higiene.
+- Tornar o repo `tharso/prumo` privado e distribuir via releases tarball -> rejeitado, fricciona instalacao via marketplace (que espera URL publica) e via `pip` do GitHub.
+- Renomear o repo publico pra `prumo-public` e deixar `tharso/prumo` como dev -> rejeitado. Quebraria todas as URLs de instalacao que ja estao por ai (marketplace, docs, curls). URL publica e contrato com o mundo, nao com o time.
+
+---
+
 ## 2026-04-21 — Despacho por intencao substitui bootstrap just-in-case (issue #69)
 
 **Contexto:** O bootstrap do Prumo lia na abertura `AGENT.md`, `PRUMO-CORE.md` inteiro, `PERFIL.md`, `EMAIL-CURADORIA.md`, `briefing-procedure.md`, `PAUTA.md` e `REGISTRO.md` presumindo que a tarefa e briefing matinal. Tres problemas: (1) Prumo virou ferramenta quase exclusiva de briefing, subutilizado para projetos, artigos, brainstorms e analises; (2) cada sessao nascia com ~10-15K tokens gastos em leitura especulativa; (3) abertura passiva ("bom dia, como posso ajudar?") sem se invocar como Prumo.

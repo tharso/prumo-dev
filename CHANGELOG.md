@@ -15,7 +15,12 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 - **Faxina sem duplicação**: a limpeza de estado técnico saiu da faxina. Agora a triade é clara: `sanitize` cuida do sistema (`.prumo/`, automático, cooldown), `faxina` cuida de arquivos do usuário (`Prumo/`, automático no briefing), `higiene` cuida de manutenção assistida do workspace do usuário (pergunta antes de mexer).
 - Multiagente (`multiagent.md`) reescrito como lock-only. Sem handover narrativo, sem validação cruzada PENDING/REJECTED.
 
-## [Unreleased]
+## [5.0.0] - 2026-04-22
+
+### Infrastructure (breaking for direct cloners, transparente pro usuário do plugin)
+- **Split dev/dist**: o desenvolvimento do Prumo mudou de casa pra `tharso/prumo-dev` (repo aberto com issues, history, reviews). `tharso/prumo` virou espelho público limpo, populado automaticamente a cada push em `prumo-dev/main` por workflow de CI. Quem instala via marketplace (Cowork, Claude Code), `pip install prumo-runtime` ou clone direto não muda nada — a URL pública continua `tharso/prumo`. O espelho só carrega o subset distribuível (`skills/`, `runtime/prumo_runtime/`, `.claude-plugin/`, README, LICENSE, CHANGELOG, VERSION, pyproject, scripts de runtime). Arquivos internos de dev (`DECISIONS.md`, `CLAUDE.md`, `AGENT.md`, `.github/`, `dev-archive/`, gotchas, etc.) ficam em `prumo-dev` e não vazam pro usuário final.
+- **Major bump**: quebra de contrato apenas para quem clonou direto de `tharso/prumo.git` antes do split, porque a history foi reescrita (force-push do mirror). Instalação via plugin manager e `pip` são transparentes.
+- **Não commitar em `tharso/prumo` direto**: qualquer PR, commit ou tag nesse repo é sobrescrito no próximo espelhamento. Desenvolvimento acontece em `prumo-dev`, pronto.
 
 ### Scope
 - MVP limpo de fumaça: multi-conta e Apple Reminders saem do horizonte ativo do produto. Continuam como história e código legado onde já existirem, mas deixam de aparecer no contrato principal, nos playbooks e na conversa do dia.

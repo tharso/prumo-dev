@@ -18,7 +18,7 @@ Em 2026-04-22 o schema de estado de briefing foi enxugado. `briefing-state.json`
 
 ## Versoes fora de sincronia
 
-A versao do Prumo vive em 5 lugares: `plugin.json`, `.claude-plugin/plugin.json`, `pyproject.toml`, `marketplace.json` e `VERSION`. Se uma estiver diferente das outras, e bug. Bumpar todas juntas.
+A versao do Prumo vive em 9 lugares: 6 manifestos (`plugin.json`, `.claude-plugin/plugin.json`, `marketplace.json`, `.claude-plugin/marketplace.json`, `pyproject.toml`, `VERSION`) + 3 headers de skill (`skills/prumo/references/prumo-core.md`, `skills/prumo/references/modules/load-policy.md`, `skills/prumo/references/modules/dispatch.md`). Se uma estiver diferente das outras, e bug. Bumpar todas juntas. Comando rapido pra auditar: `grep -rn "X\.Y\.Z" --include='*.json' --include='*.toml' --include='VERSION' --include='*.md'`.
 
 ## Google Drive snapshots (removido)
 
@@ -39,3 +39,15 @@ O sandbox onde o agente roda (`/sessions/ecstatic-upbeat-cerf/...`) nao tem cred
 Fallback oficial: **Desktop Commander**. Rodar `mcp__Desktop_Commander__start_process` + `interact_with_process` para executar o comando a partir do clone real do repo na maquina do usuario (em geral `/Users/tharsovieira/Documents/DEV_Prumo`). Credenciais locais (ssh/keychain/gh) funcionam normalmente de la.
 
 Localizar o repo real se o caminho mudar: `mdfind -name "DEV_Prumo" -onlyin "$HOME"` (macOS) ou `find ~ -maxdepth 4 -type d -name "DEV_Prumo"`.
+
+## `tharso/prumo` nao aceita commit direto
+
+Desde 2026-04-22 o `tharso/prumo` virou espelho publico, populado por GitHub Action a cada push em `prumo-dev/main`. Se voce:
+
+- push direto em `tharso/prumo` -> sera sobrescrito no proximo espelhamento. Perda de trabalho garantida.
+- abrir PR em `tharso/prumo` -> sera fechado como obsoleto. A instrucao no `README-MIRROR.md` manda abrir em `prumo-dev`.
+- criar tag em `tharso/prumo` -> some no proximo espelhamento (force-push resetando history).
+
+Regra: **todo desenvolvimento acontece em `tharso/prumo-dev`**. A URL publica `github.com/tharso/prumo` e contrato com o mundo (marketplace, pip, curls em docs) e nao deve mudar. O dev vive no `prumo-dev`.
+
+Se voce nao lembra disso na hora e tentar push em `tharso/prumo`: verifica se o `origin` local aponta pra `prumo-dev.git`, nao pra `prumo.git`. Comando: `git remote -v`.
