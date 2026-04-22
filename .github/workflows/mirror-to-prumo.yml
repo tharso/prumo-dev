@@ -1,0 +1,84 @@
+name: Mirror to prumo (public)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: {}
+
+concurrency:
+  group: mirror-to-prumo
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    name: Espelhar subset distribuível
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout prumo-dev
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        with:
+          fetch-depth: 1
+
+      - name: Staging do subset distribuível
+        run: |
+          set -euo pipefail
+          STAGE="$RUNNER_TEMP/prumo-dist"
+          mkdir -p "$STAGE"
+
+          cp -R skills                         "$STAGE/skills"
+          mkdir -p "$STAGE/runtime"
+          cp -R runtime/prumo_runtime          "$STAGE/runtime/prumo_runtime"
+          cp    README.md                      "$STAGE/README.md"
+          cp    CHANGELOG.md                   "$STAGE/CHANGELOG.md"
+          cp    VERSION                        "$STAGE/VERSION"
+          cp    LICENSE                        "$STAGE/LICENSE"
+          cp    pyproject.toml                 "$STAGE/pyproject.toml"
+          cp -R .claude-plugin                 "$STAGE/.claude-plugin"
+
+          mkdir -p "$STAGE/scripts"
+          cp scripts/prumo_runtime_install.sh  "$STAGE/scripts/"
+          cp scripts/prumo_runtime_update.sh   "$STAGE/scripts/"
+          cp scripts/prumo_runtime_install.ps1 "$STAGE/scripts/"
+          cp scripts/prumo_runtime_update.ps1  "$STAGE/scripts/"
+
+          # Higiene: remover caches se sobraram
+          find "$STAGE" -type d -name "__pycache__" -prune -exec rm -rf {} +
+          find "$STAGE" -name ".DS_Store" -delete
+
+          # Marcador pro usuário curioso
+          cat > "$STAGE/README-MIRROR.md" <<'EOF'
+          # Este repositório é um espelho
+
+          O desenvolvimento do Prumo acontece em [tharso/prumo-dev](https://github.com/tharso/prumo-dev).
+
+          Este repositório é atualizado automaticamente a cada push na main do repo de desenvolvimento. **Não abra PRs aqui** — eles serão sobrescritos no próximo espelhamento. Abra em `prumo-dev`.
+
+          Usuários finais: este é o repo correto pra instalar o Prumo via marketplace (Cowork, Claude Code), `pip install prumo-runtime`, ou clone direto.
+          EOF
+
+          echo "Conteúdo do staging:"
+          ls -la "$STAGE"
+          echo "$STAGE" >> "$GITHUB_ENV"
+          echo "STAGE=$STAGE" >> "$GITHUB_ENV"
+
+      - name: Push pra prumo público
+        env:
+          MIRROR_TOKEN: ${{ secrets.MIRROR_TOKEN }}
+          GIT_AUTHOR_NAME: "Prumo Mirror Bot"
+          GIT_AUTHOR_EMAIL: "mirror@prumo.me"
+          GIT_COMMITTER_NAME: "Prumo Mirror Bot"
+          GIT_COMMITTER_EMAIL: "mirror@prumo.me"
+        run: |
+          set -euo pipefail
+          cd "$STAGE"
+
+          git init -q -b main
+          git add -A
+          SHORT_SHA="${GITHUB_SHA::7}"
+          git commit -q -m "mirror: sync from prumo-dev@${SHORT_SHA}"
+          git remote add origin "https://x-access-token:${MIRROR_TOKEN}@github.com/tharso/prumo.git"
+          git push --force origin main

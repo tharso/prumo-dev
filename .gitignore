@@ -32,7 +32,7 @@ trab/
 dev-archive/
 
 # Artefatos internos de desenvolvimento (fora da distribuição pública)
-.github/
+# .github/ vive em prumo-dev e é filtrado pelo workflow de espelho; não ignorar aqui
 .claude-plugin/*
 !.claude-plugin/marketplace.json
 !.claude-plugin/plugin.json
