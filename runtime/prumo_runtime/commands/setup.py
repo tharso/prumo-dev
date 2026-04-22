@@ -9,6 +9,7 @@ from prumo_runtime.workspace import (
     ensure_workspace_exists,
     install_custom_readme,
     install_skills,
+    is_already_workspace,
 )
 
 
@@ -68,12 +69,28 @@ def ask_wrapper_policy(mode: str) -> str:
 
 
 def run_setup(args) -> int:
-    print("Etapa 1 de 3: identidade")
+    print("Etapa 1 de 4: identidade")
     user_name = ask_if_missing(args.user_name, "Como você prefere ser chamado? ")
 
     print("")
-    print("Etapa 2 de 3: escolher o terreno")
+    print("Etapa 2 de 4: escolher o terreno")
     workspace = ask_workspace_path(args.workspace)
+
+    # Gatekeeper: pasta que já é workspace não pode ser re-setada.
+    # Isso protege a identidade de sobrescritas silenciosas.
+    if is_already_workspace(workspace):
+        print("")
+        print(f"`{workspace}` já tem um workspace do Prumo configurado.")
+        print("Rodar setup aqui de novo pisaria na identidade existente.")
+        print("")
+        print("Caminhos possíveis:")
+        print("- Usar `prumo repair --workspace ...` pra restaurar wrappers/índices")
+        print("  sem reconfigurar do zero.")
+        print("- Se você quer mesmo reconfigurar a personalidade, edite")
+        print("  `Prumo/Agente/PERFIL.md` direto ou peça reconfiguração pelo agente.")
+        print("- Se quer um workspace novo, escolha outra pasta.")
+        raise SystemExit(1)
+
     mode = detect_setup_mode(workspace, getattr(args, "mode", None))
 
     if mode == "new":
@@ -90,12 +107,12 @@ def run_setup(args) -> int:
         workspace.mkdir(parents=True, exist_ok=True)
     else:
         target_choice = prompt_choice(
-            f"`{workspace}` ja tem conteudo. Como quer seguir?",
+            f"`{workspace}` ja tem conteudo, mas nao e workspace do Prumo. Como quer seguir?",
             {
-                "a": "Adotar esta pasta como workspace do Prumo",
+                "a": "Adotar esta pasta como workspace do Prumo (Prumo vai morar aqui)",
                 "b": "Cancelar para escolher outro caminho depois",
             },
-            default="a",
+            default="b",
         )
         if target_choice != "a":
             raise SystemExit("setup cancelado pelo usuario")
@@ -103,7 +120,16 @@ def run_setup(args) -> int:
     wrapper_policy = ask_wrapper_policy(mode)
 
     print("")
-    print("Etapa 3 de 3: materializar a estrutura")
+    print("Etapa 3 de 4: nomear o workspace")
+    print("Esse nome aparece no briefing diário e nos logs.")
+    print("Exemplos: 'Vida Tharso', 'Pessoal', 'Prumo Casa'. Pode mudar depois.")
+    workspace_name = ask_if_missing(
+        getattr(args, "workspace_name", None),
+        "Como quer chamar esse workspace? ",
+    )
+
+    print("")
+    print("Etapa 4 de 4: materializar a estrutura")
     agent_name = args.agent_name or DEFAULT_AGENT_NAME
     timezone_name = args.timezone or DEFAULT_TIMEZONE
     briefing_time = args.briefing_time or DEFAULT_BRIEFING_TIME
@@ -116,6 +142,7 @@ def run_setup(args) -> int:
         briefing_time=briefing_time,
         layout_mode="nested",
         wrapper_policy=wrapper_policy,
+        workspace_name=workspace_name,
     )
     result = create_missing_files(config)
     installed_skills = install_skills(workspace, layout_mode="nested")

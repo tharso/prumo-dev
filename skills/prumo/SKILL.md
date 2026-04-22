@@ -53,17 +53,21 @@ O setup é um wizard conversacional. **Uma pergunta por vez.** Nunca fazer mais 
 
 **Princípio fundamental do setup:** Todas as decisões são reversíveis e vão sendo calibradas com o uso. Isso deve ser comunicado ao usuário logo no início e reforçado quando relevante. O objetivo é tirar pressão ("não preciso saber tudo agora") e passar confiança ("o sistema me conhece melhor com o tempo").
 
-### Etapa 0: Verificar a pasta
+### Etapa 0: Gatekeeper do workspace
 
-Antes de qualquer pergunta, checar a pasta. Se os arquivos forem pra uma pasta escondida do sistema, o usuário nunca vai achar nada.
+O Prumo é workspace-first. Identidade (perfil, pessoas, tom, história,
+curadoria) vive dentro do workspace escolhido. **Nenhum workspace nasce
+silencioso.** Toda criação é declarada e nomeada.
 
-**Como detectar:** Verificar o path do workspace montado. Se contém `local-agent-mode-sessions` ou `outputs` sem relação com uma pasta do usuário, é a pasta temporária. Se o path aponta para algo como `/Users/.../Documents/...` ou qualquer caminho real do sistema de arquivos do usuário, é pasta real.
+Checklist obrigatório, na ordem, antes de qualquer pergunta do setup:
 
-**Se NÃO tem pasta real selecionada:**
+**1. A pasta aberta é real?**
 
-Parar tudo. Não fazer nenhuma pergunta do setup. Explicar de forma clara e direta:
+Verificar o CWD. Se for pasta temporária do Cowork (`local-agent-mode-sessions`,
+`outputs` sem relação com pasta do usuário), **parar**. Orientar:
 
-"Antes de começar, preciso que você selecione uma pasta no seu computador. Sem isso, os arquivos ficam numa pasta escondida que você não vai encontrar depois.
+"Antes de começar, preciso que você selecione uma pasta no seu computador.
+Sem isso, os arquivos ficam numa pasta escondida que você não vai encontrar depois.
 
 Como fazer:
 1. Feche esta conversa (o Prumo já está instalado, não perde nada)
@@ -73,13 +77,82 @@ Como fazer:
 
 Vou estar aqui quando voltar."
 
-Não adianta tentar contornar (tipo "me diz o caminho e eu crio"). A pasta tem que ser selecionada antes de abrir a conversa — limitação da plataforma, não dá pra mudar no meio.
+Não tentar contornar. A pasta tem que ser selecionada antes da conversa.
 
-**Se TEM pasta real selecionada:**
+**2. Essa pasta já é um workspace do Prumo?**
 
-Confirmar com o usuário: "Vou usar a pasta [nome legível da pasta]. É aqui que você quer organizar?" Em seguida, verificar o que já existe e informar: "Vi que você já tem [N] arquivos/pastas aqui. Vou respeitar tudo que já existe e só criar o que falta."
+Procurar marcadores:
 
-Seguir para Etapa 1.
+- `.prumo/state/workspace-schema.json`
+- `.prumo/system/PRUMO-CORE.md`
+- `Prumo/AGENT.md`
+- `Prumo/Agente/PERFIL.md`
+
+Se qualquer um existir, a pasta já é workspace. **Não** rodar o setup —
+isso recriaria arquivos e pisaria na identidade existente. Oferecer o
+modo de reconfiguração (ver a seção "Reconfiguração" abaixo) ou
+redirecionar pro briefing:
+
+"Essa pasta já tem o Prumo configurado. Posso ajustar algo (área, tom,
+ritual) ou você quer seguir direto pro briefing com `/prumo:briefing`?"
+
+**3. Pasta real, sem workspace: confirmação nomeada**
+
+Antes de qualquer pergunta do wizard, confirmar explicitamente em duas
+etapas:
+
+**3.A — Explicitar que o Prumo vai morar ali:**
+
+"Antes de começar, rápido alinhamento: o Prumo é um sistema pessoal de
+organização de vida. Ele cria uma estrutura própria dentro da pasta
+aberta e passa a morar ali. Pendências, pessoas, tom, história — tudo
+junto.
+
+A pasta aberta agora é `[nome]` (caminho: `[caminho completo]`). Tem
+`[N]` arquivos/pastas dentro dela.
+
+Quer que **ESSA pasta** seja a casa do seu Prumo? A identidade vive
+aqui; espalhar em duas pastas fragmenta a vida."
+
+Oferecer via AskUserQuestion:
+
+- `a) Sim, usar essa pasta como workspace do Prumo.`
+- `b) Não. Vou fechar e abrir na pasta certa.`
+- `c) Tenho dúvida. Me explica de novo.`
+
+Se `b)`, parar o fluxo e repetir o script da situação "pasta
+temporária". Sem insistência.
+
+Se `c)`, explicar:
+
+"O Prumo não é um app separado. Ele vira uma camada em cima de uma
+pasta sua. A gente cria alguns arquivos (perfil, pauta, pasta de inbox
+mobile). Depois, sempre que você abrir o Cowork **nessa mesma pasta**,
+o Prumo te reconhece. Abrir em outra pasta é outro Prumo — e dois
+Prumos em pastas diferentes são dois sistemas que não se conversam."
+
+Voltar às três opções depois da explicação.
+
+**3.B — Nomear o workspace:**
+
+Se o usuário escolheu `a)`:
+
+"Beleza. Como quer chamar esse workspace? Vai aparecer no briefing
+diário e nos logs (exemplos: 'Vida Tharso', 'Pessoal', 'Prumo Casa').
+Pode mudar depois."
+
+Guardar esse nome no futuro `.prumo/state/workspace-schema.json` no
+campo `workspace_name` (a criação do arquivo acontece na Etapa 9). Só
+depois desse OK nomeado é que o wizard começa.
+
+### Regras duras do gatekeeper
+
+1. Nenhuma pasta vira workspace sem a confirmação nomeada da Etapa 3.B.
+2. Pasta já com workspace: não rodar o setup. Oferecer reconfiguração
+   ou briefing.
+3. Nunca criar arquivos em pasta aberta só porque o usuário começou a
+   conversar. Falar autoriza ouvir, não criar.
+4. O gatekeeper vale pra qualquer trigger do `/prumo:setup`. Sem atalho.
 
 ### Etapa 1: Boas-vindas
 

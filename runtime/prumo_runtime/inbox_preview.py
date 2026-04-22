@@ -66,10 +66,11 @@ def summarize_text_preview(path: Path) -> str:
     return path.name
 
 
-def summarize_inbox_entry(entry: dict) -> str:
+def summarize_inbox_entry(entry: dict, workspace: Path | None = None) -> str:
     filename = str(entry.get("filename") or "item sem nome")
     kind = str(entry.get("kind") or "arquivo")
-    absolute_path = entry.get("absolute_path")
+    relative_path = entry.get("relative_path")
+    absolute_path = entry.get("absolute_path")  # legacy, pra compatibilidade
     first_url = entry.get("first_url")
     domain = infer_domain(first_url)
 
@@ -77,13 +78,22 @@ def summarize_inbox_entry(entry: dict) -> str:
         return f"{filename} (imagem/captura)"
     if kind == "pdf":
         return f"{filename} (PDF)"
-    if kind == "text" and isinstance(absolute_path, str):
-        path = Path(absolute_path)
-        if path.exists():
-            preview = summarize_text_preview(path)
-            if domain:
-                return f"{filename}: {preview} ({domain})"
-            return f"{filename}: {preview}"
+
+    resolved_path: Path | None = None
+    if kind == "text":
+        if isinstance(relative_path, str) and workspace is not None:
+            candidate = Path(relative_path)
+            if not candidate.is_absolute():
+                candidate = workspace / candidate
+            resolved_path = candidate
+        elif isinstance(absolute_path, str):
+            resolved_path = Path(absolute_path)
+
+    if kind == "text" and resolved_path is not None and resolved_path.exists():
+        preview = summarize_text_preview(resolved_path)
+        if domain:
+            return f"{filename}: {preview} ({domain})"
+        return f"{filename}: {preview}"
     if domain:
         return f"{filename} ({domain})"
     return filename

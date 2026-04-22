@@ -4,12 +4,12 @@ description: >
   Onboarding rápido do Prumo via dump-first. Alternativa ao setup wizard
   para quem quer sentir valor em 5 minutos. O usuário despeja o que tem na
   cabeça e o Prumo organiza, infere áreas de vida e gera os arquivos de
-  configuração a partir de dados reais. Use quando não existir CLAUDE.md e
-  o usuário disser "quero começar", "me ajuda a organizar", "tô perdido",
-  ou simplesmente começar a falar da vida sem ter o sistema configurado.
-  Triggers: "/prumo:start", "começar", "quero usar o prumo", "me ajuda
-  a organizar minha vida", ou qualquer interação sem CLAUDE.md que não
-  seja "/prumo:setup" (que dispara o wizard completo).
+  configuração a partir de dados reais. Use SOMENTE quando o usuário
+  disser explicitamente "/prumo:start", "quero começar o prumo",
+  "começar setup rápido" ou equivalente. Nunca disparar por simples
+  ausência de CLAUDE.md — se a pasta atual não tiver workspace, o
+  gatekeeper do Prumo decide o caminho. Esta skill NÃO é o default para
+  qualquer conversa sem sistema configurado.
 ---
 
 # Prumo Start — Onboarding via dump-first
@@ -21,16 +21,24 @@ o sistema organiza, e as perguntas vêm depois, ancoradas no que ele disse.
 O setup wizard continua existindo e funcionando. Este modo é para quem
 quer começar rápido ou se sente intimidado por 10 etapas de configuração.
 
-## Antes de tudo: checar a pasta
+## Antes de tudo: gatekeeper do workspace
 
-Verificar se o workspace é uma pasta real do usuário (mesma lógica da
-Etapa 0 do setup wizard). Se a pasta for temporária (`local-agent-mode-sessions`,
-`outputs` sem relação com pasta do usuário):
+O Prumo é workspace-first. A identidade (perfil, pessoas, tom, história,
+regras de curadoria) mora dentro do workspace — não no plugin, não na
+home do usuário. Portanto, **nada de workspace nasce silencioso**.
+Toda criação é declarada.
 
-Parar tudo. Explicar:
+Checklist obrigatório, na ordem, antes de qualquer pergunta do fluxo:
 
-"Antes de começar, preciso que você selecione uma pasta no seu computador.
-Sem isso, os arquivos ficam perdidos numa pasta escondida.
+### 1. A pasta aberta é real?
+
+Verificar se o CWD aponta pra uma pasta do sistema de arquivos do
+usuário (tipicamente `/Users/...`, `/home/...` ou equivalente). Se for
+pasta temporária do Cowork (`local-agent-mode-sessions`, `outputs` sem
+vínculo com pasta do usuário), **parar**. Orientar:
+
+"Antes de começar, preciso que você selecione uma pasta no seu
+computador. Sem isso, os arquivos ficam perdidos numa pasta escondida.
 
 Como fazer:
 1. Feche esta conversa
@@ -40,12 +48,88 @@ Como fazer:
 
 Vou estar aqui quando voltar."
 
-Se a pasta for real, confirmar brevemente ("Vou usar a pasta [nome]. Certo?")
-e seguir.
+Não tentar contornar. A pasta precisa ser selecionada antes da conversa.
 
-Se já existir PERFIL.md na pasta, este NÃO é o fluxo correto. Informar:
-"Você já tem o Prumo configurado. Quer dizer 'bom dia' pro briefing ou
-despejar algo novo?" Não entrar no fluxo de start.
+### 2. Essa pasta já é um workspace do Prumo?
+
+Procurar marcadores na pasta aberta:
+
+- `.prumo/state/workspace-schema.json`
+- `.prumo/system/PRUMO-CORE.md`
+- `Prumo/AGENT.md`
+- `Prumo/Agente/PERFIL.md`
+
+Se qualquer um existir, a pasta já é workspace. Este fluxo **não** é o
+correto — orientar:
+
+"Essa pasta já tem o Prumo configurado. O caminho aqui é `/prumo:briefing`
+pra começar o dia ou mandar o dump direto. Quer que eu siga pelo
+briefing agora?"
+
+Não entrar no onboarding. Não recriar arquivos.
+
+### 3. Pasta real, sem workspace: confirmação nomeada
+
+Aqui o risco é real: qualquer pasta aleatória (o projeto de trabalho,
+a pasta de fotos, o repo de um script) pode virar workspace por
+distração. O gatekeeper corta isso.
+
+Antes de qualquer pergunta de onboarding, fazer uma confirmação
+explícita em **duas etapas**:
+
+**Etapa A — explicitar o que o Prumo é e onde vai morar:**
+
+"Antes de começar, rápido alinhamento: o Prumo é o seu sistema pessoal
+de organização de vida. Ele cria uma estrutura própria dentro da pasta
+aberta e passa a morar ali. Fotos, pendências, pessoas, tom — tudo
+junto.
+
+A pasta aberta agora é `[nome da pasta]` (caminho: `[caminho
+completo]`). Tem `[N]` arquivos/pastas dentro dela.
+
+Quer que **ESSA pasta** seja a casa do seu Prumo? Uma vez que a
+identidade vive aqui, espalhar em duas pastas fragmenta a vida."
+
+Oferecer via AskUserQuestion opções curtas:
+
+- `a) Sim, usar essa pasta como workspace do Prumo.`
+- `b) Não. Vou fechar e abrir na pasta certa.`
+- `c) Tenho dúvida. Me explica de novo.`
+
+Se o usuário escolher `b)`, parar o fluxo e repetir o script da
+situação "pasta temporária" (fechar, selecionar pasta, voltar). Não
+insistir.
+
+Se escolher `c)`, explicar:
+
+"O Prumo não é um app separado. Ele vira uma camada em cima de uma
+pasta sua. A gente cria alguns arquivos (o perfil, a pauta, a pasta de
+inbox mobile). Depois, sempre que você abrir o Cowork **nessa mesma
+pasta**, o Prumo te reconhece. Se você abrir em outra pasta, é outro
+Prumo — e dois Prumos em pastas diferentes significam dois sistemas
+que não se conversam."
+
+Depois da explicação, voltar às três opções.
+
+**Etapa B — nomear o workspace:**
+
+Se o usuário escolheu `a)`:
+
+"Beleza. Como quer chamar esse workspace? Vai aparecer no briefing
+diário e nos logs (exemplos: 'Vida Tharso', 'Pessoal', 'Prumo Casa').
+Pode mudar depois."
+
+Guardar esse nome em `.prumo/state/workspace-schema.json` no campo
+`workspace_name` (criar o arquivo mais tarde, na fase de gerar
+arquivos). Só depois desse "OK nomeado" o fluxo de dump começa.
+
+### Regras duras do gatekeeper
+
+1. Nenhuma pasta vira workspace sem a confirmação nomeada da Etapa B.
+2. Nunca gerar arquivos em pasta aberta só porque o usuário começou a
+   conversar. Falar é autorização pra ouvir, não pra criar.
+3. Se a pasta já for workspace, redirecionar pro briefing. Ponto.
+4. O gatekeeper vale pra qualquer trigger do `start`. Não há atalho.
 
 ---
 

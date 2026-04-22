@@ -23,6 +23,10 @@ def build_parser() -> argparse.ArgumentParser:
     setup = subparsers.add_parser("setup", help="Preparar ou inicializar um workspace")
     setup.add_argument("--workspace", help="Caminho do workspace")
     setup.add_argument("--user-name", help="Nome preferido do usuario")
+    setup.add_argument(
+        "--workspace-name",
+        help="Nome do workspace (ex: 'Vida Tharso', 'Pessoal'). Aparece no briefing e logs.",
+    )
     setup.add_argument("--agent-name", default="Prumo", help="Nome do agente")
     setup.add_argument("--timezone", default="America/Sao_Paulo", help="Fuso IANA")
     setup.add_argument("--briefing-time", default="09:00", help="Horario preferido do briefing")

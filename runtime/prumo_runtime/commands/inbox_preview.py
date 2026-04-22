@@ -68,7 +68,7 @@ def build_inbox_preview_payload(workspace: Path) -> dict[str, object]:
     overview = workspace_overview(workspace)
     preview = load_inbox_preview(workspace, repo_root_from(Path(__file__)))
     docs = documentation_targets(workspace)
-    samples = [summarize_inbox_entry(item) for item in preview["items"][:5]]
+    samples = [summarize_inbox_entry(item, workspace) for item in preview["items"][:5]]
     note = str(preview.get("note") or "").strip()
 
     if preview["count"]:

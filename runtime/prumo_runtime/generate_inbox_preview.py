@@ -270,7 +270,7 @@ def item_card(index: int, path: Path, output_dir: Path) -> str:
     )
 
 
-def build_index_entry(path: Path) -> dict[str, str | int | None]:
+def build_index_entry(path: Path, root: Path) -> dict[str, str | int | None]:
     stat = path.stat()
     kind = resolve_kind(path)
     first_url: str | None = None
@@ -279,9 +279,17 @@ def build_index_entry(path: Path) -> dict[str, str | int | None]:
         ext = path.suffix.lower()
         first_url = parse_url_file_contents(text) if ext in {".url", ".webloc"} else extract_first_url(text)
 
+    resolved = path.resolve()
+    try:
+        relative = resolved.relative_to(root.resolve())
+        relative_path = str(relative)
+    except ValueError:
+        # arquivo fora do workspace (raro): cai pro caminho resolvido mesmo
+        relative_path = str(resolved)
+
     return {
         "filename": path.name,
-        "absolute_path": str(path.resolve()),
+        "relative_path": relative_path,
         "kind": kind,
         "size_bytes": stat.st_size,
         "mtime_iso": dt.datetime.fromtimestamp(stat.st_mtime).isoformat(),
@@ -581,13 +589,17 @@ def main() -> int:
     index_entries: list[dict[str, str | int | None]] = []
     for idx, file_path in enumerate(iter_files(inbox_dir, excluded), start=1):
         cards.append(item_card(idx, file_path, output_dir))
-        index_entries.append(build_index_entry(file_path))
+        index_entries.append(build_index_entry(file_path, root))
 
     html_doc = build_html("\n".join(cards), len(cards))
     output_path.write_text(html_doc, encoding="utf-8")
+    try:
+        inbox_dir_relative = str(inbox_dir.resolve().relative_to(root.resolve()))
+    except ValueError:
+        inbox_dir_relative = str(inbox_dir)
     index_payload = {
         "generated_at": dt.datetime.now().isoformat(),
-        "inbox_dir": str(inbox_dir),
+        "inbox_dir": inbox_dir_relative,
         "items": index_entries,
     }
     index_output_path.write_text(

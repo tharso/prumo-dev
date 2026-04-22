@@ -85,6 +85,18 @@ Três gestos. É isso.
 
 Se preferir ir direto: abra uma conversa e diga o que está na sua cabeça. Prumo organiza na hora.
 
+## O workspace
+
+O Prumo é **workspace-first**. Toda a identidade (perfil, pessoas, tom, história, curadoria, inbox) mora dentro de **uma** pasta escolhida por você. O plugin (Cowork, Claude Code, Codex, Antigravity, CLI) é executor: sem estado próprio, sem home oculto, sem registro global de workspaces.
+
+Consequências práticas:
+
+- Você escolhe conscientemente a pasta que vira casa do Prumo. Nenhuma pasta vira workspace por acidente: o setup exige confirmação nomeada antes de criar qualquer arquivo.
+- Se rodar o Prumo em outra pasta vazia, ele não adota silencioso — propõe criar novo workspace ali ou fechar e voltar pra pasta original. Nunca duplica a vida.
+- Workspace é portátil: mover a pasta pra outra máquina leva tudo junto. Paths absolutos em estado persistido são bugs.
+
+Quer duas instâncias (ex: pessoal vs. trabalho)? É opt-in declarado: rode `/prumo:setup` na outra pasta e nomeie. São dois workspaces que não se conversam por design.
+
 ## Comandos
 
 | Comando | O que faz |
@@ -101,6 +113,7 @@ Se preferir ir direto: abra uma conversa e diga o que está na sua cabeça. Prum
 - **Tudo local.** Arquivos Markdown no seu computador. Abra com qualquer editor.
 - **Sem lock-in.** Deletou o plugin? Seus arquivos continuam lá.
 - **Uma entrada.** Sua vida não tem departamentos. Prumo também não.
+- **Workspace-first.** Identidade mora no workspace, nunca no plugin. Zero estado global.
 - **Proativo.** Não espera você checar. Traz o que importa na hora certa.
 - **Resolve, não lista.** Outros sistemas viram mais um trabalho. Prumo tira trabalho.
 

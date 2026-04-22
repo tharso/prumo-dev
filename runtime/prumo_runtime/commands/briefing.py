@@ -78,7 +78,7 @@ def build_inbox_line(workspace: Path, inbox_text: str, preview: dict) -> str:
             return "Inbox4Mobile: 0 item(ns). Inbox limpa."
         return f"INBOX.md acusa {inbox_count} item(ns), mas o preview local não trouxe vitrine.{preview_hint}"
 
-    top_items = [summarize_inbox_entry(item) for item in preview.get("items", [])[:3]]
+    top_items = [summarize_inbox_entry(item, workspace) for item in preview.get("items", [])[:3]]
     summary = "; ".join(top_items) if top_items else "há item, mas sem resumo leve decente."
     note = f" {preview.get('note')}" if preview.get("note") else ""
     return f"Inbox4Mobile: {preview_count} item(ns). {summary}.{note}{preview_hint}"

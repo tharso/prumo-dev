@@ -41,6 +41,7 @@ class WorkspaceConfig:
     briefing_time: str = DEFAULT_BRIEFING_TIME
     layout_mode: str = "flat"
     wrapper_policy: str = "replace"
+    workspace_name: str | None = None
 
 
 class WorkspaceError(RuntimeError):
@@ -193,7 +194,7 @@ def render_files(config: WorkspaceConfig) -> dict[str, str]:
 
 def schema_payload(config: WorkspaceConfig) -> dict:
     paths = workspace_paths(config.workspace, layout_mode=config.layout_mode)
-    return {
+    payload = {
         "schema_version": SCHEMA_VERSION,
         "runtime_version": RUNTIME_VERSION,
         "created_at": now_iso(config.timezone_name),
@@ -208,6 +209,26 @@ def schema_payload(config: WorkspaceConfig) -> dict:
             "derived": list(paths.derived_relative_paths()),
         },
     }
+    if config.workspace_name:
+        payload["workspace_name"] = config.workspace_name
+    return payload
+
+
+def is_already_workspace(workspace: Path) -> bool:
+    """Retorna True se a pasta já tem marcadores canônicos do Prumo.
+
+    Serve pra bloquear setup silencioso em cima de identidade existente.
+    Usa apenas marcadores exclusivos do runtime (os arquivos em `.prumo/`
+    não existem por acidente; wrappers como `AGENT.md` ou `Prumo/AGENT.md`
+    podem colidir com projetos alheios e por isso não entram aqui).
+    """
+    if not workspace.exists() or not workspace.is_dir():
+        return False
+    markers = [
+        workspace / ".prumo" / "state" / "workspace-schema.json",
+        workspace / ".prumo" / "system" / "PRUMO-CORE.md",
+    ]
+    return any(marker.exists() for marker in markers)
 
 
 def ensure_directories(workspace: Path) -> None:

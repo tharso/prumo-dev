@@ -21,6 +21,7 @@ class SetupCommandTests(unittest.TestCase):
                     "Batata",
                     str(workspace),
                     "a",
+                    "Vida Batata",
                 ],
             ):
                 with redirect_stdout(buffer):
@@ -36,10 +37,18 @@ class SetupCommandTests(unittest.TestCase):
             self.assertFalse((workspace / "PAUTA.md").exists())
 
             rendered = buffer.getvalue()
-            self.assertIn("Etapa 1 de 3", rendered)
-            self.assertIn("Etapa 2 de 3", rendered)
-            self.assertIn("Etapa 3 de 3", rendered)
+            self.assertIn("Etapa 1 de 4", rendered)
+            self.assertIn("Etapa 2 de 4", rendered)
+            self.assertIn("Etapa 3 de 4", rendered)
+            self.assertIn("Etapa 4 de 4", rendered)
             self.assertIn("Entre no workspace e rode `prumo`", rendered)
+
+            import json
+
+            schema = json.loads(
+                (workspace / ".prumo" / "state" / "workspace-schema.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(schema.get("workspace_name"), "Vida Batata")
 
     def test_setup_adopt_mode_can_merge_existing_root_wrappers(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -55,6 +64,7 @@ class SetupCommandTests(unittest.TestCase):
                     str(workspace),
                     "a",
                     "a",
+                    "Casa Batata",
                 ],
             ):
                 with redirect_stdout(buffer):
@@ -68,3 +78,27 @@ class SetupCommandTests(unittest.TestCase):
             self.assertTrue((workspace / "Prumo" / "AGENT.md").exists())
             rendered = buffer.getvalue()
             self.assertIn("Wrappers mesclados", rendered)
+
+    def test_setup_refuses_to_run_on_existing_prumo_workspace(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = Path(tmpdir) / "JaExiste"
+            workspace.mkdir(parents=True)
+            (workspace / ".prumo" / "state").mkdir(parents=True)
+            (workspace / ".prumo" / "state" / "workspace-schema.json").write_text(
+                "{}", encoding="utf-8"
+            )
+            buffer = io.StringIO()
+            with patch(
+                "builtins.input",
+                side_effect=[
+                    "Batata",
+                    str(workspace),
+                ],
+            ):
+                with redirect_stdout(buffer):
+                    with self.assertRaises(SystemExit) as ctx:
+                        main(["setup"])
+            self.assertEqual(ctx.exception.code, 1)
+            rendered = buffer.getvalue()
+            self.assertIn("já tem um workspace do Prumo", rendered)
+            self.assertIn("prumo repair", rendered)
