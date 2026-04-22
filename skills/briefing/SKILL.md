@@ -71,24 +71,17 @@ A resposta do runtime vai como veio. Não reescrever, não enfeitar.
 - Usar Gmail MCP e Calendar MCP como fonte primária de email e calendário. Seguir o pipeline de curadoria em camadas definido em `briefing-procedure.md` (camada 1: canais prioritários, camada 2: emails diretos com filtragem pessoa/sistema, camada 3: roteamento de conteúdo).
 - Antes de curar emails, ler `Prumo/Referencias/EMAIL-CURADORIA.md` (se existir) para carregar regras aprendidas. Quando o usuário corrigir a curadoria, registrar a regra nesse arquivo.
 - Se existir `_preview-index.json`, linkar `inbox-preview.html` antes de abrir bruto.
-- Persistir `last_briefing_at` antes da primeira resposta.
-- `interrupted_at` e `resume_point` só existem se o usuário pediu pra parar.
 - Update que não consegue se aplicar sozinho não trava o briefing.
-- Se houver versão nova detectável, o briefing deve avisar antes do panorama e oferecer alternativas curtas.
+- Se houver versão nova detectável, o briefing deve avisar antes do panorama e seguir.
 - Se o `.prumo/system/PRUMO-CORE.md` do workspace estiver atrás do `Prumo/VERSION` local, isso deve ser tratado como core defasado do workspace, não como detalhe invisível.
-- Se tiver shell e o workspace estiver no formato novo, tentar o runtime antes.
-- Quando isso acontecer, preferir:
-  - `a) atualizar agora`
-  - `b) seguir mesmo assim`
-  - `c) ver diagnóstico`
+- Se tiver `prumo` no PATH e o workspace estiver no formato novo, tentar o runtime antes.
 
 ## Resultado esperado
 
 O briefing entrega:
 
-- `Bloco 1` de panorama (agenda + emails curados + pendências, tudo numerado sequencialmente);
-- `Bloco 2` de proposta do dia;
-- contexto completo apenas em `c` ou `/prumo:briefing --detalhe`;
+- panorama numerado único: agenda, emails curados e pendências numerados sequencialmente de 1 a N;
+- proposta do dia em seguida, com opções curtas para responder;
 - curadoria de email: classificação em `Responder` / `Ver` / `Sem ação` com prioridade P1 (ação hoje) / P2 (ação esta semana) / P3 (informativo);
 - email e calendário via Gmail/Calendar MCP direto.
 

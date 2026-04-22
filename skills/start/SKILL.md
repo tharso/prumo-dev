@@ -298,12 +298,8 @@ Usar os mesmos templates do setup wizard:
 2. Copiar `../prumo/references/prumo-core.md` → gerar `.prumo/system/PRUMO-CORE.md`
 3. Ler `../prumo/references/agent-md-template.md` → gerar AGENT.md
 4. Ler `../prumo/references/file-templates.md` → gerar arquivos auxiliares
-5. Gerar `.prumo/state/briefing-state.json` com `last_briefing_at` vazio
-6. Criar pastas: uma por área inferida (com README.md), `.prumo/logs/`, `.prumo/state/`,
+5. Criar pastas: uma por área inferida (com README.md), `.prumo/logs/`, `.prumo/state/`,
    `Inbox4Mobile/`, `Referencias/`
-7. Gerar scripts operacionais (mesmos do setup wizard):
-   - `scripts/prumo_sanitize_state.py`
-   - `scripts/prumo_auto_sanitize.py`
 
 **Proteção de arquivos existentes:** consultar `../prumo/references/file-protection-rules.md` para regras detalhadas. Se algum arquivo já existir, não sobrescrever.
 

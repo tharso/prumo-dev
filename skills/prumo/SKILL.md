@@ -214,8 +214,7 @@ Após coletar todas as respostas:
 7. Gerar `AGENT.md` na raiz (ponteiro, mesmo conteúdo adaptado)
 8. Ler `references/agents-md-template.md` → gerar `AGENTS.md` na raiz (ponteiro)
 9. Ler `references/file-templates.md` → gerar arquivos auxiliares em `Prumo/`
-10. Gerar `.prumo/state/briefing-state.json` com `last_briefing_at` vazio
-11. Copiar skills para `Prumo/skills/` (cópia completa do diretório `skills/` do repo)
+10. Copiar skills para `Prumo/skills/` (cópia completa do diretório `skills/` do repo)
 
 **Separação de responsabilidades:**
 - Raiz: ponteiros de compatibilidade (CLAUDE.md, AGENT.md, AGENTS.md). Todos apontam para `Prumo/AGENT.md`.
@@ -225,7 +224,7 @@ Após coletar todas as respostas:
 - `.prumo/state/`: estado técnico do runtime. Agente humano não mexe aqui.
 
 **Comando `/prumo:briefing`:**
-Após o setup, o usuário pode usar `/prumo:briefing` para acionar o morning briefing completo. Alias legado `/briefing` continua aceito por compatibilidade. O comando dispara a skill `briefing` que lê os arquivos de configuração, verifica atualizações, processa todos os canais de inbox, e apresenta o briefing do dia via Gmail/Calendar MCP direto, com curadoria obrigatória e usando `.prumo/state/briefing-state.json`.
+Após o setup, o usuário pode usar `/prumo:briefing` para acionar o morning briefing completo. Alias legado `/briefing` continua aceito por compatibilidade. O comando dispara a skill `briefing` que lê os arquivos de configuração, verifica atualizações, processa todos os canais de inbox, e apresenta o briefing do dia via Gmail/Calendar MCP direto, com curadoria obrigatória.
 
 **Comando `/prumo:sanitize`:**
 Se o território técnico do sistema ficar pesado (backups velhos em `.prumo/backups/`, cache expirado em `.prumo/cache/`, estado inchado em `.prumo/state/`), `/prumo:sanitize` compacta e alivia o contexto. Escopo é exclusivamente `.prumo/` — arquivos do usuário ficam intactos.

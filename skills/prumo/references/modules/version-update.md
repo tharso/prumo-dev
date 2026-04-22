@@ -1,6 +1,6 @@
 # Version Update
 
-> **module_version: 4.17.0**
+> **module_version: 4.21.0**
 >
 > Fonte canônica do fluxo de verificação e aplicação de atualização do Prumo.
 
@@ -41,9 +41,7 @@ Transportes válidos:
    - `Prumo/VERSION`
    - `skills/prumo/references/prumo-core.md`
    - `Prumo/skills/prumo/references/prumo-core.md`
-2. updater via shell:
-   - nome oficial: `safe_core_update.sh`
-   - paths válidos definidos em `runtime-paths.md`
+2. updater via runtime: `prumo` CLI quando disponível (instalação pip, caminho preferido).
 
 Sem transporte seguro de aplicação:
 
@@ -89,9 +87,9 @@ Se o caso for `workspace core defasado`:
 3. reler o core atualizado;
 4. confirmar que a nova `prumo_version` é a esperada.
 
-### Se houver updater via shell
+### Se houver runtime instalado
 
-1. executar o updater seguro;
+1. executar `prumo` com o subcomando de update quando existir;
 2. reler o core;
 3. validar a versão final.
 

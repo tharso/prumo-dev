@@ -47,10 +47,7 @@
 
 Arquivos de estado esperados em `.prumo/state/`:
 
-- `briefing-state.json`
 - `agent-lock.json`
-- `auto-sanitize-state.json`
-- `auto-sanitize-history.json`
 - `archive/ARCHIVE-INDEX.json`
 - `archive/ARCHIVE-INDEX.md`
 
@@ -59,7 +56,7 @@ Arquivos de estado esperados em `.prumo/state/`:
 | Comando | Função |
 |---|---|
 | `/setup` | Configuração inicial e reconfiguração |
-| `/briefing` | Briefing diário em blocos progressivos |
+| `/briefing` | Briefing diário |
 | `/doctor` | Diagnóstico do runtime do Prumo no Cowork |
 | `/sanitize` | Sanitizar estado operacional |
 | `/higiene` | Higiene assistida do `Prumo/Agente/PERFIL.md` |
@@ -190,9 +187,9 @@ Sem lock ativo, escrita simultânea em estado compartilhado vira corrida. Dois a
 
 Update pode mexer em `.prumo/system/PRUMO-CORE.md` e backup. O resto é área do usuário. Mão fora.
 
-### 12. Briefing é progressivo
+### 12. Briefing entrega panorama único
 
-Primeiro panorama, depois proposta, detalhe só sob demanda.
+Panorama numerado de 1 a N (agenda, emails curados, pendências), proposta do dia em seguida com opções curtas para responder. Sem blocos progressivos.
 
 ## Guardrails
 
@@ -204,11 +201,7 @@ Primeiro panorama, depois proposta, detalhe só sob demanda.
 
 `ASSERT: Registrar no Prumo/REGISTRO.md antes de remover o original do inbox.`
 
-`ASSERT: last_briefing_at deve ser persistido antes da primeira resposta do briefing.`
-
 `ASSERT: Na primeira resposta do briefing, é proibido abrir arquivo bruto de Prumo/Inbox4Mobile/*.`
-
-`ASSERT: interrupted_at e resume_point só existem quando o usuário acionou escape hatch.`
 
 `ASSERT: No update, a allowlist de escrita é apenas .prumo/system/PRUMO-CORE.md e .prumo/backup/PRUMO-CORE.md.*`
 
@@ -232,13 +225,10 @@ Ler e seguir:
 
 Esse módulo cobre:
 
-- `last_briefing_at`, `interrupted_at`, `resume_point`
-- antes da primeira resposta do briefing, persistir `last_briefing_at`
-- capturar em memória o `last_briefing_at` anterior para usar como janela da sessão
-- Gmail MCP e Calendar MCP como fonte primária
-- janela temporal via `last_briefing_at` ou fallback 24h
-- `Bloco 1`, `Bloco 2`, `--detalhe`
-- regra de 24h quando não houver estado
+- Gmail MCP e Calendar MCP como fonte primária de email e calendário
+- curadoria em camadas (canal prioritário, emails diretos, roteamento de conteúdo)
+- numeração sequencial única entre seções
+- janela temporal de 24h para busca de emails novos
 
 ### Inbox processing
 
@@ -304,9 +294,9 @@ O usuário pode fazer dump, check-in, pedir cobrança futura ou rodar sanitizaç
 
 ## Observações de runtime
 
-- Com shell: preferir scripts oficiais (`safe_core_update.sh`, `prumo_briefing_state.py`, `prumo_auto_sanitize.py`, `generate_inbox_preview.py`).
-- Sem shell: manter paridade de curadoria e transparência sobre limitações.
-- Se o runtime só detectar versão nova, mas não conseguir aplicar com segurança, informar e seguir. Briefing não vira refém de updater manco.
+- Com `prumo` no PATH: prefira o CLI (`prumo briefing`, `prumo start`, `prumo repair`) como caminho determinístico.
+- Sem runtime disponível: o agente executa o procedimento da skill manualmente, com paridade de curadoria e transparência sobre o que não consegue fazer no ambiente.
+- Se o preflight detectar versão nova mas não conseguir aplicar com segurança, informar e seguir. Briefing não vira refém de updater manco.
 
 ---
 
@@ -316,7 +306,7 @@ Histórico completo de versão vive em `CHANGELOG.md`.
 
 Versão atual deste core:
 
-- `4.19.0`
+- `4.21.0`
 
 ---
 

@@ -1,14 +1,16 @@
 # Sanitization
 
-> **module_version: 4.19.0**
+> **module_version: 4.21.0**
 >
-> Fonte canônica de sanitização manual e automática do estado técnico do sistema.
+> Fonte canônica de sanitização do estado técnico do sistema.
 > Escopo: `.prumo/` — backups velhos, cache expirado, arquivos de estado que crescem demais.
 > Nunca toca em arquivos pessoais do usuário.
 
-## Sanitização manual
+## Execução
 
-Quando houver shell, usar `prumo_sanitize_state.py` resolvendo os caminhos pela ordem definida em `runtime-paths.md`.
+Sanitize é procedimento executado pelo agente seguindo as regras abaixo. Quando o runtime do Prumo oferecer um subcomando dedicado, esta seção ganha a chamada correspondente.
+
+O fluxo é sempre em dois passos: dry-run (listar candidatos, reportar ao usuário) e, após aprovação, aplicação com backup.
 
 O processo deve:
 
@@ -19,21 +21,13 @@ O processo deve:
    - `.prumo/state/archive/ARCHIVE-INDEX.md`
 4. nunca tocar arquivos pessoais.
 
-## Autosanitização
+## Política
 
-Pode rodar no briefing como manutenção preventiva, não como ritual destrutivo.
-
-Regras:
-
-1. respeitar cooldown;
-2. registrar estado em `.prumo/state/auto-sanitize-state.json`;
-3. usar `.prumo/state/auto-sanitize-history.json` para calibrar thresholds quando houver amostra;
-4. sem histórico suficiente, usar defaults seguros;
-5. arquivar frio só com política explícita;
-6. política inicial segura:
+1. arquivar frio só com política explícita;
+2. política inicial segura:
    - remoção de backups em `.prumo/backups/` acima do threshold de idade;
    - limpeza de cache expirado em `.prumo/cache/`;
    - arquivos de `Inbox4Mobile/` marcados como processados em `_processed.json` e acima do threshold de idade;
-7. nunca apagar histórico sem archive;
-8. nunca mover sem registrar no `ARCHIVE-INDEX`;
-9. `PERFIL.md` está fora do escopo deste comando; para isso existe higiene assistida.
+3. nunca apagar histórico sem archive;
+4. nunca mover sem registrar no `ARCHIVE-INDEX`;
+5. `PERFIL.md` está fora do escopo deste comando; para isso existe higiene assistida.

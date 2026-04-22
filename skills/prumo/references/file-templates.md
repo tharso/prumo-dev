@@ -33,10 +33,7 @@
 │   └── skills/            ← cópia das skills do repo (portáveis)
 └── .prumo/
     ├── state/
-    │   ├── briefing-state.json
     │   ├── agent-lock.json
-    │   ├── auto-sanitize-state.json
-    │   ├── auto-sanitize-history.json
     │   └── archive/
     │       ├── ARCHIVE-INDEX.json
     │       └── ARCHIVE-INDEX.md
@@ -249,20 +246,6 @@ Após o primeiro ciclo de feedback, apagar esta seção de setup e manter apenas
 ## Log de feedback
 
 (formato: data | o que aconteceu | regra derivada)
-
---- FIM ---
-
----
-
-## .prumo/state/briefing-state.json
-
---- INÍCIO ---
-
-{
-  "last_briefing_at": "",
-  "interrupted_at": "",
-  "resume_point": ""
-}
 
 --- FIM ---
 

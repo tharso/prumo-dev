@@ -24,19 +24,9 @@ PERFIL.md pesado), use `/higiene`.
 
 ## Como rodar
 
-Se houver shell:
+Sanitize hoje é procedimento que o agente executa manualmente seguindo as regras de `references/sanitization.md`. Quando o runtime do Prumo for oferecer um subcomando dedicado, este documento ganha a chamada correspondente.
 
-```bash
-python3 scripts/prumo_sanitize_state.py --workspace .          # dry-run
-python3 scripts/prumo_sanitize_state.py --workspace . --apply   # aplicar
-```
-
-Auto-sanitize (com cooldown e thresholds adaptativos):
-
-```bash
-python3 scripts/prumo_auto_sanitize.py --workspace .
-python3 scripts/prumo_auto_sanitize.py --workspace . --apply
-```
+O fluxo padrão é dry-run primeiro (listar candidatos sem tocar em nada), aprovação do usuário, depois aplicação com backup.
 
 Consultar `references/sanitization.md` para regras detalhadas.
 
