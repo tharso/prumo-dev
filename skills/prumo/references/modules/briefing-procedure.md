@@ -1,12 +1,14 @@
 # Briefing Procedure
 
-> **module_version: 4.17.0**
+> **module_version: 4.19.0**
 >
 > Fonte canônica do procedimento de `/prumo:briefing`.
 > Se este módulo conflitar com um resumo em `SKILL.md`, este módulo vence.
 > Se este módulo conflitar com um `ASSERT:` do `.prumo/system/PRUMO-CORE.md`, o `ASSERT:` vence.
 >
 > Este módulo é o procedimento do bundled Cowork, com detalhes de bridge e fallback específicos desse host.
+>
+> **Carregamento:** este módulo é carregado sob demanda via `modules/dispatch.md` quando a intenção do usuário for briefing. Não é lido na abertura de sessão. A "Pré-carga obrigatória" abaixo é o que este playbook precisa além da identidade mínima que o dispatch já carregou.
 
 ## REGRA DE NUMERAÇÃO (obrigatória, sem exceção)
 

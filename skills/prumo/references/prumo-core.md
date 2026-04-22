@@ -143,8 +143,18 @@ Se o runtime não expuser o repositório local `Prumo/skills/`, ele deve usar a 
 
 ## Política de leitura
 
-1. Sempre ler `Prumo/AGENT.md`, `.prumo/system/PRUMO-CORE.md`, `Prumo/PAUTA.md` e `Prumo/INBOX.md`.
-2. Para comando específico, ler também o módulo canônico correspondente.
+### Na abertura da sessão (sempre)
+
+1. `Prumo/AGENT.md` (porta curta).
+2. `.prumo/system/PRUMO-CORE.md` — Parte 1 (identidade e interação).
+3. Scan leve via `modules/dispatch.md`: cabeçalhos de `Prumo/PAUTA.md` e últimas 5-10 linhas de `Prumo/REGISTRO.md`.
+
+Fora disso, abertura não abre mais nada. `PERFIL.md`, `EMAIL-CURADORIA.md`, `briefing-procedure.md`, `INBOX.md` e a Parte 2 deste core só entram sob demanda, conforme a intenção expressada pelo usuário.
+
+### Dentro de um playbook (sob demanda)
+
+1. Ao executar um comando ou intenção específica, ler o módulo canônico correspondente (ver tabela acima).
+2. O módulo é que lista o que mais precisa ser lido (PERFIL, PAUTA integral, INBOX, arquivos de estado, etc.).
 3. Preferir leitura leve quando disponível:
    - `Prumo/Inbox4Mobile/_preview-index.json`
    - `Prumo/Inbox4Mobile/inbox-preview.html`
