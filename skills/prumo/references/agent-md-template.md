@@ -45,14 +45,19 @@ Se o runtime não estiver no PATH, ler a skill correspondente no workspace:
 | sanitize | `Prumo/skills/sanitize/SKILL.md` |
 | doctor | `Prumo/skills/doctor/SKILL.md` |
 
-## Ler nesta ordem
+## Abertura de sessão (leitura mínima)
 
-1. `Prumo/Agente/INDEX.md`
-2. `Prumo/Agente/PERFIL.md`
-3. `Prumo/PAUTA.md`
-4. `Prumo/INBOX.md`
-5. `.prumo/system/PRUMO-CORE.md`
-6. `Prumo/REGISTRO.md` (quando precisar histórico)
+1. Este `AGENT.md` (você já está lendo).
+2. `.prumo/system/PRUMO-CORE.md` — Parte 1 (identidade e interação).
+3. `Prumo/skills/prumo/references/modules/dispatch.md` — protocolo de abertura por intenção (scan leve de `PAUTA.md` + `REGISTRO.md` e saudação proativa com opções).
+
+Fora disso, abertura não abre mais nada. A saudação vem proativa, com 2-4 opções concretas ancoradas no scan + uma fuga explícita (`outra coisa`). Briefing não é default: só entra se o usuário expressar intenção de briefing.
+
+## Leitura sob demanda (conforme a intenção)
+
+- `Prumo/Agente/INDEX.md` e `Prumo/Agente/PERFIL.md` quando o playbook precisar de contexto pessoal.
+- `Prumo/PAUTA.md` integral, `Prumo/INBOX.md`, `Prumo/REGISTRO.md` quando a intenção exigir (briefing, curadoria de email, revisão semanal, etc.).
+- `.prumo/system/PRUMO-CORE.md` — Parte 2 (playbooks operacionais) e demais módulos da tabela em `prumo-core.md`.
 
 ## Mapa do workspace
 

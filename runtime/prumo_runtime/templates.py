@@ -91,19 +91,34 @@ def render_agent_md(
     if skills_path:
         fallback_section = "\n" + _render_fallback_chain(skills_path) + "\n"
 
-    reading_order_items = ["1. `Agente/INDEX.md`"]
+    opening_reads = [
+        "1. Este `AGENT.md` (você já está lendo).",
+        f"2. `{core_path}` — Parte 1 (identidade e interação).",
+    ]
     if skills_path:
-        reading_order_items.append("2. `Agente/PERFIL.md`")
-        reading_order_items.append("3. `PAUTA.md`")
-        reading_order_items.append("4. `INBOX.md`")
-        reading_order_items.append(f"5. `{core_path}`")
-        reading_order_items.append("6. `REGISTRO.md` (quando precisar histórico)")
+        opening_reads.append(
+            f"3. `{skills_path}prumo/references/modules/dispatch.md` — protocolo de abertura por intenção (scan leve de PAUTA + REGISTRO e saudação proativa com opções)."
+        )
     else:
-        reading_order_items.append("2. `PAUTA.md`")
-        reading_order_items.append("3. `INBOX.md`")
-        reading_order_items.append(f"4. `{core_path}`")
-        reading_order_items.append("5. `REGISTRO.md` (quando precisar histórico)")
-    reading_order = "\n".join(reading_order_items)
+        opening_reads.append(
+            "3. Scan leve: cabeçalhos de `PAUTA.md` + últimas 5-10 linhas de `REGISTRO.md`. Dispatch por intenção define o que carregar a seguir."
+        )
+    reading_order = "\n".join(opening_reads)
+
+    on_demand_items = ["- `Agente/INDEX.md` e `Agente/PERFIL.md` quando o playbook precisar de contexto pessoal."]
+    if skills_path:
+        on_demand_items.append(
+            "- `PAUTA.md` integral, `INBOX.md`, `REGISTRO.md` quando a intenção exigir (briefing, curadoria de email, revisão semanal, etc.)."
+        )
+        on_demand_items.append(
+            f"- `{core_path}` — Parte 2 (playbooks operacionais) e demais módulos da tabela em `{core_path}`."
+        )
+    else:
+        on_demand_items.append(
+            "- `PAUTA.md` integral, `INBOX.md`, `REGISTRO.md` quando a intenção exigir."
+        )
+        on_demand_items.append(f"- `{core_path}` — Parte 2 e módulos operacionais conforme necessidade.")
+    on_demand_section = "\n".join(on_demand_items)
 
     map_items = [
         "- `Agente/`: contexto modular do usuário",
@@ -131,9 +146,15 @@ def render_agent_md(
 - Fuso: {timezone_name}
 - Briefing preferencial: {briefing_time}
 {fallback_section}
-## Ler nesta ordem
+## Abertura de sessão (leitura mínima)
 
 {reading_order}
+
+Fora disso, abertura não abre mais nada. A saudação vem proativa, com 2-4 opções concretas ancoradas no scan + uma fuga explícita (`outra coisa`). Briefing não é default: só entra se o usuário expressar intenção de briefing.
+
+## Leitura sob demanda (conforme a intenção)
+
+{on_demand_section}
 
 ## Mapa do workspace
 
