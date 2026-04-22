@@ -11,6 +11,7 @@ from prumo_runtime.daily_operator import (
     daily_operation_payload,
     inbox_item_count,
     next_move_payload,
+    render_action_menu_lines,
     selection_contract_payload,
 )
 from prumo_runtime.constants import ADAPTER_CONTRACT_VERSION, canonical_refs_from
@@ -253,17 +254,7 @@ def _render_start_text(workspace: Path, overview: dict) -> str:
     lines.append(
         f"{suggestion_index + 2}. Se aparecer padrão repetitivo de trabalho, registre o candidato em `{workflow_registry}`. Mas não enfie workflow no café da manhã por vaidade."
     )
-    if next_move:
-        lines.append("a) Aceitar e seguir")
-        lines.append("b) Ver lista completa")
-        lines.append("c) Ver estado técnico")
-        lines.append(f"   `prumo context-dump --workspace {workspace} --format json`")
-        lines.append("d) Tá bom por hoje")
-    else:
-        option_labels = list("abcdefghi")
-        for label, action in zip(option_labels, actions):
-            lines.append(f"{label}) {action['label']}")
-            lines.append(f"   `{action['command']}`")
+    lines.extend(render_action_menu_lines(actions, next_move, workspace))
 
     return "\n".join(lines)
 

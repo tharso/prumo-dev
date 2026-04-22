@@ -112,6 +112,68 @@ def selection_contract_payload(next_move: dict[str, object] | None) -> dict[str,
     return payload
 
 
+def render_action_menu_lines(
+    actions: list[dict[str, object]],
+    next_move: dict[str, object] | None,
+    workspace: Path,
+) -> list[str]:
+    """Menu humano: recomendação visível + alternativas nomeadas.
+
+    Sem colapsar em 'Ver lista completa': quando há next_move, a primeira opção
+    é 'Aceitar', e as próximas listam alternativas pelo nome real. Align-core
+    sempre aparece pelo nome quando presente, para que drift do motor não fique
+    escondido em menu genérico.
+    """
+    lines: list[str] = []
+    letters = list("abcdefghij")
+
+    if not next_move:
+        for letter, action in zip(letters, actions):
+            lines.append(f"{letter}) {action['label']}")
+            lines.append(f"   `{action['command']}`")
+        return lines
+
+    next_move_id = str(next_move.get("id") or "")
+    actions_by_id = {str(action["id"]): action for action in actions}
+
+    alt_priority = [
+        "align-core",
+        "briefing",
+        "continue",
+        "process-inbox",
+        "organize-day",
+        "repair",
+        "kickoff",
+    ]
+    alternatives: list[dict[str, object]] = []
+    for alt_id in alt_priority:
+        if alt_id == next_move_id:
+            continue
+        action = actions_by_id.get(alt_id)
+        if action is None:
+            continue
+        alternatives.append(action)
+    alternatives = alternatives[:5]
+
+    lines.append(f"{letters[0]}) Aceitar: {next_move['label']}")
+    offset = 1
+    for index, action in enumerate(alternatives):
+        letter = letters[offset + index]
+        lines.append(f"{letter}) {action['label']}")
+        lines.append(f"   `{action['command']}`")
+    offset += len(alternatives)
+
+    context_letter = letters[offset]
+    lines.append(f"{context_letter}) Ver estado técnico")
+    lines.append(f"   `prumo context-dump --workspace {workspace} --format json`")
+    offset += 1
+
+    final_letter = letters[min(offset, len(letters) - 1)]
+    lines.append(f"{final_letter}) Tá bom por hoje")
+
+    return lines
+
+
 def kickoff_contract_payload(workspace: Path) -> dict[str, object]:
     docs = documentation_targets(workspace)
     return {
@@ -243,9 +305,12 @@ def suggest_core_alignment_action(workspace: Path, overview: dict) -> dict[str, 
     agent_name = shlex.quote(str(overview["agent_name"]))
     timezone_name = shlex.quote(str(overview["timezone"]))
     briefing_time = shlex.quote(str(overview["briefing_time"]))
+    core_version = str(overview.get("core_version") or "ausente")
+    runtime_version = str(overview.get("runtime_version") or "atual")
+    label = f"Atualizar o motor (core {core_version} → runtime {runtime_version})"
     return shell_action(
         "align-core",
-        "Alinhar core e wrappers canônicos",
+        label,
         (
             f"prumo migrate --workspace {workspace_str} --user-name {user_name} "
             f"--agent-name {agent_name} --timezone {timezone_name} --briefing-time {briefing_time}"

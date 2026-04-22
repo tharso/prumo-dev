@@ -501,6 +501,82 @@ class StartCommandTests(unittest.TestCase):
             self.assertTrue(payload["actions"][0]["recommended"])
             self.assertEqual(payload["next_move"]["id"], "continue")
 
+    def test_start_surfaces_align_core_as_named_option_when_core_outdated(self) -> None:
+        """Drift no core deve virar opção nomeada no menu, não só recado melancólico em preflight."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = Path(tmpdir)
+            state_dir = workspace / "_state"
+            state_dir.mkdir(parents=True, exist_ok=True)
+            (workspace / "AGENT.md").write_text("# AGENT\n", encoding="utf-8")
+            (workspace / "PRUMO-CORE.md").write_text("> **prumo_version: 4.0.0**\n", encoding="utf-8")
+            (workspace / "PAUTA.md").write_text(
+                "# Pauta\n\n## Em andamento\n\n- Projeto X\n",
+                encoding="utf-8",
+            )
+            (state_dir / "workspace-schema.json").write_text(
+                json.dumps(
+                    {
+                        "user_name": "Batata",
+                        "agent_name": "Prumo",
+                        "timezone": "America/Sao_Paulo",
+                        "briefing_time": "09:00",
+                        "files": {"generated": [], "authorial": [], "derived": []},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (state_dir / "last-briefing.json").write_text('{"at": ""}', encoding="utf-8")
+            args = Namespace(workspace=str(workspace), format="text")
+            buffer = io.StringIO()
+            with redirect_stdout(buffer):
+                rc = run_start(args)
+            self.assertEqual(rc, 0)
+            rendered = buffer.getvalue()
+            self.assertIn("Atualizar o motor", rendered)
+            self.assertIn("prumo migrate", rendered)
+
+    def test_start_with_next_move_shows_named_alternatives_not_collapsed_menu(self) -> None:
+        """Com next_move recomendado, o menu não pode colapsar em 'Ver lista completa' — tem que mostrar alternativas pelo nome."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = Path(tmpdir)
+            state_dir = workspace / "_state"
+            state_dir.mkdir(parents=True, exist_ok=True)
+            (workspace / "AGENT.md").write_text("# AGENT\n", encoding="utf-8")
+            (workspace / "PRUMO-CORE.md").write_text(
+                f"> **prumo_version: {__version__}**\n", encoding="utf-8"
+            )
+            (workspace / "PAUTA.md").write_text(
+                "# Pauta\n\n## Quente (precisa de atenção agora)\n\n- Ajuste urgente no site\n",
+                encoding="utf-8",
+            )
+            (state_dir / "workspace-schema.json").write_text(
+                json.dumps(
+                    {
+                        "user_name": "Batata",
+                        "agent_name": "Prumo",
+                        "timezone": "America/Sao_Paulo",
+                        "briefing_time": "09:00",
+                        "files": {"generated": [], "authorial": [], "derived": []},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (state_dir / "last-briefing.json").write_text('{"at": ""}', encoding="utf-8")
+            args = Namespace(workspace=str(workspace), format="text")
+            buffer = io.StringIO()
+            with redirect_stdout(buffer):
+                rc = run_start(args)
+            self.assertEqual(rc, 0)
+            rendered = buffer.getvalue()
+            self.assertNotIn("Ver lista completa", rendered)
+            named_alternatives = [
+                "Rodar o briefing",
+                "Organizar o dia",
+                "estado técnico",
+            ]
+            visible = sum(1 for marker in named_alternatives if marker in rendered)
+            self.assertGreaterEqual(visible, 2)
+
     def test_json_output_marks_workspace_resolution_from_cwd(self) -> None:
         previous_cwd = Path.cwd()
         with tempfile.TemporaryDirectory() as tmpdir:

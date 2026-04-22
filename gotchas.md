@@ -53,3 +53,15 @@ Desde 2026-04-22 o `tharso/prumo` virou espelho publico, populado por GitHub Act
 Regra: **todo desenvolvimento acontece em `tharso/prumo-dev`**. A URL publica `github.com/tharso/prumo` e contrato com o mundo (marketplace, pip, curls em docs) e nao deve mudar. O dev vive no `prumo-dev`.
 
 Se voce nao lembra disso na hora e tentar push em `tharso/prumo`: verifica se o `origin` local aponta pra `prumo-dev.git`, nao pra `prumo.git`. Comando: `git remote -v`.
+
+## Menus colapsados escondem sinais de primeira classe
+
+O `start` e o `briefing` ja geram `actions[]` com varios caminhos nomeados (`align-core`, `briefing`, `continue`, `process-inbox`, `organize-day`, `repair`). Em abril/2026 os dois renderers colapsavam tudo em 4 opcoes genericas (Aceitar/Ver lista completa/Estado/Tá bom) quando `next_move` estava definido. Resultado: drift de versao nao virava opcao explicita (ficava escondido atras de "Ver lista completa") e "prumo" cru no inicio da sessao tratava briefing como unica possibilidade.
+
+Regras:
+
+- Renderer de menu nunca deve colapsar em "Ver lista completa" quando ha actions nomeadas. Surface ate 5 alternativas + `Ver estado tecnico` + `Ta bom por hoje`.
+- Alertas de `degradation.alerts` com `action_id` (ex: `align-core`) precisam virar opcao explicita no menu, com label humano e comando inline. Label tecnico tipo "Alinhar core e wrappers canonicos" vira "Atualizar o motor (core X → runtime Y)".
+- Start e briefing compartilham o helper `render_action_menu_lines(actions, next_move, workspace)` em `daily_operator.py`. Se voce vai mexer em um dos dois renderers, mexe no helper e ambos herdam.
+
+Teste de sanidade: `message` renderizada nao pode conter "Ver lista completa" quando `actions` tem mais de 4 entradas nomeadas.

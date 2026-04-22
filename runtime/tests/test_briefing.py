@@ -110,6 +110,74 @@ class BriefingTests(unittest.TestCase):
             self.assertEqual(payload["selection_contract"]["accepts_next_move"], "continue")
             self.assertIn("aceitar", payload["selection_contract"]["accept_tokens"])
 
+    def test_briefing_surfaces_align_core_as_named_option_when_core_outdated(self) -> None:
+        """Quando o core está defasado, o menu do briefing deve mostrar 'Atualizar o motor' pelo nome, com o comando."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = Path(tmpdir)
+            state_dir = workspace / "_state"
+            state_dir.mkdir(parents=True, exist_ok=True)
+            (workspace / "PRUMO-CORE.md").write_text("> **prumo_version: 4.0.0**\n", encoding="utf-8")
+            (workspace / "PAUTA.md").write_text(
+                "# Pauta\n\n## Em andamento\n\n- Projeto X\n",
+                encoding="utf-8",
+            )
+            (workspace / "INBOX.md").write_text("# Inbox\n\n_Inbox limpo._\n", encoding="utf-8")
+            (state_dir / "workspace-schema.json").write_text(
+                json.dumps(
+                    {
+                        "user_name": "Batata",
+                        "agent_name": "Prumo",
+                        "timezone": "America/Sao_Paulo",
+                        "briefing_time": "09:00",
+                        "files": {"generated": [], "authorial": [], "derived": []},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (state_dir / "last-briefing.json").write_text('{"at": ""}', encoding="utf-8")
+            payload = build_briefing_payload(workspace, refresh_snapshot=False)
+            self.assertTrue(payload["core_outdated"])
+            self.assertIn("Atualizar o motor", payload["message"])
+            self.assertIn("prumo migrate", payload["message"])
+
+    def test_briefing_menu_shows_named_alternatives_not_collapsed_lista(self) -> None:
+        """Com next_move definido, o menu do briefing não pode colapsar em 'Ver lista completa'. Tem que exibir alternativas nomeadas."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = Path(tmpdir)
+            state_dir = workspace / "_state"
+            state_dir.mkdir(parents=True, exist_ok=True)
+            (workspace / "PRUMO-CORE.md").write_text(
+                f"> **prumo_version: {__version__}**\n", encoding="utf-8"
+            )
+            (workspace / "PAUTA.md").write_text(
+                "# Pauta\n\n## Quente (precisa de atenção agora)\n\n- Ajuste urgente\n",
+                encoding="utf-8",
+            )
+            (workspace / "INBOX.md").write_text("# Inbox\n\n_Inbox limpo._\n", encoding="utf-8")
+            (state_dir / "workspace-schema.json").write_text(
+                json.dumps(
+                    {
+                        "user_name": "Batata",
+                        "agent_name": "Prumo",
+                        "timezone": "America/Sao_Paulo",
+                        "briefing_time": "09:00",
+                        "files": {"generated": [], "authorial": [], "derived": []},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (state_dir / "last-briefing.json").write_text('{"at": ""}', encoding="utf-8")
+            payload = build_briefing_payload(workspace, refresh_snapshot=False)
+            message = payload["message"]
+            self.assertNotIn("Ver lista completa", message)
+            named_alternatives = [
+                "Rodar o briefing",
+                "Organizar o dia",
+                "estado técnico",
+            ]
+            visible = sum(1 for marker in named_alternatives if marker in message)
+            self.assertGreaterEqual(visible, 2)
+
     def test_choose_proposal_prefers_quente_over_andamento(self) -> None:
         proposal = choose_proposal(
             ["Ajuste urgente"],

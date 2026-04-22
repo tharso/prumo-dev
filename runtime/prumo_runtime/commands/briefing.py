@@ -11,6 +11,7 @@ from prumo_runtime.daily_operator import (
     build_daily_actions,
     daily_operation_payload,
     next_move_payload,
+    render_action_menu_lines,
     selection_contract_payload,
 )
 from prumo_runtime.inbox_preview import load_inbox_preview, summarize_inbox_entry
@@ -207,21 +208,7 @@ def build_briefing_payload(workspace: Path, refresh_snapshot: bool = False) -> d
         lines.append(
             "   Resposta curta aceita: `1`, `a` ou `aceitar` deve executar esse próximo movimento sem reabrir menu."
         )
-    if next_move:
-        lines.append("a) Aceitar e seguir")
-        lines.append("b) Ver lista completa")
-        lines.append("c) Ver estado técnico")
-        lines.append(f"   `prumo context-dump --workspace {workspace} --format json`")
-        lines.append("d) Tá bom por hoje")
-    else:
-        option_labels = list("abcdef")
-        for label, action in zip(option_labels, actions[:4]):
-            lines.append(f"{label}) {action['label']}")
-            lines.append(f"   `{action['command']}`")
-        lines.append("a) Aceitar e seguir")
-        lines.append("b) Ajustar")
-        lines.append("c) Ver lista completa")
-        lines.append("d) Tá bom por hoje")
+    lines.extend(render_action_menu_lines(actions, next_move, workspace))
 
     return {
         "adapter_contract_version": ADAPTER_CONTRACT_VERSION,
