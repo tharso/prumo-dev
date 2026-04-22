@@ -69,7 +69,8 @@ class MigrateCommandTests(unittest.TestCase):
             self.assertTrue((workspace / "Prumo" / "Agente" / "INDEX.md").exists())
             self.assertTrue((workspace / "Prumo" / "Agente" / "LEGADO-CLAUDE.md").exists())
             self.assertTrue((workspace / ".prumo" / "state" / "workspace-schema.json").exists())
-            self.assertTrue((workspace / ".prumo" / "state" / "briefing-state.json").exists())
+            self.assertTrue((workspace / ".prumo" / "state" / "last-briefing.json").exists())
+            self.assertFalse((workspace / ".prumo" / "state" / "briefing-state.json").exists())
             self.assertTrue((workspace / ".prumo" / "logs" / "runtime.log").exists())
             self.assertTrue((workspace / ".prumo" / "system" / "PRUMO-CORE.md").exists())
 

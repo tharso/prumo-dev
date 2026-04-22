@@ -63,7 +63,7 @@ class StartCommandTests(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
-            (state_dir / "briefing-state.json").write_text('{"last_briefing_at": ""}', encoding="utf-8")
+            (state_dir / "last-briefing.json").write_text('{"at": ""}', encoding="utf-8")
             os.chdir(workspace)
             try:
                 args = Namespace(workspace=None, format="text")
@@ -143,7 +143,7 @@ class StartCommandTests(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
-            (state_dir / "briefing-state.json").write_text('{"last_briefing_at": ""}', encoding="utf-8")
+            (state_dir / "last-briefing.json").write_text('{"at": ""}', encoding="utf-8")
             args = Namespace(workspace=str(workspace), format="text")
             buffer = io.StringIO()
             with redirect_stdout(buffer):
@@ -190,7 +190,7 @@ class StartCommandTests(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
-            (workspace / ".prumo" / "state" / "briefing-state.json").write_text('{"last_briefing_at": ""}', encoding="utf-8")
+            (workspace / ".prumo" / "state" / "last-briefing.json").write_text('{"at": ""}', encoding="utf-8")
             args = Namespace(workspace=str(workspace), format="json")
             buffer = io.StringIO()
             with redirect_stdout(buffer):
@@ -254,7 +254,7 @@ class StartCommandTests(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
-            (workspace / ".prumo" / "state" / "briefing-state.json").write_text('{"last_briefing_at": ""}', encoding="utf-8")
+            (workspace / ".prumo" / "state" / "last-briefing.json").write_text('{"at": ""}', encoding="utf-8")
             args = Namespace(workspace=str(workspace), format="text")
             buffer = io.StringIO()
             with redirect_stdout(buffer):
@@ -291,7 +291,7 @@ class StartCommandTests(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
-            (state_dir / "briefing-state.json").write_text('{"last_briefing_at": ""}', encoding="utf-8")
+            (state_dir / "last-briefing.json").write_text('{"at": ""}', encoding="utf-8")
             args = Namespace(workspace=str(workspace), format="text")
             buffer = io.StringIO()
             with redirect_stdout(buffer):
@@ -322,13 +322,13 @@ class StartCommandTests(unittest.TestCase):
                         "files": {
                             "generated": ["CLAUDE.md"],
                             "authorial": [],
-                            "derived": ["_state/briefing-state.json"],
+                            "derived": ["_state/last-briefing.json"],
                         },
                     }
                 ),
                 encoding="utf-8",
             )
-            (state_dir / "briefing-state.json").write_text('{"last_briefing_at": ""}', encoding="utf-8")
+            (state_dir / "last-briefing.json").write_text('{"at": ""}', encoding="utf-8")
             args = Namespace(workspace=str(workspace), format="json")
             buffer = io.StringIO()
             with redirect_stdout(buffer):
@@ -366,7 +366,7 @@ class StartCommandTests(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
-            (state_dir / "briefing-state.json").write_text('{"last_briefing_at": ""}', encoding="utf-8")
+            (state_dir / "last-briefing.json").write_text('{"at": ""}', encoding="utf-8")
             args = Namespace(workspace=str(workspace), format="json")
             buffer = io.StringIO()
             with redirect_stdout(buffer):
@@ -440,8 +440,8 @@ class StartCommandTests(unittest.TestCase):
             yesterday = (
                 datetime.now(ZoneInfo("America/Sao_Paulo")) - timedelta(days=1)
             ).replace(hour=9, minute=0, second=0, microsecond=0)
-            (state_dir / "briefing-state.json").write_text(
-                json.dumps({"last_briefing_at": yesterday.isoformat()}),
+            (state_dir / "last-briefing.json").write_text(
+                json.dumps({"at": yesterday.isoformat()}),
                 encoding="utf-8",
             )
             args = Namespace(workspace=str(workspace), format="json")
@@ -487,8 +487,8 @@ class StartCommandTests(unittest.TestCase):
                 second=0,
                 microsecond=0,
             )
-            (state_dir / "briefing-state.json").write_text(
-                json.dumps({"last_briefing_at": same_day.isoformat()}),
+            (state_dir / "last-briefing.json").write_text(
+                json.dumps({"at": same_day.isoformat()}),
                 encoding="utf-8",
             )
             args = Namespace(workspace=str(workspace), format="json")
@@ -522,7 +522,7 @@ class StartCommandTests(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
-            (state_dir / "briefing-state.json").write_text('{"last_briefing_at": ""}', encoding="utf-8")
+            (state_dir / "last-briefing.json").write_text('{"at": ""}', encoding="utf-8")
             os.chdir(workspace)
             try:
                 args = Namespace(workspace=None, format="json")

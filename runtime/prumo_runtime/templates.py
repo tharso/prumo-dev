@@ -24,17 +24,16 @@ def _render_workspace_runtime_rules() -> str:
 8. Se o host conseguir renderizar ações próprias, preferir `prumo start --format json` em vez de reinventar onboarding na unha.
 9. Ao consumir JSON estruturado, o host deve ler `adapter_contract_version`, `workspace_resolution` e `adapter_hints` antes de bancar o esperto.
 10. Em `start` e `briefing` estruturados, o host deve olhar primeiro para `state_flags`, `degradation`, `next_move` e `selection_contract`. A prosa vem depois.
-11. `google_status` e `integration_status` servem para detalhe operacional. `state_flags` serve para decisão rápida de fluxo. Não misture as gavetas.
-12. Se `degradation.status` vier `error` ou `partial`, preserve o que ainda presta, mostre o tropeço em uma linha curta e, se houver `action_id` útil, priorize essa recuperação antes de inventar novo ritual.
-13. Não leia arquivo para simular `prumo`, `briefing` ou `start`. Primeiro execute o comando.
-14. Não escreva arquivos em `_state/` fingindo ser o runtime.
-15. Não fabrique JSON de `prumo start --format json` ou `prumo briefing --format json`. Ou retorna a saída real, ou assume que falhou.
-16. Não rode comando extra só porque ficou curioso. Execute o que foi pedido ou o que o runtime sugeriu.
-17. Se um comando falhar por uso ou argumento inválido, não repita a mesma linha cegamente.
-18. Se houver falha parcial, preservar o que ainda presta e avisar em uma linha curta, sem despejar jargão técnico.
-19. Se `next_move.id == kickoff`, prefira uma segue curta em vez de menu de confirmação.
-20. Na invocação curta, não anuncie que vai rodar comando, ler JSON ou abrir arquivo. Execute primeiro e fale depois.
-21. Quando houver escolha, prefira uma pergunta por vez e opções curtas. Produto não é formulário com perfume."""
+11. Se `degradation.status` vier `error` ou `partial`, preserve o que ainda presta, mostre o tropeço em uma linha curta e, se houver `action_id` útil, priorize essa recuperação antes de inventar novo ritual.
+12. Não leia arquivo para simular `prumo`, `briefing` ou `start`. Primeiro execute o comando.
+13. Não escreva arquivos em `_state/` fingindo ser o runtime.
+14. Não fabrique JSON de `prumo start --format json` ou `prumo briefing --format json`. Ou retorna a saída real, ou assume que falhou.
+15. Não rode comando extra só porque ficou curioso. Execute o que foi pedido ou o que o runtime sugeriu.
+16. Se um comando falhar por uso ou argumento inválido, não repita a mesma linha cegamente.
+17. Se houver falha parcial, preservar o que ainda presta e avisar em uma linha curta, sem despejar jargão técnico.
+18. Se `next_move.id == kickoff`, prefira uma segue curta em vez de menu de confirmação.
+19. Na invocação curta, não anuncie que vai rodar comando, ler JSON ou abrir arquivo. Execute primeiro e fale depois.
+20. Quando houver escolha, prefira uma pergunta por vez e opções curtas. Produto não é formulário com perfume."""
 
 
 def _render_wrapper_runtime_rules(*, state_path: str = "_state/") -> str:
@@ -45,17 +44,16 @@ def _render_wrapper_runtime_rules(*, state_path: str = "_state/") -> str:
 5. Se o host souber trabalhar com JSON, prefira `prumo start --format json`.
 6. Se usar JSON, leia `adapter_hints` e respeite `kind`, `shell_command` e `host_prompt`.
 7. Antes de olhar `message`, leia `state_flags`, `degradation`, `next_move` e `selection_contract`.
-8. Use `google_status` e `integration_status` para narrar integração. Use `state_flags` para decidir fluxo.
-9. Se `degradation.status` vier `error` ou `partial`, preserve o que ainda funciona e priorize a ação de recuperação quando ela existir.
-10. Não reinvente `setup`, `migrate`, `repair` ou `auth`. Deixe o runtime tomar a primeira decisão.
-11. Não leia arquivo para simular briefing ou start. Primeiro execute o comando real.
-12. Não escreva `{state_path}` fingindo ser o runtime.
-13. Não rode comando extra sem necessidade.
-14. Se um comando falhar por uso ou argumento inválido, não repita a mesma linha como disco riscado.
-15. Em falha parcial, preserve o que ainda serve e explique o tropeço em uma linha curta, sem vazar stack trace.
-16. Se `next_move.id == kickoff`, não abra cardápio de aeroporto. Faça uma segue curta e convide ao despejo inicial.
-17. Na invocação curta, não narre o backstage ("vou rodar", "vou ler", "vou seguir o JSON"). Execute primeiro e fale depois.
-18. Quando houver escolha real, faça uma pergunta por vez e ofereça opções curtas em vez de cardápio burocrático."""
+8. Se `degradation.status` vier `error` ou `partial`, preserve o que ainda funciona e priorize a ação de recuperação quando ela existir.
+9. Não reinvente `setup`, `migrate`, `repair` ou `auth`. Deixe o runtime tomar a primeira decisão.
+10. Não leia arquivo para simular briefing ou start. Primeiro execute o comando real.
+11. Não escreva `{state_path}` fingindo ser o runtime.
+12. Não rode comando extra sem necessidade.
+13. Se um comando falhar por uso ou argumento inválido, não repita a mesma linha como disco riscado.
+14. Em falha parcial, preserve o que ainda serve e explique o tropeço em uma linha curta, sem vazar stack trace.
+15. Se `next_move.id == kickoff`, não abra cardápio de aeroporto. Faça uma segue curta e convide ao despejo inicial.
+16. Na invocação curta, não narre o backstage ("vou rodar", "vou ler", "vou seguir o JSON"). Execute primeiro e fale depois.
+17. Quando houver escolha real, faça uma pergunta por vez e ofereça opções curtas em vez de cardápio burocrático."""
 
 
 def _render_fallback_chain(skills_path: str) -> str:
@@ -455,8 +453,8 @@ _Última atualização: {setup_date}_
 """
 
 
-def render_briefing_state_json() -> str:
-    return '{\n  "last_briefing_at": "",\n  "interrupted_at": "",\n  "resume_point": ""\n}\n'
+def render_last_briefing_json() -> str:
+    return '{\n  "at": ""\n}\n'
 
 
 def render_inbox_processed_json() -> str:

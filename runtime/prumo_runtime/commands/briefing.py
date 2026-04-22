@@ -18,10 +18,11 @@ from prumo_runtime.workspace import (
     build_config_from_existing,
     extract_section,
     load_json,
+    migrate_briefing_state_to_last_briefing,
     parse_core_version,
     read_text,
     semantic_version_key,
-    update_briefing_state,
+    update_last_briefing,
     workspace_overview,
 )
 from prumo_runtime.workspace_paths import workspace_paths
@@ -136,9 +137,10 @@ def build_briefing_payload(workspace: Path, refresh_snapshot: bool = False) -> d
 
     preview = load_inbox_preview(workspace, repo_root)
 
-    update_briefing_state(workspace, config.timezone_name)
-    briefing_state = load_json(paths.briefing_state)
-    last_briefing_at = str(briefing_state.get("last_briefing_at") or "").strip()
+    migrate_briefing_state_to_last_briefing(workspace)
+    update_last_briefing(workspace, config.timezone_name)
+    last_briefing_state = load_json(paths.last_briefing)
+    last_briefing_at = str(last_briefing_state.get("at") or "").strip()
     has_briefed_today = same_local_day(last_briefing_at, config.timezone_name)
 
     core_version = parse_core_version(workspace)

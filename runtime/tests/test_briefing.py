@@ -45,7 +45,7 @@ class BriefingTests(unittest.TestCase):
                 encoding="utf-8",
             )
             (workspace / "PRUMO-CORE.md").write_text(f"> **prumo_version: {__version__}**\n", encoding="utf-8")
-            (state_dir / "briefing-state.json").write_text('{"last_briefing_at": ""}', encoding="utf-8")
+            (state_dir / "last-briefing.json").write_text('{"at": ""}', encoding="utf-8")
             payload = build_briefing_payload(workspace, refresh_snapshot=False)
             self.assertEqual(payload["workspace_path"], str(workspace.resolve()))
             self.assertEqual(payload["adapter_contract_version"], "2026-03-28")
@@ -86,7 +86,7 @@ class BriefingTests(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
-            (state_dir / "briefing-state.json").write_text('{"last_briefing_at": ""}', encoding="utf-8")
+            (state_dir / "last-briefing.json").write_text('{"at": ""}', encoding="utf-8")
             args = Namespace(workspace=str(workspace), refresh_snapshot=False, format="json")
             buffer = io.StringIO()
             with redirect_stdout(buffer):

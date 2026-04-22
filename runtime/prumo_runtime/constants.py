@@ -12,30 +12,6 @@ DEFAULT_AGENT_NAME = "Prumo"
 DEFAULT_TIMEZONE = "America/Sao_Paulo"
 DEFAULT_BRIEFING_TIME = "09:00"
 
-GENERATED_FILES = ("AGENT.md", "CLAUDE.md", "AGENTS.md", "PRUMO-CORE.md")
-AUTHORIAL_FILES = (
-    "Agente/INDEX.md",
-    "Agente/PESSOAS.md",
-    "Agente/SAUDE.md",
-    "Agente/ROTINA.md",
-    "Agente/INFRA.md",
-    "Agente/PROJETOS.md",
-    "Agente/RELACOES.md",
-    "PAUTA.md",
-    "INBOX.md",
-    "REGISTRO.md",
-    "IDEIAS.md",
-    "Referencias/INDICE.md",
-    "Referencias/WORKFLOWS.md",
-)
-DERIVED_FILES = (
-    "_state/workspace-schema.json",
-    "_state/briefing-state.json",
-    "Inbox4Mobile/_processed.json",
-)
-DIRECTORIES = ("Agente", "Inbox4Mobile", "Referencias", "_logs", "_state")
-
-
 def generated_files_for(workspace: Path) -> tuple[str, ...]:
     return workspace_paths(workspace).generated_relative_paths()
 

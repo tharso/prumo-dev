@@ -8,13 +8,9 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from prumo_runtime.constants import (
-    AUTHORIAL_FILES,
     DEFAULT_AGENT_NAME,
     DEFAULT_BRIEFING_TIME,
     DEFAULT_TIMEZONE,
-    DERIVED_FILES,
-    DIRECTORIES,
-    GENERATED_FILES,
     RUNTIME_VERSION,
     SCHEMA_VERSION,
     authorial_files_for,
@@ -190,7 +186,7 @@ def render_files(config: WorkspaceConfig) -> dict[str, str]:
         paths.relative(paths.ideias): templates.render_ideias_md(),
         paths.relative(paths.referencias_index): templates.render_referencias_md(setup_date),
         paths.relative(paths.workflows_index): templates.render_workflows_md(setup_date),
-        paths.relative(paths.briefing_state): templates.render_briefing_state_json(),
+        paths.relative(paths.last_briefing): templates.render_last_briefing_json(),
         paths.relative(paths.inbox_processed): templates.render_inbox_processed_json(),
     }
 
@@ -646,13 +642,28 @@ def parse_core_version(workspace: Path) -> str | None:
     return None
 
 
-def update_briefing_state(workspace: Path, timezone_name: str) -> None:
-    state_path = workspace_paths(workspace).briefing_state
-    state = load_json(state_path)
-    state["last_briefing_at"] = now_iso(timezone_name)
-    state.pop("interrupted_at", None)
-    state.pop("resume_point", None)
-    write_json(state_path, state)
+def update_last_briefing(workspace: Path, timezone_name: str) -> None:
+    state_path = workspace_paths(workspace).last_briefing
+    write_json(state_path, {"at": now_iso(timezone_name)})
+
+
+def migrate_briefing_state_to_last_briefing(workspace: Path) -> None:
+    """Idempotente: se o arquivo legado existir, migra pro schema novo e deleta.
+
+    - Se `last-briefing.json` já existe, só remove o legado (o novo ganha).
+    - Se o legado não existe, no-op.
+    """
+    paths = workspace_paths(workspace)
+    legacy_path = paths.legacy_briefing_state
+    if not legacy_path.exists():
+        return
+    if paths.last_briefing.exists():
+        legacy_path.unlink()
+        return
+    legacy_payload = load_json(legacy_path)
+    at_value = str(legacy_payload.get("last_briefing_at") or "")
+    write_json(paths.last_briefing, {"at": at_value})
+    legacy_path.unlink()
 
 
 def workspace_overview(workspace: Path) -> dict:

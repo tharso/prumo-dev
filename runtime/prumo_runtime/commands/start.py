@@ -17,6 +17,7 @@ from prumo_runtime.constants import ADAPTER_CONTRACT_VERSION, canonical_refs_fro
 from prumo_runtime.workspace import (
     WorkspaceError,
     load_json,
+    migrate_briefing_state_to_last_briefing,
     workspace_overview,
 )
 from prumo_runtime.workspace_paths import workspace_paths
@@ -164,8 +165,9 @@ def _render_start_text(workspace: Path, overview: dict) -> str:
     platform = overview["platform"]
     capabilities = overview["capabilities"]
     paths = workspace_paths(workspace)
-    briefing_state = load_json(paths.briefing_state)
-    last_briefing_at = str(briefing_state.get("last_briefing_at") or "").strip()
+    migrate_briefing_state_to_last_briefing(workspace)
+    last_briefing_state = load_json(paths.last_briefing)
+    last_briefing_at = str(last_briefing_state.get("at") or "").strip()
     has_briefed_today = _same_local_day(last_briefing_at, timezone_name)
     last_briefing_clock = _short_clock(last_briefing_at, timezone_name)
     actions = build_daily_actions(workspace, overview, has_briefed_today=has_briefed_today)
@@ -344,8 +346,9 @@ def run_start(args) -> int:
             return 0
         raise
 
+    migrate_briefing_state_to_last_briefing(workspace)
     has_briefed_today = _same_local_day(
-        str(load_json(workspace_paths(workspace).briefing_state).get("last_briefing_at") or "").strip(),
+        str(load_json(workspace_paths(workspace).last_briefing).get("at") or "").strip(),
         overview["timezone"],
     )
     continue_item = choose_continue_item(workspace)

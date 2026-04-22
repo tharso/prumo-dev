@@ -124,7 +124,11 @@ class WorkspacePaths:
         return self.referencias_root / "INDICE.md"
 
     @property
-    def briefing_state(self) -> Path:
+    def last_briefing(self) -> Path:
+        return self.state_root / "last-briefing.json"
+
+    @property
+    def legacy_briefing_state(self) -> Path:
         return self.state_root / "briefing-state.json"
 
     @property
@@ -166,7 +170,7 @@ class WorkspacePaths:
     def derived_relative_paths(self) -> tuple[str, ...]:
         return (
             self.relative(self.workspace_schema),
-            self.relative(self.briefing_state),
+            self.relative(self.last_briefing),
             self.relative(self.inbox_processed),
         )
 

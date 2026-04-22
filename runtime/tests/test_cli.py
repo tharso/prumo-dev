@@ -33,7 +33,7 @@ class CliDefaultInvocationTests(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
-            (state_dir / "briefing-state.json").write_text('{"last_briefing_at": ""}', encoding="utf-8")
+            (state_dir / "last-briefing.json").write_text('{"at": ""}', encoding="utf-8")
             os.chdir(workspace)
             try:
                 buffer = io.StringIO()
@@ -90,7 +90,7 @@ class CliDefaultInvocationTests(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
-            (state_dir / "briefing-state.json").write_text('{"last_briefing_at": ""}', encoding="utf-8")
+            (state_dir / "last-briefing.json").write_text('{"at": ""}', encoding="utf-8")
             (inbox_dir / "_processed.json").write_text('{"version":"1.0","items":[]}\n', encoding="utf-8")
             (inbox_dir / "item.txt").write_text("https://example.com\n", encoding="utf-8")
             buffer = io.StringIO()

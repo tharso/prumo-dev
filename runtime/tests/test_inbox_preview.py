@@ -39,7 +39,7 @@ class InboxPreviewCommandTests(unittest.TestCase):
             ),
             encoding="utf-8",
         )
-        (state_dir / "briefing-state.json").write_text('{"last_briefing_at": ""}', encoding="utf-8")
+        (state_dir / "last-briefing.json").write_text('{"at": ""}', encoding="utf-8")
         (inbox_dir / "_processed.json").write_text('{"version":"1.0","items":[]}\n', encoding="utf-8")
         (inbox_dir / "2026-03-23_text.txt").write_text(
             "https://youtu.be/QT7W_uHjqWE\nCriar nota sobre o video.\n",
