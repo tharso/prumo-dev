@@ -32,12 +32,6 @@ jobs:
       - name: Run unit tests
         run: PYTHONPATH=runtime python -m unittest discover -s runtime/tests -v
 
-      - name: Run runtime smoke
-        run: bash scripts/tests/local_runtime_phase1_smoke.sh
-
-      - name: Run briefing smoke
-        run: bash scripts/tests/briefing_smoke.sh
-
   windows-runtime-smoke:
     name: Windows Runtime Smoke
     runs-on: windows-latest

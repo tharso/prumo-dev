@@ -45,3 +45,5 @@ scripts/*
 !scripts/prumo_cowork_doctor.sh
 !scripts/prumo_cowork_update.sh
 !scripts/prumo_cowork_bridge.py
+!scripts/prumo_runtime_install.ps1
+!scripts/prumo_runtime_update.ps1
