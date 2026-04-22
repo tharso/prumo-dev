@@ -4,6 +4,31 @@ Log de decisoes arquiteturais e de processo. Cada entrada registra o contexto, a
 
 ---
 
+## 2026-04-22 — Prumo e workspace-first: identidade mora no workspace, plugin e stateless
+
+**Contexto:** Debate sobre o risco de fragmentacao acidental. Hoje o plugin descobre o workspace por CWD + marcadores (`.prumo/state/workspace-schema.json`, `Prumo/`, `.prumo/`) e oferece onboarding silencioso em pasta vazia. Se o usuario abrir o Cowork numa pasta errada e disser "bom dia", o Prumo cria estrutura ali e comeca um workspace paralelo. Depois de alguns dias, o DailyLife real fica congelado no tempo enquanto o duplicado acumula registro novo. A fragmentacao nao e por copia, e por bifurcacao silenciosa.
+
+Pesquisa em BMAD-METHOD (bmad-code-org) e Agent OS (buildermethods) mostrou dois modelos opostos. Agent OS faz instalacao em duas fases (`~/agent-os/` com identidade global + `project/agent-os/` com conteudo por projeto), mantendo identidade transversal. BMAD mantem tudo dentro do projeto (`_bmad/` no root, sem home directory), cada projeto autocontido e visivel. O Prumo nasceu mais proximo do BMAD — `.prumo/` e `Prumo/` vivem dentro da pasta do usuario. Forcar identidade global em `~/.prumo/` seria retrofit contra o DNA do produto.
+
+**Decisao:** O Prumo e workspace-first. Identidade (voz, perfil, pessoas, regras de curadoria, historico) mora inteira dentro do workspace escolhido pelo usuario. Plugin (Cowork, Claude Code, Codex, Antigravity, runtime CLI) e executor stateless: nenhum estado persistente em `~/.prumo/` ou equivalente. O Prumo nao memoriza workspaces entre sessoes. O que o usuario ve na pasta e o que existe.
+
+**Regras:**
+
+1. CWD-discovery silencioso morre como porta de entrada. Skills `start` e `setup` ganham gatekeeper explicito: pasta vazia ou sem marcadores canonicos nunca vira workspace sem confirmacao ativa do usuario (nome do workspace + confirmacao da pasta antes do primeiro toque em disco).
+2. O trigger da skill `start` por "qualquer interacao sem CLAUDE.md" e removido. Dispara apenas quando o usuario pede explicitamente ou quando o gatekeeper oferece como opcao.
+3. Em pasta nao-workspace, as unicas opcoes do gatekeeper sao (a) criar workspace nomeado aqui, ou (b) fechar e reabrir onde o Prumo mora. Nao ha "procurar Prumo existente em outra pasta" — isso exigiria persistir estado sobre workspaces conhecidos, o que contradiz a decisao.
+4. Segundo workspace e opt-in declarado. Criacao exige nome, confirmacao da pasta e ato deliberado. Nao ha heranca automatica de perfil entre workspaces. Se um dia precisar, vira comando explicito (`prumo fork-from <caminho>`).
+5. Workspace e portatil por contrato. Paths absolutos persistidos em qualquer arquivo de estado sao bugs. Debito conhecido no fechamento desta decisao: `Prumo/Inbox4Mobile/_preview-index.json` ainda escreve `inbox_dir` absoluto. Cleanup obrigatorio.
+6. Nao ha registry global de workspaces. `~/.prumo/` nao existe. Se um dia alguem propuser recriar, esta decisao e o freio.
+
+**Alternativas consideradas:**
+
+- *Agent OS-style* (identidade em `~/.prumo/profiles/` + workspaces que herdam): rejeitado. Cria metafisica de "Prumo canonico alem do workspace" que nao existe. A identidade do Prumo e o conteudo do workspace; separar os dois e ficcao arquitetural. Alem disso, agrega superficie de bug (sync entre `~/.prumo/` e workspace) sem ganho proporcional.
+- *Status quo + registry central de workspaces conhecidos* (`~/.prumo/workspaces.json`): rejeitado. Muleta que resolve sintoma sem atacar a causa. Acrescenta estado global pra compensar a falta de identidade central — ou seja, pior dos dois mundos.
+- *Status quo sem mudanca*: rejeitado. O risco de fragmentacao acidental e real e previsivel antes de qualquer reporte de usuario. Deixar o buraco aberto porque "ninguem caiu ainda" e decisao ruim.
+
+---
+
 ## 2026-04-22 — Distribuicao multi-cliente: Cowork, Claude Code, Codex CLI, Antigravity como targets de primeira classe
 
 **Contexto:** Ate o v4.x, o Prumo documentava instalacao primaria via Claude Code/Cowork e tratava os outros hosts como "compativeis em tese". Na pratica: `.claude-plugin/` era o unico manifesto distribuivel, Codex CLI e Antigravity nao tinham caminho testado. Risco: virar produto de ecossistema unico. A skill e portavel (SKILL.md + YAML frontmatter eh padrao aberto), mas cada host tem conveniencias diferentes (manifesto, marketplace, path de skills no disco). Sem tratar cada um como cidadao de primeira classe, o usuario fica dependente de terceiros reempacotarem o Prumo.
