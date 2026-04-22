@@ -31,3 +31,11 @@ O briefing usava Google Docs como cache de email/calendario. Esse mecanismo foi 
 ## Repo vs workspace sao pastas diferentes
 
 O repo de dev (codigo-fonte) e o workspace do usuario (dados pessoais) sao diretorios distintos. Nunca colocar o repo dentro do workspace nem vice-versa. O `detect_nested_layout()` em `workspace_paths.py` confunde os dois se estiverem aninhados.
+
+## Sandbox do Cowork nao tem credencial HTTPS pro GitHub
+
+O sandbox onde o agente roda (`/sessions/ecstatic-upbeat-cerf/...`) nao tem credenciais HTTPS configuradas pro `github.com`. `git push`, `gh auth`, `gh pr create` etc. falham com "could not read Username for 'https://github.com'". Nao tentar workaround com token embutido no remote, nao pedir credencial em chat.
+
+Fallback oficial: **Desktop Commander**. Rodar `mcp__Desktop_Commander__start_process` + `interact_with_process` para executar o comando a partir do clone real do repo na maquina do usuario (em geral `/Users/tharsovieira/Documents/DEV_Prumo`). Credenciais locais (ssh/keychain/gh) funcionam normalmente de la.
+
+Localizar o repo real se o caminho mudar: `mdfind -name "DEV_Prumo" -onlyin "$HOME"` (macOS) ou `find ~ -maxdepth 4 -type d -name "DEV_Prumo"`.
