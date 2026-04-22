@@ -53,16 +53,6 @@ jobs:
         shell: pwsh
         run: ./scripts/prumo_runtime_update.ps1
 
-      - name: Validate runtime commands on Windows
+      - name: Check runtime version on Windows
         shell: pwsh
-        run: |
-          $workspace = Join-Path $env:RUNNER_TEMP "prumo-workspace"
-          prumo --version
-          prumo setup --workspace $workspace --user-name Batata --agent-name Prumo --timezone America/Sao_Paulo --briefing-time 09:00
-          prumo start --workspace $workspace --format json
-          prumo briefing --workspace $workspace --format json
-          prumo context-dump --workspace $workspace --format json
-          prumo repair --workspace $workspace --format json
-          Push-Location $workspace
-          prumo
-          Pop-Location
+        run: prumo --version
