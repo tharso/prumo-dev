@@ -4,17 +4,6 @@ Este arquivo registra mudanças públicas do produto Prumo.
 
 O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamento semântico.
 
-## [4.19.0] - 2026-04-20
-
-### Removed
-- **HANDOVER sai do produto do usuário (issue #68).** `HANDOVER.md`, `HANDOVER.summary.md` e o comando `/prumo:handover` deixam de fazer parte do contrato do usuário final. A prática era ferramenta de desenvolvimento do Prumo vazando pro produto. A coordenação entre múltiplos agentes agora acontece exclusivamente via `.prumo/state/agent-lock.json` (lock curto, sem narrativa).
-- Referências a handover removidas de `prumo-core.md`, `briefing-procedure.md`, `load-policy.md`, `multiagent.md`, `interaction-format.md`, `file-protection-rules.md`, `changelog-setup.md`, `file-templates.md` e `skills/prumo/SKILL.md`.
-
-### Changed
-- **Sanitize refocalizada**: escopo passou a ser exclusivamente `.prumo/` (sistema). Cuida de backups velhos, cache expirado e arquivos de estado que crescem demais. Não toca em arquivos do usuário.
-- **Faxina sem duplicação**: a limpeza de estado técnico saiu da faxina. Agora a triade é clara: `sanitize` cuida do sistema (`.prumo/`, automático, cooldown), `faxina` cuida de arquivos do usuário (`Prumo/`, automático no briefing), `higiene` cuida de manutenção assistida do workspace do usuário (pergunta antes de mexer).
-- Multiagente (`multiagent.md`) reescrito como lock-only. Sem handover narrativo, sem validação cruzada PENDING/REJECTED.
-
 ## [5.0.0] - 2026-04-22
 
 ### Infrastructure (breaking for direct cloners, transparente pro usuário do plugin)
@@ -46,6 +35,17 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 - O protocolo de consumo por host agora cobre também o pré-cenário de `migrate` para workspaces legados, porque ignorar a primeira pedra real do caminho seria um bom jeito de chamar teatro de validação de campo.
 - Relatórios de validação do `Claude Code` e do `Antigravity` ficaram registrados em [validation/host-consumption/claude-code-2026-03-28.md](/Users/tharsovieira/Documents/DailyLife/Prumo/validation/host-consumption/claude-code-2026-03-28.md) e [validation/host-consumption/antigravity-2026-03-28.md](/Users/tharsovieira/Documents/DailyLife/Prumo/validation/host-consumption/antigravity-2026-03-28.md).
 - O README e a bridge de Apps Script foram alinhados a uma decisão menos histérica: multi-conta fica documentado como ponte futura, mas sai do MVP. Uma conta Google bem integrada basta para a primeira entrega.
+
+## [4.19.0] - 2026-04-20
+
+### Removed
+- **HANDOVER sai do produto do usuário (issue #68).** `HANDOVER.md`, `HANDOVER.summary.md` e o comando `/prumo:handover` deixam de fazer parte do contrato do usuário final. A prática era ferramenta de desenvolvimento do Prumo vazando pro produto. A coordenação entre múltiplos agentes agora acontece exclusivamente via `.prumo/state/agent-lock.json` (lock curto, sem narrativa).
+- Referências a handover removidas de `prumo-core.md`, `briefing-procedure.md`, `load-policy.md`, `multiagent.md`, `interaction-format.md`, `file-protection-rules.md`, `changelog-setup.md`, `file-templates.md` e `skills/prumo/SKILL.md`.
+
+### Changed
+- **Sanitize refocalizada**: escopo passou a ser exclusivamente `.prumo/` (sistema). Cuida de backups velhos, cache expirado e arquivos de estado que crescem demais. Não toca em arquivos do usuário.
+- **Faxina sem duplicação**: a limpeza de estado técnico saiu da faxina. Agora a triade é clara: `sanitize` cuida do sistema (`.prumo/`, automático, cooldown), `faxina` cuida de arquivos do usuário (`Prumo/`, automático no briefing), `higiene` cuida de manutenção assistida do workspace do usuário (pergunta antes de mexer).
+- Multiagente (`multiagent.md`) reescrito como lock-only. Sem handover narrativo, sem validação cruzada PENDING/REJECTED.
 
 ## [4.16.6] - 2026-03-27
 
