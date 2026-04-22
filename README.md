@@ -133,7 +133,7 @@ Quer duas instâncias (ex: pessoal vs. trabalho)? É opt-in declarado: rode `/pr
 
 ## Versão
 
-`5.1.0`
+`5.1.1`
 
 ## Licença
 

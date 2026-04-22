@@ -4,6 +4,22 @@ Este arquivo registra mudanças públicas do produto Prumo.
 
 O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamento semântico.
 
+## [5.1.1] - 2026-04-22
+
+### Fixed
+- **Menu de alternativas no briefing e no start para de colapsar em "Ver lista completa"**: quando `next_move` estava definido, o renderer enterrava todas as opções nomeadas (briefing, continue, process-inbox, organize-day, align-core) atrás de 4 genéricas (Aceitar/Lista/Estado/Tá bom). Agora os dois renderers surfam até 5 alternativas nomeadas + "Ver estado técnico" + "Tá bom por hoje". Abrir sessão com "prumo" cru mostra de cara os caminhos disponíveis em vez de tratar briefing como única possibilidade.
+- **Drift de versão entre workspace e runtime vira opção explícita no menu**: quando `core_outdated` é detectado, a opção `align-core` aparece como item nomeado com label humano contextual ("Atualizar o motor (core X → runtime Y)") e o comando `prumo migrate` inline. Antes, o drift aparecia só no preflight e a opção de atualizar ficava enterrada em "Ver lista completa".
+
+### Changed
+- `daily_operator.py`: novo helper `render_action_menu_lines(actions, next_move, workspace)` compartilhado entre `start` e `briefing`. Prioridade explícita: align-core, briefing, continue, process-inbox, organize-day, repair, kickoff. Source of truth única para renderização de menu.
+- `suggest_core_alignment_action` passa a gerar label dinâmico usando as versões reais do workspace em vez do texto técnico genérico "Alinhar core e wrappers canônicos".
+
+### Tests
+- 4 novos testes cobrindo os dois bugs (2 em `test_start.py`, 2 em `test_briefing.py`). Total: 45 testes verdes.
+
+### Docs
+- Gotchas.md ganha entrada "Menus colapsados escondem sinais de primeira classe" para prevenir regressão.
+
 ## [5.1.0] - 2026-04-22
 
 ### Added
