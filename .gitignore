@@ -47,3 +47,4 @@ scripts/*
 !scripts/prumo_cowork_bridge.py
 !scripts/prumo_runtime_install.ps1
 !scripts/prumo_runtime_update.ps1
+!scripts/prumo_antigravity_install.sh

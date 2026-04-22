@@ -4,6 +4,32 @@ Log de decisoes arquiteturais e de processo. Cada entrada registra o contexto, a
 
 ---
 
+## 2026-04-22 — Distribuicao multi-cliente: Cowork, Claude Code, Codex CLI, Antigravity como targets de primeira classe
+
+**Contexto:** Ate o v4.x, o Prumo documentava instalacao primaria via Claude Code/Cowork e tratava os outros hosts como "compativeis em tese". Na pratica: `.claude-plugin/` era o unico manifesto distribuivel, Codex CLI e Antigravity nao tinham caminho testado. Risco: virar produto de ecossistema unico. A skill e portavel (SKILL.md + YAML frontmatter eh padrao aberto), mas cada host tem conveniencias diferentes (manifesto, marketplace, path de skills no disco). Sem tratar cada um como cidadao de primeira classe, o usuario fica dependente de terceiros reempacotarem o Prumo.
+
+**Decisao:** Prumo passa a distribuir explicitamente em quatro canais, cada um com caminho de instalacao documentado, testado e espelhado:
+
+1. **Cowork / Claude Code** — manifesto `.claude-plugin/plugin.json` + `.claude-plugin/marketplace.json` (e espelhos na raiz por retrocompatibilidade). Instalacao via `claude plugin marketplace add https://github.com/tharso/prumo.git`.
+2. **Codex CLI** — manifesto `.codex-plugin/plugin.json` + `.codex-plugin/marketplace.json`, schema especifico do Codex (source url, policy, category). Instalacao via `codex plugin marketplace add ...`.
+3. **Antigravity (Gemini)** — sem manifesto. Cada skill em `skills/` eh standalone e compativel direto. Script `scripts/prumo_antigravity_install.sh --scope global|workspace` copia `skills/*` pra `~/.gemini/antigravity/skills/` ou `<pwd>/.agent/skills/`.
+4. **Runtime standalone** — `prumo_runtime_install.sh|.ps1` instala o CLI `prumo` via uv ou pip. Serve qualquer host e eh recomendado como base de todos eles.
+
+Todos leem a mesma fonte canonica: `skills/` + `runtime/prumo_runtime/`. Zero divergencia de comportamento entre hosts. O mirror workflow (`tharso/prumo-dev` -> `tharso/prumo`) espelha `.claude-plugin/`, `.codex-plugin/`, `skills/`, `runtime/` e os cinco scripts (4 runtime + 1 antigravity).
+
+**Regras:**
+- Adicionar novo host de primeira classe exige: manifesto proprio (ou caminho de instalacao documentado), script de instalacao ou receita no README, inclusao explicita no mirror workflow, linha dedicada no CHANGELOG.
+- Nenhum host pode receber feature que dependa de capacidade exclusiva dele. Se a feature nao cabe em Markdown + runtime Python, nao entra.
+- Skills nao podem assumir host especifico. Se precisarem, ramificam por deteccao em runtime, nunca por arquivo condicional.
+
+**Alternativas consideradas:**
+- Deixar Codex e Antigravity como "best effort" sem manifesto proprio -> rejeitado. Sem manifesto, Codex CLI nao descobre o plugin. Usuario teria que clonar na mao. Friccao mata adocao.
+- Publicar cada host como plugin separado (prumo-claude, prumo-codex, prumo-antigravity) -> rejeitado. Duplica manutencao de versao, CHANGELOG, skills. Mesmo produto, quatro forks virtuais.
+- Deixar Antigravity fora do escopo por ser mais novo -> rejeitado. Skills ja sao compativeis, custo zero de adicao. Script e cinco minutos.
+- Exigir runtime como pre-requisito de todos os hosts -> rejeitado. Antigravity funciona sem runtime pra quem so quer briefing manual e despejar texto. Runtime e recomendado, nao obrigatorio.
+
+---
+
 ## 2026-04-22 — Split dev/dist: `tharso/prumo-dev` desenvolve, `tharso/prumo` distribui
 
 **Contexto:** O repositorio `tharso/prumo` acumulava dois contratos incompativeis: (1) repo de desenvolvimento com issues, history completo, documentos internos (DECISIONS.md, CLAUDE.md, AGENT.md, gotchas.md, `.github/`, `dev-archive/`, HANDOVER historico) e (2) repo publico instalavel via marketplace Cowork, Claude Code e `pip install prumo-runtime`. Consequencia: quem clonava ou instalava recebia um pacote poluido com arquivos de trabalho interno, dificil de auditar, com muitos sinais que nao sao contrato do produto. Auditoria mostrou: o `source: url` do marketplace do Cowork clona o repo inteiro, sem filtro. Arquivos sensiveis de desenvolvimento ficavam visiveis no cache do usuario.

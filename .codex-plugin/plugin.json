@@ -1,0 +1,31 @@
+{
+  "name": "prumo",
+  "version": "5.1.0",
+  "description": "Sistema de organização de vida pessoal com IA. Transforma o Codex em interface única para capturar, processar, lembrar e cobrar — tudo em arquivos locais, sem cloud, sem lock-in.",
+  "author": {
+    "name": "Prumo Maintainers",
+    "url": "https://prumo.me"
+  },
+  "homepage": "https://prumo.me",
+  "repository": "https://github.com/tharso/prumo",
+  "license": "MIT",
+  "keywords": [
+    "productivity",
+    "life-organization",
+    "personal-assistant",
+    "gtd",
+    "task-management",
+    "produtividade",
+    "organização"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Prumo",
+    "shortDescription": "Organização de vida pessoal via agente, arquivos locais.",
+    "longDescription": "Prumo transforma o agente em interface única para capturar, processar, lembrar e cobrar. Setup conversacional em 10 etapas, onboarding dump-first, briefings diários, coordenação entre agentes via lock, sanitização de estado e governança assistida do CLAUDE.md/AGENTS.md do workspace.",
+    "developerName": "Prumo Maintainers",
+    "category": "Productivity",
+    "capabilities": ["Read", "Write"],
+    "websiteURL": "https://prumo.me"
+  }
+}

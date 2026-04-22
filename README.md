@@ -21,9 +21,11 @@ Prumo funciona diferente:
 
 ## Instalação
 
-Prumo funciona com qualquer host que suporte plugins: **Claude Code**, **Codex CLI**, **Antigravity**, **Cowork**.
+Prumo é agnóstico: mesma alma (as skills em `skills/`), quatro canais de instalação. Escolha o host que você já usa.
 
-### Runtime (recomendado)
+### Runtime local (recomendado em todos os casos)
+
+O runtime é o motor que segura estado, coordena agentes e expõe o comando `prumo`. Instala uma vez, serve todos os hosts.
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/tharso/prumo/main/scripts/prumo_runtime_install.sh)
@@ -41,18 +43,36 @@ Depois:
 prumo setup --workspace /caminho/da/pasta
 ```
 
-Ou simplesmente:
+### Cowork / Claude Code
 
-```bash
-cd /caminho/da/pasta
-prumo
-```
-
-### Plugin (Claude/Cowork)
+Os dois leem o mesmo manifesto (`plugin.json` + `marketplace.json` na raiz ou em `.claude-plugin/`).
 
 ```bash
 claude plugin marketplace add https://github.com/tharso/prumo.git
-claude plugin install prumo@prumo-marketplace
+claude plugin install prumo@prumo
+```
+
+No Cowork: adicione `https://github.com/tharso/prumo.git` como marketplace na interface e instale o plugin `prumo`.
+
+### Codex CLI
+
+Codex usa `.codex-plugin/plugin.json`. Registre o marketplace e instale:
+
+```bash
+codex plugin marketplace add https://github.com/tharso/prumo.git
+codex plugin install prumo
+```
+
+### Antigravity (Gemini)
+
+Antigravity lê skills direto do filesystem. Instale via script, global ou por workspace:
+
+```bash
+# Global (~/.gemini/antigravity/skills/) — disponível em qualquer workspace
+bash <(curl -fsSL https://raw.githubusercontent.com/tharso/prumo/main/scripts/prumo_antigravity_install.sh)
+
+# Por workspace (<pwd>/.agent/skills/) — escopado ao diretório atual
+bash <(curl -fsSL https://raw.githubusercontent.com/tharso/prumo/main/scripts/prumo_antigravity_install.sh) --scope workspace
 ```
 
 ## Primeiros passos
@@ -89,16 +109,18 @@ Se preferir ir direto: abra uma conversa e diga o que está na sua cabeça. Prum
 ```
 ├── skills/                 # Alma do produto (portáteis entre hosts)
 ├── runtime/                # Motor mecânico (setup, auth, estado)
-├── docs/                   # Referência interna de desenvolvimento
-├── plugin.json             # Manifesto do plugin
-├── marketplace.json        # Manifesto do marketplace
+├── scripts/                # Instaladores (runtime + hosts específicos)
+├── .claude-plugin/         # Manifesto para Cowork e Claude Code
+├── .codex-plugin/          # Manifesto para Codex CLI
+├── plugin.json             # Manifesto raiz (espelha .claude-plugin/)
+├── marketplace.json        # Marketplace raiz
 ├── CHANGELOG.md            # Histórico
 └── VERSION                 # Versão atual
 ```
 
 ## Versão
 
-`4.17.0`
+`5.1.0`
 
 ## Licença
 

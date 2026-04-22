@@ -38,12 +38,14 @@ jobs:
           cp    LICENSE                        "$STAGE/LICENSE"
           cp    pyproject.toml                 "$STAGE/pyproject.toml"
           cp -R .claude-plugin                 "$STAGE/.claude-plugin"
+          cp -R .codex-plugin                  "$STAGE/.codex-plugin"
 
           mkdir -p "$STAGE/scripts"
-          cp scripts/prumo_runtime_install.sh  "$STAGE/scripts/"
-          cp scripts/prumo_runtime_update.sh   "$STAGE/scripts/"
-          cp scripts/prumo_runtime_install.ps1 "$STAGE/scripts/"
-          cp scripts/prumo_runtime_update.ps1  "$STAGE/scripts/"
+          cp scripts/prumo_runtime_install.sh    "$STAGE/scripts/"
+          cp scripts/prumo_runtime_update.sh     "$STAGE/scripts/"
+          cp scripts/prumo_runtime_install.ps1   "$STAGE/scripts/"
+          cp scripts/prumo_runtime_update.ps1    "$STAGE/scripts/"
+          cp scripts/prumo_antigravity_install.sh "$STAGE/scripts/"
 
           # Higiene: remover caches se sobraram
           find "$STAGE" -type d -name "__pycache__" -prune -exec rm -rf {} +

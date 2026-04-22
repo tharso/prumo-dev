@@ -4,6 +4,20 @@ Este arquivo registra mudanças públicas do produto Prumo.
 
 O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamento semântico.
 
+## [5.1.0] - 2026-04-22
+
+### Added
+- **Codex CLI como target de primeira classe**: novo `.codex-plugin/plugin.json` + `.codex-plugin/marketplace.json` com schema próprio do Codex (source url, policy, category). Instalação agora funciona via `codex plugin marketplace add https://github.com/tharso/prumo.git`.
+- **Antigravity (Gemini) como target de primeira classe**: novo `scripts/prumo_antigravity_install.sh` que copia `skills/` pra `~/.gemini/antigravity/skills/` (escopo global, default) ou `<pwd>/.agent/skills/` (escopo workspace, via `--scope workspace`). Funciona com checkout local ou snapshot baixado via curl. Usa rsync quando disponível, cai em `cp -R` quando não.
+- **Receita de instalação documentada pros quatro canais**: README reorganizado em seções Runtime, Cowork/Claude Code, Codex CLI, Antigravity. Zero ambiguidade sobre qual comando rodar em cada host.
+
+### Changed
+- Mirror workflow (`.github/workflows/mirror-to-prumo.yml`) agora inclui `.codex-plugin/` e `scripts/prumo_antigravity_install.sh` no subset distribuído pra `tharso/prumo`.
+- Estrutura no README atualizada pra refletir `.claude-plugin/`, `.codex-plugin/` e `scripts/` como cidadãos de primeira classe. `docs/` removido do diagrama (foi removido do repo em 2026-04-14).
+
+### Docs
+- Decisão arquitetural "Distribuicao multi-cliente" registrada em `DECISIONS.md` como contrato: adicionar novo host exige manifesto próprio, script de instalação, inclusão no mirror e linha no CHANGELOG. Nenhum host pode receber feature que dependa de capacidade exclusiva dele.
+
 ## [5.0.0] - 2026-04-22
 
 ### Infrastructure (breaking for direct cloners, transparente pro usuário do plugin)

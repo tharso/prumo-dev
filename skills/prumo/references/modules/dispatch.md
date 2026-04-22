@@ -1,6 +1,6 @@
 # Dispatch
 
-> **module_version: 5.0.0**
+> **module_version: 5.1.0**
 >
 > Como o Prumo abre sessão e decide o que fazer. Substitui o bootstrap just-in-case (ler tudo antes de saber a intenção) por despacho baseado no que o usuário quer.
 
