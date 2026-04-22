@@ -18,7 +18,7 @@ Em 2026-04-22 o schema de estado de briefing foi enxugado. `briefing-state.json`
 
 ## Versoes fora de sincronia
 
-A versao do Prumo vive em 10 lugares: 7 manifestos (`plugin.json`, `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, `marketplace.json`, `.claude-plugin/marketplace.json`, `pyproject.toml`, `VERSION`) + 3 headers de skill (`skills/prumo/references/prumo-core.md`, `skills/prumo/references/modules/load-policy.md`, `skills/prumo/references/modules/dispatch.md`). Se uma estiver diferente das outras, e bug. Bumpar todas juntas. Comando rapido pra auditar: `grep -rn "X\.Y\.Z" --include='*.json' --include='*.toml' --include='VERSION' --include='*.md'`.
+A versao do Prumo vive em 11 lugares: 7 manifestos (`plugin.json`, `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, `marketplace.json`, `.claude-plugin/marketplace.json`, `pyproject.toml`, `VERSION`) + 3 headers de skill (`skills/prumo/references/prumo-core.md`, `skills/prumo/references/modules/load-policy.md`, `skills/prumo/references/modules/dispatch.md`) + `runtime/prumo_runtime/__init__.py` (`__version__`, aferido pelo `test_version_sync.py`). Se uma estiver diferente das outras, e bug. Bumpar todas juntas. Comando rapido pra auditar: `grep -rn "X\.Y\.Z" --include='*.json' --include='*.toml' --include='VERSION' --include='*.md' --include='__init__.py'`.
 
 Nota: `.codex-plugin/marketplace.json` nao tem campo `version` (schema do Codex nao preve). Nao ressuscitar.
 
