@@ -62,7 +62,6 @@ jobs:
 
           echo "Conteúdo do staging:"
           ls -la "$STAGE"
-          echo "$STAGE" >> "$GITHUB_ENV"
           echo "STAGE=$STAGE" >> "$GITHUB_ENV"
 
       - name: Push pra prumo público
