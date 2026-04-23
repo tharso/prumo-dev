@@ -65,3 +65,14 @@ Regras:
 - Start e briefing compartilham o helper `render_action_menu_lines(actions, next_move, workspace)` em `daily_operator.py`. Se voce vai mexer em um dos dois renderers, mexe no helper e ambos herdam.
 
 Teste de sanidade: `message` renderizada nao pode conter "Ver lista completa" quando `actions` tem mais de 4 entradas nomeadas.
+
+## Formato do workspace evolui, parser do runtime fica cego
+
+Em abril/2026 o `extract_section` do runtime casava header com igualdade estrita. Funcionava enquanto o usuario escrevia `## Quente (precisa de atencao agora)` porque esse era o formato do template. Quando o usuario passou a escrever `## Quente — Quarta 22/04` (formato mais vivo, com data do dia), o runtime passou a ler **zero itens** da secao. O briefing nao quebrava: devolvia pauta vazia. Silencioso, pior que erro.
+
+Regras:
+
+- Parser de arquivo do usuario (PAUTA, INBOX, marcadores) nao pode depender de formato exato do template. Tolerar sufixos visuais (separador `—`, `(`, `:`, `-`, `/`, `|`) no header sem confundir secoes parecidas (ex: `Agendado` vs `Agendado Futuro`).
+- Unit test com fixture sintetica **nao basta**. Todo parser de formato do usuario precisa de smoke test contra o workspace real (`DailyLife/Prumo/PAUTA.md` na maquina do Tharso) antes do merge. Se o runtime le 0 itens numa secao que tem conteudo visivel, e bug de parser, nao ausencia de dados.
+- Quando o usuario reportar "o briefing esta ignorando isso" ou "nao me lembrou de X", a primeira hipotese nao e bug no briefing em si. E parser do workspace divergindo do formato que o usuario escreve hoje. Validar com smoke antes de mexer em logica de briefing.
+- Header match tolerante nao e permissao pra match solto. `_section_header_matches` em `workspace.py` so aceita tail apos separadores reconhecidos. Letra nao e separador (senao `Agendado` casaria `Agendado Futuro`, bug mais sutil que o primeiro).

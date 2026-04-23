@@ -219,7 +219,7 @@ def kickoff_contract_payload(workspace: Path) -> dict[str, object]:
 
 def pauta_candidates(workspace: Path) -> tuple[list[str], list[str]]:
     pauta = read_text(workspace_paths(workspace).pauta)
-    hot = extract_section(pauta, "Quente (precisa de atenção agora)")
+    hot = extract_section(pauta, "Quente")
     ongoing = extract_section(pauta, "Em andamento")
     clean_hot = [item for item in hot if "_Nada ainda._" not in item and "Nada ainda." not in item]
     clean_ongoing = [item for item in ongoing if "_Nada ainda._" not in item and "Nada ainda." not in item]

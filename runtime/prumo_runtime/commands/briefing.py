@@ -132,9 +132,9 @@ def build_briefing_payload(workspace: Path, refresh_snapshot: bool = False) -> d
     paths = workspace_paths(workspace)
     pauta_text = read_text(paths.pauta)
     inbox_text = read_text(paths.inbox)
-    quente = extract_section(pauta_text, "Quente (precisa de atenção agora)")
+    quente = extract_section(pauta_text, "Quente")
     andamento = extract_section(pauta_text, "Em andamento")
-    agendado = extract_section(pauta_text, "Agendado / Lembretes")
+    agendado = extract_section(pauta_text, "Agendado")
 
     preview = load_inbox_preview(workspace, repo_root)
 
