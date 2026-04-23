@@ -634,6 +634,26 @@ def read_text(path: Path) -> str:
     return path.read_text(encoding="utf-8") if path.exists() else ""
 
 
+_SECTION_HEADER_SEPARATORS = frozenset("—-():|/")
+
+
+def _section_header_matches(header_text: str, marker: str) -> bool:
+    """Match de header tolerante a sufixo visual sem engolir seções parecidas.
+
+    Casa "## Quente", "## Quente — Quarta 22/04" e "## Quente (precisa...)"
+    para heading="Quente", mas NÃO casa "## Agendado Futuro" para heading="Agendado"
+    porque a letra 'F' de 'Futuro' não é um separador visual reconhecido.
+    """
+    if header_text == marker:
+        return True
+    if not header_text.startswith(marker):
+        return False
+    tail = header_text[len(marker):].lstrip()
+    if not tail:
+        return True
+    return tail[0] in _SECTION_HEADER_SEPARATORS
+
+
 def extract_section(markdown: str, heading: str) -> list[str]:
     lines = markdown.splitlines()
     capture = False
@@ -643,7 +663,7 @@ def extract_section(markdown: str, heading: str) -> list[str]:
         if line.startswith("## "):
             if capture:
                 break
-            capture = line.strip() == marker
+            capture = _section_header_matches(line.strip(), marker)
             continue
         if capture:
             stripped = line.strip()
