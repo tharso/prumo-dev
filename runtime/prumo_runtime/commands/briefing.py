@@ -18,6 +18,7 @@ from prumo_runtime.inbox_preview import load_inbox_preview, summarize_inbox_entr
 from prumo_runtime.workspace import (
     build_config_from_existing,
     extract_section,
+    filter_by_due_date,
     load_json,
     migrate_briefing_state_to_last_briefing,
     parse_core_version,
@@ -132,9 +133,10 @@ def build_briefing_payload(workspace: Path, refresh_snapshot: bool = False) -> d
     paths = workspace_paths(workspace)
     pauta_text = read_text(paths.pauta)
     inbox_text = read_text(paths.inbox)
-    quente = extract_section(pauta_text, "Quente")
-    andamento = extract_section(pauta_text, "Em andamento")
-    agendado = extract_section(pauta_text, "Agendado")
+    today = datetime.now(ZoneInfo(config.timezone_name)).date()
+    quente = filter_by_due_date(extract_section(pauta_text, "Quente"), today)
+    andamento = filter_by_due_date(extract_section(pauta_text, "Em andamento"), today)
+    agendado = filter_by_due_date(extract_section(pauta_text, "Agendado"), today)
 
     preview = load_inbox_preview(workspace, repo_root)
 

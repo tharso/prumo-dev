@@ -2,9 +2,17 @@ from __future__ import annotations
 
 import os
 import shlex
+from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
-from prumo_runtime.workspace import extract_section, read_text, load_json
+from prumo_runtime.workspace import (
+    build_config_from_existing,
+    extract_section,
+    filter_by_due_date,
+    load_json,
+    read_text,
+)
 from prumo_runtime.workspace_paths import workspace_paths
 
 
@@ -218,9 +226,11 @@ def kickoff_contract_payload(workspace: Path) -> dict[str, object]:
 
 
 def pauta_candidates(workspace: Path) -> tuple[list[str], list[str]]:
+    config = build_config_from_existing(workspace)
+    today = datetime.now(ZoneInfo(config.timezone_name)).date()
     pauta = read_text(workspace_paths(workspace).pauta)
-    hot = extract_section(pauta, "Quente")
-    ongoing = extract_section(pauta, "Em andamento")
+    hot = filter_by_due_date(extract_section(pauta, "Quente"), today)
+    ongoing = filter_by_due_date(extract_section(pauta, "Em andamento"), today)
     clean_hot = [item for item in hot if "_Nada ainda._" not in item and "Nada ainda." not in item]
     clean_ongoing = [item for item in ongoing if "_Nada ainda._" not in item and "Nada ainda." not in item]
     return clean_hot, clean_ongoing
