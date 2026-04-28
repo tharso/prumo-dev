@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -30,10 +31,49 @@ from prumo_runtime.workspace import (
 from prumo_runtime.workspace_paths import workspace_paths
 
 
-def list_or_placeholder(items: list[str], fallback: str) -> str:
+_COBRAR_SUFFIX_PATTERN = re.compile(r"\|\s*cobrar\s*:[^|]*$", re.IGNORECASE)
+_TITLE_PATTERN = re.compile(r"^(?P<prefix>[^*]*?)(?P<title>\*\*[^*]+\*\*)")
+
+
+def shorten_pauta_item(item: str, max_fallback_chars: int = 80) -> str:
+    """Reduz um item da pauta a `[tag] **titulo** | cobrar: DD/MM` quando possivel.
+
+    Quando o item nao tem titulo em negrito, faz truncate por caracteres com '...'.
+    Preserva o sufixo `| cobrar: DD/MM[/AAAA]` quando presente — eh sinal de acao.
+    """
+    text = item.strip()
+    if text.startswith("- "):
+        text = text[2:].strip()
+
+    cobrar_match = _COBRAR_SUFFIX_PATTERN.search(text)
+    cobrar_suffix = f" {cobrar_match.group(0).strip()}" if cobrar_match else ""
+
+    title_match = _TITLE_PATTERN.match(text)
+    if title_match:
+        prefix = title_match.group("prefix").strip()
+        title = title_match.group("title")
+        head = f"{prefix} {title}".strip() if prefix else title
+        return f"{head}{cobrar_suffix}"
+
+    base = _COBRAR_SUFFIX_PATTERN.sub("", text).strip()
+    if len(base) > max_fallback_chars:
+        base = base[:max_fallback_chars].rstrip() + "..."
+    return f"{base}{cobrar_suffix}"
+
+
+def list_or_placeholder(items: list[str], fallback: str, limit: int = 3) -> str:
+    """Formata os primeiros `limit` itens encurtados, com sufixo de overflow.
+
+    Aplica `shorten_pauta_item` em cada item antes de juntar. Se houver mais
+    itens que `limit`, anexa ` (+N)` no final pra o panorama nao mentir sobre
+    o tamanho real da fila.
+    """
     if not items:
         return fallback
-    return "; ".join(items[:3])
+    shortened = [shorten_pauta_item(item) for item in items[:limit]]
+    overflow = len(items) - limit
+    suffix = f" (+{overflow})" if overflow > 0 else ""
+    return "; ".join(shortened) + suffix
 
 
 def count_inbox_items(inbox_text: str) -> int:

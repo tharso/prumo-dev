@@ -12,7 +12,9 @@ from pathlib import Path
 from prumo_runtime.commands.briefing import (
     build_briefing_payload,
     choose_proposal,
+    list_or_placeholder,
     run_briefing,
+    shorten_pauta_item,
 )
 from prumo_runtime import __version__
 from prumo_runtime.platform_support import platform_label
@@ -197,6 +199,86 @@ class BriefingTests(unittest.TestCase):
     def test_choose_proposal_returns_fallback_when_empty(self) -> None:
         proposal = choose_proposal([], [], [])
         self.assertIn("dump real de pendências", proposal)
+
+
+class ShortenPautaItemTests(unittest.TestCase):
+    def test_keeps_tag_title_and_cobrar_suffix(self) -> None:
+        item = (
+            "- [Pai] **Reunião Emilie — Encontro da Aprendizagem Solidária (Nina)** "
+            "— Sexta 24/04, 13:30–15h, Sala de Projeção. Convocação da Sonia. "
+            "(desde 22/04) | cobrar: 23/04"
+        )
+        self.assertEqual(
+            shorten_pauta_item(item),
+            "[Pai] **Reunião Emilie — Encontro da Aprendizagem Solidária (Nina)** | cobrar: 23/04",
+        )
+
+    def test_drops_descriptive_tail_when_no_cobrar(self) -> None:
+        item = (
+            "- [Pessoal/Financeiro] **Declaração de IR 2026** — Prazo até 29/05. "
+            "Documentos enviados ao contador (confirmado 22/04)."
+        )
+        self.assertEqual(
+            shorten_pauta_item(item),
+            "[Pessoal/Financeiro] **Declaração de IR 2026**",
+        )
+
+    def test_falls_back_to_char_truncate_when_no_bold_title(self) -> None:
+        item = "- [Pai] reuniao da escola amanha as 19h, levar caderno do Roque e conversar com a tia"
+        result = shorten_pauta_item(item, max_fallback_chars=80)
+        self.assertTrue(result.endswith("..."))
+        self.assertLessEqual(len(result), 84)
+        self.assertTrue(result.startswith("[Pai] reuniao"))
+
+    def test_fallback_preserves_cobrar_suffix(self) -> None:
+        item = "- [Pai] reuniao curta sem destaque (desde 14/04) | cobrar: 25/04"
+        result = shorten_pauta_item(item)
+        self.assertIn("| cobrar: 25/04", result)
+        self.assertTrue(result.startswith("[Pai] reuniao curta sem destaque (desde 14/04)"))
+
+    def test_handles_item_without_bullet_prefix(self) -> None:
+        item = "[Pessoal] **Comprar parafuso M5x30** — Yoga confirmou ontem"
+        self.assertEqual(
+            shorten_pauta_item(item),
+            "[Pessoal] **Comprar parafuso M5x30**",
+        )
+
+
+class ListOrPlaceholderTests(unittest.TestCase):
+    def test_returns_fallback_when_empty(self) -> None:
+        self.assertEqual(
+            list_or_placeholder([], "Pauta sem tração aparente."),
+            "Pauta sem tração aparente.",
+        )
+
+    def test_appends_overflow_count_when_more_than_limit(self) -> None:
+        items = [
+            "- [A] **Item 1** — descricao 1",
+            "- [B] **Item 2** — descricao 2",
+            "- [C] **Item 3** — descricao 3",
+            "- [D] **Item 4** — descricao 4",
+            "- [E] **Item 5** — descricao 5",
+        ]
+        result = list_or_placeholder(items, "fallback")
+        self.assertIn("[A] **Item 1**", result)
+        self.assertIn("[C] **Item 3**", result)
+        self.assertNotIn("Item 4", result)
+        self.assertTrue(result.endswith(" (+2)"))
+
+    def test_no_overflow_suffix_when_at_or_below_limit(self) -> None:
+        items = [
+            "- [A] **Item 1** — descricao 1",
+            "- [B] **Item 2** — descricao 2",
+        ]
+        result = list_or_placeholder(items, "fallback")
+        self.assertNotIn("(+", result)
+
+    def test_shortens_each_item(self) -> None:
+        items = [
+            "- [Pai] **Reunião Emilie** — descricao longa que deveria sumir do panorama final",
+        ]
+        result = list_or_placeholder(items, "fallback")
+        self.assertEqual(result, "[Pai] **Reunião Emilie**")
 
 
 if __name__ == "__main__":
