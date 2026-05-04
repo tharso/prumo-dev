@@ -56,3 +56,16 @@ jobs:
       - name: Check runtime version on Windows
         shell: pwsh
         run: prumo --version
+
+      - name: Validate setup runs non-interactive on Windows
+        shell: pwsh
+        env:
+          PRUMO_NONINTERACTIVE: "1"
+        run: |
+          prumo setup `
+            --workspace "$env:RUNNER_TEMP/prumo-validate" `
+            --user-name CI `
+            --workspace-name "CI Validate" `
+            --agent-name Prumo `
+            --timezone America/Sao_Paulo `
+            --briefing-time 09:00

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+import sys
 from pathlib import Path
 
 from prumo_runtime.constants import DEFAULT_AGENT_NAME, DEFAULT_BRIEFING_TIME, DEFAULT_TIMEZONE
@@ -13,9 +15,28 @@ from prumo_runtime.workspace import (
 )
 
 
+def _is_interactive() -> bool:
+    """Detecta se o setup pode pedir input do usuario.
+
+    Retorna False quando stdin nao e TTY (CI, pipes, redirect) ou quando a env
+    var PRUMO_NONINTERACTIVE esta setada (override explicito pra rodar com
+    defaults mesmo em terminal humano). Quando False, prompts com default usam
+    o default sem perguntar; prompts sem default falham com mensagem clara em
+    vez de EOFError criptico.
+    """
+    if os.environ.get("PRUMO_NONINTERACTIVE"):
+        return False
+    return sys.stdin.isatty()
+
+
 def ask_if_missing(value: str | None, prompt: str) -> str:
     if value:
         return value.strip()
+    if not _is_interactive():
+        raise SystemExit(
+            f"setup cancelado: campo obrigatorio ausente e stdin nao-interativo. "
+            f"Pergunta: {prompt.rstrip()} Passe via flag CLI ou rode em terminal interativo."
+        )
     answer = input(prompt).strip()
     if not answer:
         raise SystemExit("setup cancelado: resposta vazia")
@@ -23,6 +44,19 @@ def ask_if_missing(value: str | None, prompt: str) -> str:
 
 
 def prompt_choice(prompt: str, options: dict[str, str], *, default: str | None = None) -> str:
+    if not _is_interactive():
+        if default is not None and default in options:
+            print(prompt)
+            for key, label in options.items():
+                suffix = " (padrao)" if default == key else ""
+                print(f"{key}) {label}{suffix}")
+            print(f"[stdin nao-interativo: assumindo default '{default}' = {options[default]}]")
+            return default
+        raise SystemExit(
+            "setup cancelado: prompt sem default e stdin nao-interativo. "
+            "Rode em terminal interativo ou ajuste flags CLI pra cobrir todas as decisoes."
+        )
+
     while True:
         print(prompt)
         for key, label in options.items():
