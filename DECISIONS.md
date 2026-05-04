@@ -1,6 +1,56 @@
-# Decisoes do projeto
+# Decisões do projeto
 
-Log de decisoes arquiteturais e de processo. Cada entrada registra o contexto, a decisao e as alternativas consideradas. Consultar antes de tomar decisoes que possam contradizer algo ja registrado.
+Log de decisões arquiteturais e de processo. Cada entrada registra o contexto, a decisão e as alternativas consideradas. Antes de tomar uma decisão que possa contradizer algo já registrado, consultar este arquivo via **índice temático abaixo** — não confiar só em busca por palavra-chave.
+
+## Índice temático
+
+Use o tópico para encontrar decisões ativas na sua área antes de propor mudança nova. Atualizar esta tabela ao adicionar entrada nova.
+
+| Tópico                | Entradas                                                                                  |
+|-----------------------|-------------------------------------------------------------------------------------------|
+| `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first)                                            |
+| `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice)                    |
+| `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first)           |
+| `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist) |
+| `dispatch-bootstrap`  | 2026-04-21 (#69 despacho)                                                                 |
+| `multiagent-coord`    | 2026-04-20 (#68 HANDOVER)                                                                 |
+| `documentation`       | 2026-04-14 (CLAUDE.md)                                                                    |
+| `integrations`        | 2026-04-14 (Google Drive snapshots)                                                       |
+| `briefing`            | 2026-04-14 (Google Drive snapshots), 2026-04-21 (#69 despacho)                            |
+| `personalization`     | 2026-04-21 (tharso-voice)                                                                 |
+
+## Vocabulário controlado de tópicos
+
+Lista inicial. Tópico novo entra após justificativa explícita na entrada que o introduz (parágrafo curto explicando por que o vocabulário existente não cabia).
+
+- `workspace-layout` — estrutura de pastas e contratos do workspace do usuário (Prumo/, .prumo/).
+- `skills-distribution` — onde skills moram, install/update, cadeia de fallback (slash → CLI → skill direto).
+- `governance` — decisões, rastros, processos de desenvolvimento.
+- `distribution` — como o produto chega ao usuário (plugins, marketplace, repos público/dev).
+- `dispatch-bootstrap` — abertura de sessão e resolução de intenção do usuário.
+- `multiagent-coord` — coordenação entre agentes em runtime do produto final.
+- `documentation` — contratos textuais (CLAUDE.md, AGENT.md, DECISIONS.md, gotchas.md).
+- `integrations` — Gmail, Calendar, MCPs externos, snapshots, conectores.
+- `briefing` — fluxo do briefing matinal e seus módulos.
+- `personalization` — skills/conteúdo específico de um usuário (não distribuído).
+
+## Formato das entradas
+
+A partir de 2026-05-04 (#78), toda entrada nova segue o formato:
+
+```markdown
+## YYYY-MM-DD — [Título descritivo]
+
+**Tópicos:** lista de termos do vocabulário controlado, separados por vírgula.
+**Issues relacionadas:** #N (papel: revoga / estende / mantém / bloqueia / desbloqueia / ortogonal), ou "nenhuma".
+**Relações com decisões anteriores:** entradas prévias deste arquivo que esta entrada toca, com o papel (revoga, estende parcialmente, mantém, complementa). Se nenhuma, escrever explicitamente "nenhuma identificada após consulta ao índice temático" — isso documenta que a consulta foi feita.
+
+**Contexto:** ...
+**Decisão:** ...
+**Alternativas consideradas:** ...
+```
+
+Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões anteriores" (introduzido na #78). Quando um conflito retrospectivo for descoberto, anotar a relação na entrada nova que o resolve — não reescrever entradas antigas.
 
 ---
 

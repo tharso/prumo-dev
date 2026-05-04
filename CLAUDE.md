@@ -127,7 +127,34 @@ Regras:
 
 ## Decisões arquiteturais
 
-Ver DECISIONS.md para o log completo. Ao tomar uma decisão relevante, registrar lá com data, contexto, decisão e alternativas consideradas. Antes de tomar uma decisão que possa contradizer algo já registrado, consultar DECISIONS.md.
+Ver `DECISIONS.md` para o log completo. O arquivo tem **índice temático** no topo — use ele pra encontrar decisões por tópico, não confiar só em busca por data ou palavra-chave.
+
+### Antes de qualquer operação arquitetural
+
+Considerar "operação arquitetural" qualquer uma destas:
+
+- mudança de schema, contrato ou interface pública,
+- nova dependency ou alteração de dependency existente,
+- alteração de API surface (runtime ou skills),
+- refactor cross-file ou que afete portabilidade,
+- renomear, mover ou deletar pastas canônicas (`skills/`, `runtime/`, `Prumo/`, `.prumo/`),
+- alterar contratos entre componentes ou layout de diretório do produto,
+- qualquer mudança que afete onboarding, fallback chain, ou comportamento observável pelo usuário final.
+
+Checklist obrigatório:
+
+1. Identificar o tópico principal da operação. Conferir o **vocabulário controlado** no `DECISIONS.md`.
+2. Consultar o **índice temático** no topo do `DECISIONS.md` filtrando pelo tópico (e pelo menos um sinônimo, se houver risco).
+3. Listar decisões ativas no mesmo tópico. Se houver, ler integralmente cada uma — não confiar no título.
+4. Se há conflito potencial — mesmo parcial — declarar ao usuário **antes de prosseguir**. **Nunca revogar silenciosamente uma decisão anterior.**
+5. Após decisão tomada, registrar nova entrada no `DECISIONS.md` no formato definido lá (incluindo o campo **"Relações com decisões anteriores"**: revoga, estende, mantém ou "nenhuma identificada após consulta ao índice").
+6. Atualizar o índice temático no topo do `DECISIONS.md` adicionando a entrada nova nos tópicos correspondentes.
+
+### Operações manuais (mv, rm, renomeação) com efeito arquitetural
+
+Operações estruturais executadas como `mv`/`rm` manual em pastas canônicas seguem o checklist acima. Adicionalmente: **toda op manual com efeito arquitetural deve ter ao menos um commit de registro** (ainda que seja só `chore: mv X to Y`) ou comentário explícito na issue relacionada explicando o que foi feito e quando. Operação arquitetural sem rastro git é fantasma — some do `git log`, some do `git blame`, e o próximo agente reconstitui a história errada.
+
+Aplicado retroativamente: a renomeação `Prumo/skills/` → `Prumo/skills_OLD/` em 22/04 (Fase Operacional da #73) foi feita sem commit no repo. Esse é exatamente o padrão de fantasma que esta regra quer prevenir. Se a operação tivesse passado por `prumo migrate ...` ou tido um `chore` explícito, o conflito com a #65 teria saltado mais cedo.
 
 ## Direção atual do projeto
 
