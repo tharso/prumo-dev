@@ -98,7 +98,7 @@ O Prumo deve mirar ação concreta, não listinha passiva. Nível 3 ou 4 sempre 
 
 ### 13. Feedback do produto é comportamento do sistema
 
-Se o usuário der feedback, bug ou sugestão sobre o Prumo em si, capturar isso e usar `Prumo/skills/prumo/references/feedback-loop.md` como procedimento canônico.
+Se o usuário der feedback, bug ou sugestão sobre o Prumo em si, capturar isso e usar `.prumo/skills/prumo/references/feedback-loop.md` como procedimento canônico.
 
 ### 14. Fluxo não perde contagem
 
@@ -120,23 +120,23 @@ Quando um comando específico for executado, o agente deve ler o módulo corresp
 
 | Assunto | Módulo canônico |
 |---|---|
-| Dispatch (abertura por intenção) | `Prumo/skills/prumo/references/modules/dispatch.md` |
-| Briefing | `Prumo/skills/prumo/references/modules/briefing-procedure.md` |
-| Inbox | `Prumo/skills/prumo/references/modules/inbox-processing.md` |
-| Revisão semanal | `Prumo/skills/prumo/references/modules/weekly-review.md` |
-| Update de versão | `Prumo/skills/prumo/references/modules/version-update.md` |
-| Multiagente | `Prumo/skills/prumo/references/modules/multiagent.md` |
-| Sanitização | `Prumo/skills/prumo/references/modules/sanitization.md` |
-| Higiene do perfil | `Prumo/skills/prumo/references/modules/claude-hygiene.md` |
-| Runtime do Cowork | `Prumo/skills/prumo/references/modules/cowork-runtime-maintenance.md` |
-| Bridge do runtime no Cowork | `Prumo/skills/prumo/references/modules/cowork-runtime-bridge.md` |
-| Contrato de interface | `Prumo/skills/prumo/references/modules/interaction-format.md` |
-| Governança de arquivos | `Prumo/skills/prumo/references/modules/runtime-file-governance.md` |
-| Política de leitura | `Prumo/skills/prumo/references/modules/load-policy.md` |
-| Runtime paths | `Prumo/skills/prumo/references/modules/runtime-paths.md` |
-| Feedback do produto | `Prumo/skills/prumo/references/feedback-loop.md` |
+| Dispatch (abertura por intenção) | `.prumo/skills/prumo/references/modules/dispatch.md` |
+| Briefing | `.prumo/skills/prumo/references/modules/briefing-procedure.md` |
+| Inbox | `.prumo/skills/prumo/references/modules/inbox-processing.md` |
+| Revisão semanal | `.prumo/skills/prumo/references/modules/weekly-review.md` |
+| Update de versão | `.prumo/skills/prumo/references/modules/version-update.md` |
+| Multiagente | `.prumo/skills/prumo/references/modules/multiagent.md` |
+| Sanitização | `.prumo/skills/prumo/references/modules/sanitization.md` |
+| Higiene do perfil | `.prumo/skills/prumo/references/modules/claude-hygiene.md` |
+| Runtime do Cowork | `.prumo/skills/prumo/references/modules/cowork-runtime-maintenance.md` |
+| Bridge do runtime no Cowork | `.prumo/skills/prumo/references/modules/cowork-runtime-bridge.md` |
+| Contrato de interface | `.prumo/skills/prumo/references/modules/interaction-format.md` |
+| Governança de arquivos | `.prumo/skills/prumo/references/modules/runtime-file-governance.md` |
+| Política de leitura | `.prumo/skills/prumo/references/modules/load-policy.md` |
+| Runtime paths | `.prumo/skills/prumo/references/modules/runtime-paths.md` |
+| Feedback do produto | `.prumo/skills/prumo/references/feedback-loop.md` |
 
-Se o runtime não expuser o repositório local `Prumo/skills/`, ele deve usar a referência equivalente do bundle instalado. O que não pode é improvisar uma terceira versão do procedimento.
+Se o runtime não expuser o repositório local `.prumo/skills/`, ele deve usar a referência equivalente do bundle instalado. O que não pode é improvisar uma terceira versão do procedimento.
 
 ## Política de leitura
 
@@ -221,7 +221,7 @@ Panorama numerado de 1 a N (agenda, emails curados, pendências), proposta do di
 
 Ler e seguir:
 
-- `Prumo/skills/prumo/references/modules/briefing-procedure.md`
+- `.prumo/skills/prumo/references/modules/briefing-procedure.md`
 
 Esse módulo cobre:
 
@@ -234,7 +234,7 @@ Esse módulo cobre:
 
 Ler e seguir:
 
-- `Prumo/skills/prumo/references/modules/inbox-processing.md`
+- `.prumo/skills/prumo/references/modules/inbox-processing.md`
 
 Esse módulo cobre:
 
@@ -249,13 +249,13 @@ Esse módulo cobre:
 
 Ler e seguir:
 
-- `Prumo/skills/prumo/references/modules/weekly-review.md`
+- `.prumo/skills/prumo/references/modules/weekly-review.md`
 
 ### Update de versão
 
 Ler e seguir:
 
-- `Prumo/skills/prumo/references/modules/version-update.md`
+- `.prumo/skills/prumo/references/modules/version-update.md`
 
 Esse módulo é a fonte canônica para:
 
@@ -268,25 +268,25 @@ Esse módulo é a fonte canônica para:
 
 Ler e seguir:
 
-- `Prumo/skills/prumo/references/modules/multiagent.md`
+- `.prumo/skills/prumo/references/modules/multiagent.md`
 
 ### Sanitização
 
 Ler e seguir:
 
-- `Prumo/skills/prumo/references/modules/sanitization.md`
+- `.prumo/skills/prumo/references/modules/sanitization.md`
 
 ### Higiene do perfil
 
 Ler e seguir:
 
-- `Prumo/skills/prumo/references/modules/claude-hygiene.md`
+- `.prumo/skills/prumo/references/modules/claude-hygiene.md`
 
 ### Runtime paths
 
 Ler e seguir:
 
-- `Prumo/skills/prumo/references/modules/runtime-paths.md`
+- `.prumo/skills/prumo/references/modules/runtime-paths.md`
 
 ## Durante o dia
 

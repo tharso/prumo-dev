@@ -37,19 +37,19 @@ Se o runtime não estiver no PATH, ler a skill correspondente no workspace:
 
 | Comando | Skill |
 |---|---|
-| briefing | `Prumo/skills/briefing/SKILL.md` |
-| setup | `Prumo/skills/prumo/SKILL.md` |
-| start | `Prumo/skills/start/SKILL.md` |
-| faxina | `Prumo/skills/faxina/SKILL.md` |
-| higiene | `Prumo/skills/higiene/SKILL.md` |
-| sanitize | `Prumo/skills/sanitize/SKILL.md` |
-| doctor | `Prumo/skills/doctor/SKILL.md` |
+| briefing | `.prumo/skills/briefing/SKILL.md` |
+| setup | `.prumo/skills/prumo/SKILL.md` |
+| start | `.prumo/skills/start/SKILL.md` |
+| faxina | `.prumo/skills/faxina/SKILL.md` |
+| higiene | `.prumo/skills/higiene/SKILL.md` |
+| sanitize | `.prumo/skills/sanitize/SKILL.md` |
+| doctor | `.prumo/skills/doctor/SKILL.md` |
 
 ## Abertura de sessão (leitura mínima)
 
 1. Este `AGENT.md` (você já está lendo).
 2. `.prumo/system/PRUMO-CORE.md` — Parte 1 (identidade e interação).
-3. `Prumo/skills/prumo/references/modules/dispatch.md` — protocolo de abertura por intenção (scan leve de `PAUTA.md` + `REGISTRO.md` e saudação proativa com opções).
+3. `.prumo/skills/prumo/references/modules/dispatch.md` — protocolo de abertura por intenção (scan leve de `PAUTA.md` + `REGISTRO.md` e saudação proativa com opções).
 
 Fora disso, abertura não abre mais nada. A saudação vem proativa, com 2-4 opções concretas ancoradas no scan + uma fuga explícita (`outra coisa`). Briefing não é default: só entra se o usuário expressar intenção de briefing.
 
@@ -68,7 +68,7 @@ Fora disso, abertura não abre mais nada. A saudação vem proativa, com 2-4 op�
 - `Prumo/IDEIAS.md`: ideias sem ação imediata
 - `Prumo/Referencias/`: material de referência
 - `Prumo/Inbox4Mobile/`: captura mobile
-- `Prumo/skills/`: skills do Prumo (portáveis, lidas diretamente quando CLI não estiver disponível)
+- `.prumo/skills/`: skills do Prumo (portáveis, lidas diretamente quando CLI não estiver disponível)
 - `.prumo/system/PRUMO-CORE.md`: regras do motor e guardrails do sistema
 - `.prumo/state/`: estado técnico e metadados do runtime
 - `.prumo/logs/`: registros de revisão

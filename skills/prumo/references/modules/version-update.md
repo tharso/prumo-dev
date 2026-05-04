@@ -40,7 +40,7 @@ Transportes válidos:
 1. fonte local bruta no workspace:
    - `Prumo/VERSION`
    - `skills/prumo/references/prumo-core.md`
-   - `Prumo/skills/prumo/references/prumo-core.md`
+   - `.prumo/skills/prumo/references/prumo-core.md`
 2. updater via runtime: `prumo` CLI quando disponível (instalação pip, caminho preferido).
 
 Sem transporte seguro de aplicação:

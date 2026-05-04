@@ -287,11 +287,12 @@ Após coletar todas as respostas:
 7. Gerar `AGENT.md` na raiz (ponteiro, mesmo conteúdo adaptado)
 8. Ler `references/agents-md-template.md` → gerar `AGENTS.md` na raiz (ponteiro)
 9. Ler `references/file-templates.md` → gerar arquivos auxiliares em `Prumo/`
-10. Copiar skills para `Prumo/skills/` (cópia completa do diretório `skills/` do repo)
+10. Copiar skills para `.prumo/skills/` (cópia completa do diretório `skills/` do repo, em pasta de infra invisível)
 
 **Separação de responsabilidades:**
 - Raiz: ponteiros de compatibilidade (CLAUDE.md, AGENT.md, AGENTS.md). Todos apontam para `Prumo/AGENT.md`.
-- `Prumo/`: dados operacionais do usuário + skills portáveis. `Prumo/AGENT.md` é a fonte canônica.
+- `Prumo/`: dados operacionais do usuário (PAUTA, INBOX, REGISTRO, IDEIAS, Agente/, Referencias/, Inbox4Mobile/). `Prumo/AGENT.md` é a fonte canônica.
+- `.prumo/`: infraestrutura invisível (state, system/PRUMO-CORE.md, skills/, logs, backup).
 - `Prumo/Agente/PERFIL.md`: configuração pessoal (áreas, tom, lembretes). Nunca atualizado automaticamente.
 - `.prumo/system/PRUMO-CORE.md`: motor do sistema. Atualizável automaticamente.
 - `.prumo/state/`: estado técnico do runtime. Agente humano não mexe aqui.

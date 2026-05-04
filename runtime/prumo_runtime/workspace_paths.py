@@ -39,12 +39,21 @@ class WorkspacePaths:
 
     @property
     def skills_root(self) -> Path:
-        """Skills portáveis copiadas do repo. Fallback quando CLI não está disponível."""
-        return self.user_root / "skills" if self.nested_layout else self.root
+        """Skills portáveis copiadas do repo. Fallback quando o runtime CLI não
+        está disponível.
+
+        Mora em `.prumo/skills/` (pasta de infraestrutura invisível, alinhada
+        com workspace-first). Decisão registrada em DECISIONS.md
+        (2026-05-04, #77) — substitui parcialmente a decisão de 2026-04-15
+        (#65) que escolhia `Prumo/skills/` (visível). Justificativa: skills
+        são infra, não dado do usuário; preservar cadeia de fallback sem
+        poluir o workspace visível.
+        """
+        return self.system_root / "skills" if self.nested_layout else self.root
 
     @property
     def system_skills_root(self) -> Path:
-        """Alias legado. Usar skills_root."""
+        """Alias legado. Usar `skills_root`."""
         return self.skills_root
 
     @property

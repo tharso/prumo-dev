@@ -49,4 +49,4 @@ Ao final da geração de arquivos, mostrar resumo claro:
 | Prumo/Inbox4Mobile/ | Criar pasta | Para notas/arquivos do celular. |
 | Prumo/Inbox4Mobile/_processed.json | file-templates.md | Registro de itens processados do mobile. |
 | Prumo/Referencias/ | Criar pasta | Para material de referência. |
-| Prumo/skills/ | Copiar do repo | Skills portáveis (fallback quando CLI não existe). |
+| .prumo/skills/ | Copiar do repo | Skills portáveis (fallback quando CLI não existe). Pasta de infra, não polui workspace visível. |
