@@ -53,6 +53,20 @@ Os seguintes diretórios e arquivos foram removidos em abril/2026 durante a cons
 - Commitar com mensagens descritivas em português. Prefixos: `feat:`, `fix:`, `refactor:`, `chore:`, `docs:`, `test:`.
 - Bumpar versão em `plugin.json`, `pyproject.toml`, `marketplace.json` e `VERSION` simultaneamente. Versão fora de sincronia é bug.
 
+### Autoria de commits redigidos por agente
+
+Quando um agente de IA (Cowork, Claude Code, Codex, Antigravity) redige o commit, adicionar trailer `Co-authored-by` no fim da mensagem identificando o agente. Tharso continua como autor primário (aprova e dirige), o agente vira co-autor. Padrão GitHub, renderizado com avatar duplo na UI. Exemplo:
+
+```
+fix(setup): auto-default em stdin nao-interativo
+
+[corpo da mensagem]
+
+Co-authored-by: Claude (Cowork) <noreply@anthropic.com>
+```
+
+Isso vale apenas para commits onde o agente *efetivamente redige* — código, mensagem, decisão. Commits onde o agente apenas executa comando ditado pelo usuário ficam sem trailer (autoria humana clara). Quando em dúvida, marcar — falsa modéstia atrapalha mais que ruído de log.
+
 ### Issues e documentação
 
 - Issues no GitHub como unidade de trabalho: toda feature, bug ou refactor vira issue antes da implementação.
