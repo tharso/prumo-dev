@@ -8,8 +8,8 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 
 | Tópico                | Entradas                                                                                  |
 |-----------------------|-------------------------------------------------------------------------------------------|
-| `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first)                                            |
-| `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice)                    |
+| `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first), 2026-05-04 (#77)                          |
+| `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77)  |
 | `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first)           |
 | `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist) |
 | `dispatch-bootstrap`  | 2026-04-21 (#69 despacho)                                                                 |
@@ -51,6 +51,31 @@ A partir de 2026-05-04 (#78), toda entrada nova segue o formato:
 ```
 
 Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões anteriores" (introduzido na #78). Quando um conflito retrospectivo for descoberto, anotar a relação na entrada nova que o resolve — não reescrever entradas antigas.
+
+---
+
+## 2026-05-04 — Skills moram em `.prumo/skills/` (oculto), preservando cadeia de fallback (issue #77)
+
+**Tópicos:** workspace-layout, skills-distribution
+
+**Issues relacionadas:** #77 (executa esta decisão), #73 (desbloqueia — Fase Operacional ficava aguardando destino articulado), #65 (revoga parcialmente), #78 (estabeleceu o formato com este campo de Relações).
+
+**Relações com decisões anteriores:**
+- **Revoga parcialmente:** 2026-04-15 — Nova estrutura de workspace com fallback skills-first (#65). A decisão de copiar skills para `Prumo/skills/` (visível) é substituída por copiar para `.prumo/skills/` (invisível). Tudo o mais da #65 fica mantido.
+- **Estende:** 2026-04-22 — Prumo e workspace-first. O princípio "infra invisível em `.prumo/`, dados visíveis em `Prumo/`" se aplica também às skills.
+- **Mantém integralmente:** o princípio de cadeia de fallback (slash → CLI → skill direto), a regra "ler skill localmente é operação legítima, não simulação", a rejeição da alternativa "depender só do plugin" (era 1, pré-#65, continua rejeitada).
+
+**Contexto:** A validação operacional da #73 em 2026-05-04 expôs que a Fase Operacional daquela issue (renomear `Prumo/skills/` → `Prumo/skills_OLD/` no DailyLife do Tharso) revogava silenciosamente a decisão de 2026-04-15 (#65) — sem articular destino para as skills. O Codex sinalizou drift no briefing matinal: AGENT.md referenciava `Prumo/skills/` que não existia mais. Post-mortem identificou seis falhas de sinalização (formalizadas na #78), e duas decisões adjacentes (workspace-first em 22/04 + estrutura skills-first em 15/04) tocando o mesmo território sem cross-reference.
+
+A questão central: skills são *infra* (mecânica, atualizada via `prumo update`) ou *dado* (autoral, parte do workspace do usuário)? A #65 escolheu *dado* implicitamente ao colocar em `Prumo/`. A #73 escolheu *infra* sem articular. Esta decisão articula: skills são infra, moram em `.prumo/`.
+
+**Decisão:** Skills (cópia das skills canônicas do repo) moram em `.prumo/skills/` no workspace do usuário. `workspace_paths.skills_root` aponta para `system_root / "skills"`. Templates, instalação via `prumo setup`, atualização via `prumo update`/`prumo migrate`, e cadeia de fallback do AGENT.md gerado pelo runtime usam o novo path. Migração de workspaces existentes via comando `prumo migrate skills-to-system` (a ser implementado em release subsequente, com pre-flight obrigatório).
+
+**Alternativas consideradas:**
+- *Manter `Prumo/skills/` (caminho da #65)* → rejeitado, contradiz workspace-first. Skills são infra atualizada via runtime, não dado autoral do usuário.
+- *Voltar a era 1 — skills só no plugin instalado* → rejeitado, alternativa explícita rejeitada na #65 e mantida rejeitada aqui. Amarra a host específico, derruba cadeia de fallback.
+- *Manter ambos `.prumo/skills/` e `Prumo/skills/` durante transição* → rejeitado, drift garantido. Uma fonte de verdade.
+- *Usar identificadores abstratos (`prumo://modules/dispatch.md`)* → rejeitado, exige resolver custom em cada agente. Path simples e transparente vence simbolismo.
 
 ---
 

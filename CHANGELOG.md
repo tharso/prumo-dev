@@ -4,6 +4,28 @@ Este arquivo registra mudanças públicas do produto Prumo.
 
 O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamento semântico.
 
+## [5.2.0] - 2026-05-04
+
+### Changed
+- **Skills moram em `.prumo/skills/`** (pasta de infraestrutura invisível), não mais em `Prumo/skills/` (visível). Substitui parcialmente a decisão de 2026-04-15 (#65) — preserva a cadeia de fallback (slash → CLI → skill direto) que motivou a #65, mas alinha o destino ao princípio workspace-first registrado em 2026-04-22 (#73): infra invisível em `.prumo/`, dados visíveis em `Prumo/`. Resolve drift detectado na validação operacional da #73, em que `Prumo/skills/` fora renomeada pra `Prumo/skills_OLD/` sem destino articulado.
+- **Workspaces existentes precisam migração manual nesta versão**. O comando `prumo migrate skills-to-system` (com pre-flight obrigatório) será adicionado em release subsequente. Migração manual hoje: mover `Prumo/skills_OLD/` (ou `Prumo/skills/`, dependendo do estado do workspace) para `.prumo/skills/`, deletar `Prumo/AGENT.md` e `.prumo/system/PRUMO-CORE.md`, e rodar `prumo repair --workspace <path>` para regenerar com os caminhos novos.
+
+### Governance
+- **`DECISIONS.md` ganha índice temático no topo + vocabulário controlado de tópicos**. Cada nova entrada inclui campo "Relações com decisões anteriores" (revoga, estende, mantém, ou "nenhuma identificada após consulta ao índice"). Entradas anteriores não são reescritas. Plumagem da Melhoria 1, 2 e 3 da #78 ([commit cb5ef3f]).
+- **Workflow `needs-review-detector` em `.github/workflows/`** marca toda segunda às 9h UTC issues que parecem concluídas com label `status/needs-review` para revisão humana antes de fechar. Heurística com negation patterns; não fecha automaticamente. Plumagem da Melhoria 5 da #78 ([commit 965de71]).
+- **CLAUDE.md ganha checklist operacional explícito de 6 passos** antes de qualquer operação arquitetural, e bloco específico sobre operações manuais (`mv`/`rm`) com efeito arquitetural exigindo commit de registro. Aplicado retroativamente: a renomeação `Prumo/skills/` → `Prumo/skills_OLD/` em 22/04 (#73) é citada como exemplo do padrão de fantasma git que esta regra previne ([commit cb5ef3f]).
+
+### Fixed
+- **`prumo setup` roda em CI e stdin redirecionado sem `EOFError`** (#72). `prompt_choice` e `ask_if_missing` detectam stdin não-TTY (ou env var `PRUMO_NONINTERACTIVE`); prompt com default usa default + log explícito; sem default, falha com mensagem clara. Windows CI ganha step `Validate setup runs non-interactive on Windows` que valida o caminho de automação ([commit 3081d88]).
+- **Truncate do `hottest` no panorama do briefing**: `list_or_placeholder` agora aplica `shorten_pauta_item` em cada item (extrai `[tag] **título** | cobrar: DD/MM`), não despeja a descrição inteira. Suffix `(+N)` quando há overflow. Antes, panorama virava muro de texto de 1500+ chars ([commit 8237392]).
+
+### Tests
+- 96 testes verdes (eram 90 na 5.1.1; +6 em `NonInteractiveStdinTests`).
+
+### Docs
+- README e CHANGELOG não citam mais `Prumo/skills/` em paths (referências históricas a `Prumo/skills_OLD/` foram preservadas como contexto na decisão arquitetural).
+- Convenção de assinatura: commits redigidos por agente incluem trailer `Co-authored-by: Claude (Cowork) <noreply@anthropic.com>`. Tharso continua como autor primário (aprova e dirige), agente vira co-autor.
+
 ## [5.1.1] - 2026-04-22
 
 ### Fixed
