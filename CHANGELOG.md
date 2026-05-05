@@ -14,8 +14,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
   
   Decisão arquitetural reforçada por review do Codex: arquivos que possam conter customização do usuário **não** são tratados como artefatos descartáveis. A separação `.prumo/` (sistema, regenerável) vs raiz (autoral, preservar) é contrato — backup de wrappers seria violação. Idempotente: segunda execução em workspace em dia retorna "nada recriável precisava de reparo".
 
+- **Convenção canônica de backups: `.prumo/backups/<scope>/<timestamp>/`** (#81 P3.8) — antes existia drift entre dois paths: `backup_root_for()` em `workspace.py` e `backup_path_for()` (runtime-migrate) já usavam `.prumo/backups/` plural com scope, mas `bump_system_canonicals_for_repair` (#84) escrevia em `.prumo/backup/repair-version-bump-<ts>/` (singular) e `migrate_skills` (#79) escrevia em `.prumo/system/backup/relocate-skills-<ts>/` (singular aninhado em `system/`). Convergido: ambos escritores agora usam `.prumo/backups/<scope>/<timestamp>/` com convenção uniforme. Backups em `.prumo/backup/` (singular) de runtimes antigos permanecem **intocados** — sanitize varre os dois paths quando rodada e consolida sobreviventes em `.prumo/backups/legacy/`. Skills (`prumo`, `prumo-core.md`, `file-protection-rules.md`, `version-update.md`, `claude-hygiene.md`, módulo `sanitization.md`) atualizadas pra documentar o caminho canônico, com nota explicando o legado.
+
 ### Tests
-- 8 testes novos em `test_repair.py` cobrindo: detecção de drift (em dia, defasado, sem PRUMO-CORE.md), repair sem drift (não toca canonicals, não cria backup, sem merge), repair com drift (regenera só sistema/canonical, faz merge nos wrappers de raiz, backup contém só sistema/canonical), idempotência, e **preservação de conteúdo autoral** em CLAUDE.md fora do bloco gerenciado durante drift. Suite total: 125 testes verdes.
+- 8 testes novos em `test_repair.py` cobrindo: detecção de drift (em dia, defasado, sem PRUMO-CORE.md), repair sem drift (não toca canonicals, não cria backup, sem merge), repair com drift (regenera só sistema/canonical, faz merge nos wrappers de raiz, backup contém só sistema/canonical), idempotência, e **preservação de conteúdo autoral** em CLAUDE.md fora do bloco gerenciado durante drift.
+- 1 teste novo `test_repair_writes_backup_under_canonical_backups_path` afirma escrita no path canônico e preservação de legado em `.prumo/backup/`. Suite total: 126 testes verdes.
 
 ## [5.3.0] - 2026-05-05
 

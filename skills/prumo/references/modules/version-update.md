@@ -82,7 +82,7 @@ Se o caso for `workspace core defasado`:
 
 ### Se houver fonte local válida
 
-1. criar backup em `.prumo/backup/PRUMO-CORE.md.YYYY-MM-DD-HHMMSS`;
+1. criar backup em `.prumo/backups/version-update/<YYYYMMDDTHHMMSS>/PRUMO-CORE.md`;
 2. substituir somente `.prumo/system/PRUMO-CORE.md`;
 3. reler o core atualizado;
 4. confirmar que a nova `prumo_version` é a esperada.
@@ -98,6 +98,6 @@ Se o caso for `workspace core defasado`:
 Durante atualização, os únicos destinos permitidos são:
 
 1. `.prumo/system/PRUMO-CORE.md`
-2. `.prumo/backup/PRUMO-CORE.md.*`
+2. `.prumo/backups/<scope>/<timestamp>/...` (qualquer subdiretório de scope dentro de `backups/`)
 
 Qualquer tentativa de tocar `Prumo/Agente/PERFIL.md`, `PAUTA.md`, `INBOX.md`, `REGISTRO.md`, `IDEIAS.md`, `AGENT.md` ou arquivos de áreas do usuário deve abortar o update.

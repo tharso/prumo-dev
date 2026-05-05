@@ -203,7 +203,7 @@ Panorama numerado de 1 a N (agenda, emails curados, pendências), proposta do di
 
 `ASSERT: Na primeira resposta do briefing, é proibido abrir arquivo bruto de Prumo/Inbox4Mobile/*.`
 
-`ASSERT: No update, a allowlist de escrita é apenas .prumo/system/PRUMO-CORE.md e .prumo/backup/PRUMO-CORE.md.*`
+`ASSERT: No update, a allowlist de escrita é apenas .prumo/system/PRUMO-CORE.md e .prumo/backups/<scope>/<timestamp>/...`
 
 `ASSERT: Antes do panorama do briefing, o sistema deve tentar preflight de versão e avisar quando detectar versão nova.`
 

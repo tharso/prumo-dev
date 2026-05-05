@@ -82,7 +82,7 @@ Quando houver decisão para o usuário, preferir algo do tipo:
 Se o usuário aprovar explicitamente:
 
 1. rodar o script com `--apply`;
-2. criar backup em `.prumo/backup/PERFIL.md.YYYY-MM-DD-HHMMSS`;
+2. criar backup em `.prumo/backups/perfil-hygiene/<YYYYMMDDTHHMMSS>/PERFIL.md`;
 3. atualizar `REGISTRO.md`.
 
 ## Guardrails

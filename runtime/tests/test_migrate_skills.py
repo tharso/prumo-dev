@@ -238,9 +238,9 @@ class ExecutionTests(unittest.TestCase):
             # Pasta antiga sumiu.
             self.assertFalse((workspace / "Prumo" / "skills_OLD").exists())
 
-            # Backup foi criado.
-            backup_root = workspace / ".prumo" / "backup"
-            backups = [d for d in backup_root.iterdir() if d.name.startswith("relocate-skills-")]
+            # Backup foi criado em .prumo/backups/relocate-skills/<stamp>/ (canônico).
+            backup_root = workspace / ".prumo" / "backups" / "relocate-skills"
+            backups = list(backup_root.iterdir())
             self.assertEqual(len(backups), 1)
             self.assertTrue((backups[0] / "skills_OLD" / "briefing" / "SKILL.md").exists())
 

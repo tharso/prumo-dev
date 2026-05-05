@@ -15,17 +15,18 @@ O fluxo é sempre em dois passos: dry-run (listar candidatos, reportar ao usuár
 O processo deve:
 
 1. remover backups antigos de `.prumo/backups/` (> 90 dias);
-2. limpar cache expirado de `.prumo/cache/`;
-3. registrar qualquer movimento no índice global:
+2. ao varrer, considerar **também** `.prumo/backup/` (singular) se existir — variante legada criada por workspaces de runtimes antigos antes de #81 P3.8. Aplicar mesma política de idade, e mover sobreviventes pra `.prumo/backups/legacy/` ao final pra consolidar caminho canônico;
+3. limpar cache expirado de `.prumo/cache/`;
+4. registrar qualquer movimento no índice global:
    - `.prumo/state/archive/ARCHIVE-INDEX.json`
    - `.prumo/state/archive/ARCHIVE-INDEX.md`
-4. nunca tocar arquivos pessoais.
+5. nunca tocar arquivos pessoais.
 
 ## Política
 
 1. arquivar frio só com política explícita;
 2. política inicial segura:
-   - remoção de backups em `.prumo/backups/` acima do threshold de idade;
+   - remoção de backups em `.prumo/backups/` (canônico) **e** `.prumo/backup/` (legado) acima do threshold de idade;
    - limpeza de cache expirado em `.prumo/cache/`;
    - arquivos de `Inbox4Mobile/` marcados como processados em `_processed.json` e acima do threshold de idade;
 3. nunca apagar histórico sem archive;

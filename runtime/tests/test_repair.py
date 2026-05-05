@@ -131,6 +131,32 @@ class RepairVersionDriftTests(unittest.TestCase):
             self.assertFalse((backup_root / "AGENTS.md").exists())
             self.assertFalse((backup_root / "AGENT.md").exists())
 
+    def test_repair_writes_backup_under_canonical_backups_path(self) -> None:
+        # Issue #81 P3.8: escritor de backup deve usar `.prumo/backups/<scope>/<timestamp>/`,
+        # não `.prumo/backup/<scope>-<timestamp>/` (drift histórico). E backups legados
+        # em `.prumo/backup/` se existirem devem permanecer intocados — sanitize cuida.
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = _make_test_workspace(Path(tmpdir))
+            # Simula backup legado pre-existente no path antigo.
+            legacy_backup = workspace / ".prumo" / "backup" / "legacy-thing-20260101T000000"
+            legacy_backup.mkdir(parents=True, exist_ok=True)
+            (legacy_backup / "marker.txt").write_text("legado preservado", encoding="utf-8")
+
+            _force_core_version(workspace, "5.0.0")
+            result = repair_workspace(workspace)
+
+            # Novo backup foi criado em .prumo/backups/<scope>/<timestamp>/
+            backup_root = Path(result["version_drift"]["backup_root"])
+            self.assertIn(".prumo/backups/repair-version-bump/", str(backup_root))
+            self.assertNotIn("/.prumo/backup/", str(backup_root))
+
+            # Legado em .prumo/backup/ continua existindo, intocado
+            self.assertTrue(legacy_backup.exists())
+            self.assertEqual(
+                (legacy_backup / "marker.txt").read_text(encoding="utf-8"),
+                "legado preservado",
+            )
+
     def test_repair_idempotent_after_drift_resolution(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             workspace = _make_test_workspace(Path(tmpdir))

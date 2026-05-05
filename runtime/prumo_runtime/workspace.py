@@ -858,7 +858,10 @@ def bump_system_canonicals_for_repair(
     workspace_version, runtime_version = drift
     workspace_resolved = workspace.resolve()
     timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
-    backup_root = workspace_resolved / ".prumo" / "backup" / f"repair-version-bump-{timestamp}"
+    # Convenção canônica: `.prumo/backups/<scope>/<timestamp>/`. Singular
+    # (`.prumo/backup/`) era drift histórico, sem leitura no runtime mas
+    # documentado em algumas skills antigas. Issue #81 P3.8.
+    backup_root = workspace_resolved / ".prumo" / "backups" / "repair-version-bump" / timestamp
     backup_root.mkdir(parents=True, exist_ok=True)
     paths = workspace_paths(workspace)
     # Apenas sistema (PRUMO-CORE.md) e canonical do Prumo (Prumo/AGENT.md em

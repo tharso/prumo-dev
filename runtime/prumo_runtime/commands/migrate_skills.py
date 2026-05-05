@@ -103,7 +103,7 @@ def render_plan(source: Path, target: Path, workspace: Path) -> str:
         files = [f for f in source.rglob("*") if f.is_file()]
         size = sum(f.stat().st_size for f in files)
         lines.append(f"  - Conteúdo: {len(files)} arquivos, {_format_size(size)}")
-    lines.append("  - Backup automático em: `.prumo/backup/relocate-skills-<timestamp>/`")
+    lines.append("  - Backup automático em: `.prumo/backups/relocate-skills/<timestamp>/`")
     lines.append("  - Re-renderizar: `Prumo/AGENT.md`, `.prumo/system/PRUMO-CORE.md`")
     lines.append("  - Log da operação: `.prumo/logs/architectural-ops.log`")
     return "\n".join(lines)
@@ -129,7 +129,10 @@ def _execute_migration(workspace: Path, source: Path) -> dict:
     target = paths.skills_root
 
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-    backup_dir = paths.system_root / "backup" / f"relocate-skills-{timestamp}"
+    # Convenção canônica: `.prumo/backups/<scope>/<timestamp>/`. Antes este
+    # comando escrevia em `.prumo/system/backup/relocate-skills-<ts>/`,
+    # variante singular aninhada em system/. Alinhado em #81 P3.8.
+    backup_dir = workspace / ".prumo" / "backups" / "relocate-skills" / timestamp
     backup_dir.mkdir(parents=True, exist_ok=True)
 
     # Backup do source antes de mover.

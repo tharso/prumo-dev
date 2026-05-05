@@ -282,7 +282,7 @@ Após coletar todas as respostas:
    - `.prumo/state/` (estado técnico)
    - `.prumo/system/` (motor do sistema)
    - `.prumo/logs/` (registros)
-   - `.prumo/backup/` (backups)
+   - `.prumo/backups/` (backups, organizados por scope: setup, runtime-migrate, repair-version-bump, relocate-skills)
 3. Ler `references/agent-md-template.md` → gerar `Prumo/AGENT.md` (fonte canônica do workspace)
 4. Ler `references/perfil-template.md` → gerar `Prumo/Agente/PERFIL.md` (configuração pessoal)
 5. Copiar `references/prumo-core.md` → gerar `.prumo/system/PRUMO-CORE.md` (motor do sistema)
@@ -295,7 +295,7 @@ Após coletar todas as respostas:
 **Separação de responsabilidades:**
 - Raiz: ponteiros de compatibilidade (CLAUDE.md, AGENT.md, AGENTS.md). Todos apontam para `Prumo/AGENT.md`.
 - `Prumo/`: dados operacionais do usuário (PAUTA, INBOX, REGISTRO, IDEIAS, Agente/, Referencias/, Inbox4Mobile/). `Prumo/AGENT.md` é a fonte canônica.
-- `.prumo/`: infraestrutura invisível (state, system/PRUMO-CORE.md, skills/, logs, backup).
+- `.prumo/`: infraestrutura invisível (state, system/PRUMO-CORE.md, skills/, logs, backups).
 - `Prumo/Agente/PERFIL.md`: configuração pessoal (áreas, tom, lembretes). Nunca atualizado automaticamente.
 - `.prumo/system/PRUMO-CORE.md`: motor do sistema. Atualizável automaticamente.
 - `.prumo/state/`: estado técnico do runtime. Agente humano não mexe aqui.

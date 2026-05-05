@@ -10,8 +10,8 @@ Antes de gerar QUALQUER arquivo, verificar se ele já existe na pasta do usuári
 | AGENT.md (raiz) | **Não sobrescrever silenciosamente.** Ponteiro de compatibilidade. Pedir confirmação se já existir. |
 | AGENTS.md (raiz) | **Não sobrescrever silenciosamente.** Ponteiro de compatibilidade. Pedir confirmação se já existir. |
 | Prumo/AGENT.md | **Não sobrescrever silenciosamente.** Fonte canônica do workspace. Em reconfiguração, pedir confirmação explícita ou passar por repair/setup consciente. |
-| .prumo/system/PRUMO-CORE.md | **Sobrescrever** apenas em atualização de motor ou setup explícito. Sempre criar backup em `.prumo/backup/PRUMO-CORE.md.YYYY-MM-DD-HHMMSS` antes da troca. |
-| Prumo/Agente/PERFIL.md | **Não sobrescrever silenciosamente.** Em setup inicial pode criar; em reconfiguração, pedir confirmação explícita. Conteúdo histórico e drift de governança devem ser tratados pela higiene assistida, com backup em `.prumo/backup/PERFIL.md.YYYY-MM-DD-HHMMSS`. |
+| .prumo/system/PRUMO-CORE.md | **Sobrescrever** apenas em atualização de motor ou setup explícito. Sempre criar backup em `.prumo/backups/<scope>/<timestamp>/PRUMO-CORE.md` antes da troca. |
+| Prumo/Agente/PERFIL.md | **Não sobrescrever silenciosamente.** Em setup inicial pode criar; em reconfiguração, pedir confirmação explícita. Conteúdo histórico e drift de governança devem ser tratados pela higiene assistida, com backup em `.prumo/backups/perfil-hygiene/<timestamp>/PERFIL.md`. |
 | Prumo/PAUTA.md, Prumo/INBOX.md, Prumo/REGISTRO.md, Prumo/IDEIAS.md | **NÃO sobrescrever.** Informar: "Encontrei [arquivo] com conteúdo existente. Mantendo o atual." |
 | Prumo/Agente/INDEX.md, Prumo/Agente/PESSOAS.md, Prumo/Referencias/INDICE.md, Prumo/Referencias/EMAIL-CURADORIA.md | **NÃO sobrescrever.** Informar: "Encontrei [arquivo] com conteúdo existente. Mantendo o atual." |
 | [Area]/README.md | **NÃO sobrescrever.** Informar: "A pasta [Area] já tem um README com contexto. Mantendo." |
@@ -45,7 +45,7 @@ Ao final da geração de arquivos, mostrar resumo claro:
 | [Area]/README.md | Gerar dinamicamente | Um README por área/projeto com nome e descrição breve. |
 | .prumo/state/ | Criar pasta | Estado operacional (lock entre agentes). |
 | .prumo/logs/ | Criar pasta | Registros de revisão. |
-| .prumo/backup/ | Criar pasta | Backups de arquivos sobrescritos. |
+| .prumo/backups/ | Criar pasta | Backups organizados por scope: `setup/`, `runtime-migrate/`, `repair-version-bump/`, `relocate-skills/`, `perfil-hygiene/`. Cada subdiretório com timestamp. Workspaces criados antes de #81 P3.8 podem ter `.prumo/backup/` (singular) — legado, mantido pela sanitize ao varrer. |
 | Prumo/Inbox4Mobile/ | Criar pasta | Para notas/arquivos do celular. |
 | Prumo/Inbox4Mobile/_processed.json | file-templates.md | Registro de itens processados do mobile. |
 | Prumo/Referencias/ | Criar pasta | Para material de referência. |
