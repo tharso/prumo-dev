@@ -18,9 +18,11 @@ Em 2026-04-22 o schema de estado de briefing foi enxugado. `briefing-state.json`
 
 ## Versoes fora de sincronia
 
-A versao do Prumo vive em 11 lugares: 7 manifestos (`plugin.json`, `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, `marketplace.json`, `.claude-plugin/marketplace.json`, `pyproject.toml`, `VERSION`) + 3 headers de skill (`skills/prumo/references/prumo-core.md`, `skills/prumo/references/modules/load-policy.md`, `skills/prumo/references/modules/dispatch.md`) + `runtime/prumo_runtime/__init__.py` (`__version__`, aferido pelo `test_version_sync.py`). Se uma estiver diferente das outras, e bug. Bumpar todas juntas. Comando rapido pra auditar: `grep -rn "X\.Y\.Z" --include='*.json' --include='*.toml' --include='VERSION' --include='*.md' --include='__init__.py'`.
+A versao do Prumo vive em 11 lugares: 7 manifestos (`plugin.json`, `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, `marketplace.json`, `.claude-plugin/marketplace.json`, `pyproject.toml`, `VERSION`) + 3 headers de skill (`skills/prumo/references/prumo-core.md`, `skills/prumo/references/modules/load-policy.md`, `skills/prumo/references/modules/dispatch.md`) + `runtime/prumo_runtime/__init__.py` (`__version__`). Se uma estiver diferente das outras, e bug. Bumpar todas juntas.
 
-Nota: `.codex-plugin/marketplace.json` nao tem campo `version` (schema do Codex nao preve). Nao ressuscitar.
+`test_version_sync.py::test_all_canonical_sources_match_runtime_version` (expandido em #83) valida automaticamente que os 10 lugares com `version` casam com `runtime.__version__`. CI quebra se alguma fonte ficar pra tras. A lista canonica esta em `VERSION_SOURCES` no proprio teste.
+
+Nota: `.codex-plugin/marketplace.json` nao tem campo `version` (schema do Codex nao preve). Nao ressuscitar. O teste tem assert dedicado `test_codex_marketplace_does_not_carry_version_by_design` que falha se isso mudar — sinal pra atualizar `VERSION_SOURCES`.
 
 ## Google Drive snapshots (removido)
 

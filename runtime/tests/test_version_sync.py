@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 import unittest
 from pathlib import Path
@@ -8,16 +9,136 @@ from prumo_runtime import __version__
 from prumo_runtime.workspace import semantic_version_key
 
 
-class VersionSyncTests(unittest.TestCase):
-    def test_runtime_version_matches_repo_metadata(self) -> None:
-        repo_root = Path(__file__).resolve().parents[2]
-        pyproject_text = (repo_root / "pyproject.toml").read_text(encoding="utf-8")
-        version_file = (repo_root / "VERSION").read_text(encoding="utf-8").strip()
-        pyproject_match = re.search(r'^version = "([^"]+)"$', pyproject_text, re.MULTILINE)
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
-        self.assertIsNotNone(pyproject_match)
-        self.assertEqual(pyproject_match.group(1), __version__)
-        self.assertEqual(version_file, __version__)
+
+def _read_pyproject_version(path: Path) -> str:
+    text = path.read_text(encoding="utf-8")
+    match = re.search(r'^version = "([^"]+)"$', text, re.MULTILINE)
+    if not match:
+        raise AssertionError(f"version field not found in {path}")
+    return match.group(1)
+
+
+def _read_version_file(path: Path) -> str:
+    return path.read_text(encoding="utf-8").strip()
+
+
+def _read_json_top_version(path: Path) -> str:
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if "version" not in data:
+        raise AssertionError(f"top-level 'version' not found in {path}")
+    return data["version"]
+
+
+def _read_marketplace_plugin_version(path: Path) -> str:
+    data = json.loads(path.read_text(encoding="utf-8"))
+    plugins = data.get("plugins") or []
+    if not plugins or "version" not in plugins[0]:
+        raise AssertionError(f"plugins[0].version not found in {path}")
+    return plugins[0]["version"]
+
+
+def _read_md_header_version(path: Path, label: str) -> str:
+    """
+    Lê headers como `> **prumo_version: X.Y.Z**` ou `> **module_version: X.Y.Z**`.
+    `label` é o nome (`prumo_version` ou `module_version`).
+    """
+    text = path.read_text(encoding="utf-8")
+    pattern = rf"\*\*{re.escape(label)}:\s*([0-9][^\s*]*)\*\*"
+    match = re.search(pattern, text)
+    if not match:
+        raise AssertionError(f"header '{label}' not found in {path}")
+    return match.group(1)
+
+
+# Lista canônica das fontes de versão do Prumo. Decisão registrada em
+# `gotchas.md` (seção "Versoes fora de sincronia"): todos os 11 lugares
+# devem casar — runtime, manifestos distribuídos e headers de skills
+# canônicas. Quando o produto bumpar versão, todos sobem juntos.
+#
+# Cada entrada é `(nome humano, caminho, função extratora)`.
+VERSION_SOURCES: list[tuple[str, Path, callable]] = [
+    ("VERSION (raiz)", REPO_ROOT / "VERSION", _read_version_file),
+    ("pyproject.toml", REPO_ROOT / "pyproject.toml", _read_pyproject_version),
+    ("plugin.json (raiz)", REPO_ROOT / "plugin.json", _read_json_top_version),
+    (
+        "marketplace.json (raiz, plugins[0].version)",
+        REPO_ROOT / "marketplace.json",
+        _read_marketplace_plugin_version,
+    ),
+    (
+        ".claude-plugin/plugin.json",
+        REPO_ROOT / ".claude-plugin" / "plugin.json",
+        _read_json_top_version,
+    ),
+    (
+        ".claude-plugin/marketplace.json (plugins[0].version)",
+        REPO_ROOT / ".claude-plugin" / "marketplace.json",
+        _read_marketplace_plugin_version,
+    ),
+    (
+        ".codex-plugin/plugin.json",
+        REPO_ROOT / ".codex-plugin" / "plugin.json",
+        _read_json_top_version,
+    ),
+    (
+        "skills/prumo/references/prumo-core.md (prumo_version)",
+        REPO_ROOT / "skills" / "prumo" / "references" / "prumo-core.md",
+        lambda p: _read_md_header_version(p, "prumo_version"),
+    ),
+    (
+        "skills/prumo/references/modules/dispatch.md (module_version)",
+        REPO_ROOT / "skills" / "prumo" / "references" / "modules" / "dispatch.md",
+        lambda p: _read_md_header_version(p, "module_version"),
+    ),
+    (
+        "skills/prumo/references/modules/load-policy.md (module_version)",
+        REPO_ROOT / "skills" / "prumo" / "references" / "modules" / "load-policy.md",
+        lambda p: _read_md_header_version(p, "module_version"),
+    ),
+]
+# .codex-plugin/marketplace.json é deliberadamente excluído: o schema do
+# Codex não prevê campo `version` no marketplace. Documentado em gotchas.md.
+
+
+class VersionSyncTests(unittest.TestCase):
+    def test_all_canonical_sources_match_runtime_version(self) -> None:
+        """Todas as 10 fontes canônicas devem casar com `prumo_runtime.__version__`.
+
+        Lista expandida em #83 (audit Codex em #81 P1.3) cobrindo manifestos
+        `.claude-plugin/`, `.codex-plugin/` e headers de skills canônicas.
+        """
+        for label, path, extract in VERSION_SOURCES:
+            with self.subTest(source=label):
+                actual = extract(path)
+                self.assertEqual(
+                    actual,
+                    __version__,
+                    f"{label} declara '{actual}', runtime declara '{__version__}'",
+                )
+
+    def test_codex_marketplace_does_not_carry_version_by_design(self) -> None:
+        """Documenta a exceção: `.codex-plugin/marketplace.json` não tem `version`.
+
+        O schema do Codex não prevê o campo. Se um dia ele for adicionado, este
+        teste deve ser removido e o arquivo entra em VERSION_SOURCES.
+        """
+        path = REPO_ROOT / ".codex-plugin" / "marketplace.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        self.assertNotIn(
+            "version",
+            data,
+            "schema do Codex não prevê 'version' no marketplace; se isso mudou, atualize VERSION_SOURCES",
+        )
+        # Também garante que o primeiro plugin não tem version no item
+        plugins = data.get("plugins") or []
+        if plugins:
+            self.assertNotIn(
+                "version",
+                plugins[0],
+                "schema do Codex não prevê 'version' nos itens; se isso mudou, atualize VERSION_SOURCES",
+            )
 
 
 class SemanticVersionKeyTests(unittest.TestCase):
