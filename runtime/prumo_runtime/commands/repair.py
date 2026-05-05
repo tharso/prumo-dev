@@ -28,7 +28,13 @@ def run_repair(args) -> int:
         print("Arquivos recriados:")
         for relative in result["recreated"]:
             print(f"- {relative}")
-    else:
+
+    if result.get("merged"):
+        print("Wrappers atualizados via merge (custom blocks preservados):")
+        for relative in result["merged"]:
+            print(f"- {relative}")
+
+    if not result["recreated"] and not result.get("merged"):
         print("Nada recriável precisava de reparo.")
 
     if result["missing_authorial"]:

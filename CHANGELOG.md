@@ -7,10 +7,15 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 ## [Unreleased]
 
 ### Fixed
-- **`prumo repair` agora detecta drift de versão e regenera arquivos canônicos com backup** (#84) — antes, o comando só checava se arquivos existiam e devolvia "nada recriável precisava de reparo" mesmo quando `PRUMO-CORE.md` declarava versão antiga (ex: workspace em `5.1.1` após `pip install --upgrade` levar runtime pra `5.3.0`). Agora `repair` lê `prumo_version` do `PRUMO-CORE.md`, compara com `runtime.__version__`, e se houver drift: (1) move `PRUMO-CORE.md`, `Prumo/AGENT.md`, `CLAUDE.md`, `AGENTS.md` pra `.prumo/backup/repair-version-bump-<timestamp>/`, (2) regenera com templates da versão atual, (3) reporta a transição (`5.0.0 → 5.3.0`) e o path do backup. Idempotente: segunda execução em workspace já em dia retorna "nada recriável precisava de reparo". Resolve a categoria de bug que apareceu durante validação manual da release 5.3.0 (workspace existente ficava preso em estado defasado sem intervenção manual).
+- **`prumo repair` agora detecta drift de versão, preservando conteúdo autoral em wrappers de raiz** (#84) — antes, o comando só checava se arquivos existiam e devolvia "nada recriável precisava de reparo" mesmo quando `PRUMO-CORE.md` declarava versão antiga (ex: workspace em `5.1.1` após `pip install --upgrade` levar runtime pra `5.3.0`). Agora `repair` lê `prumo_version` do `PRUMO-CORE.md`, compara com `runtime.__version__`, e se houver drift:
+  - Move **apenas** `.prumo/system/PRUMO-CORE.md` e `Prumo/AGENT.md` (sistema + canonical do Prumo) pra `.prumo/backup/repair-version-bump-<timestamp>/` e regenera.
+  - **Atualiza o bloco gerenciado** dos wrappers de raiz (`AGENT.md`, `CLAUDE.md`, `AGENTS.md`) via `merge_wrapper_content` — preserva byte-for-byte qualquer conteúdo autoral fora dos delimitadores `<!-- prumo:begin --> ... <!-- prumo:end -->`. Wrappers de raiz **nunca** entram em backup nem são regenerados do zero.
+  - Reporta a transição (`5.0.0 → 5.3.0`), arquivos recriados (sistema/canonical), wrappers atualizados via merge (autorais), e path do backup.
+  
+  Decisão arquitetural reforçada por review do Codex: arquivos que possam conter customização do usuário **não** são tratados como artefatos descartáveis. A separação `.prumo/` (sistema, regenerável) vs raiz (autoral, preservar) é contrato — backup de wrappers seria violação. Idempotente: segunda execução em workspace em dia retorna "nada recriável precisava de reparo".
 
 ### Tests
-- 7 testes novos em `test_repair.py` cobrindo: detecção de drift (em dia, defasado, sem PRUMO-CORE.md), repair sem drift (não toca canonicals, não cria backup), repair com drift (regenera com versão atual, cria backup com arquivos antigos preservados), idempotência após resolução. Suite total: 124 testes verdes.
+- 8 testes novos em `test_repair.py` cobrindo: detecção de drift (em dia, defasado, sem PRUMO-CORE.md), repair sem drift (não toca canonicals, não cria backup, sem merge), repair com drift (regenera só sistema/canonical, faz merge nos wrappers de raiz, backup contém só sistema/canonical), idempotência, e **preservação de conteúdo autoral** em CLAUDE.md fora do bloco gerenciado durante drift. Suite total: 125 testes verdes.
 
 ## [5.3.0] - 2026-05-05
 

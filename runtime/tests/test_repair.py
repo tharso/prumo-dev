@@ -83,11 +83,16 @@ class RepairVersionDriftTests(unittest.TestCase):
             result = repair_workspace(workspace)
             self.assertNotIn("version_drift", result)
             self.assertEqual(result["recreated"], [])
+            self.assertEqual(result.get("merged", []), [])
             backup_dir = workspace / ".prumo" / "backup"
             existing = list(backup_dir.glob("repair-version-bump-*"))
             self.assertEqual(existing, [])
 
-    def test_repair_drifted_workspace_regenerates_canonical_files_with_runtime_version(self) -> None:
+    def test_repair_drifted_workspace_regenerates_system_and_canonical_files(self) -> None:
+        # Sistema (PRUMO-CORE.md) e canonical do Prumo (Prumo/AGENT.md) entram em
+        # `recreated`. Wrappers de raiz (CLAUDE.md, AGENTS.md, AGENT.md) NÃO devem
+        # ser regenerados — eles entram em `merged` se tiver custom block, ou
+        # ficam intactos se já estiverem em dia.
         with tempfile.TemporaryDirectory() as tmpdir:
             workspace = _make_test_workspace(Path(tmpdir))
             _force_core_version(workspace, "5.0.0")
@@ -99,12 +104,16 @@ class RepairVersionDriftTests(unittest.TestCase):
             self.assertEqual(result["version_drift"]["from"], "5.0.0")
             self.assertEqual(result["version_drift"]["to"], __version__)
             self.assertEqual(parse_core_version(workspace), __version__)
-            # AGENT.md, CLAUDE.md, AGENTS.md também regenerados
             self.assertIn("Prumo/AGENT.md", result["recreated"])
-            self.assertIn("CLAUDE.md", result["recreated"])
-            self.assertIn("AGENTS.md", result["recreated"])
+            self.assertIn(".prumo/system/PRUMO-CORE.md", result["recreated"])
+            # Wrappers de raiz NÃO em "recreated" — eles foram preservados
+            self.assertNotIn("CLAUDE.md", result["recreated"])
+            self.assertNotIn("AGENTS.md", result["recreated"])
+            self.assertNotIn("AGENT.md", result["recreated"])
 
-    def test_repair_drifted_workspace_creates_backup_with_old_files(self) -> None:
+    def test_repair_drifted_workspace_creates_backup_with_only_system_canonicals(self) -> None:
+        # Backup deve conter SÓ PRUMO-CORE.md e Prumo/AGENT.md. Wrappers de raiz
+        # NÃO entram no backup porque podem ter conteúdo autoral.
         with tempfile.TemporaryDirectory() as tmpdir:
             workspace = _make_test_workspace(Path(tmpdir))
             _force_core_version(workspace, "5.0.0")
@@ -117,9 +126,12 @@ class RepairVersionDriftTests(unittest.TestCase):
             backed_up_core = backup_root / ".prumo" / "system" / "PRUMO-CORE.md"
             self.assertTrue(backed_up_core.exists())
             self.assertEqual(backed_up_core.read_text(encoding="utf-8"), old_core_text)
+            # Wrappers de raiz NÃO no backup
+            self.assertFalse((backup_root / "CLAUDE.md").exists())
+            self.assertFalse((backup_root / "AGENTS.md").exists())
+            self.assertFalse((backup_root / "AGENT.md").exists())
 
     def test_repair_idempotent_after_drift_resolution(self) -> None:
-        # Primeiro repair regenera. Segundo repair não deve detectar drift de novo.
         with tempfile.TemporaryDirectory() as tmpdir:
             workspace = _make_test_workspace(Path(tmpdir))
             _force_core_version(workspace, "5.0.0")
@@ -129,6 +141,47 @@ class RepairVersionDriftTests(unittest.TestCase):
             second = repair_workspace(workspace)
             self.assertNotIn("version_drift", second)
             self.assertEqual(second["recreated"], [])
+            self.assertEqual(second.get("merged", []), [])
+
+    def test_repair_drift_preserves_authorial_content_in_root_wrappers(self) -> None:
+        # CRITICAL: usuário pode ter customizado CLAUDE.md/AGENTS.md/AGENT.md fora
+        # do bloco gerenciado. repair com drift deve preservar essa customização
+        # byte-for-byte, atualizando apenas o bloco entre <!-- prumo:begin --> e
+        # <!-- prumo:end -->. Codex review da #84 explicitou esse contrato.
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = _make_test_workspace(Path(tmpdir))
+            claude_path = workspace / "CLAUDE.md"
+
+            # Simula um CLAUDE.md autoral: cabeçalho personalizado + bloco prumo + cauda autoral
+            claude_path.write_text(
+                "# Meu CLAUDE.md customizado\n"
+                "\n"
+                "Notas pessoais que o Prumo nunca pode tocar.\n"
+                "\n"
+                "<!-- prumo:begin -->\n"
+                "Bloco antigo do Prumo (será atualizado).\n"
+                "<!-- prumo:end -->\n"
+                "\n"
+                "Mais notas autorais depois do bloco.\n",
+                encoding="utf-8",
+            )
+
+            _force_core_version(workspace, "5.0.0")
+            result = repair_workspace(workspace)
+
+            self.assertIn("version_drift", result)
+            self.assertIn("CLAUDE.md", result.get("merged", []))
+
+            new_content = claude_path.read_text(encoding="utf-8")
+            # Conteúdo autoral preservado byte-for-byte
+            self.assertIn("# Meu CLAUDE.md customizado", new_content)
+            self.assertIn("Notas pessoais que o Prumo nunca pode tocar.", new_content)
+            self.assertIn("Mais notas autorais depois do bloco.", new_content)
+            # Bloco prumo foi atualizado (não tem mais o texto antigo)
+            self.assertNotIn("Bloco antigo do Prumo", new_content)
+            # Bloco prumo está presente com a marca canônica
+            self.assertIn("<!-- prumo:begin -->", new_content)
+            self.assertIn("<!-- prumo:end -->", new_content)
 
 
 if __name__ == "__main__":

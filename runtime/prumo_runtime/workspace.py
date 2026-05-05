@@ -613,17 +613,19 @@ def repair_workspace(workspace: Path) -> dict:
     ensure_directories(workspace)
 
     # Drift de versão: PRUMO-CORE.md declara versão antiga, runtime está em outra.
-    # Antes de detectar arquivos faltando, mover canônicos defasados pra backup —
-    # eles entram no loop normal de regeneração logo abaixo.
+    # Mover apenas sistema e canonical pra backup — eles entram no loop normal
+    # de regeneração abaixo. Wrappers de raiz (autorais) ficam preservados e são
+    # atualizados via merge no final, preservando custom blocks.
     drift = detect_version_drift(workspace)
     backup_root: Path | None = None
     if drift is not None:
-        backup_root = bump_generated_files_for_repair(workspace, drift)
+        backup_root = bump_system_canonicals_for_repair(workspace, drift)
 
     rendered = render_files(config)
     missing = detect_missing(workspace)
     paths = workspace_paths(workspace)
     recreated: list[str] = []
+    merged: list[str] = []
     reported_authorial = list(missing["authorial"])
 
     for relative in [*missing["generated"], *missing["derived"]]:
@@ -639,10 +641,28 @@ def repair_workspace(workspace: Path) -> dict:
         target.write_text(content, encoding="utf-8")
         recreated.append(relative)
 
+    # Em caso de drift, atualizar o bloco gerenciado dos wrappers de raiz
+    # via merge — preservando byte-for-byte qualquer conteúdo autoral fora
+    # dos delimitadores `<!-- prumo:begin --> ... <!-- prumo:end -->`.
+    if drift is not None:
+        for wrapper_name, wrapper_path in paths.wrappers.items():
+            if not wrapper_path.exists():
+                continue  # Faltando — loop acima cuidou via render_files
+            wrapper_relative = paths.relative(wrapper_path)
+            new_content = rendered.get(wrapper_relative)
+            if new_content is None:
+                continue
+            existing = wrapper_path.read_text(encoding="utf-8")
+            merged_content = merge_wrapper_content(existing, wrapper_relative, new_content, config)
+            if merged_content != existing:
+                wrapper_path.write_text(merged_content, encoding="utf-8")
+                merged.append(wrapper_relative)
+
     write_schema(config, preserve_created_at=read_schema(workspace).get("created_at"))
 
     result: dict = {
         "recreated": recreated,
+        "merged": merged,
         "missing_authorial": reported_authorial,
         "missing_generated": missing["generated"],
         "missing_derived": missing["derived"],
@@ -820,15 +840,20 @@ def detect_version_drift(workspace: Path) -> tuple[str, str] | None:
     return (workspace_version, RUNTIME_VERSION)
 
 
-def bump_generated_files_for_repair(
+def bump_system_canonicals_for_repair(
     workspace: Path,
     drift: tuple[str, str],
 ) -> Path:
     """
-    Move arquivos canônicos defasados pra backup pra que `repair_workspace`
+    Move arquivos do sistema (`.prumo/system/PRUMO-CORE.md`) e canonical do
+    Prumo (`Prumo/AGENT.md` em nested) pra backup pra que `repair_workspace`
     os regenere com versão atual.
 
-    Retorna o path do backup criado. Caller decide se reporta o backup.
+    NÃO move wrappers de raiz (`AGENT.md`, `CLAUDE.md`, `AGENTS.md`). Esses
+    podem conter conteúdo autoral do usuário fora do bloco gerenciado e são
+    atualizados via merge no `repair_workspace`, não regenerados do zero.
+
+    Retorna o path do backup criado.
     """
     workspace_version, runtime_version = drift
     workspace_resolved = workspace.resolve()
@@ -836,8 +861,9 @@ def bump_generated_files_for_repair(
     backup_root = workspace_resolved / ".prumo" / "backup" / f"repair-version-bump-{timestamp}"
     backup_root.mkdir(parents=True, exist_ok=True)
     paths = workspace_paths(workspace)
+    # Apenas sistema (PRUMO-CORE.md) e canonical do Prumo (Prumo/AGENT.md em
+    # nested). Wrappers de raiz ficam preservados; merge cuida deles.
     candidates = [paths.core, paths.canonical_agent]
-    candidates.extend(paths.wrappers.values())
     for candidate in candidates:
         if not candidate.exists():
             continue
