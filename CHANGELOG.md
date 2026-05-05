@@ -6,6 +6,9 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+### Fixed
+- **`prumo setup` em Windows não falha mais com `ZoneInfoNotFoundError`** — `pyproject.toml` ganhou dependência condicional `tzdata; sys_platform == "win32"`. A stdlib `zoneinfo` não traz dados de timezone embutidos em Windows (em macOS/Linux ela lê do sistema), o que quebrava `ZoneInfo("America/Sao_Paulo")` no step `Validate setup runs non-interactive on Windows` introduzido em [commit 3081d88]. Tornou o gap antigo visível.
+
 ### Added
 - **Comando `prumo migrate-skills`** ([commit daf9c6c]) — migra workspaces pré-5.2.0 (skills em `Prumo/skills/` ou `Prumo/skills_OLD/`) para a estrutura nova (`.prumo/skills/`). Pre-flight obrigatório consulta `DECISIONS.md` por tópicos relevantes (`skills-distribution`, `workspace-layout`) e mostra plano antes de executar. Backup automático em `.prumo/backup/relocate-skills-<timestamp>/`. Re-renderiza `Prumo/AGENT.md` e `.prumo/system/PRUMO-CORE.md` via `repair_workspace`. Loga em `.prumo/logs/architectural-ops.log` (formato `<ISO>\t<op>\t<message>`). Idempotente: workspaces já migrados, sem skills, ou em estado ambíguo saem limpos. Flag `--yes` pula confirmação para automação. Resolve a Fase 3 plena da #77 e plumba a Melhoria 6 da #78 num caso de uso real.
 

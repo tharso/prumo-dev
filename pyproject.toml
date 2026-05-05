@@ -12,7 +12,11 @@ license = "MIT"
 authors = [
   { name = "Prumo Maintainers" }
 ]
-dependencies = []
+dependencies = [
+  # zoneinfo da stdlib em Windows nao tem dados de timezone embutidos;
+  # macOS/Linux leem do sistema. Pin condicional pra evitar ZoneInfoNotFoundError.
+  'tzdata; sys_platform == "win32"',
+]
 
 [project.scripts]
 prumo = "prumo_runtime.cli:main"

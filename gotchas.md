@@ -76,3 +76,13 @@ Regras:
 - Unit test com fixture sintetica **nao basta**. Todo parser de formato do usuario precisa de smoke test contra o workspace real (`DailyLife/Prumo/PAUTA.md` na maquina do Tharso) antes do merge. Se o runtime le 0 itens numa secao que tem conteudo visivel, e bug de parser, nao ausencia de dados.
 - Quando o usuario reportar "o briefing esta ignorando isso" ou "nao me lembrou de X", a primeira hipotese nao e bug no briefing em si. E parser do workspace divergindo do formato que o usuario escreve hoje. Validar com smoke antes de mexer em logica de briefing.
 - Header match tolerante nao e permissao pra match solto. `_section_header_matches` em `workspace.py` so aceita tail apos separadores reconhecidos. Letra nao e separador (senao `Agendado` casaria `Agendado Futuro`, bug mais sutil que o primeiro).
+
+## zoneinfo em Windows precisa do pacote tzdata
+
+A stdlib `zoneinfo` (PEP 615, Python 3.9+) nao traz dados de timezone embutidos em Windows. Em macOS/Linux ela le `/usr/share/zoneinfo`. Em Windows nao existe esse diretorio, entao `ZoneInfo("America/Sao_Paulo")` levanta `ZoneInfoNotFoundError`. Foi exposto em maio/2026 quando o step `Validate setup runs non-interactive on Windows` (commit 3081d88, fix #72) comecou a invocar `prumo setup` no CI Windows e quebrou imediatamente em `templates.now_display`.
+
+Regras:
+
+- Codigo do runtime que use `ZoneInfo` precisa do pacote `tzdata` listado em `pyproject.toml` como dependencia condicional: `'tzdata; sys_platform == "win32"'`. macOS/Linux nao instalam (le do sistema), Windows instala via pip.
+- Nao adicionar tzdata como dep incondicional. So Windows precisa, e em Linux/macOS o pacote pip pode divergir do tz do sistema (causando bugs sutis de DST).
+- Se um teste de integracao no CI Windows passar a invocar funcao do runtime que use timezone, garantir que `tzdata` ja esta instalado pelo install via pip antes do step.
