@@ -24,6 +24,15 @@ prumo = "prumo_runtime.cli:main"
 [tool.hatch.build.targets.wheel]
 packages = ["runtime/prumo_runtime"]
 
+# Bundle de skills + manifesto + VERSION dentro do package, para que o
+# runtime instalado via pip/wheel ache os assets sem depender de o repo
+# estar montado ao lado (ver #82). force-include copia os caminhos a
+# partir do repo root para o destino dentro do package no wheel.
+[tool.hatch.build.targets.wheel.force-include]
+"skills" = "prumo_runtime/_bundled/skills"
+"plugin.json" = "prumo_runtime/_bundled/plugin.json"
+"VERSION" = "prumo_runtime/_bundled/VERSION"
+
 [tool.hatch.build.targets.sdist]
 include = [
   "/runtime/prumo_runtime",

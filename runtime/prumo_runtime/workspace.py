@@ -329,6 +329,11 @@ def install_skills(workspace: Path, *, layout_mode: str = "nested") -> list[str]
     if not paths.nested_layout:
         return []
     repo = repo_root_from(Path(__file__))
+    if repo is None:
+        # Em wheel install, repo_root_from cai no fallback _bundled/. Se mesmo
+        # assim retornou None, é estado patológico (wheel sem _bundled, ou
+        # execução fora de contexto). Retorna lista vazia em vez de crashar.
+        return []
     source = repo / "skills"
     if not source.is_dir():
         return []

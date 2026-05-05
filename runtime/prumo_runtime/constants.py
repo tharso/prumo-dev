@@ -30,10 +30,30 @@ def directories_for(workspace: Path) -> tuple[str, ...]:
 
 
 def repo_root_from(start: Path) -> Path | None:
+    """
+    Localiza o "repo root" — diretório que contém VERSION e plugin.json e
+    serve de fonte para `skills/`, `plugin.json` e `VERSION`.
+
+    Dois modos:
+    1. **Editable / clone do repo**: sobe a partir de `start` e acha o
+       diretório onde VERSION + plugin.json moram. Retorna o caminho.
+    2. **Wheel instalado via pip**: `_bundled/` dentro do package carrega
+       cópia de skills + plugin.json + VERSION (ver pyproject.toml
+       force-include). Funciona como repo root virtual quando a árvore
+       acima de `start` (em site-packages) não tem o repo real.
+
+    Retorna `None` se nenhum dos dois caminhos existir — caso patológico
+    de wheel quebrado ou execução fora de contexto.
+    """
     current = start.resolve()
     for candidate in (current, *current.parents):
         if (candidate / "VERSION").exists() and (candidate / "plugin.json").exists():
             return candidate
+
+    bundled = Path(__file__).resolve().parent / "_bundled"
+    if (bundled / "VERSION").exists() and (bundled / "plugin.json").exists():
+        return bundled
+
     return None
 
 
