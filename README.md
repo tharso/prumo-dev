@@ -128,7 +128,7 @@ prumo migrate --workspace /caminho/do/workspace --user-name "Seu Nome"
 prumo migrate-skills --workspace /caminho/do/workspace
 ```
 
-`prumo migrate-skills` é idempotente: rodar em workspace já migrado, sem skills locais ou em estado ambíguo sai limpo (exit 0 com mensagem). Faz backup automático em `.prumo/backup/relocate-skills-<timestamp>/` antes de mover, e re-renderiza `Prumo/AGENT.md` e `.prumo/system/PRUMO-CORE.md` com os caminhos novos. Em CI ou automação, passe `--yes` pra pular o prompt de confirmação.
+`prumo migrate-skills` é idempotente: rodar em workspace já migrado, sem skills locais ou em estado ambíguo sai limpo (exit 0 com mensagem). Faz backup automático em `.prumo/backups/relocate-skills/<timestamp>/` antes de mover, e re-renderiza `Prumo/AGENT.md` e `.prumo/system/PRUMO-CORE.md` com os caminhos novos. Em CI ou automação, passe `--yes` pra pular o prompt de confirmação.
 
 ## Princípios
 
