@@ -94,7 +94,7 @@ def render_wrapper_merge_block(relative: str, rendered: str, config: WorkspaceCo
     lines = [
         WRAPPER_BLOCK_BEGIN,
         f"Prumo detectado neste workspace. Para o canon, leia `{canonical_target}`.",
-        'Se o usuário disser "Prumo", rode `prumo` neste diretório.',
+        'Se o usuário disser "Prumo" cru ou equivalente curto, ative a skill `prumo:abrir`. Quando shell e runtime estiverem disponíveis, rodar `prumo` neste diretório é atalho equivalente.',
         "Abaixo fica o bloco gerado pelo runtime. Se ele mudar, atualize só este trecho.",
         "",
         rendered.strip(),

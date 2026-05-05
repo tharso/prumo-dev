@@ -37,6 +37,7 @@ Se o runtime não estiver no PATH, ler a skill correspondente no workspace:
 
 | Comando | Skill |
 |---|---|
+| abrir | `.prumo/skills/abrir/SKILL.md` |
 | briefing | `.prumo/skills/briefing/SKILL.md` |
 | setup | `.prumo/skills/prumo/SKILL.md` |
 | start | `.prumo/skills/start/SKILL.md` |
@@ -78,7 +79,7 @@ Fora disso, abertura não abre mais nada. A saudação vem proativa, com 2-4 op�
 1. Tudo que é do usuário continua legível sem o Prumo.
 2. `CLAUDE.md`, `AGENT.md` e `AGENTS.md` na raiz são ponteiros de compatibilidade, não a fonte de verdade.
 3. Se um arquivo modular faltar, avisar antes de inventar realidade.
-4. Se o usuário chamar "Prumo", "bom dia, Prumo" ou equivalente, tentar rodar `prumo` no diretório do workspace.
+4. Se o usuário chamar "Prumo" cru, "ei prumo" ou equivalente curto, ative a skill `prumo:abrir`. Quando shell e runtime estiverem disponíveis, rodar `prumo` no diretório do workspace é atalho equivalente.
 5. Se `prumo` não estiver no PATH, tentar `$HOME/.local/bin/prumo` antes de concluir que o runtime sumiu.
 6. Se o runtime não existir, usar a cadeia de fallback (skill direto). Isso é operação legítima, não simulação.
 7. Não escrever arquivos em `.prumo/state/` fingindo ser o runtime.

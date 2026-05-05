@@ -93,11 +93,11 @@ def _build_adapter_hints(workspace: Path) -> dict[str, object]:
         },
         "briefing_entrypoint": {
             "kind": "shell",
-            "shell_command": f"prumo briefing --workspace {workspace_str} --refresh-snapshot",
+            "shell_command": f"prumo briefing --workspace {workspace_str}",
         },
         "briefing_structured_entrypoint": {
             "kind": "shell",
-            "shell_command": f"prumo briefing --workspace {workspace_str} --refresh-snapshot --format json",
+            "shell_command": f"prumo briefing --workspace {workspace_str} --format json",
         },
         "inbox_preview_entrypoint": {
             "kind": "shell",

@@ -36,7 +36,7 @@ Isso já existia e continua funcionando.
 - `.prumo/system/PRUMO-CORE.md` defasado em relação ao runtime
 
 **Como funciona:**
-- Ler `skills/prumo/references/modules/perfil-hygiene.md` para o procedimento detalhado
+- Ler `skills/prumo/references/modules/claude-hygiene.md` para o procedimento detalhado (o nome do módulo é histórico — cobre a higiene de `PERFIL.md`)
 - Apresentar em 3 blocos fixos: mudanças seguras, confirmações factuais, decisões de governança
 - Só aplicar com confirmação explícita
 

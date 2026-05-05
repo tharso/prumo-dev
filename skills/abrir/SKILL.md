@@ -20,10 +20,12 @@ protocolo, devolve controle.
 
 ## Atalho via runtime (preferencial quando disponível)
 
-Se o host tem shell e o runtime do Prumo está instalado, o atalho é:
+Se o host tem shell e o runtime do Prumo está instalado, o atalho é
+rodar `prumo` no diretório do workspace. Sem subcomando, o runtime
+abre a porta de entrada (equivalente a `prumo start`):
 
 ```bash
-prumo --workspace .
+prumo
 ```
 
 A saída do runtime é fonte primária — JSON ou prosa formatada com

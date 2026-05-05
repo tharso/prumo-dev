@@ -458,14 +458,20 @@ Este fluxo NÃO substitui o setup wizard (`/prumo:setup`). Coexistem.
 
 | Aspecto | `/prumo:setup` | `/prumo:start` |
 |---------|---------------|----------------|
-| Trigger | Explícito: `/prumo:setup` | Default quando não há CLAUDE.md |
+| Trigger | Explícito: `/prumo:setup`, "configurar prumo", "montar sistema" | Explícito: `/prumo:start`, "quero começar o prumo", "começar setup rápido" |
 | Abordagem | Wizard estruturado, 10 etapas | Dump primeiro, perguntas depois |
 | Nível de detalhe | Alto (cada área detalhada) | Inferido (refinado com uso) |
 | Tempo até valor | ~15-20 min (dump no final) | ~5-10 min (dump no início) |
 | Quando usar | Usuário quer controle total | Usuário quer começar rápido |
 
+Nenhum dos dois é default em invocação curta ("prumo" cru, "ei prumo")
+— invocação curta sem intenção declarada vai pra `prumo:abrir`, que
+faz scan leve e oferece opções. Apenas com gesto explícito de
+"configurar" ou "começar" o setup/start é ativado.
+
 Se o usuário rodar `/prumo:setup` explicitamente, usar o wizard. Se o
-usuário começar sem comando (ou usar `/prumo:start`), usar este fluxo.
+usuário rodar `/prumo:start` ou disser "quero começar o prumo", usar
+este fluxo.
 
 O resultado final é idêntico: mesmos arquivos, mesma estrutura, mesma
 experiência de briefing no dia seguinte.

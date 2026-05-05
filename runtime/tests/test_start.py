@@ -379,7 +379,7 @@ class StartCommandTests(unittest.TestCase):
             self.assertEqual(payload["adapter_hints"]["preferred_entrypoint"]["shell_command"], "prumo")
             self.assertEqual(
                 payload["adapter_hints"]["briefing_structured_entrypoint"]["shell_command"],
-                f"prumo briefing --workspace {workspace.resolve()} --refresh-snapshot --format json",
+                f"prumo briefing --workspace {workspace.resolve()} --format json",
             )
             self.assertIn("canonical_refs", payload["adapter_hints"])
             self.assertTrue(payload["adapter_hints"]["canonical_refs"]["briefing_procedure"].endswith("modules/briefing-procedure.md"))

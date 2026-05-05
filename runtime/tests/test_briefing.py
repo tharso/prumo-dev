@@ -48,7 +48,7 @@ class BriefingTests(unittest.TestCase):
             )
             (workspace / "PRUMO-CORE.md").write_text(f"> **prumo_version: {__version__}**\n", encoding="utf-8")
             (state_dir / "last-briefing.json").write_text('{"at": ""}', encoding="utf-8")
-            payload = build_briefing_payload(workspace, refresh_snapshot=False)
+            payload = build_briefing_payload(workspace)
             self.assertEqual(payload["workspace_path"], str(workspace.resolve()))
             self.assertEqual(payload["adapter_contract_version"], "2026-03-28")
             self.assertTrue(payload["sections"])
@@ -89,7 +89,7 @@ class BriefingTests(unittest.TestCase):
                 encoding="utf-8",
             )
             (state_dir / "last-briefing.json").write_text('{"at": ""}', encoding="utf-8")
-            args = Namespace(workspace=str(workspace), refresh_snapshot=False, format="json")
+            args = Namespace(workspace=str(workspace), format="json")
             buffer = io.StringIO()
             with redirect_stdout(buffer):
                 rc = run_briefing(args)
@@ -137,7 +137,7 @@ class BriefingTests(unittest.TestCase):
                 encoding="utf-8",
             )
             (state_dir / "last-briefing.json").write_text('{"at": ""}', encoding="utf-8")
-            payload = build_briefing_payload(workspace, refresh_snapshot=False)
+            payload = build_briefing_payload(workspace)
             self.assertTrue(payload["core_outdated"])
             self.assertIn("Atualizar o motor", payload["message"])
             self.assertIn("prumo migrate", payload["message"])
@@ -169,7 +169,7 @@ class BriefingTests(unittest.TestCase):
                 encoding="utf-8",
             )
             (state_dir / "last-briefing.json").write_text('{"at": ""}', encoding="utf-8")
-            payload = build_briefing_payload(workspace, refresh_snapshot=False)
+            payload = build_briefing_payload(workspace)
             message = payload["message"]
             self.assertNotIn("Ver lista completa", message)
             named_alternatives = [

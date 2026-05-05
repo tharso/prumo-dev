@@ -434,7 +434,7 @@ def build_daily_actions(
             shell_action(
                 "briefing",
                 "Rodar o briefing agora" if not has_briefed_today else "Rodar o briefing de novo",
-                f"prumo briefing --workspace {workspace_str} --refresh-snapshot",
+                f"prumo briefing --workspace {workspace_str}",
                 category="briefing",
                 documentation_targets=[docs["pauta"], docs["inbox"], docs["registro"]],
                 outcome="Panorama atualizado com proposta do dia e contexto suficiente para seguir trabalhando.",

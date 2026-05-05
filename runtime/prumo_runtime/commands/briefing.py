@@ -164,7 +164,7 @@ def choose_proposal(quente: list[str], agendado: list[str], andamento: list[str]
     return "Fazer um dump real de pendências antes que o sistema vire paisagem."
 
 
-def build_briefing_payload(workspace: Path, refresh_snapshot: bool = False) -> dict:
+def build_briefing_payload(workspace: Path) -> dict:
     workspace = workspace.expanduser().resolve()
     config = build_config_from_existing(workspace)
     repo_root = repo_root_from(Path(__file__))
@@ -287,10 +287,7 @@ def build_briefing_payload(workspace: Path, refresh_snapshot: bool = False) -> d
 
 def run_briefing(args) -> int:
     workspace = Path(args.workspace).expanduser().resolve()
-    payload = build_briefing_payload(
-        workspace,
-        refresh_snapshot=bool(getattr(args, "refresh_snapshot", False)),
-    )
+    payload = build_briefing_payload(workspace)
     if getattr(args, "format", "text") == "json":
         print(json.dumps(payload, ensure_ascii=False, indent=2))
     else:

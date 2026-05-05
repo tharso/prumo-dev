@@ -43,7 +43,7 @@ A resposta do runtime vai como veio. Não reescrever, não enfeitar.
 
 ## Quando o briefing roda
 
-1. Se o usuário disser "bom dia" ou invocar o Prumo de forma curta, tentar `start` primeiro.
+1. Briefing roda apenas com pedido explícito ("briefing", "painel do dia", "o que tem pra hoje", "começar o dia"). Saudação curta tipo "prumo" cru ou "ei prumo" não dispara briefing — vai para `prumo:abrir`, que decide o caminho a partir do scan.
 2. Se pedir briefing explicitamente, ir direto pro briefing.
 3. Não inventar onboarding ou repair por conta própria — o runtime sabe fazer isso.
 
