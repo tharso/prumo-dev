@@ -608,9 +608,18 @@ def migrate_legacy_workspace(config: WorkspaceConfig) -> dict[str, list[str] | s
     }
 
 
-def repair_workspace(workspace: Path) -> dict[str, list[str]]:
+def repair_workspace(workspace: Path) -> dict:
     config = build_config_from_existing(workspace)
     ensure_directories(workspace)
+
+    # Drift de versão: PRUMO-CORE.md declara versão antiga, runtime está em outra.
+    # Antes de detectar arquivos faltando, mover canônicos defasados pra backup —
+    # eles entram no loop normal de regeneração logo abaixo.
+    drift = detect_version_drift(workspace)
+    backup_root: Path | None = None
+    if drift is not None:
+        backup_root = bump_generated_files_for_repair(workspace, drift)
+
     rendered = render_files(config)
     missing = detect_missing(workspace)
     paths = workspace_paths(workspace)
@@ -631,12 +640,20 @@ def repair_workspace(workspace: Path) -> dict[str, list[str]]:
         recreated.append(relative)
 
     write_schema(config, preserve_created_at=read_schema(workspace).get("created_at"))
-    return {
+
+    result: dict = {
         "recreated": recreated,
         "missing_authorial": reported_authorial,
         "missing_generated": missing["generated"],
         "missing_derived": missing["derived"],
     }
+    if drift is not None:
+        result["version_drift"] = {
+            "from": drift[0],
+            "to": drift[1],
+            "backup_root": str(backup_root) if backup_root else None,
+        }
+    return result
 
 
 def read_text(path: Path) -> str:
@@ -783,6 +800,52 @@ def parse_core_version(workspace: Path) -> str | None:
         if "prumo_version:" in line:
             return line.split("prumo_version:", 1)[1].replace("*", "").replace(">", "").strip()
     return None
+
+
+def detect_version_drift(workspace: Path) -> tuple[str, str] | None:
+    """
+    Detecta drift entre `prumo_version` declarado em `.prumo/system/PRUMO-CORE.md`
+    e a versão do runtime instalado.
+
+    Retorna `(workspace_version, runtime_version)` se houver drift.
+    Retorna `None` se em dia, ou se PRUMO-CORE.md não existir / não declarar
+    versão (esse caso é tratado por `detect_missing` como ausência de arquivo
+    canônico, não como drift).
+    """
+    workspace_version = parse_core_version(workspace)
+    if workspace_version is None:
+        return None
+    if workspace_version == RUNTIME_VERSION:
+        return None
+    return (workspace_version, RUNTIME_VERSION)
+
+
+def bump_generated_files_for_repair(
+    workspace: Path,
+    drift: tuple[str, str],
+) -> Path:
+    """
+    Move arquivos canônicos defasados pra backup pra que `repair_workspace`
+    os regenere com versão atual.
+
+    Retorna o path do backup criado. Caller decide se reporta o backup.
+    """
+    workspace_version, runtime_version = drift
+    workspace_resolved = workspace.resolve()
+    timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
+    backup_root = workspace_resolved / ".prumo" / "backup" / f"repair-version-bump-{timestamp}"
+    backup_root.mkdir(parents=True, exist_ok=True)
+    paths = workspace_paths(workspace)
+    candidates = [paths.core, paths.canonical_agent]
+    candidates.extend(paths.wrappers.values())
+    for candidate in candidates:
+        if not candidate.exists():
+            continue
+        relative = candidate.resolve().relative_to(workspace_resolved)
+        target = backup_root / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(candidate), str(target))
+    return backup_root
 
 
 def update_last_briefing(workspace: Path, timezone_name: str) -> None:

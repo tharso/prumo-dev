@@ -6,6 +6,12 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+### Fixed
+- **`prumo repair` agora detecta drift de versão e regenera arquivos canônicos com backup** (#84) — antes, o comando só checava se arquivos existiam e devolvia "nada recriável precisava de reparo" mesmo quando `PRUMO-CORE.md` declarava versão antiga (ex: workspace em `5.1.1` após `pip install --upgrade` levar runtime pra `5.3.0`). Agora `repair` lê `prumo_version` do `PRUMO-CORE.md`, compara com `runtime.__version__`, e se houver drift: (1) move `PRUMO-CORE.md`, `Prumo/AGENT.md`, `CLAUDE.md`, `AGENTS.md` pra `.prumo/backup/repair-version-bump-<timestamp>/`, (2) regenera com templates da versão atual, (3) reporta a transição (`5.0.0 → 5.3.0`) e o path do backup. Idempotente: segunda execução em workspace já em dia retorna "nada recriável precisava de reparo". Resolve a categoria de bug que apareceu durante validação manual da release 5.3.0 (workspace existente ficava preso em estado defasado sem intervenção manual).
+
+### Tests
+- 7 testes novos em `test_repair.py` cobrindo: detecção de drift (em dia, defasado, sem PRUMO-CORE.md), repair sem drift (não toca canonicals, não cria backup), repair com drift (regenera com versão atual, cria backup com arquivos antigos preservados), idempotência após resolução. Suite total: 124 testes verdes.
+
 ## [5.3.0] - 2026-05-05
 
 ### Fixed

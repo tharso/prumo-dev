@@ -14,6 +14,16 @@ def run_repair(args) -> int:
         return 0
 
     print(f"Workspace reparado: {workspace}")
+
+    drift = result.get("version_drift")
+    if drift:
+        print(
+            f"Drift de versão detectado: {drift['from']} → {drift['to']}. "
+            f"Arquivos canônicos antigos movidos pra backup."
+        )
+        if drift.get("backup_root"):
+            print(f"Backup em: {drift['backup_root']}")
+
     if result["recreated"]:
         print("Arquivos recriados:")
         for relative in result["recreated"]:
