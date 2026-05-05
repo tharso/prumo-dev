@@ -30,4 +30,5 @@ O processo deve:
    - arquivos de `Inbox4Mobile/` marcados como processados em `_processed.json` e acima do threshold de idade;
 3. nunca apagar histórico sem archive;
 4. nunca mover sem registrar no `ARCHIVE-INDEX`;
-5. `PERFIL.md` está fora do escopo deste comando; para isso existe higiene assistida.
+5. ao registrar no `ARCHIVE-INDEX`, sempre usar paths relativos ao workspace (ex: `PAUTA.md`, `.prumo/state/old.md`). Nunca paths absolutos com `/Users/...` ou `C:\...`. Workspace é portátil por contrato — path absoluto persistido é bug;
+6. `PERFIL.md` está fora do escopo deste comando; para isso existe higiene assistida.

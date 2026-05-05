@@ -211,6 +211,8 @@ Panorama numerado de 1 a N (agenda, emails curados, pendências), proposta do di
 
 `ASSERT: Arquivo frio só pode ser movido para archive se houver entrada correspondente em .prumo/state/archive/ARCHIVE-INDEX.*`
 
+`ASSERT: Toda entrada em .prumo/state/archive/ARCHIVE-INDEX.* registra paths relativos ao workspace (ex: "PAUTA.md", ".prumo/state/old.md"). Nunca paths absolutos com "/Users/..." ou "C:\...". Paths absolutos em estado persistido violam o contrato de portabilidade do workspace e são bug.`
+
 `ASSERT: Prumo/Agente/PERFIL.md nunca entra em autosanitização; higiene só acontece com confirmação explícita do usuário.`
 
 `ASSERT: Pendência viva, registro resolvido e histórico não devem disputar espaço em Prumo/Agente/PERFIL.md como se fossem a mesma espécie de informação.`
