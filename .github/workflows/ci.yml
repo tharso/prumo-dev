@@ -108,12 +108,23 @@ jobs:
 
       - name: Verify bundled skills materialized in workspace
         run: |
-          test -f /tmp/prumo-wheel-ws/.prumo/skills/abrir/SKILL.md
-          test -f /tmp/prumo-wheel-ws/.prumo/skills/briefing/SKILL.md
-          test -f /tmp/prumo-wheel-ws/.prumo/skills/start/SKILL.md
+          # As 8 skills declaradas em plugin.json. Se alguem mexer em
+          # install_skills (filter, copytree) ou em force-include e quebrar
+          # uma skill especifica, isso pega.
+          for skill in abrir briefing doctor faxina higiene prumo sanitize start; do
+            target="/tmp/prumo-wheel-ws/.prumo/skills/$skill/SKILL.md"
+            if [ ! -f "$target" ]; then
+              echo "MISSING: $target"
+              exit 1
+            fi
+          done
           test -f /tmp/prumo-wheel-ws/.prumo/system/PRUMO-CORE.md
-          grep -q "prumo_version: 5.2.0" /tmp/prumo-wheel-ws/.prumo/system/PRUMO-CORE.md
-          echo "Wheel install carrega skills bundled corretamente"
+          # Compara versao do core renderizado com a versao real do runtime
+          # instalado. Garante que o bundle e o runtime sao do mesmo wheel
+          # (e nao precisa atualizar este step a cada bump de versao).
+          EXPECTED=$(/tmp/venv-wheel-test/bin/prumo --version | awk '{print $2}')
+          grep -q "prumo_version: $EXPECTED" /tmp/prumo-wheel-ws/.prumo/system/PRUMO-CORE.md
+          echo "Wheel install carrega 8 skills bundled corretamente (prumo_version: $EXPECTED)"
 
       - name: Verify start --format json devolve canonical_refs apontando pro bundle
         run: |
