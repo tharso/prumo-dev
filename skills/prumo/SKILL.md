@@ -1,12 +1,15 @@
 ---
 name: setup
 description: >
-  Setup e configuração do Prumo. Use esta skill quando o usuário quiser
-  configurar o Prumo ("setup", "configurar prumo", "montar meu sistema"),
-  adicionar novas áreas de vida, reconfigurar tom ou rituais. Também dispara com:
-  "/Prumo", "sistema de produtividade", "quero parar de esquecer coisas",
-  "life OS", "me ajuda a organizar", "tô perdido com tanta coisa". Se o usuário mencionar
-  qualquer variação de "preciso de um sistema pra não deixar as coisas caírem", esta é a skill.
+  Setup e configuração do Prumo. Use esta skill APENAS quando o usuário
+  expressar intenção explícita de configurar o Prumo ("setup", "configurar
+  prumo", "montar meu sistema", "/prumo:setup"), adicionar novas áreas de
+  vida, reconfigurar tom ou rituais. Também dispara em variações longas
+  ("sistema de produtividade", "quero parar de esquecer coisas", "life OS",
+  "me ajuda a organizar minha vida", "preciso de um sistema pra não deixar
+  as coisas caírem"). Não dispara em invocação curta tipo "prumo" cru ou
+  saudação — use `prumo:abrir`. Não dispara em onboarding rápido — use
+  `prumo:start`.
 ---
 
 # Prumo

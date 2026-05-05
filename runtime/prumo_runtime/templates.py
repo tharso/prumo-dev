@@ -17,7 +17,7 @@ def _render_workspace_runtime_rules() -> str:
     return """1. Tudo que é do usuário continua legível sem o Prumo.
 2. `CLAUDE.md` e `AGENTS.md` são wrappers de compatibilidade, não a fonte de verdade.
 3. Se um arquivo modular faltar, usar `prumo repair` antes de inventar realidade.
-4. Se o usuário chamar "Prumo", "bom dia, Prumo" ou equivalente, o host deve rodar `prumo` no diretório do workspace.
+4. Se o usuário chamar "Prumo" cru, "ei prumo" ou equivalente curto, ative a skill `prumo:abrir`. Quando shell e runtime estiverem disponíveis, rodar `prumo` no diretório do workspace é atalho equivalente.
 5. Se `prumo` não estiver no PATH do host, tente o caminho absoluto de instalação do runtime neste sistema antes de concluir que ele sumiu.
 6. Se o pedido for briefing explícito, o host pode rodar `prumo briefing --workspace . --refresh-snapshot`.
 7. Se precisar de briefing estruturado, pode rodar `prumo briefing --workspace . --refresh-snapshot --format json`.
@@ -37,7 +37,7 @@ def _render_workspace_runtime_rules() -> str:
 
 
 def _render_wrapper_runtime_rules(*, state_path: str = "_state/") -> str:
-    return f"""1. Se o usuário disser "Prumo", "bom dia, Prumo" ou equivalente, rode `prumo`.
+    return f"""1. Se o usuário disser "Prumo" cru, "ei prumo" ou equivalente curto, ative a skill `prumo:abrir`. Quando shell e runtime estiverem disponíveis, rodar `prumo` é atalho equivalente.
 2. Se `prumo` não estiver no PATH do host, tente o caminho absoluto de instalação do runtime neste sistema antes de concluir que ele sumiu.
 3. Se o pedido for briefing explícito, rode `prumo briefing --workspace . --refresh-snapshot`.
 4. Se precisar de briefing estruturado, rode `prumo briefing --workspace . --refresh-snapshot --format json`.
@@ -66,6 +66,7 @@ Se o runtime não estiver no PATH, ler a skill correspondente no workspace:
 
 | Comando | Skill |
 |---|---|
+| abrir | `{skills_path}abrir/SKILL.md` |
 | briefing | `{skills_path}briefing/SKILL.md` |
 | setup | `{skills_path}prumo/SKILL.md` |
 | start | `{skills_path}start/SKILL.md` |

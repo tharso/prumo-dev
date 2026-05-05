@@ -9,6 +9,7 @@
   "repository": "https://github.com/tharso/prumo",
   "license": "MIT",
   "skills": [
+    "./skills/abrir",
     "./skills/prumo",
     "./skills/briefing",
     "./skills/doctor",

@@ -3,8 +3,11 @@ name: briefing
 description: >
   Morning briefing do Prumo. Executa a rotina completa: lê configuração pessoal,
   verifica pauta, processa inbox (todos os canais), checa calendário e emails,
-  e apresenta o briefing do dia. Use com /prumo:briefing (alias legado: /briefing) ou quando o usuário disser
-  "bom dia", "briefing", "começar o dia".
+  e apresenta o briefing do dia. Use com /prumo:briefing (alias legado: /briefing)
+  ou quando o usuário pedir explicitamente "briefing", "começar o dia",
+  "painel do dia", "o que tem pra hoje". Não dispara em saudação curta como
+  "prumo" cru ou "ei prumo" — para invocação curta sem intenção explícita,
+  use `prumo:abrir`.
 ---
 
 # Briefing do Prumo
