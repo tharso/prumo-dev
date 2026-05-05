@@ -1,6 +1,6 @@
 # Prumo Core — Motor do sistema
 
-> **prumo_version: 5.2.0**
+> **prumo_version: 5.3.0**
 >
 > Núcleo estável do Prumo. Define regras, guardrails e localização dos módulos canônicos.
 > Procedimento detalhado não mora aqui.

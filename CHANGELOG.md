@@ -6,6 +6,8 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.3.0] - 2026-05-05
+
 ### Fixed
 - **`prumo setup` em Windows não falha mais com `ZoneInfoNotFoundError`** — `pyproject.toml` ganhou dependência condicional `tzdata; sys_platform == "win32"`. A stdlib `zoneinfo` não traz dados de timezone embutidos em Windows (em macOS/Linux ela lê do sistema), o que quebrava `ZoneInfo("America/Sao_Paulo")` no step `Validate setup runs non-interactive on Windows` introduzido em [commit 3081d88]. Tornou o gap antigo visível.
 - **Despacho do Cowork em invocação curta** (#64) — quando o usuário diz "prumo" cru, o host carregava `prumo:setup` por falta de skill dedicada à invocação curta, e acabava improvisando lendo `CLAUDE.md`. Agora o plugin tem skill nova `prumo:abrir` que dispara em "prumo", "ei prumo", "olá prumo" e segue o protocolo de dispatch (identidade mínima + scan leve + saudação proativa). Templates do `AGENT.md` e wrappers (`CLAUDE.md`, `AGENTS.md`) atualizados pra apontar a skill como instrução primária — o atalho `prumo` no shell vira atalho equivalente, não única via. Descriptions de `briefing` e `setup` aparadas: `briefing` não dispara mais em "bom dia" cru (alinhamento com decisão #69), `setup` requer intenção explícita de configuração e não dispara em "prumo" cru.
@@ -22,11 +24,20 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 - **Comando `prumo migrate-skills`** ([commit daf9c6c]) — migra workspaces pré-5.2.0 (skills em `Prumo/skills/` ou `Prumo/skills_OLD/`) para a estrutura nova (`.prumo/skills/`). Pre-flight obrigatório consulta `DECISIONS.md` por tópicos relevantes (`skills-distribution`, `workspace-layout`) e mostra plano antes de executar. Backup automático em `.prumo/backup/relocate-skills-<timestamp>/`. Re-renderiza `Prumo/AGENT.md` e `.prumo/system/PRUMO-CORE.md` via `repair_workspace`. Loga em `.prumo/logs/architectural-ops.log` (formato `<ISO>\t<op>\t<message>`). Idempotente: workspaces já migrados, sem skills, ou em estado ambíguo saem limpos. Flag `--yes` pula confirmação para automação. Resolve a Fase 3 plena da #77 e plumba a Melhoria 6 da #78 num caso de uso real.
 
 ### Tests
-- 17 testes novos em `test_migrate_skills.py` cobrindo todos os 5 estados do detector, idempotência, workspace inválido, pre-flight em modo TTY e não-TTY, execução com `--yes`, formato do log e busca em `DECISIONS.md`. Suite total: 113 testes verdes (eram 96 na 5.2.0).
+- 17 testes novos em `test_migrate_skills.py` cobrindo todos os 5 estados do detector, idempotência, workspace inválido, pre-flight em modo TTY e não-TTY, execução com `--yes`, formato do log e busca em `DECISIONS.md`.
+- `test_announced_commands.py` (3 testes) — valida que todo comando shell anunciado em template/payload existe no parser. Defesa permanente contra a categoria do bug do Codex (#81 P1.2).
+- `test_version_sync.py` ampliado — `VERSION_SOURCES` cobre 10 lugares (manifestos `.claude-plugin/`, `.codex-plugin/`, headers de `prumo-core.md`/`dispatch.md`/`load-policy.md`, plus `pyproject`/`VERSION`/`__init__.py`/`plugin.json`/`marketplace.json`). Mais teste dedicado documentando que `.codex-plugin/marketplace.json` não tem campo `version` por design do schema do Codex.
+- Job CI novo `wheel-install-smoke`: build wheel via `python -m build`, instala em venv limpo, roda `prumo setup`, verifica que as 8 skills + `PRUMO-CORE.md` materializam, valida `prumo start --format json` e `prumo briefing --format json` apontam `canonical_refs` pro `_bundled/`, e roda roundtrip sdist → wheel pra garantir que o tarball reconstrói o wheel completo.
+- Suite total: 117 testes verdes (eram 96 na 5.2.0; +17 do migrate-skills, +3 dos comandos anunciados, +1 do codex-marketplace exception).
 
 ### Docs
 - README ganha seção "Migração entre layouts" mapeando as três eras (pré-#65, #65, #77) e os comandos correspondentes (`prumo migrate` e `prumo migrate-skills`).
 - README atualiza versão para `5.2.0` (estava `5.1.1` por débito do release anterior).
+- `gotchas.md` atualiza a entry "Versoes fora de sincronia" — para de descrever auditoria como manual e aponta `test_version_sync.py` como validador automático em CI.
+- `gotchas.md` ganha entry sobre `zoneinfo` em Windows precisar do pacote `tzdata` (com regra de não adicionar incondicional).
+
+### Governance
+- Protocolo de revisão Codex consolidado nesta release: cada ajuste a uma issue de bug ou packaging foi seguido de comentário detalhado na issue + pedido explícito de review do @codex. O protocolo pegou três bugs reais nesta janela: comandos shell inválidos sendo anunciados (#82 P1.2 follow-up), placas antigas competindo com `prumo:abrir` em arquivos não tocados pelo commit inicial (#82 P2.4), e sdist tarball saindo sem skills (#82 follow-up posterior à aprovação inicial). Vale a pena.
 
 ## [5.2.0] - 2026-05-04
 
