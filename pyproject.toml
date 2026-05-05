@@ -36,6 +36,8 @@ packages = ["runtime/prumo_runtime"]
 [tool.hatch.build.targets.sdist]
 include = [
   "/runtime/prumo_runtime",
+  "/skills",
+  "/plugin.json",
   "/README.md",
   "/CHANGELOG.md",
   "/VERSION",
@@ -44,3 +46,9 @@ include = [
   "/scripts/prumo_runtime_install.ps1",
   "/scripts/prumo_runtime_update.ps1"
 ]
+# skills/ e plugin.json estão aqui (além do force-include do wheel) porque
+# o force-include do wheel é resolvido em build time a partir do CWD. Build
+# wheel a partir do sdist extraído precisa que esses caminhos existam dentro
+# do tarball, senão hatchling falha com "Forced include not found". Garante
+# que sdist → wheel reconstrói exatamente o mesmo wheel publicado direto do
+# repo. Validado em CI por wheel-install-smoke (build via sdist).
