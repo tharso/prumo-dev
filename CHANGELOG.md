@@ -4,6 +4,18 @@ Este arquivo registra mudanças públicas do produto Prumo.
 
 O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamento semântico.
 
+## [Unreleased]
+
+### Added
+- **Comando `prumo migrate-skills`** ([commit daf9c6c]) — migra workspaces pré-5.2.0 (skills em `Prumo/skills/` ou `Prumo/skills_OLD/`) para a estrutura nova (`.prumo/skills/`). Pre-flight obrigatório consulta `DECISIONS.md` por tópicos relevantes (`skills-distribution`, `workspace-layout`) e mostra plano antes de executar. Backup automático em `.prumo/backup/relocate-skills-<timestamp>/`. Re-renderiza `Prumo/AGENT.md` e `.prumo/system/PRUMO-CORE.md` via `repair_workspace`. Loga em `.prumo/logs/architectural-ops.log` (formato `<ISO>\t<op>\t<message>`). Idempotente: workspaces já migrados, sem skills, ou em estado ambíguo saem limpos. Flag `--yes` pula confirmação para automação. Resolve a Fase 3 plena da #77 e plumba a Melhoria 6 da #78 num caso de uso real.
+
+### Tests
+- 17 testes novos em `test_migrate_skills.py` cobrindo todos os 5 estados do detector, idempotência, workspace inválido, pre-flight em modo TTY e não-TTY, execução com `--yes`, formato do log e busca em `DECISIONS.md`. Suite total: 113 testes verdes (eram 96 na 5.2.0).
+
+### Docs
+- README ganha seção "Migração entre layouts" mapeando as três eras (pré-#65, #65, #77) e os comandos correspondentes (`prumo migrate` e `prumo migrate-skills`).
+- README atualiza versão para `5.2.0` (estava `5.1.1` por débito do release anterior).
+
 ## [5.2.0] - 2026-05-04
 
 ### Changed

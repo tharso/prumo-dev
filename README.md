@@ -108,6 +108,28 @@ Quer duas instâncias (ex: pessoal vs. trabalho)? É opt-in declarado: rode `/pr
 | `/higiene` | Diagnostica e propõe limpeza do CLAUDE.md |
 | `/doctor` | Diagnóstico técnico do runtime |
 
+Pelo runtime CLI também: `prumo setup`, `prumo start`, `prumo briefing`, `prumo migrate` (workspaces flat → nested), `prumo migrate-skills` (workspaces pré-5.2.0 → estrutura nova; ver seção abaixo) e `prumo repair` (regenera arquivos recriáveis).
+
+## Migração entre layouts
+
+A estrutura do workspace evoluiu duas vezes em 2026:
+
+- **Era pré-#65 (até 14/04):** workspace flat — `PAUTA.md`, `INBOX.md` e afins na raiz, estado em `_state/`.
+- **Era #65 (15/04):** estrutura nested — dados em `Prumo/`, infra em `.prumo/`, skills em `Prumo/skills/`.
+- **Era #77 (5.2.0, 04/05):** skills mudam de `Prumo/skills/` (visível) pra `.prumo/skills/` (oculto, infra de sistema). Mantém cadeia de fallback, alinha com workspace-first.
+
+Cada salto tem comando dedicado:
+
+```bash
+# workspace flat (pré-#65) → nested (#65). Wizard interativo.
+prumo migrate --workspace /caminho/do/workspace --user-name "Seu Nome"
+
+# workspace nested-#65 → nested-#77 (skills em .prumo/). Pre-flight obrigatório.
+prumo migrate-skills --workspace /caminho/do/workspace
+```
+
+`prumo migrate-skills` é idempotente: rodar em workspace já migrado, sem skills locais ou em estado ambíguo sai limpo (exit 0 com mensagem). Faz backup automático em `.prumo/backup/relocate-skills-<timestamp>/` antes de mover, e re-renderiza `Prumo/AGENT.md` e `.prumo/system/PRUMO-CORE.md` com os caminhos novos. Em CI ou automação, passe `--yes` pra pular o prompt de confirmação.
+
 ## Princípios
 
 - **Tudo local.** Arquivos Markdown no seu computador. Abra com qualquer editor.
@@ -133,7 +155,7 @@ Quer duas instâncias (ex: pessoal vs. trabalho)? É opt-in declarado: rode `/pr
 
 ## Versão
 
-`5.1.1`
+`5.2.0`
 
 ## Licença
 
