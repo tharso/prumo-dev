@@ -85,12 +85,18 @@ def _write_cache(data: dict[str, Any], path: Path) -> None:
     tmp_fd, tmp_path = tempfile.mkstemp(
         dir=str(path.parent), suffix=".tmp", prefix="vc_"
     )
+    closed = False
     try:
         os.write(tmp_fd, json.dumps(data, ensure_ascii=False).encode("utf-8"))
         os.close(tmp_fd)
+        closed = True
         Path(tmp_path).replace(path)
     except Exception:
-        os.close(tmp_fd) if not os.get_inheritable(tmp_fd) else None
+        if not closed:
+            try:
+                os.close(tmp_fd)
+            except OSError:
+                pass
         try:
             os.unlink(tmp_path)
         except OSError:
@@ -161,12 +167,7 @@ def _should_show_banner(
 
 
 def _is_newer(remote: str, local: str) -> bool:
-    """Compara versões. Tenta packaging.version, fallback pra tupla."""
-    try:
-        from packaging.version import Version
-        return Version(remote) > Version(local)
-    except (ImportError, Exception):
-        pass
+    """Compara versões semver (N.N.N). Canal VERSION garante formato simples."""
     try:
         r = tuple(int(x) for x in remote.split("."))
         l = tuple(int(x) for x in local.split("."))
