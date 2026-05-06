@@ -150,6 +150,13 @@ def repair_host_adapters(workspace: Path) -> dict[str, Any]:
                 if adapter_path.is_symlink():
                     adapter_path.unlink()
                 elif adapter_path.is_dir():
+                    # Checar marcador antes de destruir — dir sem marcador
+                    # pode ser conteúdo do usuário substituindo cópia gerenciada.
+                    # Manifest stale não basta pra autorizar destruição (#89).
+                    if not (adapter_path / _MANAGED_MARKER).is_file():
+                        managed_set.discard((host, skill_name))
+                        needs_manifest_update = True
+                        continue
                     shutil.rmtree(adapter_path)
                 _create_adapter(adapter_path, relative_target, target_path)
                 needs_manifest_update = True

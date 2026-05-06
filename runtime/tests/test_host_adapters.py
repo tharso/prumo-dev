@@ -406,5 +406,44 @@ class StaleManifestProtectionTests(unittest.TestCase):
             )
 
 
+    def test_repair_preserves_user_dir_in_copy_mode_with_version_drift(self) -> None:
+        """Codex review: repair_host_adapters() com copy mode + manifest stale
+        (runtime_version defasado) não deve destruir dir real do usuário."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = _setup_workspace(tmpdir)
+
+            # Forçar copy mode (simula ambiente sem symlink)
+            from unittest.mock import patch
+            with patch("prumo_runtime.host_adapters.os.symlink", side_effect=OSError("no symlink")):
+                create_host_adapters(workspace)
+
+            adapter = workspace / ".claude" / "skills" / "briefing"
+            self.assertTrue(adapter.is_dir())
+            self.assertFalse(adapter.is_symlink())
+
+            # Usuário substitui a cópia gerenciada por dir próprio (sem marcador)
+            import shutil
+            shutil.rmtree(adapter)
+            adapter.mkdir()
+            (adapter / "MY_STUFF.md").write_text("dados do usuário")
+
+            # Envenenar manifest pra simular drift de versão
+            manifest_path = workspace / MANIFEST_RELATIVE
+            manifest = json.loads(manifest_path.read_text())
+            for entry in manifest.get("adapters", []):
+                if entry["host"] == "claude" and entry["skill"] == "briefing":
+                    entry["runtime_version"] = "0.0.0"
+            manifest_path.write_text(json.dumps(manifest))
+
+            # Repair NÃO deve destruir o dir do usuário
+            with patch("prumo_runtime.host_adapters.os.symlink", side_effect=OSError("no symlink")):
+                result = repair_host_adapters(workspace)
+
+            self.assertTrue(
+                (adapter / "MY_STUFF.md").exists(),
+                "repair não pode destruir dir real do usuário em copy mode com drift",
+            )
+
+
 if __name__ == "__main__":
     unittest.main()
