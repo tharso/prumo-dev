@@ -73,6 +73,7 @@ Isso vale apenas para commits onde o agente *efetivamente redige* — código, m
 - O agente cria a issue com critérios de aceite claros e assina como ele mesmo (não em nome do Tharso).
 - Toda ação relevante numa issue deve ter comentário explicando o que foi feito e por quê.
 - Issues submetidas pelo usuário ficam como "review" após resolução (Tharso fecha). Issues criadas pelo agente podem ser fechadas por ele se passaram nos testes e critérios de aceite.
+- **Anti-zombie:** ao postar comentário "implementação concluída" ou equivalente, a próxima ação é fechar a issue. Issue aberta com conclusão declarada é zombie — o workflow `zombie-issue-detector` aplica `status/zombie` após 7 dias.
 
 ### Governança agente/humano
 
