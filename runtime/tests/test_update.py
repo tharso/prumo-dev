@@ -94,6 +94,15 @@ class DetectInstallMethodTests(unittest.TestCase):
             self.assertEqual(result["package_manager"], "pip-user")
             self.assertEqual(result["source"], "marker")
 
+    def test_legacy_marker_pip_emits_warning(self) -> None:
+        """Marker legado pip deve ter warning de baixa confiança."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            marker = Path(tmpdir) / "install-method.json"
+            _write_legacy_marker(marker, "pip")
+            result = detect_install_method(marker)
+            self.assertIn("warning", result)
+            self.assertIn("legado", result["warning"].lower())
+
     def test_corrupt_marker_falls_back(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             marker = Path(tmpdir) / "install-method.json"
@@ -156,23 +165,27 @@ class DetectInstallMethodTests(unittest.TestCase):
 class BuildUpdatePlanTests(unittest.TestCase):
     """Geração de plano de update baseado no método detectado."""
 
-    def test_pip_user_returns_pip_install_command(self) -> None:
+    def test_pip_user_manual_returns_pip_install_command(self) -> None:
+        """pip-user com launcher=manual vai pro registry."""
         plan = build_update_plan(
             package_manager="pip-user",
             current_version="5.3.0",
             remote_version="5.4.0",
             source_kind="archive",
+            launcher="manual",
         )
         self.assertTrue(plan["needs_update"])
         self.assertIn("pip", plan["command"])
         self.assertIn("install", plan["command"])
 
-    def test_uv_tool_returns_uv_command(self) -> None:
+    def test_uv_tool_manual_returns_uv_command(self) -> None:
+        """uv-tool com launcher=manual/unknown vai pro registry."""
         plan = build_update_plan(
             package_manager="uv-tool",
             current_version="5.3.0",
             remote_version="5.4.0",
             source_kind="archive",
+            launcher="manual",
         )
         self.assertTrue(plan["needs_update"])
         self.assertIn("uv", plan["command"])
@@ -187,6 +200,19 @@ class BuildUpdatePlanTests(unittest.TestCase):
         )
         self.assertTrue(plan["needs_update"])
         self.assertIn("install", plan["command"].lower())
+
+    def test_install_script_takes_priority_over_package_manager(self) -> None:
+        """launcher=install-script sempre re-executa script, mesmo com uv-tool."""
+        plan = build_update_plan(
+            package_manager="uv-tool",
+            current_version="5.3.0",
+            remote_version="5.4.0",
+            source_kind="archive",
+            launcher="install-script",
+        )
+        self.assertTrue(plan["needs_update"])
+        self.assertEqual(plan["command"], "install-script")
+        self.assertIn("main", plan["explanation"])
 
     def test_no_update_needed_when_versions_match(self) -> None:
         plan = build_update_plan(
@@ -255,7 +281,7 @@ class ConfirmationTests(unittest.TestCase):
     def test_yes_flag_skips_confirmation(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             marker = Path(tmpdir) / "install-method.json"
-            _write_marker_v1(marker, package_manager="pip-user", source_kind="archive")
+            _write_marker_v1(marker, package_manager="pip-user", source_kind="archive", launcher="manual")
             with patch(
                 "prumo_runtime.commands.update.install_marker_path",
                 return_value=marker,
@@ -276,7 +302,7 @@ class ConfirmationTests(unittest.TestCase):
     def test_no_yes_calls_confirm(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             marker = Path(tmpdir) / "install-method.json"
-            _write_marker_v1(marker, package_manager="pip-user", source_kind="archive")
+            _write_marker_v1(marker, package_manager="pip-user", source_kind="archive", launcher="manual")
             with patch(
                 "prumo_runtime.commands.update.install_marker_path",
                 return_value=marker,
@@ -296,7 +322,7 @@ class ConfirmationTests(unittest.TestCase):
     def test_confirm_rejected_aborts(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             marker = Path(tmpdir) / "install-method.json"
-            _write_marker_v1(marker, package_manager="pip-user", source_kind="archive")
+            _write_marker_v1(marker, package_manager="pip-user", source_kind="archive", launcher="manual")
             with patch(
                 "prumo_runtime.commands.update.install_marker_path",
                 return_value=marker,
@@ -317,7 +343,7 @@ class ConfirmationTests(unittest.TestCase):
     def test_non_tty_without_yes_aborts(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             marker = Path(tmpdir) / "install-method.json"
-            _write_marker_v1(marker, package_manager="pip-user", source_kind="archive")
+            _write_marker_v1(marker, package_manager="pip-user", source_kind="archive", launcher="manual")
             with patch(
                 "prumo_runtime.commands.update.install_marker_path",
                 return_value=marker,
@@ -347,7 +373,7 @@ class PostUpdateTests(unittest.TestCase):
     def test_post_update_reports_new_version(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             marker = Path(tmpdir) / "install-method.json"
-            _write_marker_v1(marker, package_manager="pip-user", source_kind="archive")
+            _write_marker_v1(marker, package_manager="pip-user", source_kind="archive", launcher="manual")
             with patch(
                 "prumo_runtime.commands.update.install_marker_path",
                 return_value=marker,
@@ -368,10 +394,35 @@ class PostUpdateTests(unittest.TestCase):
             payload = json.loads(output)
             self.assertEqual(payload["post_update"]["new_version"], "5.99.0")
 
+    def test_post_update_version_failure_does_not_crash(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            marker = Path(tmpdir) / "install-method.json"
+            _write_marker_v1(marker, package_manager="pip-user", source_kind="archive", launcher="manual")
+            with patch(
+                "prumo_runtime.commands.update.install_marker_path",
+                return_value=marker,
+            ), patch(
+                "prumo_runtime.commands.update.fetch_remote_version",
+                return_value="5.99.0",
+            ), patch(
+                "prumo_runtime.commands.update._execute_plan",
+                return_value=0,
+            ), patch(
+                "prumo_runtime.commands.update._confirm_update",
+                return_value=True,
+            ), patch(
+                "prumo_runtime.commands.update._get_post_update_version",
+                return_value=None,
+            ):
+                rc, output = self._run_main_capturing(["update", "--yes", "--format", "json"])
+            payload = json.loads(output)
+            self.assertEqual(rc, 0)
+            self.assertIsNone(payload["post_update"]["new_version"])
+
     def test_workspace_detected_suggests_repair(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             marker = Path(tmpdir) / "install-method.json"
-            _write_marker_v1(marker, package_manager="pip-user", source_kind="archive")
+            _write_marker_v1(marker, package_manager="pip-user", source_kind="archive", launcher="manual")
             # Cria .prumo/ no CWD pra simular workspace
             prumo_dir = Path(tmpdir) / ".prumo"
             prumo_dir.mkdir()

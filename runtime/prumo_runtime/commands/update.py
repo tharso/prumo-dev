@@ -119,6 +119,10 @@ def _parse_marker(data: dict) -> dict[str, Any]:
             "source": "marker",
             "is_editable": False,
             "details": data,
+            "warning": (
+                "Marker legado (sem schema_version). Detecção limitada: "
+                "sem python, prumo_executable ou source_kind confirmados."
+            ),
         }
     return {
         "launcher": "unknown",
@@ -188,21 +192,25 @@ def build_update_plan(
         )
         return plan
 
-    if package_manager == "uv-tool":
-        plan["command"] = "uv tool install --force prumo-runtime"
-        plan["explanation"] = (
-            f"Atualiza runtime de {current_version} pra {remote_version} via uv tool."
-        )
-    elif package_manager in ("pip-user", "pipx"):
-        plan["command"] = "pip install --upgrade prumo-runtime"
-        plan["explanation"] = (
-            f"Atualiza runtime de {current_version} pra {remote_version} via pip."
-        )
-    elif launcher == "install-script":
+    # Install-script: sempre re-executa o script (garante canal "latest em main")
+    if launcher == "install-script":
         plan["command"] = "install-script"
         plan["explanation"] = (
             f"Atualiza runtime de {current_version} pra {remote_version} "
-            "re-executando o install script."
+            "re-executando o install script (canal: latest em main)."
+        )
+        return plan
+
+    # Manual/pip direto do registry (canal PyPI, não main)
+    if package_manager in ("pip-user", "pipx"):
+        plan["command"] = "pip install --upgrade prumo-runtime"
+        plan["explanation"] = (
+            f"Atualiza runtime de {current_version} pra {remote_version} via pip (registry)."
+        )
+    elif package_manager == "uv-tool":
+        plan["command"] = "uv tool install --force prumo-runtime"
+        plan["explanation"] = (
+            f"Atualiza runtime de {current_version} pra {remote_version} via uv (registry)."
         )
     else:
         plan["command"] = None
@@ -346,9 +354,7 @@ def run_update(args) -> int:
 
     # Execução real
     payload["plan"]["would_execute"] = True
-    exec_method = method_info["package_manager"]
-    if exec_method == "unknown" and method_info["launcher"] == "install-script":
-        exec_method = "install-script"
+    exec_method = plan["command"] if plan["command"] == "install-script" else method_info["package_manager"]
     rc = _execute_plan(plan, exec_method)
     payload["plan"]["executed"] = rc == 0
     payload["plan"]["exit_code"] = rc

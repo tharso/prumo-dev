@@ -130,6 +130,11 @@ write_install_marker() {
   installed_at="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 
   mkdir -p "$marker_dir"
+  local marker_source="$ARCHIVE_URL"
+  if [ "$SOURCE_KIND" = "editable" ]; then
+    marker_source="$ROOT_DIR"
+  fi
+
   cat > "$marker_path" <<MARKER
 {
   "schema_version": "1.0",
@@ -138,7 +143,7 @@ write_install_marker() {
   "launcher": "install-script",
   "package_manager": "$PACKAGE_MANAGER",
   "source_kind": "$SOURCE_KIND",
-  "source": "$ARCHIVE_URL",
+  "source": "$marker_source",
   "python": "$PYTHON_USED",
   "prumo_executable": "$prumo_exe"
 }
