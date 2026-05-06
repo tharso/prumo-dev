@@ -182,6 +182,9 @@ def run_setup(args) -> int:
     installed_skills = install_skills(workspace, layout_mode="nested")
     install_custom_readme(workspace, layout_mode="nested")
 
+    from prumo_runtime.host_adapters import create_host_adapters
+    adapter_result = create_host_adapters(workspace)
+
     print(f"{user_name}, o workspace do Prumo agora mora em: {workspace}")
     print("O que isso significa:")
     print("1. A raiz fica leve para descoberta por host.")
@@ -209,6 +212,11 @@ def run_setup(args) -> int:
             print(f"- backup: {relative}")
     if result.get("backup_root"):
         print(f"Backup root: {result['backup_root']}")
+    if adapter_result["adapters_created"] > 0:
+        print(f"Host adapters criados: {adapter_result['adapters_created']} "
+              f"(hosts: {', '.join(adapter_result['hosts_created'])})")
+        print("Skills agora descobríveis pelo host via convenção de filesystem.")
+        print("Nota: se o host já tinha sessão aberta, pode ser necessário reiniciar.")
     print("")
     print("Próximos passos:")
     print("1. Entre no workspace e rode `prumo`.")

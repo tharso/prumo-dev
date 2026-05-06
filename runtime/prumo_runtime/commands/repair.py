@@ -9,6 +9,11 @@ from prumo_runtime.workspace import repair_workspace
 def run_repair(args) -> int:
     workspace = Path(args.workspace).expanduser().resolve()
     result = repair_workspace(workspace)
+
+    from prumo_runtime.host_adapters import repair_host_adapters
+    adapter_result = repair_host_adapters(workspace)
+    result["host_adapters"] = adapter_result
+
     if args.format == "json":
         print(json.dumps(result, ensure_ascii=True, indent=2))
         return 0
@@ -36,6 +41,9 @@ def run_repair(args) -> int:
 
     if not result["recreated"] and not result.get("merged"):
         print("Nada recriável precisava de reparo.")
+
+    if adapter_result.get("repaired", 0) > 0:
+        print(f"Host adapters reparados: {adapter_result['repaired']}")
 
     if result["missing_authorial"]:
         print("")
