@@ -21,58 +21,53 @@ Prumo funciona diferente:
 
 ## Instalação
 
-Prumo é agnóstico: mesma alma (as skills em `skills/`), quatro canais de instalação. Escolha o host que você já usa.
-
-### Runtime local (recomendado em todos os casos)
-
-O runtime é o motor que segura estado, coordena agentes e expõe o comando `prumo`. Instala uma vez, serve todos os hosts.
-
 ```bash
+# macOS / Linux
 bash <(curl -fsSL https://raw.githubusercontent.com/tharso/prumo/main/scripts/prumo_runtime_install.sh)
-```
 
-Windows:
-
-```powershell
+# Windows
 irm https://raw.githubusercontent.com/tharso/prumo/main/scripts/prumo_runtime_install.ps1 | iex
 ```
 
-Depois:
+Depois, crie seu workspace:
 
 ```bash
 prumo setup --workspace /caminho/da/pasta
 ```
 
-### Cowork / Claude Code
+`prumo setup` instala as skills e cria as conexões de filesystem que cada host descobre por convenção. Após o setup, abra qualquer host compatível no diretório do workspace e ele encontra o Prumo automaticamente.
 
-Os dois leem o mesmo manifesto (`plugin.json` + `marketplace.json` na raiz ou em `.claude-plugin/`).
+| Host | Descoberta | Status |
+|------|-----------|--------|
+| Claude Code | `.claude/skills/` | confirmado |
+| Cowork | `.claude/skills/` | confirmado |
+| Antigravity (Gemini) | `.agent/skills/` | confirmado |
+| Codex CLI | plugin marketplace | via plugin (filesystem por projeto em investigação) |
+
+Para atualizar: `prumo update`. Para reparar workspace: `prumo repair --workspace .`
+
+### Discoverability via marketplace (canal opcional)
+
+Usuários que preferem descobrir o Prumo via marketplace do host podem instalar pelo respectivo plugin manager. A funcionalidade é equivalente — atalho de discovery, não dependência.
+
+**Cowork / Claude Code:**
 
 ```bash
 claude plugin marketplace add https://github.com/tharso/prumo.git
 claude plugin install prumo@prumo
 ```
 
-No Cowork: adicione `https://github.com/tharso/prumo.git` como marketplace na interface e instale o plugin `prumo`.
-
-### Codex CLI
-
-Codex usa `.codex-plugin/plugin.json`. Registre o marketplace e instale:
+**Codex CLI:**
 
 ```bash
 codex plugin marketplace add https://github.com/tharso/prumo.git
 codex plugin install prumo
 ```
 
-### Antigravity (Gemini)
-
-Antigravity lê skills direto do filesystem. Instale via script, global ou por workspace:
+**Antigravity (Gemini)** — script standalone para ambientes sem runtime:
 
 ```bash
-# Global (~/.gemini/antigravity/skills/) — disponível em qualquer workspace
 bash <(curl -fsSL https://raw.githubusercontent.com/tharso/prumo/main/scripts/prumo_antigravity_install.sh)
-
-# Por workspace (<pwd>/.agent/skills/) — escopado ao diretório atual
-bash <(curl -fsSL https://raw.githubusercontent.com/tharso/prumo/main/scripts/prumo_antigravity_install.sh) --scope workspace
 ```
 
 ## Primeiros passos
