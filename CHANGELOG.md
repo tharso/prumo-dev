@@ -8,7 +8,7 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ### Fixed
 - **`prumo repair` agora detecta drift de versão, preservando conteúdo autoral em wrappers de raiz** (#84) — antes, o comando só checava se arquivos existiam e devolvia "nada recriável precisava de reparo" mesmo quando `PRUMO-CORE.md` declarava versão antiga (ex: workspace em `5.1.1` após `pip install --upgrade` levar runtime pra `5.3.0`). Agora `repair` lê `prumo_version` do `PRUMO-CORE.md`, compara com `runtime.__version__`, e se houver drift:
-  - Move **apenas** `.prumo/system/PRUMO-CORE.md` e `Prumo/AGENT.md` (sistema + canonical do Prumo) pra `.prumo/backup/repair-version-bump-<timestamp>/` e regenera.
+  - Move **apenas** `.prumo/system/PRUMO-CORE.md` e `Prumo/AGENT.md` (sistema + canonical do Prumo) pra `.prumo/backups/repair-version-bump/<timestamp>/` e regenera.
   - **Atualiza o bloco gerenciado** dos wrappers de raiz (`AGENT.md`, `CLAUDE.md`, `AGENTS.md`) via `merge_wrapper_content` — preserva byte-for-byte qualquer conteúdo autoral fora dos delimitadores `<!-- prumo:begin --> ... <!-- prumo:end -->`. Wrappers de raiz **nunca** entram em backup nem são regenerados do zero.
   - Reporta a transição (`5.0.0 → 5.3.0`), arquivos recriados (sistema/canonical), wrappers atualizados via merge (autorais), e path do backup.
   

@@ -354,7 +354,7 @@ Se `Prumo/AGENT.md` já existe na pasta, o sistema já está configurado. Oferec
 2. **Mudar tom**: Atualizar a seção de tom em `Prumo/Agente/PERFIL.md`
 3. **Ajustar rituais**: Atualizar horários/dias em `Prumo/Agente/PERFIL.md` e `Prumo/AGENT.md`
 4. **Adicionar integração**: Atualizar seção de integrações em `Prumo/Agente/PERFIL.md`
-5. **Reset completo**: Reconfigurar do zero. Ler `references/file-protection-rules.md` antes de regenerar: ponteiros, AGENT.md e PRUMO-CORE.md são regenerados (com backups em `.prumo/backup/`), todos os outros arquivos com dados acumulados são preservados.
+5. **Reset completo**: Reconfigurar do zero. Ler `references/file-protection-rules.md` antes de regenerar: ponteiros, AGENT.md e PRUMO-CORE.md são regenerados (com backups em `.prumo/backups/<scope>/<timestamp>/` — ver `references/file-protection-rules.md` pra estrutura completa), todos os outros arquivos com dados acumulados são preservados.
 
 Sempre atualizar o changelog no final de `Prumo/Agente/PERFIL.md` após qualquer reconfiguração.
 
