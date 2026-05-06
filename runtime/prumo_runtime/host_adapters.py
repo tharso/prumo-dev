@@ -3,6 +3,7 @@ Host adapters — symlinks de convenção de host pra .prumo/skills/ (#85).
 
 Cria e repara adapters em .claude/skills/ e .agent/skills/ apontando
 para .prumo/skills/ via symlink relativo. Fallback copy se symlink falhar.
+Respeita paths não gerenciados (preserva com warning).
 """
 from __future__ import annotations
 
@@ -31,19 +32,27 @@ def create_host_adapters(
     """Cria adapters de host apontando pra .prumo/skills/."""
     skills_root = workspace / ".prumo" / "skills"
     if not skills_root.is_dir():
-        return {"hosts_created": [], "adapters_created": 0}
+        return {"hosts_created": [], "adapters_created": 0, "skipped": []}
 
     skills = sorted(
         d.name for d in skills_root.iterdir()
         if d.is_dir() and not d.name.startswith(".")
     )
     if not skills:
-        return {"hosts_created": [], "adapters_created": 0}
+        return {"hosts_created": [], "adapters_created": 0, "skipped": []}
 
     target_hosts = hosts if hosts else list(HOST_CONVENTIONS.keys())
+    existing_manifest = _read_manifest(workspace)
     adapters: list[dict[str, Any]] = []
+    skipped: list[str] = []
     hosts_created: list[str] = []
     now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+    # Preservar entries de hosts não incluídos nesta chamada
+    if existing_manifest and hosts:
+        for entry in existing_manifest.get("adapters", []):
+            if entry["host"] not in target_hosts:
+                adapters.append(entry)
 
     for host in target_hosts:
         if host not in HOST_CONVENTIONS:
@@ -57,6 +66,10 @@ def create_host_adapters(
             adapter_path = host_skills_dir / skill_name
             target_path = skills_root / skill_name
             relative_target = os.path.relpath(target_path, adapter_path.parent)
+
+            if _is_unmanaged(adapter_path, relative_target, existing_manifest, host, skill_name):
+                skipped.append(f"{convention_path}/{skill_name}")
+                continue
 
             mode = _create_adapter(adapter_path, relative_target, target_path)
             adapters.append({
@@ -72,29 +85,33 @@ def create_host_adapters(
     _write_manifest(workspace, adapters)
     return {
         "hosts_created": hosts_created,
-        "adapters_created": len(adapters),
+        "adapters_created": len([a for a in adapters if a.get("created_at") == now]),
+        "skipped": skipped,
     }
 
 
 def repair_host_adapters(workspace: Path) -> dict[str, Any]:
     """Valida e repara adapters existentes. Cria se não existem."""
-    manifest_path = workspace / MANIFEST_RELATIVE
     skills_root = workspace / ".prumo" / "skills"
 
     if not skills_root.is_dir():
         return {"repaired": 0, "status": "no skills"}
 
-    if not manifest_path.exists():
+    manifest = _read_manifest(workspace)
+
+    if manifest is None:
         result = create_host_adapters(workspace)
         return {"repaired": result["adapters_created"], "status": "created from scratch"}
 
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     repaired = 0
+    needs_manifest_update = False
 
     skills = sorted(
         d.name for d in skills_root.iterdir()
         if d.is_dir() and not d.name.startswith(".")
     )
+
+    managed_entries = {(e["host"], e["skill"]): e for e in manifest.get("adapters", [])}
 
     for host, convention_path in HOST_CONVENTIONS.items():
         host_skills_dir = workspace / convention_path
@@ -104,6 +121,15 @@ def repair_host_adapters(workspace: Path) -> dict[str, Any]:
             adapter_path = host_skills_dir / skill_name
             target_path = skills_root / skill_name
             relative_target = os.path.relpath(target_path, adapter_path.parent)
+            entry = managed_entries.get((host, skill_name))
+
+            if not entry:
+                if adapter_path.exists() and not adapter_path.is_symlink():
+                    continue  # Não gerenciado, pular
+                mode = _create_adapter(adapter_path, relative_target, target_path)
+                needs_manifest_update = True
+                repaired += 1
+                continue
 
             needs_repair = False
             if not adapter_path.exists():
@@ -111,9 +137,10 @@ def repair_host_adapters(workspace: Path) -> dict[str, Any]:
             elif adapter_path.is_symlink():
                 if not adapter_path.resolve().exists():
                     needs_repair = True
-            # copy adapters: check if target has newer content
-            elif adapter_path.is_dir() and not adapter_path.is_symlink():
-                pass  # copy mode — refresh handled by full recreate
+            elif entry.get("mode") == "copy":
+                # Copy mode: verificar se runtime_version diverge
+                if entry.get("runtime_version") != __version__:
+                    needs_repair = True
 
             if needs_repair:
                 if adapter_path.is_symlink():
@@ -121,12 +148,48 @@ def repair_host_adapters(workspace: Path) -> dict[str, Any]:
                 elif adapter_path.is_dir():
                     shutil.rmtree(adapter_path)
                 _create_adapter(adapter_path, relative_target, target_path)
+                needs_manifest_update = True
                 repaired += 1
 
-    if repaired > 0:
+    if needs_manifest_update:
         create_host_adapters(workspace)
 
     return {"repaired": repaired, "status": "ok"}
+
+
+def _is_unmanaged(
+    adapter_path: Path,
+    expected_target: str,
+    manifest: dict | None,
+    host: str,
+    skill_name: str,
+) -> bool:
+    """Verifica se um path existente é não-gerenciado pelo Prumo."""
+    if not adapter_path.exists() and not adapter_path.is_symlink():
+        return False
+
+    # Se é symlink pro target esperado, é gerenciado
+    if adapter_path.is_symlink():
+        try:
+            current_target = os.readlink(str(adapter_path))
+            if current_target == expected_target:
+                return False
+        except OSError:
+            pass
+        # Symlink pra outro lugar — verificar manifest
+        if manifest:
+            for entry in manifest.get("adapters", []):
+                if entry["host"] == host and entry["skill"] == skill_name:
+                    return False  # Registrado no manifest = gerenciado
+        return True  # Symlink desconhecido = não tocar
+
+    # Diretório real — verificar se está no manifest
+    if manifest:
+        for entry in manifest.get("adapters", []):
+            if entry["host"] == host and entry["skill"] == skill_name:
+                return False  # Registrado como copy = gerenciado
+
+    return True  # Diretório não registrado = não gerenciado, preservar
 
 
 def _create_adapter(adapter_path: Path, relative_target: str, absolute_target: Path) -> str:
@@ -142,6 +205,14 @@ def _create_adapter(adapter_path: Path, relative_target: str, absolute_target: P
     except OSError:
         shutil.copytree(str(absolute_target), str(adapter_path))
         return "copy"
+
+
+def _read_manifest(workspace: Path) -> dict[str, Any] | None:
+    manifest_path = workspace / MANIFEST_RELATIVE
+    try:
+        return json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError, ValueError):
+        return None
 
 
 def _write_manifest(workspace: Path, adapters: list[dict[str, Any]]) -> None:
