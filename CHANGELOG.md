@@ -19,10 +19,10 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ### Tests
 - 10 testes novos em `test_repair.py` (drift, idempotência, preservação autoral, restauração de skills).
-- 23 testes em `test_host_adapters.py` (criação, repair, preservação de dirs não-gerenciados, manifest corrupto, proteção contra manifest stale).
+- 24 testes em `test_host_adapters.py` (criação, repair, preservação de dirs não-gerenciados, manifest corrupto, proteção contra manifest stale em create e repair).
 - 12 testes em `test_version_sync.py` (11 fontes canônicas + exceção documentada do Codex marketplace).
 - 35 testes em `test_update.py`, 30 em `test_version_check.py`.
-- Suite total: 216 testes verdes.
+- Suite total: 217 testes verdes.
 
 ### Docs
 - **README.md** (#88) — instalação canônica via terminal (`curl | bash`) primeiro, marketplace como canal opcional. Tabela de status de hosts. Seção de migração entre layouts.
