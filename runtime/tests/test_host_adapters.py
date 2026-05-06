@@ -242,6 +242,41 @@ class RepairHostAdaptersTests(unittest.TestCase):
                 (host_custom / "USER_FILE.md").read_text(), "user data"
             )
 
+    def test_manifest_valid_json_wrong_shape_no_crash(self) -> None:
+        """Manifest que é JSON válido mas shape errada (ex: []) não causa crash."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = _setup_workspace(tmpdir)
+            create_host_adapters(workspace)
+            manifest_path = workspace / MANIFEST_RELATIVE
+            # Escrever JSON válido mas com shape errada
+            manifest_path.write_text("[]")
+            result = repair_host_adapters(workspace)
+            self.assertEqual(result["status"], "created from scratch")
+            data = json.loads(manifest_path.read_text())
+            self.assertEqual(data["version"], "1.0")
+
+    def test_copy_repair_new_skill_registers_in_manifest(self) -> None:
+        """Em fallback copy, repair de skill nova deve registrá-la no manifest."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = _setup_workspace(tmpdir)
+            from unittest.mock import patch
+            with patch("prumo_runtime.host_adapters.os.symlink", side_effect=OSError("no symlink")):
+                create_host_adapters(workspace)
+            # Adicionar skill nova que não existia antes
+            new_skill = workspace / ".prumo" / "skills" / "faxina"
+            new_skill.mkdir()
+            (new_skill / "SKILL.md").write_text("# faxina")
+            # Repair com symlink falhando (copy mode)
+            with patch("prumo_runtime.host_adapters.os.symlink", side_effect=OSError("no symlink")):
+                repair_host_adapters(workspace)
+            # A nova skill deve estar no manifest
+            manifest_path = workspace / MANIFEST_RELATIVE
+            data = json.loads(manifest_path.read_text())
+            faxina_entries = [a for a in data["adapters"] if a["skill"] == "faxina"]
+            self.assertTrue(len(faxina_entries) > 0)
+            # E o adapter deve existir no filesystem
+            self.assertTrue((workspace / ".claude" / "skills" / "faxina").is_dir())
+
 
 if __name__ == "__main__":
     unittest.main()

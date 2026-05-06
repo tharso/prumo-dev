@@ -152,9 +152,43 @@ def repair_host_adapters(workspace: Path) -> dict[str, Any]:
                 repaired += 1
 
     if needs_manifest_update:
-        create_host_adapters(workspace)
+        _rebuild_manifest_from_filesystem(workspace, skills_root)
 
     return {"repaired": repaired, "status": "ok"}
+
+
+def _rebuild_manifest_from_filesystem(workspace: Path, skills_root: Path) -> None:
+    """Reconstrói manifest a partir dos adapters existentes no filesystem."""
+    adapters: list[dict[str, Any]] = []
+    now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+    for host, convention_path in HOST_CONVENTIONS.items():
+        host_skills_dir = workspace / convention_path
+        if not host_skills_dir.is_dir():
+            continue
+        for skill_dir in sorted(host_skills_dir.iterdir()):
+            if not skill_dir.name or skill_dir.name.startswith("."):
+                continue
+            target_path = skills_root / skill_dir.name
+            if not target_path.is_dir():
+                continue
+            if skill_dir.is_symlink():
+                mode = "symlink"
+            elif skill_dir.is_dir():
+                mode = "copy"
+            else:
+                continue
+            adapters.append({
+                "host": host,
+                "skill": skill_dir.name,
+                "adapter_path": str(Path(convention_path) / skill_dir.name),
+                "target_path": f".prumo/skills/{skill_dir.name}",
+                "mode": mode,
+                "runtime_version": __version__,
+                "created_at": now,
+            })
+
+    _write_manifest(workspace, adapters)
 
 
 def _is_unmanaged(
@@ -210,7 +244,10 @@ def _create_adapter(adapter_path: Path, relative_target: str, absolute_target: P
 def _read_manifest(workspace: Path) -> dict[str, Any] | None:
     manifest_path = workspace / MANIFEST_RELATIVE
     try:
-        return json.loads(manifest_path.read_text(encoding="utf-8"))
+        data = json.loads(manifest_path.read_text(encoding="utf-8"))
+        if not isinstance(data, dict):
+            return None
+        return data
     except (OSError, json.JSONDecodeError, ValueError):
         return None
 
