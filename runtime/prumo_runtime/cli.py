@@ -125,10 +125,18 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    from prumo_runtime.version_check import check_and_notify
+
     parser = build_parser()
     args = parser.parse_args(argv)
     if getattr(args, "command", None) is None:
         args = argparse.Namespace(command="start", workspace=None, format="text", handler=run_start)
+
+    check_and_notify(
+        command=getattr(args, "command", None),
+        format_arg=getattr(args, "format", None),
+    )
+
     try:
         return args.handler(args)
     except WorkspaceError as exc:
