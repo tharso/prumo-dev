@@ -310,19 +310,44 @@ class RepairHostAdaptersTests(unittest.TestCase):
             self.assertTrue((host_custom / "USER_FILE.md").exists())
 
     def test_manifest_malformed_adapters_field_no_crash(self) -> None:
-        """Manifest com adapters: null, ou adapters: 'bad' não causa crash."""
+        """Manifest com adapters malformado não causa crash."""
         with tempfile.TemporaryDirectory() as tmpdir:
             workspace = _setup_workspace(tmpdir)
             create_host_adapters(workspace)
             manifest_path = workspace / MANIFEST_RELATIVE
-            for bad_value in ['{"adapters": null}', '{"adapters": "bad"}',
-                              '{"adapters": [{"bad": 1}]}']:
+            bad_manifests = [
+                '{"adapters": null}',
+                '{"adapters": "bad"}',
+                '{"adapters": [{"bad": 1}]}',
+                '{"adapters": [{"host": "claude", "skill": []}]}',
+                '{"adapters": [{"host": "", "skill": "x"}]}',
+                '{"adapters": [{"host": 123, "skill": "x"}]}',
+            ]
+            for bad_value in bad_manifests:
                 manifest_path.write_text(bad_value)
                 result = repair_host_adapters(workspace)
-                self.assertIn(result["status"], ("ok", "created from scratch"))
-            # Manifest deve estar válido após último repair
+                self.assertIn(result["status"], ("ok", "created from scratch"),
+                              f"Failed for: {bad_value}")
             data = json.loads(manifest_path.read_text())
             self.assertEqual(data["version"], "1.0")
+
+    def test_create_with_malformed_manifest_and_existing_dir(self) -> None:
+        """create_host_adapters com manifest malformado e dir real existente não crasha."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = _setup_workspace(tmpdir)
+            create_host_adapters(workspace)
+            # Criar dir real não-gerenciado
+            host_custom = workspace / ".claude" / "skills" / "briefing"
+            # Adicionar uma nova skill pra forçar o path do _is_unmanaged
+            new_skill = workspace / ".prumo" / "skills" / "extra"
+            new_skill.mkdir()
+            (new_skill / "SKILL.md").write_text("# extra")
+            # Corromper manifest com shape inválida
+            manifest_path = workspace / MANIFEST_RELATIVE
+            manifest_path.write_text('{"adapters": [{"host": "claude", "skill": []}]}')
+            # Não deve crashar
+            result = create_host_adapters(workspace)
+            self.assertIsInstance(result["adapters_created"], int)
 
 
 if __name__ == "__main__":

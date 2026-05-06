@@ -206,7 +206,6 @@ def _is_unmanaged(
     if not adapter_path.exists() and not adapter_path.is_symlink():
         return False
 
-    # Se é symlink pro target esperado, é gerenciado
     if adapter_path.is_symlink():
         try:
             current_target = os.readlink(str(adapter_path))
@@ -214,20 +213,18 @@ def _is_unmanaged(
                 return False
         except OSError:
             pass
-        # Symlink pra outro lugar — verificar manifest
         if manifest:
-            for entry in manifest.get("adapters", []):
+            for entry in _safe_adapters_list(manifest):
                 if entry["host"] == host and entry["skill"] == skill_name:
-                    return False  # Registrado no manifest = gerenciado
-        return True  # Symlink desconhecido = não tocar
+                    return False
+        return True
 
-    # Diretório real — verificar se está no manifest
     if manifest:
-        for entry in manifest.get("adapters", []):
+        for entry in _safe_adapters_list(manifest):
             if entry["host"] == host and entry["skill"] == skill_name:
-                return False  # Registrado como copy = gerenciado
+                return False
 
-    return True  # Diretório não registrado = não gerenciado, preservar
+    return True
 
 
 def _create_adapter(adapter_path: Path, relative_target: str, absolute_target: Path) -> str:
@@ -250,7 +247,12 @@ def _safe_adapters_list(manifest: dict[str, Any]) -> list[dict[str, Any]]:
     adapters = manifest.get("adapters")
     if not isinstance(adapters, list):
         return []
-    return [e for e in adapters if isinstance(e, dict) and "host" in e and "skill" in e]
+    return [
+        e for e in adapters
+        if isinstance(e, dict)
+        and isinstance(e.get("host"), str) and e["host"]
+        and isinstance(e.get("skill"), str) and e["skill"]
+    ]
 
 
 def _read_manifest(workspace: Path) -> dict[str, Any] | None:
