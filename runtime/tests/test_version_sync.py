@@ -52,6 +52,15 @@ def _read_md_header_version(path: Path, label: str) -> str:
     return match.group(1)
 
 
+def _read_readme_version(path: Path) -> str:
+    """Extrai versão da linha em backticks após '## Versão' no README."""
+    text = path.read_text(encoding="utf-8")
+    match = re.search(r"^## Versão\s*\n+`([^`]+)`", text, re.MULTILINE)
+    if not match:
+        raise AssertionError(f"'## Versão' section with backtick version not found in {path}")
+    return match.group(1)
+
+
 # Lista canônica das fontes de versão do Prumo. Decisão registrada em
 # `gotchas.md` (seção "Versoes fora de sincronia"): todos os 11 lugares
 # devem casar — runtime, manifestos distribuídos e headers de skills
@@ -97,6 +106,11 @@ VERSION_SOURCES: list[tuple[str, Path, callable]] = [
         REPO_ROOT / "skills" / "prumo" / "references" / "modules" / "load-policy.md",
         lambda p: _read_md_header_version(p, "module_version"),
     ),
+    (
+        "README.md (seção ## Versão)",
+        REPO_ROOT / "README.md",
+        _read_readme_version,
+    ),
 ]
 # .codex-plugin/marketplace.json é deliberadamente excluído: o schema do
 # Codex não prevê campo `version` no marketplace. Documentado em gotchas.md.
@@ -104,7 +118,7 @@ VERSION_SOURCES: list[tuple[str, Path, callable]] = [
 
 class VersionSyncTests(unittest.TestCase):
     def test_all_canonical_sources_match_runtime_version(self) -> None:
-        """Todas as 10 fontes canônicas devem casar com `prumo_runtime.__version__`.
+        """Todas as 11 fontes canônicas devem casar com `prumo_runtime.__version__`.
 
         Lista expandida em #83 (audit Codex em #81 P1.3) cobrindo manifestos
         `.claude-plugin/`, `.codex-plugin/` e headers de skills canônicas.
