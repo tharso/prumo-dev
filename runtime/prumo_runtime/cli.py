@@ -114,6 +114,11 @@ def build_parser() -> argparse.ArgumentParser:
         default="text",
         help="Formato de saida (json pra hosts/automacao).",
     )
+    update.add_argument(
+        "--yes", "-y",
+        action="store_true",
+        help="Pula confirmacao interativa (pra CI/automacao).",
+    )
     update.set_defaults(handler=run_update)
 
     return parser

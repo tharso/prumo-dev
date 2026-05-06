@@ -86,21 +86,31 @@ find_python() {
   return 1
 }
 
+PACKAGE_MANAGER=""
+PYTHON_USED=""
+SOURCE_KIND="$INSTALL_MODE"
+
 echo "==> Instalando runtime local do Prumo"
 echo "Repo: $ROOT_DIR"
 echo "Modo de instalação: $INSTALL_MODE"
 
 if UV_BIN="$(find_uv)"; then
   echo "Usando uv: $UV_BIN"
+  PACKAGE_MANAGER="uv-tool"
   if [ "$INSTALL_MODE" = "editable" ]; then
     "$UV_BIN" tool install --editable --force --python 3.11 "$ROOT_DIR"
+    SOURCE_KIND="editable"
   else
     "$UV_BIN" tool install --force --python 3.11 "$ROOT_DIR"
   fi
+  PYTHON_USED="$("$UV_BIN" python find 3.11 2>/dev/null || echo "unknown")"
 elif PYTHON_BIN="$(find_python)"; then
   echo "uv nao encontrado. Vou de pip com $PYTHON_BIN"
+  PACKAGE_MANAGER="pip-user"
+  PYTHON_USED="$PYTHON_BIN"
   if [ "$INSTALL_MODE" = "editable" ]; then
     "$PYTHON_BIN" -m pip install --user -e "$ROOT_DIR"
+    SOURCE_KIND="editable"
   else
     "$PYTHON_BIN" -m pip install --user "$ROOT_DIR"
   fi
@@ -109,6 +119,34 @@ else
   echo "Instale uv (https://docs.astral.sh/uv/) ou um Python 3.11+ e tente de novo." >&2
   exit 1
 fi
+
+# --- Gravar marker JSON (schema v1.0) ---
+write_install_marker() {
+  local marker_dir="${XDG_DATA_HOME:-$HOME/.local/share}/prumo"
+  local marker_path="$marker_dir/install-method.json"
+  local prumo_exe
+  prumo_exe="$(command -v prumo 2>/dev/null || echo "unknown")"
+  local installed_at
+  installed_at="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+
+  mkdir -p "$marker_dir"
+  cat > "$marker_path" <<MARKER
+{
+  "schema_version": "1.0",
+  "installed_version": "$VERSION",
+  "installed_at": "$installed_at",
+  "launcher": "install-script",
+  "package_manager": "$PACKAGE_MANAGER",
+  "source_kind": "$SOURCE_KIND",
+  "source": "$ARCHIVE_URL",
+  "python": "$PYTHON_USED",
+  "prumo_executable": "$prumo_exe"
+}
+MARKER
+  echo "Marker gravado em: $marker_path"
+}
+
+write_install_marker
 
 echo ""
 echo "Runtime instalado. Versao: $VERSION"
