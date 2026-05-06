@@ -12,6 +12,7 @@ from prumo_runtime.commands import (
     run_repair,
     run_setup,
     run_start,
+    run_update,
 )
 from prumo_runtime.workspace import WorkspaceError
 
@@ -91,6 +92,29 @@ def build_parser() -> argparse.ArgumentParser:
     briefing.add_argument("--workspace", required=True, help="Caminho do workspace")
     briefing.add_argument("--format", choices=["text", "json"], default="text")
     briefing.set_defaults(handler=run_briefing)
+
+    update = subparsers.add_parser(
+        "update",
+        aliases=["upgrade"],
+        help="Atualizar o runtime instalado pra versao remota mais recente",
+    )
+    update.add_argument(
+        "--check",
+        action="store_true",
+        help="Reporta versao remota e plano sem executar update.",
+    )
+    update.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Mostra o plano de update sem executar.",
+    )
+    update.add_argument(
+        "--format",
+        choices=["text", "json"],
+        default="text",
+        help="Formato de saida (json pra hosts/automacao).",
+    )
+    update.set_defaults(handler=run_update)
 
     return parser
 

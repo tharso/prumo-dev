@@ -6,6 +6,7 @@ from prumo_runtime.commands.migrate_skills import run_migrate_skills
 from prumo_runtime.commands.repair import run_repair
 from prumo_runtime.commands.setup import run_setup
 from prumo_runtime.commands.start import run_start
+from prumo_runtime.commands.update import run_update
 
 __all__ = [
     "run_briefing",
@@ -16,4 +17,5 @@ __all__ = [
     "run_repair",
     "run_setup",
     "run_start",
+    "run_update",
 ]

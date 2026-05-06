@@ -6,6 +6,9 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+### Added
+- **Comando `prumo update`** (#86) — atualiza o runtime instalado pra versão remota mais recente. Detecta método de instalação (pip vs curl install script) via marker JSON em `~/.local/share/prumo/install-method.json` (`%LOCALAPPDATA%/prumo/...` em Windows, com suporte a `XDG_DATA_HOME`). Sem marker, faz fallback explícito (testa `pip show prumo-runtime`). Modos: `--check` reporta versão remota sem executar; `--dry-run` mostra plano sem executar; `--format json` saída estruturada pra hosts/automação. Sem flags, executa update real (re-roda pip install --upgrade ou install script via bash/curl conforme método). `prumo upgrade` é alias de compatibilidade — `update` é o nome canônico (gesto cotidiano leve), `upgrade` carregava peso semântico errado (plano pago, salto de edição). 17 testes novos cobrindo detecção de método, geração de plano, alias, modos seguros e tratamento gracioso de offline. Update real **não é executado em CI** — todos os tests usam `--check`/`--dry-run` com mocks. Endpoint de versão remota: `https://raw.githubusercontent.com/tharso/prumo/main/VERSION`. Timeout 2.5s, falha graciosa se offline.
+
 ### Fixed
 - **`prumo repair` agora detecta drift de versão, preservando conteúdo autoral em wrappers de raiz** (#84) — antes, o comando só checava se arquivos existiam e devolvia "nada recriável precisava de reparo" mesmo quando `PRUMO-CORE.md` declarava versão antiga (ex: workspace em `5.1.1` após `pip install --upgrade` levar runtime pra `5.3.0`). Agora `repair` lê `prumo_version` do `PRUMO-CORE.md`, compara com `runtime.__version__`, e se houver drift:
   - Move **apenas** `.prumo/system/PRUMO-CORE.md` e `Prumo/AGENT.md` (sistema + canonical do Prumo) pra `.prumo/backups/repair-version-bump/<timestamp>/` e regenera.
