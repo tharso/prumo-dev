@@ -50,7 +50,7 @@ def create_host_adapters(
 
     # Preservar entries de hosts não incluídos nesta chamada
     if existing_manifest and hosts:
-        for entry in existing_manifest.get("adapters", []):
+        for entry in _safe_adapters_list(existing_manifest):
             if entry["host"] not in target_hosts:
                 adapters.append(entry)
 
@@ -105,13 +105,14 @@ def repair_host_adapters(workspace: Path) -> dict[str, Any]:
 
     repaired = 0
     needs_manifest_update = False
+    managed_set: set[tuple[str, str]] = set()
 
     skills = sorted(
         d.name for d in skills_root.iterdir()
         if d.is_dir() and not d.name.startswith(".")
     )
 
-    managed_entries = {(e["host"], e["skill"]): e for e in manifest.get("adapters", [])}
+    managed_entries = {(e["host"], e["skill"]): e for e in _safe_adapters_list(manifest)}
 
     for host, convention_path in HOST_CONVENTIONS.items():
         host_skills_dir = workspace / convention_path
@@ -126,10 +127,13 @@ def repair_host_adapters(workspace: Path) -> dict[str, Any]:
             if not entry:
                 if adapter_path.exists() and not adapter_path.is_symlink():
                     continue  # Não gerenciado, pular
-                mode = _create_adapter(adapter_path, relative_target, target_path)
+                _create_adapter(adapter_path, relative_target, target_path)
+                managed_set.add((host, skill_name))
                 needs_manifest_update = True
                 repaired += 1
                 continue
+
+            managed_set.add((host, skill_name))
 
             needs_repair = False
             if not adapter_path.exists():
@@ -138,7 +142,6 @@ def repair_host_adapters(workspace: Path) -> dict[str, Any]:
                 if not adapter_path.resolve().exists():
                     needs_repair = True
             elif entry.get("mode") == "copy":
-                # Copy mode: verificar se runtime_version diverge
                 if entry.get("runtime_version") != __version__:
                     needs_repair = True
 
@@ -152,13 +155,17 @@ def repair_host_adapters(workspace: Path) -> dict[str, Any]:
                 repaired += 1
 
     if needs_manifest_update:
-        _rebuild_manifest_from_filesystem(workspace, skills_root)
+        _rebuild_manifest(workspace, skills_root, managed_set)
 
     return {"repaired": repaired, "status": "ok"}
 
 
-def _rebuild_manifest_from_filesystem(workspace: Path, skills_root: Path) -> None:
-    """Reconstrói manifest a partir dos adapters existentes no filesystem."""
+def _rebuild_manifest(
+    workspace: Path,
+    skills_root: Path,
+    managed_set: set[tuple[str, str]],
+) -> None:
+    """Reconstrói manifest apenas com adapters gerenciados."""
     adapters: list[dict[str, Any]] = []
     now = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
@@ -167,10 +174,7 @@ def _rebuild_manifest_from_filesystem(workspace: Path, skills_root: Path) -> Non
         if not host_skills_dir.is_dir():
             continue
         for skill_dir in sorted(host_skills_dir.iterdir()):
-            if not skill_dir.name or skill_dir.name.startswith("."):
-                continue
-            target_path = skills_root / skill_dir.name
-            if not target_path.is_dir():
+            if (host, skill_dir.name) not in managed_set:
                 continue
             if skill_dir.is_symlink():
                 mode = "symlink"
@@ -239,6 +243,14 @@ def _create_adapter(adapter_path: Path, relative_target: str, absolute_target: P
     except OSError:
         shutil.copytree(str(absolute_target), str(adapter_path))
         return "copy"
+
+
+def _safe_adapters_list(manifest: dict[str, Any]) -> list[dict[str, Any]]:
+    """Extrai lista de adapters do manifest com validação de shape."""
+    adapters = manifest.get("adapters")
+    if not isinstance(adapters, list):
+        return []
+    return [e for e in adapters if isinstance(e, dict) and "host" in e and "skill" in e]
 
 
 def _read_manifest(workspace: Path) -> dict[str, Any] | None:

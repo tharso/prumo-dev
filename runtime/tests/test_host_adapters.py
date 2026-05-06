@@ -277,6 +277,53 @@ class RepairHostAdaptersTests(unittest.TestCase):
             # E o adapter deve existir no filesystem
             self.assertTrue((workspace / ".claude" / "skills" / "faxina").is_dir())
 
+    def test_unmanaged_dir_not_registered_in_manifest_after_repair(self) -> None:
+        """Repair que precisa atualizar manifest não deve incluir dirs não-gerenciados."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = _setup_workspace(tmpdir)
+            create_host_adapters(workspace)
+            # Adicionar skill nova em .prumo/skills
+            new_skill = workspace / ".prumo" / "skills" / "custom"
+            new_skill.mkdir()
+            (new_skill / "SKILL.md").write_text("# custom")
+            # Criar diretório real (não-gerenciado) no host path CLAUDE
+            host_custom = workspace / ".claude" / "skills" / "custom"
+            host_custom.mkdir()
+            (host_custom / "USER_FILE.md").write_text("user data")
+            # Quebrar um adapter existente pra forçar needs_manifest_update
+            link = workspace / ".claude" / "skills" / "briefing"
+            link.unlink()
+            link.symlink_to("/nonexistent/path")
+            repair_host_adapters(workspace)
+            # O dir não-gerenciado no host CLAUDE não deve estar no manifest
+            manifest_path = workspace / MANIFEST_RELATIVE
+            data = json.loads(manifest_path.read_text())
+            claude_custom = [
+                a for a in data["adapters"]
+                if a["skill"] == "custom" and a["host"] == "claude"
+            ]
+            self.assertEqual(len(claude_custom), 0)
+            # Mas o conteúdo do usuário deve estar intacto
+            self.assertTrue((host_custom / "USER_FILE.md").exists())
+            # E uma chamada subsequente de create_host_adapters não deve destruí-lo
+            create_host_adapters(workspace)
+            self.assertTrue((host_custom / "USER_FILE.md").exists())
+
+    def test_manifest_malformed_adapters_field_no_crash(self) -> None:
+        """Manifest com adapters: null, ou adapters: 'bad' não causa crash."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = _setup_workspace(tmpdir)
+            create_host_adapters(workspace)
+            manifest_path = workspace / MANIFEST_RELATIVE
+            for bad_value in ['{"adapters": null}', '{"adapters": "bad"}',
+                              '{"adapters": [{"bad": 1}]}']:
+                manifest_path.write_text(bad_value)
+                result = repair_host_adapters(workspace)
+                self.assertIn(result["status"], ("ok", "created from scratch"))
+            # Manifest deve estar válido após último repair
+            data = json.loads(manifest_path.read_text())
+            self.assertEqual(data["version"], "1.0")
+
 
 if __name__ == "__main__":
     unittest.main()
