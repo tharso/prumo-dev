@@ -612,6 +612,10 @@ def repair_workspace(workspace: Path) -> dict:
     config = build_config_from_existing(workspace)
     ensure_directories(workspace)
 
+    # Reinstalar skills do repo — garante que .prumo/skills/ está completo
+    # antes de regenerar canonicals e reparar host adapters (#89 Finding 1).
+    skills_reinstalled = install_skills(workspace, layout_mode="nested")
+
     # Drift de versão: PRUMO-CORE.md declara versão antiga, runtime está em outra.
     # Mover apenas sistema e canonical pra backup — eles entram no loop normal
     # de regeneração abaixo. Wrappers de raiz (autorais) ficam preservados e são
@@ -663,6 +667,7 @@ def repair_workspace(workspace: Path) -> dict:
     result: dict = {
         "recreated": recreated,
         "merged": merged,
+        "skills_reinstalled": skills_reinstalled,
         "missing_authorial": reported_authorial,
         "missing_generated": missing["generated"],
         "missing_derived": missing["derived"],

@@ -7,21 +7,30 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 ## [Unreleased]
 
 ### Added
-- **Comando `prumo update`** (#86) — atualiza o runtime instalado pra versão remota mais recente. Detecta método de instalação (pip vs curl install script) via marker JSON em `~/.local/share/prumo/install-method.json` (`%LOCALAPPDATA%/prumo/...` em Windows, com suporte a `XDG_DATA_HOME`). Sem marker, faz fallback explícito (testa `pip show prumo-runtime`). Modos: `--check` reporta versão remota sem executar; `--dry-run` mostra plano sem executar; `--format json` saída estruturada pra hosts/automação. Sem flags, executa update real (re-roda pip install --upgrade ou install script via bash/curl conforme método). `prumo upgrade` é alias de compatibilidade — `update` é o nome canônico (gesto cotidiano leve), `upgrade` carregava peso semântico errado (plano pago, salto de edição). 17 testes novos cobrindo detecção de método, geração de plano, alias, modos seguros e tratamento gracioso de offline. Update real **não é executado em CI** — todos os tests usam `--check`/`--dry-run` com mocks. Endpoint de versão remota: `https://raw.githubusercontent.com/tharso/prumo/main/VERSION`. Timeout 2.5s, falha graciosa se offline.
+- **Comando `prumo update`** (#86) — atualiza o runtime pra versão remota mais recente. Detecta método de instalação via marker JSON granular em `~/.local/share/prumo/install-method.json` (`%LOCALAPPDATA%/prumo/...` em Windows, com suporte a `XDG_DATA_HOME`). Fallback via `importlib.metadata`. Modos: `--check` reporta versão remota sem executar; `--dry-run` mostra plano sem executar; `--format json` saída estruturada. Sem flags, executa update real via install script com temp file + canal explícito (pip ou curl). `prumo upgrade` é alias de compatibilidade. Confirmação interativa obrigatória, `--yes` pra automação. Pós-update hooks executam `prumo repair` automático. 35 testes em `test_update.py`.
+- **Version check passivo** (#87) — banner educado em cada invocação quando existe versão nova. TTL de 24h com cache local, cooldown de 7 dias após dismiss, supressão em `--format json` e ambientes não-interativos. 30 testes em `test_version_check.py`.
+- **Host adapters** (#85) — `prumo setup` e `prumo repair` criam symlinks de convenção de host (`.claude/skills/` para Claude Code/Cowork, `.agent/skills/` para Antigravity) apontando pra `.prumo/skills/`. Fallback copy em ambientes sem symlink (Windows). Manifest JSON v1.0 em `.prumo/state/host-skills.json`. Preservação de diretórios não-gerenciados do usuário com guard `_is_unmanaged()`, validação de shape do manifest via `_safe_adapters_list()`, rebuild defensivo via `_rebuild_manifest()` usando managed_set. 23 testes em `test_host_adapters.py`.
 
 ### Fixed
-- **`prumo repair` agora detecta drift de versão, preservando conteúdo autoral em wrappers de raiz** (#84) — antes, o comando só checava se arquivos existiam e devolvia "nada recriável precisava de reparo" mesmo quando `PRUMO-CORE.md` declarava versão antiga (ex: workspace em `5.1.1` após `pip install --upgrade` levar runtime pra `5.3.0`). Agora `repair` lê `prumo_version` do `PRUMO-CORE.md`, compara com `runtime.__version__`, e se houver drift:
-  - Move **apenas** `.prumo/system/PRUMO-CORE.md` e `Prumo/AGENT.md` (sistema + canonical do Prumo) pra `.prumo/backups/repair-version-bump/<timestamp>/` e regenera.
-  - **Atualiza o bloco gerenciado** dos wrappers de raiz (`AGENT.md`, `CLAUDE.md`, `AGENTS.md`) via `merge_wrapper_content` — preserva byte-for-byte qualquer conteúdo autoral fora dos delimitadores `<!-- prumo:begin --> ... <!-- prumo:end -->`. Wrappers de raiz **nunca** entram em backup nem são regenerados do zero.
-  - Reporta a transição (`5.0.0 → 5.3.0`), arquivos recriados (sistema/canonical), wrappers atualizados via merge (autorais), e path do backup.
-  
-  Decisão arquitetural reforçada por review do Codex: arquivos que possam conter customização do usuário **não** são tratados como artefatos descartáveis. A separação `.prumo/` (sistema, regenerável) vs raiz (autoral, preservar) é contrato — backup de wrappers seria violação. Idempotente: segunda execução em workspace em dia retorna "nada recriável precisava de reparo".
-
-- **Convenção canônica de backups: `.prumo/backups/<scope>/<timestamp>/`** (#81 P3.8) — antes existia drift entre dois paths: `backup_root_for()` em `workspace.py` e `backup_path_for()` (runtime-migrate) já usavam `.prumo/backups/` plural com scope, mas `bump_system_canonicals_for_repair` (#84) escrevia em `.prumo/backup/repair-version-bump-<ts>/` (singular) e `migrate_skills` (#79) escrevia em `.prumo/system/backup/relocate-skills-<ts>/` (singular aninhado em `system/`). Convergido: ambos escritores agora usam `.prumo/backups/<scope>/<timestamp>/` com convenção uniforme. Backups em `.prumo/backup/` (singular) de runtimes antigos permanecem **intocados** — sanitize varre os dois paths quando rodada e consolida sobreviventes em `.prumo/backups/legacy/`. Skills (`prumo`, `prumo-core.md`, `file-protection-rules.md`, `version-update.md`, `claude-hygiene.md`, módulo `sanitization.md`) atualizadas pra documentar o caminho canônico, com nota explicando o legado.
+- **`prumo repair` agora detecta drift de versão, preservando conteúdo autoral em wrappers de raiz** (#84) — `repair` lê `prumo_version` do `PRUMO-CORE.md`, compara com `runtime.__version__`, e se houver drift: move sistema/canonical pra backup, regenera, e atualiza bloco gerenciado dos wrappers via merge preservando conteúdo autoral fora dos delimitadores `<!-- prumo:begin -->`.
+- **`prumo repair` agora restaura skills ausentes em `.prumo/skills/`** (#89 Finding 1) — antes, `repair_workspace()` não chamava `install_skills()`, então se uma skill era apagada de `.prumo/skills/`, os symlinks de host adapter ficavam quebrados e o repair reportava sucesso. Agora `repair_workspace()` reinstala skills do repo antes de reparar host adapters.
+- **`create_host_adapters()` não sobrescreve mais diretório real do usuário com manifest stale** (#89 Finding 3) — antes, se o manifest registrava um par `(host, skill)` como gerenciado e o usuário substituía o symlink por diretório real com conteúdo customizado, `create_host_adapters()` destruía o diretório. Agora `_is_unmanaged()` exige marcador explícito `.prumo-managed` em diretórios reais — manifest stale não é autoridade suficiente pra destruir conteúdo do usuário.
+- **Convenção canônica de backups: `.prumo/backups/<scope>/<timestamp>/`** (#81 P3.8) — convergência de paths de backup divergentes entre `repair`, `migrate` e `migrate-skills`.
 
 ### Tests
-- 8 testes novos em `test_repair.py` cobrindo: detecção de drift (em dia, defasado, sem PRUMO-CORE.md), repair sem drift (não toca canonicals, não cria backup, sem merge), repair com drift (regenera só sistema/canonical, faz merge nos wrappers de raiz, backup contém só sistema/canonical), idempotência, e **preservação de conteúdo autoral** em CLAUDE.md fora do bloco gerenciado durante drift.
-- 1 teste novo `test_repair_writes_backup_under_canonical_backups_path` afirma escrita no path canônico e preservação de legado em `.prumo/backup/`. Suite total: 126 testes verdes.
+- 10 testes novos em `test_repair.py` (drift, idempotência, preservação autoral, restauração de skills).
+- 23 testes em `test_host_adapters.py` (criação, repair, preservação de dirs não-gerenciados, manifest corrupto, proteção contra manifest stale).
+- 12 testes em `test_version_sync.py` (11 fontes canônicas + exceção documentada do Codex marketplace).
+- 35 testes em `test_update.py`, 30 em `test_version_check.py`.
+- Suite total: 216 testes verdes.
+
+### Docs
+- **README.md** (#88) — instalação canônica via terminal (`curl | bash`) primeiro, marketplace como canal opcional. Tabela de status de hosts. Seção de migração entre layouts.
+- **README.md** (#80) — adicionado como 11ª fonte canônica de versão no linter `test_version_sync.py`.
+
+### Governance
+- **Workflow `zombie-issue-detector`** (#78) — detecta issues com comentário de conclusão há >7 dias que permanecem abertas. Aplica label `status/zombie` + comentário explicativo. Roda toda segunda às 10h UTC.
+- **Convenção anti-zombie em CLAUDE.md** (#78) — ao postar "implementação concluída", a próxima ação é fechar a issue.
 
 ## [5.3.0] - 2026-05-05
 

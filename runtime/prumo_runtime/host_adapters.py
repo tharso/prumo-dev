@@ -22,6 +22,7 @@ HOST_CONVENTIONS: dict[str, str] = {
 }
 
 MANIFEST_RELATIVE = ".prumo/state/host-skills.json"
+_MANAGED_MARKER = ".prumo-managed"
 
 
 def create_host_adapters(
@@ -202,7 +203,14 @@ def _is_unmanaged(
     host: str,
     skill_name: str,
 ) -> bool:
-    """Verifica se um path existente é não-gerenciado pelo Prumo."""
+    """Verifica se um path existente é não-gerenciado pelo Prumo.
+
+    Regra de produto: nunca sobrescrever customização do usuário.
+    - Symlinks: confia no manifest ou no target esperado.
+    - Diretórios reais: precisa de marcador explícito (.prumo-managed)
+      pra distinguir cópia do Prumo de dir do usuário. Manifest stale
+      não é autoridade suficiente (#89 Finding 3).
+    """
     if not adapter_path.exists() and not adapter_path.is_symlink():
         return False
 
@@ -219,16 +227,23 @@ def _is_unmanaged(
                     return False
         return True
 
-    if manifest:
-        for entry in _safe_adapters_list(manifest):
-            if entry["host"] == host and entry["skill"] == skill_name:
-                return False
+    # Diretório real (não symlink): verificar marcador explícito.
+    # Manifest stale NÃO basta — o usuário pode ter substituído o adapter
+    # por dir próprio enquanto o manifest ainda registra como gerenciado.
+    if adapter_path.is_dir():
+        if (adapter_path / _MANAGED_MARKER).is_file():
+            return False
+        return True
 
     return True
 
 
 def _create_adapter(adapter_path: Path, relative_target: str, absolute_target: Path) -> str:
-    """Cria symlink ou copy. Retorna mode."""
+    """Cria symlink ou copy. Retorna mode.
+
+    Em copy mode, escreve marcador `.prumo-managed` dentro do diretório
+    copiado pra distinguir cópia gerenciada de diretório do usuário (#89).
+    """
     if adapter_path.is_symlink():
         adapter_path.unlink()
     elif adapter_path.is_dir():
@@ -239,6 +254,10 @@ def _create_adapter(adapter_path: Path, relative_target: str, absolute_target: P
         return "symlink"
     except OSError:
         shutil.copytree(str(absolute_target), str(adapter_path))
+        (adapter_path / _MANAGED_MARKER).write_text(
+            f"managed by prumo runtime {__version__}\n",
+            encoding="utf-8",
+        )
         return "copy"
 
 

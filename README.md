@@ -39,10 +39,12 @@ prumo setup --workspace /caminho/da/pasta
 
 | Host | Descoberta | Status |
 |------|-----------|--------|
-| Claude Code | `.claude/skills/` | confirmado |
-| Cowork | `.claude/skills/` | confirmado |
-| Antigravity (Gemini) | `.agent/skills/` | confirmado |
+| Claude Code | `.claude/skills/` | symlinks criados; discovery por host validado em uso |
+| Cowork | `.claude/skills/` | symlinks criados; discovery por host validado em uso |
+| Antigravity (Gemini) | `.agent/skills/` | symlinks criados; smoke pendente |
 | Codex CLI | plugin marketplace | via plugin (filesystem por projeto em investigação) |
+
+> **Nota de segurança:** os comandos de instalação acima apontam pra branch `main` (mutável). Pra instalação verificável, use uma tag específica: `bash <(curl -fsSL https://raw.githubusercontent.com/tharso/prumo/v5.3.0/scripts/prumo_runtime_install.sh)`, substituindo `v5.3.0` pela versão desejada.
 
 Para atualizar: `prumo update`. Para reparar workspace: `prumo repair --workspace .`
 

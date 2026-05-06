@@ -42,6 +42,9 @@ def run_repair(args) -> int:
     if not result["recreated"] and not result.get("merged"):
         print("Nada recriável precisava de reparo.")
 
+    if result.get("skills_reinstalled"):
+        print(f"Skills restauradas: {', '.join(result['skills_reinstalled'])}")
+
     if adapter_result.get("repaired", 0) > 0:
         print(f"Host adapters reparados: {adapter_result['repaired']}")
 

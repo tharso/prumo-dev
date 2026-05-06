@@ -19,6 +19,7 @@ from prumo_runtime.workspace import (
     create_missing_files,
     detect_version_drift,
     ensure_directories,
+    install_skills,
     parse_core_version,
     repair_workspace,
 )
@@ -208,6 +209,74 @@ class RepairVersionDriftTests(unittest.TestCase):
             # Bloco prumo está presente com a marca canônica
             self.assertIn("<!-- prumo:begin -->", new_content)
             self.assertIn("<!-- prumo:end -->", new_content)
+
+
+class RepairSkillsRestorationTests(unittest.TestCase):
+    """#89 Finding 1: repair deve restaurar skills ausentes em .prumo/skills/."""
+
+    def _make_workspace_with_skills(self, parent: Path) -> Path:
+        """Cria workspace completo com skills instaladas (simula prumo setup)."""
+        workspace = _make_test_workspace(parent)
+        install_skills(workspace, layout_mode="nested")
+        return workspace
+
+    def test_repair_restores_deleted_skill_in_prumo_skills(self) -> None:
+        """Se uma skill é apagada de .prumo/skills/, repair_workspace deve restaurá-la."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = self._make_workspace_with_skills(Path(tmpdir))
+            skills_root = workspace / ".prumo" / "skills"
+
+            # Confirma que skills foram instaladas
+            installed_before = sorted(d.name for d in skills_root.iterdir() if d.is_dir())
+            self.assertIn("briefing", installed_before)
+
+            # Apaga uma skill
+            import shutil
+            shutil.rmtree(skills_root / "briefing")
+            self.assertFalse((skills_root / "briefing").exists())
+
+            # Repair deve restaurar
+            repair_workspace(workspace)
+            self.assertTrue(
+                (skills_root / "briefing").is_dir(),
+                "repair_workspace deve restaurar skills ausentes em .prumo/skills/",
+            )
+            self.assertTrue(
+                (skills_root / "briefing" / "SKILL.md").exists(),
+                "skill restaurada deve ter SKILL.md",
+            )
+
+    def test_repair_restores_skill_and_fixes_broken_adapter(self) -> None:
+        """Full path: skill apagada → repair restaura skill + conserta adapter."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = self._make_workspace_with_skills(Path(tmpdir))
+            skills_root = workspace / ".prumo" / "skills"
+
+            # Cria adapters
+            from prumo_runtime.host_adapters import create_host_adapters, repair_host_adapters
+            create_host_adapters(workspace)
+
+            # Confirma adapter funciona
+            adapter = workspace / ".claude" / "skills" / "briefing"
+            self.assertTrue(adapter.exists())
+            self.assertTrue(adapter.resolve().exists(), "adapter deve apontar pra skill existente")
+
+            # Apaga a skill — adapter fica quebrado
+            import shutil
+            shutil.rmtree(skills_root / "briefing")
+            self.assertFalse(adapter.resolve().exists(), "adapter deve estar quebrado")
+
+            # Repair do workspace + host adapters (simula run_repair)
+            repair_workspace(workspace)
+            adapter_result = repair_host_adapters(workspace)
+
+            # Skill restaurada
+            self.assertTrue((skills_root / "briefing").is_dir())
+            # Adapter agora funciona
+            self.assertTrue(
+                adapter.resolve().exists(),
+                "após repair, adapter deve apontar pra skill restaurada",
+            )
 
 
 if __name__ == "__main__":

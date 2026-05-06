@@ -350,5 +350,61 @@ class RepairHostAdaptersTests(unittest.TestCase):
             self.assertIsInstance(result["adapters_created"], int)
 
 
+class StaleManifestProtectionTests(unittest.TestCase):
+    """#89 Finding 3: create_host_adapters não deve sobrescrever dir real
+    do usuário mesmo que o manifest stale diga 'managed'."""
+
+    def test_create_preserves_user_dir_replacing_managed_symlink(self) -> None:
+        """Se o usuário substituiu um symlink gerenciado por dir real com conteúdo
+        customizado, create_host_adapters deve preservar o dir do usuário."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = _setup_workspace(tmpdir)
+            # Primeira criação — adapters normais (symlinks)
+            create_host_adapters(workspace)
+            adapter = workspace / ".claude" / "skills" / "briefing"
+            self.assertTrue(adapter.is_symlink())
+
+            # Usuário substitui o symlink por um diretório real com conteúdo custom
+            adapter.unlink()
+            adapter.mkdir()
+            custom_file = adapter / "CUSTOM.md"
+            custom_file.write_text("# Meu briefing customizado")
+
+            # Segunda chamada de create — NÃO deve destruir o dir do usuário
+            result = create_host_adapters(workspace)
+            self.assertIn(".claude/skills/briefing", result["skipped"])
+            self.assertTrue(custom_file.exists(), "conteúdo customizado do usuário deve sobreviver")
+            self.assertEqual(custom_file.read_text(), "# Meu briefing customizado")
+
+    def test_create_preserves_user_dir_even_with_manifest_entry(self) -> None:
+        """Mesmo que o manifest registre o par (host, skill) como gerenciado,
+        se o path atual é dir real, create não deve destruir."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = _setup_workspace(tmpdir)
+            create_host_adapters(workspace)
+
+            # Substitui symlink por dir real
+            adapter = workspace / ".claude" / "skills" / "briefing"
+            adapter.unlink()
+            adapter.mkdir()
+            (adapter / "MY_STUFF.md").write_text("usuário")
+
+            # Manifest ainda tem a entrada antiga — stale
+            manifest_path = workspace / MANIFEST_RELATIVE
+            manifest = json.loads(manifest_path.read_text())
+            has_entry = any(
+                e["host"] == "claude" and e["skill"] == "briefing"
+                for e in manifest.get("adapters", [])
+            )
+            self.assertTrue(has_entry, "manifest deve ter a entrada antes do teste")
+
+            # create_host_adapters NÃO deve confiar no manifest stale
+            result = create_host_adapters(workspace)
+            self.assertTrue(
+                (adapter / "MY_STUFF.md").exists(),
+                "dir real do usuário não pode ser destruído por manifest stale",
+            )
+
+
 if __name__ == "__main__":
     unittest.main()
