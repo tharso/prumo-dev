@@ -82,6 +82,18 @@ Isso vale apenas para commits onde o agente *efetivamente redige* — código, m
 - Qualquer mudança que altere a experiência do usuário final do Prumo: precisa de aprovação.
 - Qualquer mudança em `plugin.json`, `marketplace.json` ou `pyproject.toml`: precisa de aprovação.
 
+### Quality gate e baseline (`scripts/baseline.json`)
+
+O projeto tem um quality gate que congela três métricas: violações de ruff, cobertura de testes e tamanho do maior arquivo. A catraca só anda num sentido — o codebase só pode manter ou melhorar.
+
+**Regras para o agente:**
+
+- **Nunca** editar `scripts/baseline.json` sem aprovação explícita do Tharso.
+- Quando um PR melhorar uma ou mais métricas (cobertura sobe, violações caem, arquivo encolhe), o agente **deve** sinalizar isso ativamente — "a métrica X melhorou de A para B, posso apertar o baseline?" — e aguardar confirmação antes de commitar a atualização.
+- A proposta de atualização deve incluir os valores antigos e novos lado a lado, para que Tharso possa avaliar se faz sentido apertar agora ou deixar margem.
+- Atualizar o baseline é uma decisão de governança, não de código. O agente propõe, Tharso decide.
+- Quando o baseline for atualizado, registrar no `DECISIONS.md` com data e razão.
+
 ### Restrições
 
 - **Nunca** reintroduzir a camada de plugin como intermediária entre skills e consumidor. O Prumo é skills-first.

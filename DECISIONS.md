@@ -10,7 +10,7 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 |-----------------------|-------------------------------------------------------------------------------------------|
 | `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first), 2026-05-04 (#77)                          |
 | `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77)  |
-| `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first)           |
+| `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first), 2026-05-06 (quality-gate) |
 | `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist) |
 | `dispatch-bootstrap`  | 2026-04-21 (#69 despacho)                                                                 |
 | `multiagent-coord`    | 2026-04-20 (#68 HANDOVER)                                                                 |
@@ -18,6 +18,7 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 | `integrations`        | 2026-04-14 (Google Drive snapshots)                                                       |
 | `briefing`            | 2026-04-14 (Google Drive snapshots), 2026-04-21 (#69 despacho)                            |
 | `personalization`     | 2026-04-21 (tharso-voice)                                                                 |
+| `code-quality`        | 2026-05-06 (quality-gate)                                                                 |
 
 ## Vocabulário controlado de tópicos
 
@@ -51,6 +52,22 @@ A partir de 2026-05-04 (#78), toda entrada nova segue o formato:
 ```
 
 Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões anteriores" (introduzido na #78). Quando um conflito retrospectivo for descoberto, anotar a relação na entrada nova que o resolve — não reescrever entradas antigas.
+
+- `code-quality` — métricas de qualidade do codebase, quality gate, baseline.
+
+---
+
+## 2026-05-06 — Quality gate com baseline congelado no CI
+
+**Tópicos:** governance, code-quality
+**Issues relacionadas:** nenhuma (setup inicial, sem issue prévia).
+**Relações com decisões anteriores:** nenhuma identificada após consulta ao índice temático.
+
+**Contexto:** Com agentes de IA contribuindo código continuamente, revisão manual de PR virou gargalo. Sem controle automático, métricas como cobertura de testes e violações de lint tendem a regredir gradualmente sem que ninguém perceba.
+
+**Decisão:** Introduzir um quality gate no CI (`scripts/quality_gate.py`) que congela três métricas em `scripts/baseline.json` — violações de ruff, cobertura de testes e tamanho do maior arquivo. Todo PR que regredir qualquer métrica quebra o CI antes de mergear. Baseline inicial: 12 violações, 81% cobertura, 945 linhas. O baseline só pode ser atualizado com aprovação explícita do Tharso; o agente propõe, Tharso decide. Quando atualizado, registrar nova entrada aqui.
+
+**Alternativas consideradas:** SonarCloud (custo e complexidade desnecessários para um projeto solo), pre-commit hooks locais (não pegam código escrito por agentes remotos no CI), ignorar o problema (descartado — a experiência do Lucas Montano mostrou exatamente o que acontece em seis meses sem catraca).
 
 ---
 
