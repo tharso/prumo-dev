@@ -37,6 +37,7 @@ def _make_test_workspace(parent: Path) -> Path:
         workspace_name="Test Workspace",
     )
     ensure_directories(workspace)
+    install_skills(workspace, layout_mode="nested")
     create_missing_files(config)
     return workspace
 

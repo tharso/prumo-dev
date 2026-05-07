@@ -178,8 +178,10 @@ def run_setup(args) -> int:
         wrapper_policy=wrapper_policy,
         workspace_name=workspace_name,
     )
+    # Skills precisam existir no filesystem antes de render_files(), porque
+    # o dispatch dinâmico (#90) lê frontmatter de .prumo/skills/*/SKILL.md.
+    install_skills(workspace, layout_mode="nested")
     result = create_missing_files(config)
-    installed_skills = install_skills(workspace, layout_mode="nested")
     install_custom_readme(workspace, layout_mode="nested")
 
     from prumo_runtime.host_adapters import create_host_adapters

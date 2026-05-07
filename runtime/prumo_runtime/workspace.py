@@ -94,7 +94,7 @@ def render_wrapper_merge_block(relative: str, rendered: str, config: WorkspaceCo
     lines = [
         WRAPPER_BLOCK_BEGIN,
         f"Prumo detectado neste workspace. Para o canon, leia `{canonical_target}`.",
-        'Se o usuário disser "Prumo" cru ou equivalente curto, ative a skill `prumo:abrir`. Quando shell e runtime estiverem disponíveis, rodar `prumo` neste diretório é atalho equivalente.',
+        'Se o usuário disser "Prumo" cru ou equivalente curto, consulte a tabela de skills e leia o SKILL.md da skill `abrir`. Quando shell e runtime estiverem disponíveis, rodar `prumo` neste diretório é atalho equivalente.',
         "Abaixo fica o bloco gerado pelo runtime. Se ele mudar, atualize só este trecho.",
         "",
         rendered.strip(),
@@ -129,6 +129,12 @@ def render_files(config: WorkspaceConfig) -> dict[str, str]:
     canonical_target = paths.relative(paths.canonical_agent) if paths.nested_layout else "AGENT.md"
     core_relative = paths.relative(paths.core)
     state_relative = paths.relative(paths.state_root) + "/"
+
+    # Dispatch dinâmico de skills (#90): gerado a partir do filesystem,
+    # injetado nos wrappers pra que qualquer host descubra skills sem
+    # depender de plugin registry.
+    skills_dispatch = build_skills_dispatch_block(config.workspace)
+
     rendered: dict[str, str] = {}
     if paths.nested_layout:
         rendered["AGENT.md"] = templates.render_agent_root_wrapper(
@@ -153,6 +159,7 @@ def render_files(config: WorkspaceConfig) -> dict[str, str]:
             context_root=paths.relative(paths.agente_root) + "/",
             core_path=core_relative,
             state_path=state_relative,
+            skills_dispatch=skills_dispatch,
         ),
         paths.relative(paths.wrappers["AGENTS.md"]): templates.render_agents_wrapper(
             config.user_name,
@@ -161,6 +168,7 @@ def render_files(config: WorkspaceConfig) -> dict[str, str]:
             context_root=paths.relative(paths.agente_root) + "/",
             core_path=core_relative,
             state_path=state_relative,
+            skills_dispatch=skills_dispatch,
         ),
         paths.relative(paths.core): templates.load_prumo_core_text(repo_root),
         paths.relative(paths.canonical_agent): templates.render_agent_md(
@@ -348,6 +356,97 @@ def install_skills(workspace: Path, *, layout_mode: str = "nested") -> list[str]
         shutil.copytree(skill_dir, dest)
         installed.append(skill_dir.name)
     return installed
+
+
+def parse_skill_frontmatter(skill_md: Path) -> dict[str, str]:
+    """Mini-parser de frontmatter YAML (sem PyYAML).
+
+    Suporta valores simples (`key: value`) e folded scalar (`key: >\\n  line`).
+    Retorna dict vazio se o arquivo não existir ou não tiver frontmatter.
+    """
+    try:
+        text = skill_md.read_text(encoding="utf-8")
+    except OSError:
+        return {}
+
+    if not text.startswith("---"):
+        return {}
+    end = text.find("\n---", 3)
+    if end < 0:
+        return {}
+    block = text[4:end]
+
+    result: dict[str, str] = {}
+    current_key: str | None = None
+    continuation_lines: list[str] = []
+
+    def _flush() -> None:
+        if current_key is not None and continuation_lines:
+            result[current_key] = " ".join(continuation_lines).strip()
+
+    for raw_line in block.split("\n"):
+        # Nova chave: "key: value" ou "key: >"
+        if ":" in raw_line and not raw_line.startswith(" "):
+            _flush()
+            key, _, val = raw_line.partition(":")
+            key = key.strip()
+            val = val.strip()
+            if val == ">" or val == "|":
+                current_key = key
+                continuation_lines = []
+            else:
+                result[key] = val
+                current_key = None
+                continuation_lines = []
+        elif current_key is not None and raw_line.startswith("  "):
+            continuation_lines.append(raw_line.strip())
+
+    _flush()
+    return result
+
+
+def build_skills_dispatch_block(workspace: Path) -> str:
+    """Gera bloco de dispatch de skills a partir do filesystem.
+
+    Lê `.prumo/skills/*/SKILL.md`, extrai frontmatter e gera tabela
+    instruindo o modelo a ler cada SKILL.md diretamente por path.
+    Retorna string vazia se não houver skills instaladas.
+    """
+    skills_root = workspace / ".prumo" / "skills"
+    if not skills_root.is_dir():
+        return ""
+
+    entries: list[tuple[str, str, str]] = []
+    for skill_dir in sorted(skills_root.iterdir()):
+        if not skill_dir.is_dir() or skill_dir.name.startswith("."):
+            continue
+        skill_md = skill_dir / "SKILL.md"
+        meta = parse_skill_frontmatter(skill_md)
+        name = meta.get("name", skill_dir.name)
+        desc = meta.get("description", "")
+        rel_path = f".prumo/skills/{skill_dir.name}/SKILL.md"
+        entries.append((name, desc, rel_path))
+
+    if not entries:
+        return ""
+
+    lines = [
+        "## Skills disponíveis",
+        "",
+        "Quando o usuário invocar uma skill (por nome, intenção ou comando),",
+        "leia o SKILL.md correspondente e siga as instruções de lá.",
+        "",
+        "| Skill | Descrição | Arquivo |",
+        "|---|---|---|",
+    ]
+    for name, desc, path in entries:
+        # Truncar descrição longa pra caber na tabela
+        short_desc = desc[:120].rstrip()
+        if len(desc) > 120:
+            short_desc += "…"
+        lines.append(f"| {name} | {short_desc} | `{path}` |")
+
+    return "\n".join(lines)
 
 
 def install_custom_readme(workspace: Path, *, layout_mode: str = "nested") -> None:
@@ -645,22 +744,28 @@ def repair_workspace(workspace: Path) -> dict:
         target.write_text(content, encoding="utf-8")
         recreated.append(relative)
 
-    # Em caso de drift, atualizar o bloco gerenciado dos wrappers de raiz
-    # via merge — preservando byte-for-byte qualquer conteúdo autoral fora
-    # dos delimitadores `<!-- prumo:begin --> ... <!-- prumo:end -->`.
-    if drift is not None:
-        for wrapper_name, wrapper_path in paths.wrappers.items():
-            if not wrapper_path.exists():
-                continue  # Faltando — loop acima cuidou via render_files
-            wrapper_relative = paths.relative(wrapper_path)
-            new_content = rendered.get(wrapper_relative)
-            if new_content is None:
-                continue
-            existing = wrapper_path.read_text(encoding="utf-8")
-            merged_content = merge_wrapper_content(existing, wrapper_relative, new_content, config)
-            if merged_content != existing:
-                wrapper_path.write_text(merged_content, encoding="utf-8")
-                merged.append(wrapper_relative)
+    # Atualizar wrappers de raiz quando o conteúdo gerenciado mudou.
+    # Isso cobre dois cenários: (1) drift de versão e (2) mudança no
+    # dispatch de skills (skill adicionada/removida sem bump de versão).
+    # Merge preserva byte-for-byte conteúdo autoral fora dos
+    # delimitadores `<!-- prumo:begin --> ... <!-- prumo:end -->`.
+    for wrapper_name, wrapper_path in paths.wrappers.items():
+        if not wrapper_path.exists():
+            continue  # Faltando — loop acima cuidou via render_files
+        wrapper_relative = paths.relative(wrapper_path)
+        new_content = rendered.get(wrapper_relative)
+        if new_content is None:
+            continue
+        existing = wrapper_path.read_text(encoding="utf-8")
+        # Se o wrapper já é idêntico ao que seria renderizado fresh,
+        # não precisa de merge — evita injetar managed block duplicado
+        # em wrappers que ainda não têm delimitadores (#90).
+        if existing.rstrip() == new_content.rstrip():
+            continue
+        merged_content = merge_wrapper_content(existing, wrapper_relative, new_content, config)
+        if merged_content != existing:
+            wrapper_path.write_text(merged_content, encoding="utf-8")
+            merged.append(wrapper_relative)
 
     write_schema(config, preserve_created_at=read_schema(workspace).get("created_at"))
 
