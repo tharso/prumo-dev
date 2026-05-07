@@ -80,6 +80,32 @@ class ParseSkillFrontmatterTests(unittest.TestCase):
         result = parse_skill_frontmatter(Path("/nonexistent/SKILL.md"))
         self.assertEqual(result, {})
 
+    def test_parses_folded_strip_indicator(self) -> None:
+        """YAML `>-` (folded + strip trailing newline) deve funcionar."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            skill_md = Path(tmpdir) / "SKILL.md"
+            skill_md.write_text(
+                "---\nname: edge\ndescription: >-\n"
+                "  linha um\n  linha dois\n---\n",
+                encoding="utf-8",
+            )
+            result = parse_skill_frontmatter(skill_md)
+            self.assertEqual(result["name"], "edge")
+            self.assertIn("linha um", result["description"])
+            self.assertIn("linha dois", result["description"])
+
+    def test_parses_literal_keep_indicator(self) -> None:
+        """YAML `|+` (literal + keep trailing newlines) deve funcionar."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            skill_md = Path(tmpdir) / "SKILL.md"
+            skill_md.write_text(
+                "---\nname: lit\ndescription: |+\n"
+                "  bloco literal\n---\n",
+                encoding="utf-8",
+            )
+            result = parse_skill_frontmatter(skill_md)
+            self.assertIn("bloco literal", result["description"])
+
 
 class BuildSkillsDispatchBlockTests(unittest.TestCase):
     """Geração do bloco de dispatch a partir do filesystem."""
@@ -126,6 +152,42 @@ class BuildSkillsDispatchBlockTests(unittest.TestCase):
             self.assertIn("minha-skill", block)
             self.assertIn("Skill de teste", block)
 
+    def test_pipe_in_name_and_description_is_escaped(self) -> None:
+        """Pipe (`|`) em name ou description não pode quebrar a tabela Markdown."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = Path(tmpdir) / "ws"
+            skill_dir = workspace / ".prumo" / "skills" / "edge"
+            skill_dir.mkdir(parents=True)
+            (skill_dir / "SKILL.md").write_text(
+                "---\nname: edge|case\n"
+                "description: Usa A | B para decidir\n---\n",
+                encoding="utf-8",
+            )
+            block = build_skills_dispatch_block(workspace)
+            # Pipe deve estar escapado com backslash
+            self.assertIn("edge\\|case", block)
+            self.assertIn("A \\| B", block)
+            # Pipe cru (sem backslash antes) só deve aparecer como
+            # delimitador de coluna da tabela, não dentro de conteúdo.
+            for line in block.split("\n"):
+                if line.startswith("| edge"):
+                    # Não deve conter pipe cru sem backslash antes
+                    # (exceto os 4 delimitadores de coluna)
+                    self.assertNotIn("edge|case", line)
+                    self.assertNotIn("A | B", line)
+
+    def test_removed_skill_disappears_from_block(self) -> None:
+        """Skill removida do filesystem não deve aparecer no dispatch."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = _make_test_workspace(Path(tmpdir))
+            block_before = build_skills_dispatch_block(workspace)
+            self.assertIn("doctor", block_before)
+            # Remover skill
+            import shutil
+            shutil.rmtree(workspace / ".prumo" / "skills" / "doctor")
+            block_after = build_skills_dispatch_block(workspace)
+            self.assertNotIn("doctor", block_after)
+
 
 class SetupGeneratesDispatchTests(unittest.TestCase):
     """Setup deve gerar CLAUDE.md com dispatch block (skills instaladas antes)."""
@@ -166,6 +228,58 @@ class RepairUpdatesDispatchTests(unittest.TestCase):
             content_after = claude_md.read_text(encoding="utf-8")
             self.assertIn("nova-skill", content_after)
             self.assertIn(".prumo/skills/nova-skill/SKILL.md", content_after)
+
+
+class RepairPreIssue90WrapperTests(unittest.TestCase):
+    """Repair deve substituir wrapper pré-#90 sem duplicar conteúdo."""
+
+    def test_repair_replaces_pre90_wrapper_without_duplication(self) -> None:
+        """Wrapper gerado antes da #90 (sem managed block) deve ser substituído,
+        não receber conteúdo duplicado com o antigo + novo."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = _make_test_workspace(Path(tmpdir))
+            claude_md = workspace / "CLAUDE.md"
+
+            # Simular wrapper pré-#90: conteúdo Prumo sem managed block e
+            # com instrução antiga "ative a skill"
+            pre90_content = (
+                '# Prumo Adapter — Test User\n\n'
+                '> Compatibilidade para Claude/Cowork.\n\n'
+                '## Porta curta\n\n'
+                '1. Se o usuário disser "Prumo" cru, ative a skill '
+                '`prumo:abrir`.\n\n'
+                '## Instrução primária\n\n'
+                '1. Leia `Prumo/AGENT.md`.\n\n'
+                'Agente: **Prumo**\n'
+            )
+            claude_md.write_text(pre90_content, encoding="utf-8")
+
+            # Repair deve substituir inteiro
+            repair_workspace(workspace)
+
+            content = claude_md.read_text(encoding="utf-8")
+            # NÃO deve ter "ative a skill" (instrução antiga)
+            self.assertNotIn("ative a skill", content.lower())
+            # Deve ter dispatch dinâmico
+            self.assertIn(".prumo/skills/abrir/SKILL.md", content)
+            # NÃO deve ter header duplicado
+            self.assertEqual(content.count("# Prumo Adapter"), 1)
+
+
+class AgentRootDispatchTests(unittest.TestCase):
+    """AGENT.md de raiz deve ter dispatch quando referencia tabela de skills."""
+
+    def test_agent_root_has_dispatch_after_setup(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = _make_test_workspace(Path(tmpdir))
+            agent_md = workspace / "AGENT.md"
+            self.assertTrue(agent_md.exists())
+            content = agent_md.read_text(encoding="utf-8")
+            # Se menciona "tabela de skills", deve ter o dispatch
+            if "tabela de skills" in content:
+                self.assertIn("## Skills disponíveis", content)
+            # Deve ter paths de skills
+            self.assertIn(".prumo/skills/abrir/SKILL.md", content)
 
 
 if __name__ == "__main__":

@@ -171,7 +171,12 @@ def render_agent_root_wrapper(
     *,
     canonical_target: str = "AGENT.md",
     system_root: str = "_state/",
+    skills_dispatch: str = "",
 ) -> str:
+    dispatch_section = ""
+    if skills_dispatch:
+        dispatch_section = f"\n{skills_dispatch}\n"
+
     return f"""# Prumo Adapter — {user_name}
 
 > Entrada curta para hosts que procuram `AGENT.md` na raiz.
@@ -180,7 +185,7 @@ def render_agent_root_wrapper(
 ## Porta curta
 
 {_render_wrapper_runtime_rules(state_path=system_root)}
-
+{dispatch_section}
 ## Instrução primária
 
 1. Leia `{canonical_target}`.

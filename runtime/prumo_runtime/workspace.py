@@ -119,6 +119,12 @@ def merge_wrapper_content(existing: str, relative: str, rendered: str, config: W
         return rebuilt + "\n"
     if not existing:
         return block + "\n"
+    # Wrapper gerado pelo runtime em versão pré-#90 (sem managed block):
+    # substituir inteiramente pelo conteúdo novo em vez de duplicar.
+    # Reconhecemos wrapper gerado pela assinatura "# Prumo Adapter —"
+    # que o runtime sempre escreve no topo.
+    if existing.startswith("# Prumo Adapter"):
+        return rendered.rstrip() + "\n"
     return existing + "\n\n" + block + "\n"
 
 
@@ -142,6 +148,7 @@ def render_files(config: WorkspaceConfig) -> dict[str, str]:
             config.agent_name,
             canonical_target=canonical_target,
             system_root=paths.relative(paths.state_root) + "/",
+            skills_dispatch=skills_dispatch,
         )
     else:
         rendered["AGENT.md"] = templates.render_agent_md(
@@ -361,7 +368,8 @@ def install_skills(workspace: Path, *, layout_mode: str = "nested") -> list[str]
 def parse_skill_frontmatter(skill_md: Path) -> dict[str, str]:
     """Mini-parser de frontmatter YAML (sem PyYAML).
 
-    Suporta valores simples (`key: value`) e folded scalar (`key: >\\n  line`).
+    Suporta valores simples (`key: value`) e block scalars com indicadores
+    YAML: `>`, `>-`, `>+`, `|`, `|-`, `|+` (folded/literal com chomping).
     Retorna dict vazio se o arquivo não existir ou não tiver frontmatter.
     """
     try:
@@ -385,13 +393,13 @@ def parse_skill_frontmatter(skill_md: Path) -> dict[str, str]:
             result[current_key] = " ".join(continuation_lines).strip()
 
     for raw_line in block.split("\n"):
-        # Nova chave: "key: value" ou "key: >"
+        # Nova chave: "key: value" ou "key: >" / ">-" / ">+" / "|" / "|-" / "|+"
         if ":" in raw_line and not raw_line.startswith(" "):
             _flush()
             key, _, val = raw_line.partition(":")
             key = key.strip()
             val = val.strip()
-            if val == ">" or val == "|":
+            if val in (">", ">-", ">+", "|", "|-", "|+"):
                 current_key = key
                 continuation_lines = []
             else:
@@ -444,7 +452,10 @@ def build_skills_dispatch_block(workspace: Path) -> str:
         short_desc = desc[:120].rstrip()
         if len(desc) > 120:
             short_desc += "…"
-        lines.append(f"| {name} | {short_desc} | `{path}` |")
+        # Escapar pipe pra não quebrar a tabela Markdown
+        safe_name = name.replace("|", "\\|")
+        safe_desc = short_desc.replace("|", "\\|")
+        lines.append(f"| {safe_name} | {safe_desc} | `{path}` |")
 
     return "\n".join(lines)
 
