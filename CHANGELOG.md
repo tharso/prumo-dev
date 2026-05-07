@@ -7,6 +7,7 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 ## [Unreleased]
 
 ### Added
+- **Discovery de skills sem plugin** (#90) — `CLAUDE.md`, `AGENTS.md` e `AGENT.md` agora contêm tabela dinâmica de skills gerada a partir de `.prumo/skills/*/SKILL.md`. Qualquer host que leia esses wrappers descobre as skills sem depender de plugin registry. Mini-parser de frontmatter YAML (sem PyYAML) extrai name + description com suporte a block scalars (`>`, `>-`, `|+`). `repair` atualiza wrappers quando dispatch muda, mesmo sem drift de versão. Wrappers pré-#90 sem managed block são substituídos sem duplicação. Pipe (`|`) em conteúdo é escapado na tabela. 16 testes em `test_skills_dispatch.py`.
 - **Comando `prumo update`** (#86) — atualiza o runtime pra versão remota mais recente. Detecta método de instalação via marker JSON granular em `~/.local/share/prumo/install-method.json` (`%LOCALAPPDATA%/prumo/...` em Windows, com suporte a `XDG_DATA_HOME`). Fallback via `importlib.metadata`. Modos: `--check` reporta versão remota sem executar; `--dry-run` mostra plano sem executar; `--format json` saída estruturada. Sem flags, executa update real via install script com temp file + canal explícito (pip ou curl). `prumo upgrade` é alias de compatibilidade. Confirmação interativa obrigatória, `--yes` pra automação. Pós-update hooks executam `prumo repair` automático. 35 testes em `test_update.py`.
 - **Version check passivo** (#87) — banner educado em cada invocação quando existe versão nova. TTL de 24h com cache local, cooldown de 7 dias após dismiss, supressão em `--format json` e ambientes não-interativos. 30 testes em `test_version_check.py`.
 - **Host adapters** (#85) — `prumo setup` e `prumo repair` criam symlinks de convenção de host (`.claude/skills/` para Claude Code/Cowork, `.agent/skills/` para Antigravity) apontando pra `.prumo/skills/`. Fallback copy em ambientes sem symlink (Windows). Manifest JSON v1.0 em `.prumo/state/host-skills.json`. Preservação de diretórios não-gerenciados do usuário com guard `_is_unmanaged()`, validação de shape do manifest via `_safe_adapters_list()`, rebuild defensivo via `_rebuild_manifest()` usando managed_set. 23 testes em `test_host_adapters.py`.
@@ -22,7 +23,8 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 - 24 testes em `test_host_adapters.py` (criação, repair, preservação de dirs não-gerenciados, manifest corrupto, proteção contra manifest stale em create e repair).
 - 12 testes em `test_version_sync.py` (11 fontes canônicas + exceção documentada do Codex marketplace).
 - 35 testes em `test_update.py`, 30 em `test_version_check.py`.
-- Suite total: 217 testes verdes.
+- 16 testes em `test_skills_dispatch.py` (frontmatter parser, dispatch block, setup/repair integração, pre-#90 migration, AGENT.md root dispatch).
+- Suite total: 233 testes verdes.
 
 ### Docs
 - **README.md** (#88) — instalação canônica via terminal (`curl | bash`) primeiro, marketplace como canal opcional. Tabela de status de hosts. Seção de migração entre layouts.
