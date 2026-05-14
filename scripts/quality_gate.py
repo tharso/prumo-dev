@@ -67,8 +67,12 @@ def collect_coverage() -> float:
         text=True,
         cwd=REPO_ROOT,
     )
-    if run_result.returncode != 0 and not run_result.stdout:
-        print(f"[qg]   coverage run stderr: {run_result.stderr[:500]}", file=__import__("sys").stderr)
+    print(f"[qg]   coverage run exit={run_result.returncode} data_file_exists={data_file.exists()}")
+    if run_result.stderr:
+        # Mostrar apenas linhas relevantes (warnings do coverage)
+        for ln in run_result.stderr.splitlines()[:10]:
+            if "warn" in ln.lower() or "error" in ln.lower() or "no data" in ln.lower():
+                print(f"[qg]   coverage run: {ln}")
 
     report_result = subprocess.run(
         [sys.executable, "-m", "coverage", "report",
@@ -83,8 +87,12 @@ def collect_coverage() -> float:
         if m:
             return float(m.group(1))
 
+    # Diagnóstico: mostrar o que coverage report devolveu
+    print(f"[qg]   coverage report exit={report_result.returncode}")
+    if report_result.stdout:
+        print(f"[qg]   coverage report stdout: {report_result.stdout[:300]}")
     if report_result.stderr:
-        print(f"[qg]   coverage report stderr: {report_result.stderr[:500]}", file=__import__("sys").stderr)
+        print(f"[qg]   coverage report stderr: {report_result.stderr[:300]}")
 
     return 0.0
 
