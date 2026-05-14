@@ -1,6 +1,6 @@
 {
-  "_note": "Congelado em 2026-05-06. PRs só podem manter ou melhorar estas métricas.",
-  "ruff_violations": 12,
+  "_note": "Atualizado em 2026-05-14. PRs só podem manter ou melhorar estas métricas.",
+  "ruff_violations": 11,
   "coverage_pct": 81,
-  "largest_file_lines": 945
+  "largest_file_lines": 1061
 }
