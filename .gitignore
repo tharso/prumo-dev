@@ -50,3 +50,5 @@ scripts/*
 !scripts/prumo_runtime_install.ps1
 !scripts/prumo_runtime_update.ps1
 !scripts/prumo_antigravity_install.sh
+!scripts/quality_gate.py
+!scripts/baseline.json
