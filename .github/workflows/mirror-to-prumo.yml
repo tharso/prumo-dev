@@ -84,9 +84,12 @@ jobs:
           SHORT_SHA="${GITHUB_SHA::7}"
           git commit -q -m "mirror: sync from prumo-dev@${SHORT_SHA}"
           git remote add origin "https://x-access-token:${MIRROR_TOKEN}@github.com/tharso/prumo.git"
-          git push --force origin main
+          # Só atualiza main quando triggado por push em branch (não por tag)
+          if [[ "${GITHUB_REF}" == refs/heads/* ]]; then
+            git push --force origin main
+          fi
 
-          # Se o trigger foi um tag push (v*), espelhar a tag no repo público
+          # Se o trigger foi um tag push (v*), espelhar apenas a tag
           if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
             TAG="${GITHUB_REF#refs/tags/}"
             git tag -a "${TAG}" -m "Release ${TAG} (mirrored from prumo-dev)"

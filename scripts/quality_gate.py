@@ -35,11 +35,17 @@ def collect_ruff_violations() -> int:
         capture_output=True,
         text=True,
     )
+    if not result.stdout or not result.stdout.strip():
+        print(f"[qg]   ruff não emitiu JSON (exit={result.returncode})", file=sys.stderr)
+        if result.stderr:
+            print(f"[qg]   ruff stderr: {result.stderr[:300]}", file=sys.stderr)
+        return -1
     try:
-        data = json.loads(result.stdout or "[]")
+        data = json.loads(result.stdout)
         return len(data)
     except json.JSONDecodeError:
-        return 0
+        print(f"[qg]   ruff emitiu saída não-JSON: {result.stdout[:200]}", file=sys.stderr)
+        return -1
 
 
 def collect_coverage() -> float:
@@ -178,6 +184,9 @@ def main() -> int:
     print("[qg] Coletando métricas...")
 
     violations = collect_ruff_violations()
+    if violations < 0:
+        print("[qg] ERRO: ruff falhou sem emitir resultados válidos.", file=sys.stderr)
+        return 1
     print(f"[qg]   ruff_violations  : {violations}")
 
     coverage = collect_coverage()
