@@ -45,58 +45,48 @@ def collect_ruff_violations() -> int:
 def collect_coverage() -> float:
     """Roda pytest com coverage e retorna o percentual total.
 
-    Usa --source=prumo_runtime (nome do módulo) em vez de path de
-    filesystem, para funcionar tanto com PYTHONPATH quanto com
-    pip install -e. Parseia a linha TOTAL do coverage report em vez
-    de depender de --format=total (adicionado só no coverage 7.3).
+    Usa a configuração de [tool.coverage.run] do pyproject.toml
+    (source = ["prumo_runtime"]) via --rcfile. Parseia a linha
+    TOTAL do coverage report.
     """
     import re
 
     cov_dir = Path("/tmp/prumo_qg_cov")
     cov_dir.mkdir(exist_ok=True)
     data_file = cov_dir / ".coverage"
+    rcfile = REPO_ROOT / "pyproject.toml"
 
-    run_env = {**__import__("os").environ, "PYTHONPATH": str(REPO_ROOT / "runtime")}
-    subprocess.run(
+    run_result = subprocess.run(
         [
             sys.executable, "-m", "coverage", "run",
             f"--data-file={data_file}",
-            "--source=prumo_runtime",
+            f"--rcfile={rcfile}",
             "-m", "pytest", str(REPO_ROOT / "runtime" / "tests"), "-q",
         ],
         capture_output=True,
+        text=True,
         cwd=REPO_ROOT,
-        env=run_env,
     )
+    if run_result.returncode != 0 and not run_result.stdout:
+        print(f"[qg]   coverage run stderr: {run_result.stderr[:500]}", file=__import__("sys").stderr)
 
-    result = subprocess.run(
+    report_result = subprocess.run(
         [sys.executable, "-m", "coverage", "report",
-         f"--data-file={data_file}"],
+         f"--data-file={data_file}", f"--rcfile={rcfile}"],
         capture_output=True,
         text=True,
         cwd=REPO_ROOT,
-        env=run_env,
     )
 
-    # Parseia a linha TOTAL: "TOTAL   1234   200    84%"
-    for line in result.stdout.splitlines():
+    for line in report_result.stdout.splitlines():
         m = re.match(r"^TOTAL\s+\d+\s+\d+\s+(\d+)%", line)
         if m:
             return float(m.group(1))
 
-    # Fallback: tenta --format=total (coverage >= 7.3)
-    result2 = subprocess.run(
-        [sys.executable, "-m", "coverage", "report",
-         f"--data-file={data_file}", "--format=total"],
-        capture_output=True,
-        text=True,
-        cwd=REPO_ROOT,
-        env=run_env,
-    )
-    try:
-        return float(result2.stdout.strip())
-    except ValueError:
-        return 0.0
+    if report_result.stderr:
+        print(f"[qg]   coverage report stderr: {report_result.stderr[:500]}", file=__import__("sys").stderr)
+
+    return 0.0
 
 
 def collect_largest_file() -> tuple[int, str]:
