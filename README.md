@@ -44,7 +44,7 @@ prumo setup --workspace /caminho/da/pasta
 | Antigravity (Gemini) | `.agent/skills/` | symlinks criados; smoke pendente |
 | Codex CLI | plugin marketplace | via plugin (filesystem por projeto em investigação) |
 
-> **Nota de segurança:** os comandos de instalação acima apontam pra branch `main` (mutável). Pra instalação verificável, use uma tag específica: `bash <(curl -fsSL https://raw.githubusercontent.com/tharso/prumo/v5.3.0/scripts/prumo_runtime_install.sh)`, substituindo `v5.3.0` pela versão desejada.
+> **Nota de segurança:** os comandos de instalação acima apontam pra branch `main` (mutável). Pra instalação verificável, use uma tag específica: `bash <(curl -fsSL https://raw.githubusercontent.com/tharso/prumo/v5.4.0/scripts/prumo_runtime_install.sh)`, substituindo `v5.4.0` pela versão desejada.
 
 Para atualizar: `prumo update`. Para reparar workspace: `prumo repair --workspace .`
 
@@ -152,7 +152,7 @@ prumo migrate-skills --workspace /caminho/do/workspace
 
 ## Versão
 
-`5.3.0`
+`5.4.0`
 
 ## Licença
 

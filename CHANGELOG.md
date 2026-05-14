@@ -4,7 +4,7 @@ Este arquivo registra mudanças públicas do produto Prumo.
 
 O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamento semântico.
 
-## [Unreleased]
+## [5.4.0] - 2026-05-14
 
 ### Added
 - **Discovery de skills sem plugin** (#90) — `CLAUDE.md`, `AGENTS.md` e `AGENT.md` agora contêm tabela dinâmica de skills gerada a partir de `.prumo/skills/*/SKILL.md`. Qualquer host que leia esses wrappers descobre as skills sem depender de plugin registry. Mini-parser de frontmatter YAML (sem PyYAML) extrai name + description com suporte a block scalars (`>`, `>-`, `|+`). `repair` atualiza wrappers quando dispatch muda, mesmo sem drift de versão. Wrappers pré-#90 sem managed block são substituídos sem duplicação. Pipe (`|`) em conteúdo é escapado na tabela. 16 testes em `test_skills_dispatch.py`.
