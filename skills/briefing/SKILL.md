@@ -22,7 +22,9 @@ O procedimento completo está nos módulos. Aqui só tem o mapa de onde cada coi
 2. Leia `.prumo/system/PRUMO-CORE.md`.
 3. Leia o módulo canônico:
    - `skills/prumo/references/modules/briefing-procedure.md`
-4. Quando disponíveis, carregue também:
+4. Se `Inbox4Mobile/` existir no workspace, leia também:
+   - `skills/prumo/references/modules/inbox-processing.md`
+5. Quando disponíveis, carregue também:
    - `skills/prumo/references/modules/load-policy.md`
    - `skills/prumo/references/modules/version-update.md`
    - `skills/prumo/references/modules/interaction-format.md`

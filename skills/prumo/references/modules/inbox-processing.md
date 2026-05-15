@@ -16,13 +16,14 @@ Vale para:
 
 ### Estágio A: triagem leve
 
-1. Se houver shell, regenerar:
+1. **Inventário real**: listar os arquivos em `Inbox4Mobile/` (excluindo `_preview-index.json`, `_processed.json`, `inbox-preview.html`). Comparar com `_processed.json`. Qualquer arquivo que não esteja lá com `status: "processed"` é item novo. Não confiar no `_preview-index.json` como fonte de verdade — ele pode estar stale.
+2. Se houver shell, regenerar:
    - `Inbox4Mobile/inbox-preview.html`
    - `Inbox4Mobile/_preview-index.json`
    - usando os paths válidos definidos em `runtime-paths.md`
-2. Se não houver shell, produzir fallback textual equivalente.
-3. Se `_preview-index.json` existir, o agente DEVE linkar `inbox-preview.html` antes de abrir qualquer arquivo bruto.
-4. Classificar cada item por:
+3. Se não houver shell, produzir fallback textual equivalente.
+4. Se `_preview-index.json` estiver atualizado, linkar `inbox-preview.html` antes de abrir arquivo bruto.
+5. **Para cada item novo**, classificar por:
    - ação: `Responder`, `Ver`, `Sem ação`
    - prioridade: `P1`, `P2`, `P3`
    - motivo objetivo

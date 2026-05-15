@@ -59,13 +59,16 @@ Não persistir estado de briefing entre sessões. A janela temporal de email é 
 
 ## Passo 4: canais de entrada
 
-### Inbox4Mobile
+### Inbox4Mobile (obrigatório quando a pasta existir)
 
-Se houver `Inbox4Mobile/`, delegar a triagem para:
+Se `Inbox4Mobile/` existir no workspace:
 
-- `skills/prumo/references/modules/inbox-processing.md`
+1. **Listar os arquivos da pasta** (excluindo `_preview-index.json`, `_processed.json`, `inbox-preview.html`).
+2. **Comparar com `_processed.json`**: qualquer arquivo que não esteja listado lá com `status: "processed"` é item novo e não processado.
+3. **Se houver itens novos: ler `skills/prumo/references/modules/inbox-processing.md` e executar a triagem.** Não basta linkar o preview — o módulo precisa ser lido e o procedimento executado.
+4. Se não houver itens novos, apenas mencionar "Inbox4Mobile: N itens, todos já processados" e seguir.
 
-Esse módulo é a fonte canônica de preview, commit, `_processed.json`, deleção e roteamento.
+Não pular este passo. Não tratar `_preview-index.json` como substituto da checagem real. O index pode estar stale — a verdade está no filesystem comparado com `_processed.json`.
 
 ### Email e calendário via MCP direto
 
@@ -163,7 +166,7 @@ Entregar em uma resposta única, numerada de 1 a N:
 2. Agenda do dia, consolidada por conta quando aplicável.
 3. Emails curados (Camadas 1, 2 e 3 aplicadas), com classificação Responder/Ver/Sem ação e prioridade P1/P2/P3.
 4. Pendências vivas de `PAUTA.md` (quente, em andamento, agendado).
-5. Link para `Inbox4Mobile/inbox-preview.html` quando `_preview-index.json` existir. Na primeira resposta do briefing é proibido abrir arquivos brutos de `Inbox4Mobile/*`; preferir sempre `_preview-index.json`.
+5. Inbox4Mobile: se houver itens novos (detectados no Passo 4), apresentar a contagem e a triagem. Linkar `inbox-preview.html` quando o preview estiver atualizado. Na primeira resposta do briefing, não despejar conteúdo bruto dos arquivos — preferir resumo numerado com classificação. **Este item é sobre formato de apresentação. A triagem real acontece no Passo 4 — não pular o Passo 4 por causa deste item.**
 
 Depois da lista numerada, entregar a proposta do dia em uma linha curta e oferecer opções respondíveis:
 
