@@ -55,6 +55,8 @@ Antes do panorama, comparar a versão local usando o módulo `version-update.md`
 1. Ler `PAUTA.md`.
 2. Ler `INBOX.md`.
 
+Ao ler a PAUTA, aplicar o filtro de cobrança: itens com marker `| cobrar: DD/MM` só são elegíveis para o briefing quando a data é hoje, ontem (véspera) ou passada (atrasado). Itens com cobrança para daqui a 2+ dias ficam de fora do briefing — o objetivo é não cobrar antes da hora. Itens sem marker aparecem sempre. Marker ambíguo ou não-parseável: fail-open (mostrar o item).
+
 Não persistir estado de briefing entre sessões. A janela temporal de email é fixa em 24h (ver Passo 4).
 
 ## Passo 4: canais de entrada
@@ -165,7 +167,7 @@ Entregar em uma resposta única, numerada de 1 a N:
 1. Abertura com data correta no fuso do usuário.
 2. Agenda do dia, consolidada por conta quando aplicável.
 3. Emails curados (Camadas 1, 2 e 3 aplicadas), com classificação Responder/Ver/Sem ação e prioridade P1/P2/P3.
-4. Pendências vivas de `PAUTA.md` (quente, em andamento, agendado).
+4. Pendências vivas de `PAUTA.md` (quente, em andamento, agendado), **respeitando o marker `| cobrar: DD/MM`**. Item com marker de cobrança só aparece no briefing quando falta no máximo 1 dia para a data (véspera ou dia). Itens com cobrança no passado (atrasados) sempre aparecem. Item sem marker aparece sempre. Marker mal formado ou ambíguo: mostrar o item (fail-open, melhor ruído que perda silenciosa).
 5. Inbox4Mobile: se houver itens novos (detectados no Passo 4), apresentar a contagem e a triagem. Linkar `inbox-preview.html` quando o preview estiver atualizado. Na primeira resposta do briefing, não despejar conteúdo bruto dos arquivos — preferir resumo numerado com classificação. **Este item é sobre formato de apresentação. A triagem real acontece no Passo 4 — não pular o Passo 4 por causa deste item.**
 
 Depois da lista numerada, entregar a proposta do dia em uma linha curta e oferecer opções respondíveis:

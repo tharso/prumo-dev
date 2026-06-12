@@ -4,6 +4,11 @@ Este arquivo registra mudanças públicas do produto Prumo.
 
 O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamento semântico.
 
+## [Unreleased]
+
+### Added
+- **Filtro de cobrança no briefing** (#91) — itens da `PAUTA.md` com marker `| cobrar: DD/MM` só entram no briefing quando a data é hoje, véspera ou passada (atrasado sempre aparece). Item sem marker aparece sempre. Marker malformado ou ambíguo: fail-open (mostrar o item — melhor ruído que perda silenciosa). Instrução no módulo `briefing-procedure.md` (Passo 3 e item 4 da entrega).
+
 ## [5.4.0] - 2026-05-14
 
 ### Added
