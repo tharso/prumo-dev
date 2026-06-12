@@ -9,6 +9,9 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 ### Added
 - **Filtro de cobrança no briefing** (#91) — itens da `PAUTA.md` com marker `| cobrar: DD/MM` só entram no briefing quando a data é hoje, véspera ou passada (atrasado sempre aparece). Item sem marker aparece sempre. Marker malformado ou ambíguo: fail-open (mostrar o item — melhor ruído que perda silenciosa). Instrução no módulo `briefing-procedure.md` (Passo 3 e item 4 da entrega).
 
+### Changed
+- **Kickoff em workspace fresh independe de briefing prévio** (#63) — `build_daily_actions` agora oferece a ação `kickoff` como primeira opção sempre que o workspace é fresh, mesmo que já tenha havido briefing no dia. Antes, workspace fresh com briefing já registrado caía em "organizar o dia" sobre um workspace vazio — exatamente o anti-padrão que a #63 quer eliminar da primeira experiência. 8 testes novos em `test_daily_operator.py` (primeira cobertura direta de `build_daily_actions` e `is_fresh_workspace`).
+
 ## [5.4.0] - 2026-05-14
 
 ### Added

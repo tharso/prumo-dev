@@ -408,7 +408,7 @@ def build_daily_actions(
     if overview.get("core_outdated"):
         register(suggest_core_alignment_action(workspace, overview))
 
-    if not has_briefed_today and fresh_workspace:
+    if fresh_workspace:
         kickoff_contract = kickoff_contract_payload(workspace)
         register(
             host_prompt_action(
@@ -528,8 +528,10 @@ def build_daily_actions(
     order: list[str] = []
     if "repair" in actions_by_id:
         order.append("repair")
-    if not has_briefed_today:
+    if "kickoff" in actions_by_id:
         order.extend(["kickoff", "briefing", "continue", "process-inbox", "organize-day"])
+    elif not has_briefed_today:
+        order.extend(["briefing", "kickoff", "continue", "process-inbox", "organize-day"])
     elif continue_item:
         order.extend(["continue", "process-inbox", "organize-day", "briefing"])
     elif inbox_count:
