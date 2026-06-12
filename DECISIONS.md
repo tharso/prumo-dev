@@ -19,6 +19,7 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 | `briefing`            | 2026-04-14 (Google Drive snapshots), 2026-04-21 (#69 despacho)                            |
 | `personalization`     | 2026-04-21 (tharso-voice)                                                                 |
 | `code-quality`        | 2026-05-06 (quality-gate)                                                                 |
+| `touchpoint`          | 2026-05-18 (landing page sync)                                                            |
 
 ## Vocabulário controlado de tópicos
 
@@ -34,6 +35,7 @@ Lista inicial. Tópico novo entra após justificativa explícita na entrada que 
 - `integrations` — Gmail, Calendar, MCPs externos, snapshots, conectores.
 - `briefing` — fluxo do briefing matinal e seus módulos.
 - `personalization` — skills/conteúdo específico de um usuário (não distribuído).
+- `touchpoint` — pontos de contato com o usuário final fora do produto (landing page, docs públicas, README do repo público). Sincronização entre produto e superfície externa.
 
 ## Formato das entradas
 
@@ -252,3 +254,30 @@ Todos leem a mesma fonte canonica: `skills/` + `runtime/prumo_runtime/`. Zero di
 **Alternativas consideradas:**
 - Usar apenas ADRs → rejeitado, ADRs documentam decisoes pontuais mas nao dao instrucoes operacionais.
 - Colocar regras no README → rejeitado, README e pra humanos entenderem o projeto, nao pra agentes operarem.
+
+---
+
+## 2026-05-18 — Sincronização obrigatória entre produto e landing page (prumo.me)
+
+**Tópicos:** touchpoint, governance
+**Issues relacionadas:** #63 (ortogonal — durante teste de first experience, ficou evidente que produto e página precisam andar juntos).
+**Relações com decisões anteriores:** nenhuma identificada após consulta ao índice temático. Tópico `touchpoint` é novo — introduzido porque nenhum tópico existente cobre a relação produto ↔ superfície externa voltada ao usuário final. `distribution` cobre como o produto chega ao usuário (marketplace, repo, pip), mas não cobre a comunicação pública (landing page, filosofia, instruções de instalação visíveis).
+
+**Contexto:** Durante o teste da issue #63 (first experience), ao simular o caminho completo de um usuário novo (prumo.me → curl → setup → host), ficou claro que mudanças no produto (comandos, fluxo de instalação, filosofia) podem desincronizar silenciosamente da landing page. O usuário final vê prumo.me primeiro — se a página promete algo que o produto não entrega mais, a primeira experiência quebra antes de começar.
+
+**Decisão:** Toda mudança no produto que afete usabilidade, comandos, fluxo de instalação ou filosofia deve ser verificada contra prumo.me. Se a página não reflete a realidade do produto, ajustar antes de considerar a mudança concluída. Isso inclui:
+- Mudança de comandos de instalação ou setup
+- Alteração de pré-requisitos (hosts suportados, versões)
+- Evolução da proposta de valor ou filosofia do produto
+- Mudança no fluxo de onboarding
+
+Referências operacionais:
+- Landing page: https://prumo.me
+- Repo: `tharso/prumo_landing-page` (Vercel auto-deploy)
+- Local: `/Users/tharsovieira/Documents/DailyLife/Projetos/Prumo_LandingPage`
+
+Regra correspondente adicionada ao `CLAUDE.md` na seção de governança.
+
+**Alternativas consideradas:**
+- Checar só em releases → rejeitado, mudanças incrementais na main já podem desincronizar antes de um release formal.
+- Automatizar via CI → considerado para o futuro, mas hoje o volume de mudanças não justifica. A regra manual no CLAUDE.md garante que agentes e humanos lembrem.

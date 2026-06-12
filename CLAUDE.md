@@ -81,6 +81,7 @@ Isso vale apenas para commits onde o agente *efetivamente redige* — código, m
 - Bugs triviais e refactors pequenos (< 3 arquivos, sem mudança de comportamento): pode executar direto.
 - Qualquer mudança que altere a experiência do usuário final do Prumo: precisa de aprovação.
 - Qualquer mudança em `plugin.json`, `marketplace.json` ou `pyproject.toml`: precisa de aprovação.
+- **Touchpoint sync (prumo.me):** toda mudança que afete usabilidade, comandos, fluxo de instalação ou filosofia do produto deve ser verificada contra a landing page em https://prumo.me. Se a página não reflete a realidade do produto, ajustar antes de considerar a mudança concluída. Repo: `tharso/prumo_landing-page` (Vercel auto-deploy). Local: `/Users/tharsovieira/Documents/DailyLife/Projetos/Prumo_LandingPage`. Ver DECISIONS.md 2026-05-18.
 
 ### Quality gate e baseline (`scripts/baseline.json`)
 
