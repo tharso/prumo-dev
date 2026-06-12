@@ -42,7 +42,7 @@ prumo setup --workspace /caminho/da/pasta
 | Claude Code | `.claude/skills/` | symlinks criados; discovery por host validado em uso |
 | Cowork | `.claude/skills/` | symlinks criados; discovery por host validado em uso |
 | Antigravity (Gemini) | `.agent/skills/` | symlinks criados; smoke pendente |
-| Codex CLI | plugin marketplace | via plugin (filesystem por projeto em investigação) |
+| Codex CLI | plugin marketplace | validado em 12/06/2026 (marketplace add + install via TUI `/plugins`) |
 
 > **Nota de segurança:** os comandos de instalação acima apontam pra branch `main` (mutável). Pra instalação verificável, use uma tag específica: `bash <(curl -fsSL https://raw.githubusercontent.com/tharso/prumo/v5.4.0/scripts/prumo_runtime_install.sh)`, substituindo `v5.4.0` pela versão desejada.
 
@@ -63,8 +63,9 @@ claude plugin install prumo@prumo
 
 ```bash
 codex plugin marketplace add https://github.com/tharso/prumo.git
-codex plugin install prumo
 ```
+
+Depois, dentro do Codex: `/plugins` → selecionar **prumo** → Install. (A partir do codex-cli 0.125 a instalação acontece no TUI; não existe mais `codex plugin install`.)
 
 **Antigravity (Gemini)** — script standalone para ambientes sem runtime:
 
