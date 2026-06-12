@@ -30,6 +30,11 @@ trab/
 # Oficina interna de desenvolvimento (handover, reviews e aprendizado local)
 .workbench/
 
+# Artefatos locais de agente e de ambiente Python (não versionar)
+.claude/
+.venv/
+uv.lock
+
 # Arquivo morto do desenvolvimento (histórico preservado, fora do produto)
 dev-archive/
 

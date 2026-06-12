@@ -7,7 +7,7 @@ Sistema de organização de vida pessoal com IA. Transforma o Claude (ou qualque
 - **Runtime:** Python 3.11+ (`runtime/prumo_runtime/`), empacotado via hatchling
 - **Skills:** Markdown com referências cruzadas (`skills/`)
 - **Scripts operacionais:** Bash e Python (`scripts/`)
-- **Testes:** unittest (Python) + smoke tests (Bash)
+- **Testes:** unittest (Python) + jobs de smoke no CI (instalação via scripts Bash/PowerShell e wheel)
 - **CI:** GitHub Actions (Ubuntu, macOS, Windows)
 - **Distribuição:** marketplace do Cowork via `marketplace.json` + `plugin.json`
 - **Repo:** https://github.com/tharso/prumo (público, MIT)
@@ -27,7 +27,6 @@ runtime/             ← runtime Python (CLI local)
   prumo_runtime/     ← código do runtime
   tests/             ← unit tests
 scripts/             ← scripts de operação e distribuição
-  tests/             ← smoke tests
 plugin.json          ← manifesto do plugin (aponta pra skills/)
 marketplace.json     ← registro no marketplace do Cowork
 pyproject.toml       ← empacotamento Python do runtime
