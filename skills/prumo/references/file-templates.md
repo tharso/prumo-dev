@@ -24,7 +24,6 @@
 │   ├── REGISTRO.md
 │   ├── IDEIAS.md
 │   ├── Agente/
-│   │   ├── INDEX.md       ← índice do contexto modular
 │   │   ├── PERFIL.md      ← config pessoal (áreas, tom, lembretes)
 │   │   └── PESSOAS.md
 │   ├── Referencias/
@@ -159,27 +158,6 @@ _Adicione pessoas conforme forem aparecendo nas interações._
 ## Follow-ups pendentes
 
 _Quem precisa de resposta, retorno, ou atenção._
-
---- FIM ---
-
----
-
-## Prumo/Agente/INDEX.md
-
---- INÍCIO ---
-
-# Índice de contexto
-
-> Porta modular do contexto vivo do usuário.
-> Este diretório concentra o que muda comportamento. Não é almoxarifado de entulho narrativo.
-
-## Onde procurar o quê
-
-1. `Prumo/Agente/PERFIL.md`: configuração pessoal (áreas, tom, lembretes)
-2. `Prumo/Agente/PESSOAS.md`: pessoas-chave e pendências de relacionamento
-3. `Prumo/PAUTA.md`: pendência viva
-4. `Prumo/INBOX.md`: captura ainda não processada
-5. `Prumo/REGISTRO.md`: trilha do que já aconteceu
 
 --- FIM ---
 

@@ -66,12 +66,9 @@ class TemplateAdapterTests(unittest.TestCase):
         self.assertIn("candidatos", rendered.lower())
         self.assertIn("22/03/2026", rendered)
 
-    def test_agente_index_can_point_to_nested_core_path(self) -> None:
-        rendered = templates.render_agente_index(
-            "Batata",
-            "America/Sao_Paulo",
-            "09:00",
-            "30/03/2026",
-            core_path=".prumo/system/PRUMO-CORE.md",
-        )
-        self.assertIn("`.prumo/system/PRUMO-CORE.md`", rendered)
+    def test_agente_index_tombstone_points_to_agent_md(self) -> None:
+        rendered = templates.render_agente_index_tombstone()
+        self.assertIn("aposentado", rendered.lower())
+        self.assertIn("Prumo/AGENT.md", rendered)
+        # O tombstone não pode reanunciar o contrato de identidade legado.
+        self.assertNotIn("- Nome preferido:", rendered)

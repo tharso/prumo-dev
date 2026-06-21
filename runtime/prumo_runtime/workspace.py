@@ -19,13 +19,13 @@ from prumo_runtime.constants import (
     SCHEMA_VERSION,
     authorial_files_for,
     derived_files_for,
-    directories_for,
     generated_files_for,
     repo_root_from,
 )
 from prumo_runtime.capabilities import runtime_capabilities
 from prumo_runtime import templates
 from prumo_runtime.workspace_paths import workspace_paths
+from prumo_runtime.identity import infer_user_name
 
 
 def now_iso(timezone_name: str) -> str:
@@ -186,13 +186,6 @@ def render_files(config: WorkspaceConfig) -> dict[str, str]:
             core_path=core_relative,
             state_path=state_relative,
             skills_path=paths.relative(paths.skills_root) + "/" if paths.nested_layout else None,
-        ),
-        paths.relative(paths.agent_index): templates.render_agente_index(
-            user_name=config.user_name,
-            timezone_name=config.timezone_name,
-            briefing_time=config.briefing_time,
-            setup_date=setup_date,
-            core_path=core_relative,
         ),
         paths.relative(paths.agente_root / "PESSOAS.md"): templates.render_people_md(),
         paths.relative(paths.agente_root / "SAUDE.md"): templates.render_health_md(),
@@ -492,45 +485,18 @@ def detect_missing(workspace: Path) -> dict[str, list[str]]:
         "authorial": list(authorial_files_for(workspace)),
         "derived": list(derived_files_for(workspace)),
     }
+    # O Agente/INDEX.md foi aposentado (Fase 2 #97). Schemas antigos ainda
+    # podem listá-lo como autoral; sua ausência não é "missing".
+    paths = workspace_paths(workspace)
+    legacy_index = paths.relative(paths.agent_index)
     missing = {"generated": [], "authorial": [], "derived": []}
     for group in ("generated", "authorial", "derived"):
         for relative in files.get(group, []):
+            if group == "authorial" and relative == legacy_index:
+                continue
             if not (workspace / relative).exists():
                 missing[group].append(relative)
     return missing
-
-
-def infer_user_name(workspace: Path) -> str | None:
-    schema = read_schema(workspace)
-    if schema.get("user_name"):
-        return str(schema["user_name"])
-    index_path = workspace_paths(workspace).agent_index
-    if not index_path.exists():
-        return None
-    for line in index_path.read_text(encoding="utf-8").splitlines():
-        if line.startswith("- Nome preferido:"):
-            return line.split(":", 1)[1].strip()
-    return None
-
-
-def infer_user_name_from_legacy_claude(workspace: Path) -> str | None:
-    claude_path = workspace_paths(workspace).wrappers["CLAUDE.md"]
-    if not claude_path.exists():
-        return None
-    text = claude_path.read_text(encoding="utf-8")
-    for line in text.splitlines():
-        stripped = line.strip()
-        if stripped.lower().startswith("- nome preferido:"):
-            return stripped.split(":", 1)[1].strip()
-        if stripped.lower().startswith("nome preferido:"):
-            return stripped.split(":", 1)[1].strip()
-    for line in text.splitlines():
-        stripped = line.strip()
-        if stripped.startswith("# Prumo") and "—" in stripped:
-            candidate = stripped.split("—", 1)[1].strip()
-            if candidate:
-                return candidate
-    return None
 
 
 def infer_agent_name(workspace: Path) -> str:
@@ -625,6 +591,28 @@ def remove_if_empty(path: Path) -> None:
         path.rmdir()
 
 
+def convert_legacy_index_to_tombstone(
+    workspace: Path,
+    index_path: Path,
+    *,
+    stamp: str,
+    backed_up: list[str],
+    overwritten: list[str],
+) -> None:
+    """Converte um `Agente/INDEX.md` legado em tombstone, com backup do original.
+
+    A identidade já deve ter sido extraída antes da chamada
+    (ver `run_migrate` / `infer_user_name`).
+    """
+    if not index_path.exists():
+        return
+    relative = str(index_path.relative_to(workspace))
+    copy_to_backup(index_path, backup_path_for(workspace, relative, stamp))
+    backed_up.append(relative)
+    index_path.write_text(templates.render_agente_index_tombstone(), encoding="utf-8")
+    overwritten.append(relative)
+
+
 def migrate_legacy_workspace(config: WorkspaceConfig) -> dict[str, list[str] | str]:
     if infer_layout_mode(config.workspace) == "nested":
         raise WorkspaceError(
@@ -683,6 +671,16 @@ def migrate_legacy_workspace(config: WorkspaceConfig) -> dict[str, list[str] | s
             backed_up=backed_up,
             moved=moved,
         )
+
+    # Aposenta o INDEX.md legado já movido: vira tombstone apontando o AGENT.md.
+    # A identidade já foi extraída antes (run_migrate / infer_user_name).
+    convert_legacy_index_to_tombstone(
+        config.workspace,
+        nested_paths.agent_index,
+        stamp=stamp,
+        backed_up=backed_up,
+        overwritten=overwritten,
+    )
 
     for relative in ("AGENT.md", "CLAUDE.md", "AGENTS.md", "PRUMO-CORE.md"):
         target = config.workspace / relative

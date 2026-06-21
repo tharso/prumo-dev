@@ -34,7 +34,6 @@
 │   ├── REGISTRO.md
 │   ├── IDEIAS.md
 │   ├── Agente/
-│   │   ├── INDEX.md
 │   │   ├── PERFIL.md
 │   │   └── PESSOAS.md
 │   ├── Referencias/
