@@ -17,13 +17,13 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from prumo_runtime.identity import infer_user_name
 from prumo_runtime.workspace import (
     WorkspaceConfig,
     WorkspaceError,
     build_config_from_existing,
     create_missing_files,
     ensure_directories,
-    infer_user_name,
     install_skills,
 )
 from prumo_runtime.workspace_paths import workspace_paths

@@ -3,11 +3,10 @@ from __future__ import annotations
 from pathlib import Path
 
 from prumo_runtime.constants import DEFAULT_AGENT_NAME, DEFAULT_BRIEFING_TIME, DEFAULT_TIMEZONE
+from prumo_runtime.identity import infer_user_name, infer_user_name_from_legacy_claude
 from prumo_runtime.workspace import (
     WorkspaceConfig,
     ensure_workspace_exists,
-    infer_user_name,
-    infer_user_name_from_legacy_claude,
     install_custom_readme,
     install_skills,
     migrate_briefing_state_to_last_briefing,
