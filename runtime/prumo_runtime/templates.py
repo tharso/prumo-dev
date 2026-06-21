@@ -104,7 +104,7 @@ def render_agent_md(
         )
     reading_order = "\n".join(opening_reads)
 
-    on_demand_items = ["- `Agente/INDEX.md` e `Agente/PERFIL.md` quando o playbook precisar de contexto pessoal."]
+    on_demand_items = ["- `Agente/PERFIL.md` e `Agente/PESSOAS.md` quando o playbook precisar de contexto pessoal."]
     if skills_path:
         on_demand_items.append(
             "- `PAUTA.md` integral, `INBOX.md`, `REGISTRO.md` quando a intenção exigir (briefing, curadoria de email, revisão semanal, etc.)."
@@ -119,17 +119,22 @@ def render_agent_md(
         on_demand_items.append(f"- `{core_path}` — Parte 2 e módulos operacionais conforme necessidade.")
     on_demand_section = "\n".join(on_demand_items)
 
+    logs_path = state_path.replace("state", "logs")
     map_items = [
-        "- `Agente/`: contexto modular do usuário",
+        "- `Agente/`: contexto modular do usuário (perfil, pessoas)",
         "- `PAUTA.md`: estado vivo e pendências",
         "- `INBOX.md`: itens ainda não processados",
         "- `REGISTRO.md`: rastro do que aconteceu",
+        "- `IDEIAS.md`: ideias sem ação imediata",
+        "- `Referencias/`: material de referência",
+        "- `Inbox4Mobile/`: captura mobile",
     ]
     if skills_path:
         map_items.append(f"- `{skills_path}`: skills do Prumo (fallback quando CLI não existe)")
     map_items.extend([
         f"- `{core_path}`: regras do motor e guardrails do sistema",
         f"- `{state_path}`: estado técnico e metadados do runtime",
+        f"- `{logs_path}`: registros de revisão",
     ])
     workspace_map = "\n".join(map_items)
 
@@ -156,6 +161,8 @@ Fora disso, abertura não abre mais nada. A saudação vem proativa, com 2-4 op�
 {on_demand_section}
 
 ## Mapa do workspace
+
+> Fonte canônica de navegação do workspace. Se outra árvore divergir desta, esta prevalece.
 
 {workspace_map}
 

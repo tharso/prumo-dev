@@ -56,13 +56,15 @@ Fora disso, abertura não abre mais nada. A saudação vem proativa, com 2-4 op�
 
 ## Leitura sob demanda (conforme a intenção)
 
-- `Prumo/Agente/INDEX.md` e `Prumo/Agente/PERFIL.md` quando o playbook precisar de contexto pessoal.
+- `Prumo/Agente/PERFIL.md` e `Prumo/Agente/PESSOAS.md` quando o playbook precisar de contexto pessoal.
 - `Prumo/PAUTA.md` integral, `Prumo/INBOX.md`, `Prumo/REGISTRO.md` quando a intenção exigir (briefing, curadoria de email, revisão semanal, etc.).
 - `.prumo/system/PRUMO-CORE.md` — Parte 2 (playbooks operacionais) e demais módulos da tabela em `prumo-core.md`.
 
 ## Mapa do workspace
 
-- `Prumo/Agente/`: contexto modular do usuário (perfil, pessoas, índice)
+> Fonte canônica de navegação do workspace. Se outra árvore divergir desta (ex: a "Estrutura do workspace" do PRUMO-CORE), esta prevalece.
+
+- `Prumo/Agente/`: contexto modular do usuário (perfil, pessoas)
 - `Prumo/PAUTA.md`: estado vivo e pendências
 - `Prumo/INBOX.md`: itens ainda não processados
 - `Prumo/REGISTRO.md`: rastro do que aconteceu

@@ -4,11 +4,13 @@
 > Copiar o conteúdo entre as marcações `--- INÍCIO ---` e `--- FIM ---`.
 >
 > **Estrutura de workspace v2 (2026-04):** Raiz é território do usuário com ponteiros.
-> `Prumo/` contém dados operacionais + skills. `.prumo/` contém infraestrutura do sistema.
+> `Prumo/` contém dados operacionais. `.prumo/` contém infraestrutura do sistema (skills, state, system).
 
 ---
 
 ## Estrutura de workspace
+
+> Árvore física dos arquivos gerados. Para navegação — onde cada coisa mora — a fonte canônica é o `## Mapa do workspace` do `Prumo/AGENT.md`.
 
 ```text
 [Workspace]/
@@ -28,10 +30,10 @@
 │   ├── Referencias/
 │   │   ├── INDICE.md
 │   │   └── EMAIL-CURADORIA.md  ← regras aprendidas de curadoria de email
-│   ├── Inbox4Mobile/
-│   │   └── _processed.json
-│   └── skills/            ← cópia das skills do repo (portáveis)
+│   └── Inbox4Mobile/
+│       └── _processed.json
 └── .prumo/
+    ├── skills/            ← cópia das skills do repo (portáveis, fallback)
     ├── state/
     │   ├── agent-lock.json
     │   └── archive/
