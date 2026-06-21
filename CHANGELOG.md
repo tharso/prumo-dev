@@ -6,11 +6,14 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.5.0] - 2026-06-21
+
 ### Added
 - **Filtro de cobrança no briefing** (#91) — itens da `PAUTA.md` com marker `| cobrar: DD/MM` só entram no briefing quando a data é hoje, véspera ou passada (atrasado sempre aparece). Item sem marker aparece sempre. Marker malformado ou ambíguo: fail-open (mostrar o item — melhor ruído que perda silenciosa). Instrução no módulo `briefing-procedure.md` (Passo 3 e item 4 da entrega).
 
 ### Changed
 - **Kickoff em workspace fresh independe de briefing prévio** (#63) — `build_daily_actions` agora oferece a ação `kickoff` como primeira opção sempre que o workspace é fresh, mesmo que já tenha havido briefing no dia. Antes, workspace fresh com briefing já registrado caía em "organizar o dia" sobre um workspace vazio — exatamente o anti-padrão que a #63 quer eliminar da primeira experiência. 8 testes novos em `test_daily_operator.py` (primeira cobertura direta de `build_daily_actions` e `is_fresh_workspace`).
+- **Consolidação dos mapas do workspace e aposentadoria do `Agente/INDEX.md`** (#97) — o `## Mapa do workspace` do `AGENT.md` vira a fonte canônica única de navegação. O `Agente/INDEX.md` foi aposentado: sai da leitura recomendada e da faxina, e o runtime para de gerá-lo (identidade resolve por schema → `AGENT.md` → INDEX legado). Workspaces antigos preservam o arquivo como tombstone com backup na migração. Corrige o drift `Prumo/skills/` → `.prumo/skills/` (#77), completa o `runtime-file-governance.md` e extrai `identity.py`. +20 testes.
 
 ## [5.4.0] - 2026-05-14
 
