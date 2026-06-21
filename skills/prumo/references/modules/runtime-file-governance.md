@@ -66,6 +66,50 @@ Mora aqui:
 
 Histórico não deve disputar atenção com configuração viva.
 
+### `INBOX.md`
+
+Mora aqui:
+
+1. captura crua ainda não triada;
+2. dump rápido que ainda não virou pendência, ideia ou referência.
+
+Inbox é estação de passagem, não depósito. Item processado sai do `INBOX.md` para o destino certo (`PAUTA.md`, `IDEIAS.md`, `Referencias/`) e o trânsito vira linha no `REGISTRO.md`.
+
+### `IDEIAS.md`
+
+Mora aqui:
+
+1. ideia sem próxima ação concreta;
+2. possibilidade que ainda não merece prazo nem cobrança.
+
+Se ganhar próxima ação datada, migra para `PAUTA.md`. Ideia não é pendência — não disputa espaço na pauta.
+
+### `Agente/PERFIL.md` e `Agente/PESSOAS.md`
+
+Mora aqui:
+
+1. `PERFIL.md`: configuração pessoal estável (áreas de vida, tom, lembretes recorrentes);
+2. `PESSOAS.md`: pessoas-chave e pendências de relacionamento.
+
+Contexto pessoal que muda comportamento. Não é pendência datada (isso é `PAUTA.md`) nem trilha de auditoria (isso é `REGISTRO.md`).
+
+### `Referencias/`
+
+Mora aqui:
+
+1. material de referência salvo (artigos, PDFs, links, relatórios);
+2. `INDICE.md`: catálogo do que foi salvo, com keywords.
+
+Conteúdo para consultar depois, não para agir agora. Item acionável não é referência — vira pendência.
+
+### `Inbox4Mobile/`
+
+Mora aqui:
+
+1. captura mobile bruta (texto, foto, áudio, link) ainda não processada.
+
+Equivale ao `INBOX.md` para o canal mobile. Item processado é roteado para o destino certo e marcado em `_processed.json`; o original sai pelo fluxo de inbox, com registro.
+
 ## Sinais de drift
 
 Os seguintes sinais indicam que conteúdo pode estar no arquivo errado:

@@ -65,28 +65,7 @@ vivo. O registro é a trilha.
 
 **Reportar:** "Movi X itens concluídos da pauta pro registro."
 
-### 3. Agente/INDEX.md — atualização automática
-
-O INDEX.md é o mapa de onde cada tipo de informação mora. Se alguém
-criou um arquivo novo em `Agente/` ou deletou um antigo, o índice
-precisa refletir isso.
-
-**Verificar:**
-- Listar arquivos em `Agente/`
-- Comparar com o que está no INDEX.md
-
-**Executar se houver diferença:**
-- Atualizar a seção "Onde procurar o quê" com a lista atual
-- Para cada arquivo: nome, descrição curta (inferida do cabeçalho), última modificação
-- Manter o formato existente do INDEX.md
-
-**Não fazer:**
-- Não reescrever seções que não são sobre a lista de arquivos
-- Não inventar descrições — usar o cabeçalho do arquivo como base
-
-**Reportar:** "INDEX.md atualizado. {N} arquivo(s) novo(s), {M} removido(s)."
-
-### 4. Referencias/INDICE.md — catálogo atualizado
+### 3. Referencias/INDICE.md — catálogo atualizado
 
 A biblioteca de referências precisa de índice. Sem índice, o usuário
 pergunta "onde guardei aquele artigo?" e Prumo não sabe.
@@ -105,7 +84,7 @@ pergunta "onde guardei aquele artigo?" e Prumo não sabe.
 
 **Reportar:** "INDICE.md atualizado com X referência(s) nova(s)."
 
-### 5. Inbox4Mobile — limpeza de processados
+### 4. Inbox4Mobile — limpeza de processados
 
 Itens que já foram processados e estão no `_processed.json` há mais
 de 14 dias são lixo residual.
@@ -128,7 +107,6 @@ Depois de rodar tudo, montar um resumo curto. Exemplo:
 > Faxina feita.
 > - Registro: arquivei 23 itens antigos (jan–fev)
 > - Pauta: movi 3 itens concluídos pro registro
-> - INDEX.md: atualizado (1 arquivo novo)
 > - Inbox: limpei 5 entradas processadas
 >
 > Nada mais precisava de atenção.

@@ -20,6 +20,8 @@
 
 ## Estrutura do workspace
 
+> Árvore física do workspace. Para navegação (onde cada coisa mora), a fonte canônica é o `## Mapa do workspace` do `Prumo/AGENT.md`; para o contrato de gravação (onde salvar cada tipo de conteúdo), ver `runtime-file-governance.md`.
+
 ```text
 [Workspace]/
 ├── CLAUDE.md              ← ponteiro → Prumo/AGENT.md
@@ -36,9 +38,9 @@
 │   │   ├── PERFIL.md
 │   │   └── PESSOAS.md
 │   ├── Referencias/
-│   ├── Inbox4Mobile/
-│   └── skills/            ← cópia das skills do repo
+│   └── Inbox4Mobile/
 └── .prumo/
+    ├── skills/            ← cópia das skills do repo (fallback quando o CLI não existe)
     ├── state/
     ├── system/
     │   └── PRUMO-CORE.md  ← este arquivo
