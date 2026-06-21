@@ -269,41 +269,23 @@ Agente: **{agent_name}**
 """
 
 
-def render_agente_index(
-    user_name: str,
-    timezone_name: str,
-    briefing_time: str,
-    setup_date: str,
-    *,
-    core_path: str = "PRUMO-CORE.md",
-) -> str:
-    return f"""# Índice de contexto — {user_name}
+def render_agente_index_tombstone() -> str:
+    """Conteúdo de aposentadoria do `Agente/INDEX.md` (Fase 2 da #97).
 
-> Este diretório concentra o contexto vivo do usuário.
-> Se uma informação não muda o comportamento do agente nem merece memória durável, ela não ganha aluguel aqui.
+    Preservado por compatibilidade em workspaces migrados; aponta a navegação
+    canônica para o `AGENT.md`. Sem o contrato de identidade legado
+    (`- Nome preferido:`), que agora vive no `AGENT.md`/schema.
+    """
+    return """# Índice de contexto (aposentado)
 
-## Identidade
+> Este arquivo foi preservado por compatibilidade com workspaces antigos.
+> A navegação canônica do workspace agora mora em `Prumo/AGENT.md`.
 
-- Nome preferido: {user_name}
-- Fuso: {timezone_name}
-- Briefing padrão: {briefing_time}
-- Setup inicial: {setup_date}
+Para contexto pessoal, use os módulos em `Prumo/Agente/` — cada um se
+descreve no próprio cabeçalho:
 
-## Onde procurar o quê
-
-1. `PESSOAS.md`: pessoas-chave, contexto, dados e pendências de relacionamento
-2. `SAUDE.md`: saúde, exames, médicos, histórico relevante
-3. `ROTINA.md`: rituais, hábitos e estrutura semanal
-4. `INFRA.md`: domínios, contas, infraestrutura e sistemas
-5. `PROJETOS.md`: frentes de trabalho, produtos, clientes e projetos
-6. `RELACOES.md`: família, amigos, dinâmica relacional e assuntos delicados
-
-## Jurisdição
-
-- Pendência viva: `PAUTA.md`
-- Item não processado: `INBOX.md`
-- Histórico e trilha do que já foi resolvido: `REGISTRO.md`
-- Regras do sistema: `{core_path}`
+- `PERFIL.md` e `PESSOAS.md`: configuração pessoal e pessoas-chave
+- `SAUDE.md`, `ROTINA.md`, `INFRA.md`, `PROJETOS.md`, `RELACOES.md`: contexto temático
 """
 
 

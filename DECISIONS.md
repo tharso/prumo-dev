@@ -8,13 +8,13 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 
 | Tópico                | Entradas                                                                                  |
 |-----------------------|-------------------------------------------------------------------------------------------|
-| `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first), 2026-05-04 (#77)                          |
+| `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first), 2026-05-04 (#77), 2026-06-21 (#97 mapas)  |
 | `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77)  |
 | `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first), 2026-05-06 (quality-gate) |
 | `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist) |
 | `dispatch-bootstrap`  | 2026-04-21 (#69 despacho)                                                                 |
 | `multiagent-coord`    | 2026-04-20 (#68 HANDOVER)                                                                 |
-| `documentation`       | 2026-04-14 (CLAUDE.md)                                                                    |
+| `documentation`       | 2026-04-14 (CLAUDE.md), 2026-06-21 (#97 mapas)                                            |
 | `integrations`        | 2026-04-14 (Google Drive snapshots)                                                       |
 | `briefing`            | 2026-04-14 (Google Drive snapshots), 2026-04-21 (#69 despacho)                            |
 | `personalization`     | 2026-04-21 (tharso-voice)                                                                 |
@@ -56,6 +56,34 @@ A partir de 2026-05-04 (#78), toda entrada nova segue o formato:
 Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões anteriores" (introduzido na #78). Quando um conflito retrospectivo for descoberto, anotar a relação na entrada nova que o resolve — não reescrever entradas antigas.
 
 - `code-quality` — métricas de qualidade do codebase, quality gate, baseline.
+
+---
+
+## 2026-06-21 — Consolidação dos mapas do workspace e aposentadoria do `Agente/INDEX.md` (#97)
+
+**Tópicos:** workspace-layout, documentation
+**Issues relacionadas:** #97 (executa esta decisão), #98 (PR da Fase 1).
+**Relações com decisões anteriores:**
+- **Mantém e reforça:** 2026-04-21 (#69 — despacho por intenção). Aposentar o INDEX como mapa reduz leitura especulativa na abertura, no espírito da #69.
+- **Estende:** 2026-04-20 (#68 — tríade de limpeza). A faxina deixa de manter o INDEX (trabalho morto removido); seu escopo (`Prumo/`) permanece.
+- **Complementa:** 2026-05-04 (#77 — skills em `.prumo/`). A Fase 1 corrigiu o drift `Prumo/skills/` → `.prumo/skills/` que ainda existia nas árvores de `prumo-core.md` e `file-templates.md`.
+- Nenhuma decisão revogada.
+
+**Contexto:** O workspace mantinha representações sobrepostas de "onde mora o quê": o `## Mapa do workspace` do `AGENT.md`, a `## Estrutura do workspace` do `PRUMO-CORE`, o `## Onde procurar o quê` do `Agente/INDEX.md`, mais uma árvore em `file-templates.md` e a versão dinâmica do runtime. Risco de drift (mapas discordando) e manutenção morta (a faxina reconciliava um INDEX que nenhum fluxo de skill lia). O INDEX não era órfão no runtime: era gerado e consumido como fallback de identidade. Revisão cruzada com o Codex (6 rodadas via CLI, registradas na #97) confirmou diagnóstico, escopo e implementação.
+
+**Decisão:** O `## Mapa do workspace` do `Prumo/AGENT.md` é a fonte canônica única de navegação. O `Agente/INDEX.md` é aposentado em duas fases:
+- **Fase 1 (#98):** remoção da leitura recomendada (skill + runtime) e do escopo da faxina; papéis declarados (navegação × árvore física × governança de gravação); correção do drift #77; `runtime-file-governance.md` completado com os destinos faltantes.
+- **Fase 2:** o runtime para de gerar o INDEX; a identidade passa a resolver pela cadeia schema → `AGENT.md` → INDEX legado (compat); a migração converte o INDEX existente em **tombstone** apontando o `AGENT.md`, com backup e identidade extraída antes; o fluxo de skill (`file-templates.md`) também para de criá-lo.
+
+Workspaces existentes preservam o INDEX como tombstone (nunca deletado no escuro). A propriedade `agent_index` permanece como path de compatibilidade. Os módulos de `Agente/` (`PESSOAS`, `SAUDE`, `ROTINA`, `INFRA`, `PROJETOS`, `RELACOES`) são auto-descritivos (cabeçalho próprio) e dispensam índice dedicado.
+
+**Alternativas consideradas:**
+- *Criar um "mapa-mestre" unificado (Rota A)* → rejeitado: adicionaria um quarto artefato e mais superfície de drift — o oposto do objetivo.
+- *Fundir navegação e governança de gravação num só documento* → rejeitado: faria mal as duas coisas. Mantidos separados (`AGENT.md` × `runtime-file-governance.md`).
+- *Deletar o INDEX em workspaces existentes* → rejeitado: tombstone com backup preserva trabalho do usuário e auditabilidade.
+- *Manter o INDEX só no runtime para identidade* → rejeitado: a identidade migra para o `AGENT.md` (que já carrega o nome), eliminando a dependência.
+
+**Touchpoint (prumo.me):** avaliado. A aposentadoria do INDEX é interna (arquivo que o usuário não abre; nenhum comando, fluxo de instalação ou filosofia muda). Sem impacto na landing.
 
 ---
 

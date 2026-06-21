@@ -66,7 +66,10 @@ class MigrateCommandTests(unittest.TestCase):
             self.assertTrue((workspace / "Prumo" / "INBOX.md").exists())
             self.assertTrue((workspace / "Prumo" / "REGISTRO.md").exists())
             self.assertTrue((workspace / "Prumo" / "IDEIAS.md").exists())
-            self.assertTrue((workspace / "Prumo" / "Agente" / "INDEX.md").exists())
+            tombstone = (workspace / "Prumo" / "Agente" / "INDEX.md").read_text(encoding="utf-8")
+            self.assertIn("aposentado", tombstone.lower())
+            self.assertIn("Prumo/AGENT.md", tombstone)
+            self.assertNotIn("- Nome preferido:", tombstone)
             self.assertTrue((workspace / "Prumo" / "Agente" / "LEGADO-CLAUDE.md").exists())
             self.assertTrue((workspace / ".prumo" / "state" / "workspace-schema.json").exists())
             self.assertTrue((workspace / ".prumo" / "state" / "last-briefing.json").exists())
@@ -94,4 +97,42 @@ class MigrateCommandTests(unittest.TestCase):
             rendered = buffer.getvalue()
             self.assertIn("migrado para o layout novo", rendered)
             self.assertIn("Arquivos e diretórios movidos", rendered)
+
+    def test_migrate_infers_identity_from_legacy_index_and_tombstones_with_backup(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = Path(tmpdir) / "DailyLife"
+            (workspace / "Agente").mkdir(parents=True, exist_ok=True)
+            (workspace / "_state").mkdir(parents=True, exist_ok=True)
+            (workspace / "PAUTA.md").write_text("# Pauta\n\n- Antiga\n", encoding="utf-8")
+            (workspace / "Agente" / "INDEX.md").write_text(
+                "# Índice antigo\n\n## Identidade\n\n- Nome preferido: Batata Legado\n",
+                encoding="utf-8",
+            )
+            # Schema legado SEM user_name: a identidade tem que vir do INDEX.
+            (workspace / "_state" / "workspace-schema.json").write_text(
+                json.dumps({"timezone": "America/Sao_Paulo", "briefing_time": "09:00"}),
+                encoding="utf-8",
+            )
+
+            buffer = io.StringIO()
+            with redirect_stdout(buffer):
+                rc = main(["migrate", "--workspace", str(workspace)])
+
+            self.assertEqual(rc, 0)
+            schema = json.loads(
+                (workspace / ".prumo" / "state" / "workspace-schema.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(schema["user_name"], "Batata Legado")
+
+            tombstone = (workspace / "Prumo" / "Agente" / "INDEX.md").read_text(encoding="utf-8")
+            self.assertIn("aposentado", tombstone.lower())
+            self.assertNotIn("Batata Legado", tombstone)
+
+            backups = list(
+                (workspace / ".prumo" / "backups" / "runtime-migrate").glob(
+                    "*/Prumo__Agente__INDEX.md"
+                )
+            )
+            self.assertTrue(backups, "backup específico do INDEX convertido deve existir")
+            self.assertIn("Batata Legado", backups[0].read_text(encoding="utf-8"))
 
