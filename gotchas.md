@@ -4,6 +4,14 @@ Padroes de erro registrados durante o desenvolvimento. Agentes devem consultar e
 
 ---
 
+## Mudança em skills/ ou runtime/ exige bump de versão
+
+Toda mudança de comportamento em `skills/` ou `runtime/prumo_runtime/` precisa subir a versão nas 11 fontes canônicas (VERSION, pyproject.toml, runtime/__init__.py, plugin.json ×3, marketplace.json ×2, `prumo_version` do core, `module_version` de dispatch.md e load-policy.md) + entrada no CHANGELOG.
+
+`test_version_sync` garante que as 11 estão *em sync entre si*, mas NÃO força o bump quando o código muda — então dá pra mergear uma mudança de comportamento com tudo em sync na versão antiga (aconteceu na #97, PRs #98/#99). Sem o bump, o preflight de update do briefing compara `prumo_version` do workspace com o `VERSION` remoto, vê que são iguais, e **nenhum usuário recebe a atualização ao abrir o Prumo**.
+
+Regra do Tharso (2026-06-21): "sempre que o sistema é atualizado, a versão tb precisa ser, e os usuários precisam receber assim que abrirem". Guard de CI: `scripts/version_bump_guard.py` (falha o PR se `skills/` ou `runtime/prumo_runtime/` mudaram sem bump de VERSION).
+
 ## cowork-plugin/ foi removido
 
 `cowork-plugin/` foi deletado em 2026-04-14. Se encontrar referencia a `cowork-plugin/skills/`, `cowork-plugin/scripts/`, ou `cowork-plugin/VERSION`, e residuo. A fonte canonica e `skills/`.

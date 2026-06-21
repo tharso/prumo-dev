@@ -57,3 +57,4 @@ scripts/*
 !scripts/prumo_antigravity_install.sh
 !scripts/quality_gate.py
 !scripts/baseline.json
+!scripts/version_bump_guard.py
