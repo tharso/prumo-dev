@@ -151,8 +151,9 @@ class StartCommandTests(unittest.TestCase):
             self.assertEqual(rc, 0)
             rendered = buffer.getvalue()
             self.assertIn("Ainda não há briefing registrado hoje", rendered)
-            self.assertIn("Rodar o briefing agora", rendered)
-            self.assertIn("prumo briefing", rendered)
+            self.assertIn("Rodar o briefing do dia", rendered)
+            # Modelo A: a ação briefing aponta para a curadoria rica, não roda o cartão.
+            self.assertIn("briefing-procedure.md", rendered)
 
     def test_fresh_nested_workspace_prefers_kickoff_over_empty_briefing(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -381,6 +382,11 @@ class StartCommandTests(unittest.TestCase):
                 payload["adapter_hints"]["briefing_structured_entrypoint"]["shell_command"],
                 f"prumo briefing --workspace {workspace.resolve()} --format json",
             )
+            # Modelo A (#104): briefing explícito é a curadoria rica (host-prompt), não o cartão shell.
+            briefing_entry = payload["adapter_hints"]["briefing_entrypoint"]
+            self.assertEqual(briefing_entry["kind"], "host-prompt")
+            self.assertIn("briefing-procedure.md", briefing_entry["host_prompt"])
+            self.assertNotIn("shell_command", briefing_entry)
             self.assertIn("canonical_refs", payload["adapter_hints"])
             self.assertTrue(payload["adapter_hints"]["canonical_refs"]["briefing_procedure"].endswith("modules/briefing-procedure.md"))
             self.assertTrue(payload["adapter_hints"]["canonical_refs"]["inbox_processing"].endswith("modules/inbox-processing.md"))
@@ -398,8 +404,9 @@ class StartCommandTests(unittest.TestCase):
             self.assertTrue(payload["capabilities"]["daily_operation"]["workflow_scaffolding"])
             self.assertTrue(payload["actions"])
             self.assertEqual(payload["actions"][0]["id"], "briefing")
-            self.assertEqual(payload["actions"][0]["kind"], "shell")
-            self.assertIn("shell_command", payload["actions"][0])
+            # Modelo A (#104): briefing é host-prompt (cede a vez à curadoria rica), não shell.
+            self.assertEqual(payload["actions"][0]["kind"], "host-prompt")
+            self.assertIn("host_prompt", payload["actions"][0])
             continue_action = next(action for action in payload["actions"] if action["id"] == "continue")
             self.assertEqual(continue_action["kind"], "host-prompt")
             self.assertIn("documentation_targets", continue_action)

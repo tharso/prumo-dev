@@ -12,11 +12,11 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 | `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir) |
 | `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first), 2026-05-06 (quality-gate) |
 | `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist) |
-| `dispatch-bootstrap`  | 2026-04-21 (#69 despacho)                                                                 |
+| `dispatch-bootstrap`  | 2026-04-21 (#69 despacho), 2026-06-23 (#104 briefing rico)                                |
 | `multiagent-coord`    | 2026-04-20 (#68 HANDOVER)                                                                 |
 | `documentation`       | 2026-04-14 (CLAUDE.md), 2026-06-21 (#97 mapas)                                            |
 | `integrations`        | 2026-04-14 (Google Drive snapshots)                                                       |
-| `briefing`            | 2026-04-14 (Google Drive snapshots), 2026-04-21 (#69 despacho), 2026-06-23 (#102 decidir) |
+| `briefing`            | 2026-04-14 (Google Drive snapshots), 2026-04-21 (#69 despacho), 2026-06-23 (#102 decidir), 2026-06-23 (#104 briefing rico) |
 | `personalization`     | 2026-04-21 (tharso-voice)                                                                 |
 | `code-quality`        | 2026-05-06 (quality-gate)                                                                 |
 | `touchpoint`          | 2026-05-18 (landing page sync)                                                            |
@@ -56,6 +56,31 @@ A partir de 2026-05-04 (#78), toda entrada nova segue o formato:
 Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões anteriores" (introduzido na #78). Quando um conflito retrospectivo for descoberto, anotar a relação na entrada nova que o resolve — não reescrever entradas antigas.
 
 - `code-quality` — métricas de qualidade do codebase, quality gate, baseline.
+
+---
+
+## 2026-06-23 — O briefing é a curadoria rica, não o cartão do runtime (#104, Modelo A, Fatia 1)
+
+**Tópicos:** briefing, dispatch-bootstrap
+**Issues relacionadas:** #104 (executa esta decisão, Fatia 1). Fatias seguintes: renomear copy da CLI, semente `--format json` read-only, ajustar o script do bridge.
+**Relações com decisões anteriores:**
+- **Refina:** 2026-06-23 (#102 — decidir / "Fase 2: runtime gera decidir"). A "Fase 2" original (runtime gera o HTML da decidir) foi **descartada por construir na altitude errada** — o runtime não cura email/agenda. Em vez disso: o runtime **semeia** (painel local determinístico), o **agente rico gera** o briefing e a decidir. A decidir continua alcançável, agora pelo caminho certo.
+- **Refina (não revoga):** o bridge experimental (`cowork-runtime-bridge.md`). A regra "rodar o runtime, devolver a saída e encerrar" passa a valer **só para a prévia** (`start` / invocação curta), **não para o briefing**. O "runtime-first" para a prévia continua.
+- **Estende e obedece melhor:** 2026-04-21 (#69 — despacho por intenção). O `dispatch.md` já dizia que a intenção "briefing" carrega `briefing-procedure.md` e que abertura não é briefing; esta decisão alinha o runtime a isso.
+- **Mantém integralmente:** o contrato `interaction-format` (panorama numerado único) e os ASSERTs do core.
+
+**Contexto:** Investigando o produto (não o workspace de ninguém), descobriu-se que no caminho feliz do runtime o briefing dava um **beco sem saída**: o cartão do runtime (`prumo briefing`) entrega um resumo enxuto local e encerra; a ação "briefing" do menu rodava `prumo briefing` de novo (circular); e a curadoria rica de email/agenda (`briefing-procedure.md`) — coração do "separa, lembra e cobra" — só rodava quando o bridge falhava. Ou seja: **quando o runtime funcionava, o briefing rico nunca acontecia**, e o Prumo perdia metade do valor. Design fechado com o Tharso (Modelo A) e revisado pelo Codex (review de design + de implementação na #104).
+
+**Decisão (Modelo A):** dois gestos distintos. A **prévia** (`prumo start` / `prumo:abrir`) é o retrato rápido local + opções; entrega e encerra. O **briefing** é sempre a curadoria rica do agente (email/agenda via MCP quando disponível → panorama numerado único → `decidir` se 6+ itens). A ação `briefing` do `build_daily_actions` vira `host_prompt_action` que cede a vez ao agente (conserta a prévia e o cartão de uma vez). `prumo briefing --format json` segue como **painel local/semente**; o texto deixa de ser anunciado como "briefing explícito". A marcação "briefing feito hoje" passa a ser `prumo briefing --mark-done` ao final da curadoria. **Sem MCP**, o briefing entrega o panorama local e declara email/agenda indisponíveis (governança multi-cliente), nunca caindo de volta no cartão.
+
+**Fatia 1 (esta):** ação → host-prompt, flag `--mark-done`, adapter_hints, docs (`briefing/SKILL.md`, `briefing-procedure.md`, `cowork-runtime-bridge.md`) e templates, + testes. **Depois:** renomear copy da CLI, tornar a semente `--format json` read-only, mexer no script do bridge.
+
+**Alternativas consideradas:**
+- *Runtime gera a decidir (Fase 2 original)* → rejeitado: altitude errada (runtime não cura email/agenda); construía uma decidir parcial ao custo de sistema.
+- *Briefing como um gesto só, com "aprofundar" (Modelo B)* → rejeitado: mantém "briefing" significando duas coisas; menos limpo que dois gestos nomeados.
+- *Manter o cartão enxuto e só linkar o rico* → rejeitado: continua deixando o rico como caminho secundário; o valor central ficava órfão.
+
+**Touchpoint (prumo.me):** a reavaliar na fatia final — com o briefing rico de volta ao centro (e a decidir alcançável), pode reforçar a narrativa da landing.
 
 ---
 

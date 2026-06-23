@@ -92,8 +92,13 @@ def _build_adapter_hints(workspace: Path) -> dict[str, object]:
             "shell_command": "prumo",
         },
         "briefing_entrypoint": {
-            "kind": "shell",
-            "shell_command": f"prumo briefing --workspace {workspace_str}",
+            "kind": "host-prompt",
+            "host_prompt": (
+                "Conduza o briefing rico do Prumo (skills/prumo/references/modules/briefing-procedure.md): "
+                "cure email/agenda via MCP quando disponível, entregue panorama numerado único e ofereça "
+                "`decidir` se houver 6+ itens. Não devolva o cartão do runtime nem rode `prumo start`. "
+                f"Ao final, registre com `prumo briefing --workspace {workspace_str} --mark-done`."
+            ),
         },
         "briefing_structured_entrypoint": {
             "kind": "shell",
@@ -109,7 +114,7 @@ def _build_adapter_hints(workspace: Path) -> dict[str, object]:
         },
         "behavior": {
             "short_invocation": "run preferred_entrypoint",
-            "explicit_briefing": "run briefing_entrypoint",
+            "explicit_briefing": "run briefing_entrypoint (the rich, agent-led briefing); never deliver the runtime card as the briefing",
             "structured_briefing": "prefer briefing_structured_entrypoint when the host needs machine-readable briefing output",
             "inbox_preview": "use inbox_preview_entrypoint when triaging Inbox4Mobile or when the host needs the inbox preview instead of inventing it",
             "structured_actions": "prefer structured_entrypoint and obey actions[].kind",

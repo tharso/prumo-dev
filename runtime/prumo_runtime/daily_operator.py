@@ -431,13 +431,20 @@ def build_daily_actions(
         actions_by_id["kickoff"]["initial_question"] = kickoff_contract["initial_invitation"]
     else:
         register(
-            shell_action(
+            host_prompt_action(
                 "briefing",
-                "Rodar o briefing agora" if not has_briefed_today else "Rodar o briefing de novo",
-                f"prumo briefing --workspace {workspace_str}",
+                "Rodar o briefing do dia" if not has_briefed_today else "Rodar o briefing de novo",
+                (
+                    "Conduza o briefing rico do Prumo seguindo "
+                    "`skills/prumo/references/modules/briefing-procedure.md`: cure email e agenda via MCP "
+                    "quando disponível (sem MCP, entregue o panorama local e avise em uma linha que "
+                    "email/agenda estão indisponíveis), entregue um panorama numerado único e ofereça a "
+                    "`decidir` se houver 6+ itens acionáveis. Não responda com o cartão do runtime nem rode "
+                    f"`prumo start`. Ao final, registre o dia com `prumo briefing --workspace {workspace_str} --mark-done`."
+                ),
                 category="briefing",
                 documentation_targets=[docs["pauta"], docs["inbox"], docs["registro"]],
-                outcome="Panorama atualizado com proposta do dia e contexto suficiente para seguir trabalhando.",
+                outcome="Briefing rico entregue: email/agenda curados (quando há MCP), panorama numerado único e decidir quando aplicável.",
                 why_now=(
                     "Ainda não houve briefing hoje; antes de acelerar, convém olhar o painel do carro."
                     if not has_briefed_today

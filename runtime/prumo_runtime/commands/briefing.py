@@ -287,6 +287,14 @@ def build_briefing_payload(workspace: Path) -> dict:
 
 def run_briefing(args) -> int:
     workspace = Path(args.workspace).expanduser().resolve()
+    if getattr(args, "mark_done", False):
+        # Registra o briefing do dia como feito sem montar o painel. Usado ao
+        # final da curadoria rica (o agente marca quando o briefing de verdade
+        # termina, não quando o cartão local é montado).
+        config = build_config_from_existing(workspace)
+        update_last_briefing(workspace, config.timezone_name)
+        print("Briefing do dia registrado.")
+        return 0
     payload = build_briefing_payload(workspace)
     if getattr(args, "format", "text") == "json":
         print(json.dumps(payload, ensure_ascii=False, indent=2))

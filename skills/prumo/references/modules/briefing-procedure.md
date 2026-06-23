@@ -1,6 +1,6 @@
 # Briefing Procedure
 
-> **module_version: 4.21.0**
+> **module_version: 4.22.0**
 >
 > Fonte canônica do procedimento de briefing do Prumo.
 > Se este módulo conflitar com um resumo em `SKILL.md`, este módulo vence.
@@ -22,15 +22,14 @@ Antes de executar o briefing:
 4. Ler `skills/prumo/references/modules/version-update.md`.
 5. Ler `skills/prumo/references/modules/runtime-paths.md` quando houver shell.
 
-## Passo 0: tentar o runtime primeiro
+## Passo 0: o runtime é prévia, não é o briefing
 
-Antes de montar o briefing manualmente:
+O cartão do runtime (`prumo start` / `prumo briefing`) é a **prévia** — um retrato rápido e local (pauta, inbox, próximo movimento). O **briefing** é a curadoria rica deste módulo: email e agenda + panorama numerado único → `decidir`. Os dois não se confundem.
 
-1. Se houver `prumo` no PATH e o workspace expuser `AGENT.md` + `.prumo/state/workspace-schema.json`, rodar `prumo briefing --workspace <path>`.
-2. Se o runtime devolver saída com código `0`, entregar essa saída como briefing final e encerrar.
-3. Se o runtime falhar, registrar em uma linha curta e seguir para o fluxo manual abaixo.
-
-O objetivo aqui não é heroísmo. Quando o runtime responde, ele é o caminho determinístico e a skill só serve como contrato. Quando não responde, o agente cumpre o contrato manualmente.
+1. **Nunca** entregar a saída do runtime como briefing final nem encerrar nela. Entregar o cartão e parar é beco sem saída — o usuário pediu o briefing, não a prévia.
+2. Conduzir a curadoria rica abaixo. `prumo briefing --workspace <path> --format json` pode ser lido como **painel local** (semente determinística da parte local), mas a resposta é sempre o panorama numerado rico.
+3. **Sem MCP de email/agenda:** entregar o panorama com o que há localmente (pauta, inbox, calendário se acessível) e **declarar em uma linha** que email e/ou agenda estão indisponíveis. Nunca cair de volta no cartão da prévia como "solução".
+4. Ao final do briefing, registrar o dia: `prumo briefing --workspace <path> --mark-done` (quando há shell). Isso marca "briefing feito hoje" sem remontar o painel.
 
 ## Passo 1: configuração e data local
 
@@ -197,6 +196,7 @@ Depois do briefing:
 1. Atualizar `PAUTA.md` se algo mudou.
 2. Registrar ações no `REGISTRO.md`.
 3. Manter `Inbox4Mobile/_processed.json` sincronizado quando houver fallback sem deleção física.
+4. Registrar o briefing do dia: `prumo briefing --workspace <path> --mark-done` (quando há shell). Marca "briefing feito hoje" — sem isso, a prévia segue recomendando o briefing como se não tivesse acontecido.
 
 ## Passo 7: brain dump obrigatório quando a pauta estiver vazia
 

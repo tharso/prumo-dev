@@ -19,8 +19,8 @@ def _render_workspace_runtime_rules() -> str:
 3. Se um arquivo modular faltar, usar `prumo repair` antes de inventar realidade.
 4. Se o usuário chamar "Prumo" cru, "ei prumo" ou equivalente curto, consulte a tabela de skills disponíveis e leia o SKILL.md da skill `abrir`. Quando shell e runtime estiverem disponíveis, rodar `prumo` no diretório do workspace é atalho equivalente.
 5. Se `prumo` não estiver no PATH do host, tente o caminho absoluto de instalação do runtime neste sistema antes de concluir que ele sumiu.
-6. Se o pedido for briefing explícito, o host pode rodar `prumo briefing --workspace .`.
-7. Se precisar de briefing estruturado, pode rodar `prumo briefing --workspace . --format json`.
+6. Se o pedido for briefing explícito, conduza a curadoria rica (skill `briefing` / `briefing-procedure.md`): email/agenda + panorama numerado único → `decidir`. O cartão do runtime é a prévia, não o briefing — não encerre nele.
+7. Para o painel local estruturado (semente/backcompat), `prumo briefing --workspace . --format json`.
 8. Se o host conseguir renderizar ações próprias, preferir `prumo start --format json` em vez de reinventar onboarding na unha.
 9. Ao consumir JSON estruturado, o host deve ler `adapter_contract_version`, `workspace_resolution` e `adapter_hints` antes de bancar o esperto.
 10. Em `start` e `briefing` estruturados, o host deve olhar primeiro para `state_flags`, `degradation`, `next_move` e `selection_contract`. A prosa vem depois.
@@ -39,8 +39,8 @@ def _render_workspace_runtime_rules() -> str:
 def _render_wrapper_runtime_rules(*, state_path: str = "_state/") -> str:
     return f"""1. Se o usuário disser "Prumo" cru, "ei prumo" ou equivalente curto, consulte a tabela de skills disponíveis e leia o SKILL.md da skill `abrir`. Quando shell e runtime estiverem disponíveis, rodar `prumo` é atalho equivalente.
 2. Se `prumo` não estiver no PATH do host, tente o caminho absoluto de instalação do runtime neste sistema antes de concluir que ele sumiu.
-3. Se o pedido for briefing explícito, rode `prumo briefing --workspace .`.
-4. Se precisar de briefing estruturado, rode `prumo briefing --workspace . --format json`.
+3. Se o pedido for briefing explícito, conduza a curadoria rica (skill `briefing` / `briefing-procedure.md`); o cartão do runtime é a prévia, não o briefing — não encerre nele.
+4. Para o painel local estruturado (semente/backcompat), `prumo briefing --workspace . --format json`.
 5. Se o host souber trabalhar com JSON, prefira `prumo start --format json`.
 6. Se usar JSON, leia `adapter_hints` e respeite `kind`, `shell_command` e `host_prompt`.
 7. Antes de olhar `message`, leia `state_flags`, `degradation`, `next_move` e `selection_contract`.
