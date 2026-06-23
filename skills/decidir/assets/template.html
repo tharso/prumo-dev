@@ -376,7 +376,8 @@ const CONFIG = {
     suggestion: 'Sugestão',
     options: 'Opções',
     action: 'Ação',
-    requiresNote: 'Esta ação precisa de um detalhe no comentário (ex.: destinatário, data).',
+    requiresNote: 'Esta ação precisa de um detalhe no comentário.',
+    requiresNotePrefix: 'Falta no comentário: ',
     commentPlaceholder: 'Comentário (entra no relatório como instrução)',
     saved: 'salvo ✓',
     generate: 'Copiar respostas',
@@ -402,7 +403,9 @@ const CONFIG = {
 //               actions: [{ key, label, tone, effect, requires? }] }
 //      tones: green|amber|red|blue|purple|slate (use 'red' p/ ação de risco)
 //      requires: texto curto do que o comentário precisa trazer (ex: 'destinatário')
-//      effect: identificador do que o Prumo executa (ex: 'reply','archive','snooze')
+//      effect: token canônico (enum snake_case) do que o Prumo executa — use
+//             exatamente os de references/acoes-allowlist.md (ex: 'draft_reply',
+//             'archive', 'snooze'); o agente lê o `effect` do JSON, não a prosa.
 //   escolha:  { id, sec, type:'escolha', badges?, link?, title, contexto,
 //               proposta?, options:[{ key, label, desc, rec?, effect? }] }
 //
@@ -572,6 +575,7 @@ function updateReqNote(id) {
   const act = fb.status ? actionByKey(p, fb.status) : null;
   const needs = !!(act && act.requires);
   const filled = (fb.comment || '').trim().length > 0;
+  if (needs) note.textContent = `⚑ ${L.requiresNotePrefix}${act.requires}`;
   note.classList.toggle('show', needs && !filled);
 }
 
@@ -602,12 +606,14 @@ function buildReportData() {
       });
     } else {
       const act = fb.status ? actionByKey(p, fb.status) : null;
+      const requires = act && act.requires ? act.requires : null;
       items.push({
         item_id: String(p.id), type: 'despacho',
         action_key: fb.status || null,
         label: act ? act.label : null,
         effect: act && act.effect ? act.effect : null,
-        requires: act && act.requires ? act.requires : null,
+        requires: requires,
+        requires_missing: !!(requires && !comment),
         comment: comment || null,
       });
     }

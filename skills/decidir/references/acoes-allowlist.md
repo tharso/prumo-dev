@@ -4,16 +4,16 @@ O Prumo **seleciona** ações desta lista — não inventa verbos. Ações incon
 
 Cada ação tem:
 
-- **`key`** — identificador estável (não traduzir; é o que vai no JSON).
+- **`key`** — id do botão (snake_case, não traduzir). É o que o usuário escolhe e o que vai no JSON como `action_key`.
 - **`label`** — o texto do botão (PT, é o que o usuário vê).
-- **`tone`** — cor do botão: `green` (ação positiva/avançar), `amber` (adiar/cautela), `red` (risco/remoção), `blue` (rotear/secundária), `slate` (neutra).
-- **`effect`** — o que o Prumo executa ao receber o relatório.
-- **`requires`** — detalhe que o comentário precisa trazer; se vazio, a ação executa sem detalhe. Marque o botão com `requires` para o usuário ver o ⚑.
+- **`tone`** — cor do botão: `green` (avançar), `amber` (adiar/cautela), `red` (risco/remoção), `blue` (rotear/secundária), `slate` (neutra).
+- **`effect`** — **token canônico (snake_case) do que o Prumo executa** ao receber o relatório. É um enum estável, não prosa — o agente lê o `effect` do JSON e age. Use exatamente os tokens desta tabela; não invente nem descreva em prosa no campo `effect`.
+- **`requires`** — detalhe que o **comentário** precisa trazer (o usuário preenche). Se preenchido, marque o botão (`⚑`) e, ao receber o relatório com `requires_missing`, peça o detalhe antes de executar.
 - **`confirma?`** — se o `effect` precisa de confirmação extra apesar da promessa "executo sem perguntar de novo".
 
 ## Regra de ouro da execução
 
-"Executo sem perguntar de novo" vale para **rascunhar, registrar, marcar visto, virar pauta/tarefa, adiar, arquivar com destino explícito**. **NÃO** vale (confirma antes) para **enviar email/cobrança de fato, recusar/remarcar com terceiros, e qualquer remoção de item de inbox** — o core exige confirmar o plano e registrar no `REGISTRO.md` antes de remover o original. Botão não é procuração vitalícia.
+Tokens `draft_*` produzem **rascunho** (não enviam). "Executo sem perguntar de novo" vale para `draft_*`, registrar, `mark_seen`, `make_task`/`make_reference`/`make_pauta`, `snooze`/`wait_until`/`promote_today`, e `archive` **com destino explícito**. **NÃO** vale (confirma antes) para enviar de fato o que foi rascunhado, `rsvp_decline`/`propose_reschedule` com terceiros, e qualquer remoção de inbox (`archive`/`discard`) — o core exige confirmar o plano e registrar no `REGISTRO.md` antes de remover o original. Botão não é procuração vitalícia.
 
 ## Por tipo
 
@@ -21,21 +21,21 @@ Cada ação tem:
 
 | label | key | tone | effect | requires | confirma? |
 |---|---|---|---|---|---|
-| Responder | `reply` | green | rascunho de resposta (não envia) | o que responder | só se for enviar de fato |
-| Ver/Marcar visto | `mark_seen` | slate | registra ciência; marca lido se possível | — | não |
-| Arquivar | `archive` | slate | arquiva/move processado | destino se arquivo local | sim p/ remoção de inbox/local |
-| Adiar | `snooze` | amber | reagenda retomada (marker `cobrar: DD/MM`) | até quando | não |
-| Delegar | `delegate` | blue | rascunho de delegação (não envia) | destinatário | só se for enviar |
-| Sem ação | `no_action` | slate | registra que não exige ação | — | não |
+| Responder | `reply` | green | `draft_reply` | o que responder | só ao enviar |
+| Ver/Marcar visto | `mark_seen` | slate | `mark_seen` | — | não |
+| Arquivar | `archive` | slate | `archive` | destino se arquivo local | sim p/ inbox/local |
+| Adiar | `snooze` | amber | `snooze` | até quando | não |
+| Delegar | `delegate` | blue | `draft_delegation` | destinatário | só ao enviar |
+| Sem ação | `no_action` | slate | `no_action` | — | não |
 
 ### Email informativo
 
 | label | key | tone | effect | requires | confirma? |
 |---|---|---|---|---|---|
-| Ver/Marcar visto | `mark_seen` | slate | registra ciência | — | não |
-| Rotear p/ leitura | `route_reading` | blue | move/registra em fila de leitura | — | não |
-| Arquivar | `archive` | slate | arquiva | — | não |
-| Sem ação | `no_action` | slate | registra ciência sem promover | — | não |
+| Ver/Marcar visto | `mark_seen` | slate | `mark_seen` | — | não |
+| Rotear p/ leitura | `route_reading` | blue | `route_reading` | — | não |
+| Arquivar | `archive` | slate | `archive` | — | não |
+| Sem ação | `no_action` | slate | `no_action` | — | não |
 
 ### Evento de calendário (do dia, sem RSVP)
 
@@ -43,29 +43,29 @@ O calendário do briefing é "evento do dia", não necessariamente convite. Sem 
 
 | label | key | tone | effect | requires | confirma? |
 |---|---|---|---|---|---|
-| Preparar | `prepare` | green | cria nota/checklist de preparo | o que preparar | não |
-| Virar tarefa | `make_task` | blue | cria item em `PAUTA.md` | — | não |
-| Remarcar | `calendar_reschedule` | amber | propõe novo horário/altera evento | novo horário | sim se há terceiros |
-| Sem ação | `no_action` | slate | registra ciência | — | não |
+| Preparar | `prepare` | green | `prepare` | o que preparar | não |
+| Virar tarefa | `make_task` | blue | `make_task` | — | não |
+| Remarcar | `calendar_reschedule` | amber | `propose_reschedule` | novo horário | sim se há terceiros |
+| Sem ação | `no_action` | slate | `no_action` | — | não |
 
 ### Convite de calendário (com RSVP)
 
 | label | key | tone | effect | requires | confirma? |
 |---|---|---|---|---|---|
-| Confirmar | `calendar_accept` | green | RSVP "sim" | — | não, se o evento exato está no card |
-| Recusar | `calendar_decline` | red | RSVP "não" | motivo se há mensagem | sim se há mensagem aos convidados |
-| Remarcar | `calendar_reschedule` | amber | propõe novo horário | novo horário | sim se há terceiros |
-| Delegar | `delegate` | blue | rascunho de delegação | destinatário | só se for enviar |
+| Confirmar | `calendar_accept` | green | `rsvp_accept` | — | não, se o evento exato está no card |
+| Recusar | `calendar_decline` | red | `rsvp_decline` | motivo se há mensagem | sim se há mensagem aos convidados |
+| Remarcar | `calendar_reschedule` | amber | `propose_reschedule` | novo horário | sim se há terceiros |
+| Delegar | `delegate` | blue | `draft_delegation` | destinatário | só ao enviar |
 
 ### Pendência / cobrança
 
 | label | key | tone | effect | requires | confirma? |
 |---|---|---|---|---|---|
-| Fazer hoje | `do_today` | green | promove para foco de hoje / pauta quente | — | não |
-| Aguardar até | `wait_until` | blue | mantém fora do briefing até a data; seta cobrança | nova data | não |
-| Cobrar | `follow_up` | amber | rascunho de cobrança/follow-up (não envia) | canal e o que pedir | só se for enviar |
-| Delegar | `delegate` | blue | rascunho de delegação | destinatário | só se for enviar |
-| Descartar | `discard` | red | remove da fila ativa | motivo | sim (remoção) |
+| Fazer hoje | `do_today` | green | `promote_today` | — | não |
+| Aguardar até | `wait_until` | blue | `wait_until` | nova data | não |
+| Cobrar | `follow_up` | amber | `draft_follow_up` | canal e o que pedir | só ao enviar |
+| Delegar | `delegate` | blue | `draft_delegation` | destinatário | só ao enviar |
+| Descartar | `discard` | red | `discard` | motivo | sim (remoção) |
 
 ### Item de inbox (conteúdo / arquivo / link)
 
@@ -73,12 +73,16 @@ Inbox4Mobile traz conteúdo, não nota pura. Remoção sempre confirma (ASSERT d
 
 | label | key | tone | effect | requires | confirma? |
 |---|---|---|---|---|---|
-| Rotear p/ leitura | `route_reading` | blue | move/registra em fila de leitura | — | não |
-| Virar referência | `make_reference` | green | guarda como referência no workspace | onde guardar | não |
-| Virar tarefa | `make_task` | blue | cria item em `PAUTA.md` | — | não |
-| Arquivar | `archive` | slate | arquiva o item | — | sim (remoção de inbox) |
-| Descartar | `discard` | red | descarta o item | motivo | sim (remoção de inbox) |
+| Rotear p/ leitura | `route_reading` | blue | `route_reading` | — | não |
+| Virar referência | `make_reference` | green | `save_reference` | onde guardar | não |
+| Virar tarefa | `make_task` | blue | `make_task` | — | não |
+| Arquivar | `archive` | slate | `archive` | — | sim (remoção de inbox) |
+| Descartar | `discard` | red | `discard` | motivo | sim (remoção de inbox) |
 
 ### Decisão entre alternativas
 
-Não é card de despacho — é card `escolha` (A/B/C com texto final e uma `rec: true`). Cada opção pode trazer `effect` para o Prumo executar a escolha (ex.: `focus_acme`).
+Não é card de despacho — é card `escolha` (A/B/C com texto final e uma `rec: true`). Cada opção pode trazer um `effect` próprio para o Prumo executar a escolha (ex.: `focus_acme`); aqui o token é livre porque descreve a decisão específica, não uma ação genérica do catálogo.
+
+## Sobre `key` vs `effect`
+
+`key` é a escolha do usuário (botão); `effect` é o que o Prumo executa. Costumam coincidir, mas divergem quando o botão "esconde" a semântica de máquina — ex.: `Responder` (`key: reply`) produz `effect: draft_reply` (rascunho, não envio). O JSON do relatório carrega os dois; o agente decide pela `effect`.

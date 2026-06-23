@@ -49,7 +49,7 @@ Use `assets/template.html`. A mecânica (estado em localStorage, ações por-car
 1. **Reuse os números do panorama.** No briefing, o item numerado `7` do panorama vira o card de `id: '7'`. O usuário responde "o 7" no mesmo número que viu no chat. Nunca renumerar.
 
 2. **Escolha tipo e ações por item:**
-   - **`despacho`** — a maioria dos itens. Traz `actions: [{key, label, tone, effect, requires?}]`. As ações vêm da **allowlist por tipo** em `references/acoes-allowlist.md` — **selecione de lá, nunca invente verbos**. Só ofereça ações que cabem naquele item (ex.: `Delegar` só com destinatário; `Confirmar/Recusar` só em convite com RSVP, não em evento do dia comum).
+   - **`despacho`** — a maioria dos itens. Traz `actions: [{key, label, tone, effect, requires?}]`. As ações vêm da **allowlist por tipo** em `references/acoes-allowlist.md` — **selecione de lá, nunca invente verbos**. `effect` é o token canônico (snake_case) da allowlist, não prosa. Só ofereça ações que cabem naquele item: `Delegar` traz `requires: 'destinatário'` (o usuário informa no comentário) — não ofereça se não houver a quem delegar; `Confirmar/Recusar` só em convite com RSVP, não em evento do dia comum.
    - **`escolha`** — decisões entre alternativas (foco do dia, qual caminho). Opções A/B/C com **texto final** e uma `rec: true`.
 
 3. **Preencha CONFIG e os placeholders:**
@@ -74,8 +74,8 @@ Entregue com: caminho do arquivo, o que tem dentro (nº de itens, seções), com
 
 Quando o usuário colar o relatório:
 
-1. **Leia o bloco JSON** (`prumo_decidir_report.v1`), não a prosa. Cada item traz `item_id`, `action_key`/`choice_key`, `label`, `effect`, `requires`, `comment`.
-2. **`requires` não satisfeito:** se a ação exige um detalhe (`requires`) e o `comment` não traz (ex.: `Delegar` sem destinatário, `Aguardar até` sem data), **pedir o detalhe antes de executar** — não chutar.
+1. **Leia o bloco JSON** (`prumo_decidir_report.v1`), não a prosa. Cada item de despacho traz `item_id`, `action_key`, `label`, `effect` (token canônico — aja por ele), `requires`, `requires_missing` e `comment`; os de `escolha` trazem `choice_key`, `choice_label`, `effect`.
+2. **`requires_missing: true`:** a ação exige um detalhe (`requires`) que o usuário não preencheu no comentário (ex.: `Delegar` sem destinatário, `Aguardar até` sem data). **Pedir o detalhe antes de executar** — não chutar.
 3. **Execute em camadas — a promessa "executo sem perguntar de novo" tem limite:**
    - **Direto (sem nova confirmação):** rascunhar resposta/cobrança (sem enviar), registrar, marcar visto, virar pauta/tarefa, adiar, arquivar **com destino explícito**.
    - **Confirmar antes de executar:** enviar email ou cobrança de fato, recusar/remarcar evento com terceiros, e **qualquer remoção de item de inbox** (`arquivar`/`descartar`) — o core exige confirmar o plano e registrar no `REGISTRO.md` antes de remover o original (ASSERT). Botão de despacho não é procuração para mandar mensagem ou apagar arquivo sem o usuário ver.

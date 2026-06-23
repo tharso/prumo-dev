@@ -12,9 +12,9 @@ Calibragem de qualidade, não template literal. Os IDs reusam a numeração do p
   title: 'Acme pede retorno sobre o orçamento até hoje',
   contexto: 'Thread aberta ontem 18h. <span class="ref">de: ana@acme.com</span> Pergunta se o prazo de entrega muda com o escopo novo. <span class="q">"conseguimos manter a entrega no dia 30?"</span>',
   actions: [
-    { key:'reply',    label:'Responder', tone:'green', effect:'draft_reply', requires:'o que responder' },
-    { key:'snooze',   label:'Adiar',     tone:'amber', effect:'snooze',      requires:'até quando' },
-    { key:'delegate', label:'Delegar',   tone:'blue',  effect:'delegate',    requires:'destinatário' },
+    { key:'reply',    label:'Responder', tone:'green', effect:'draft_reply',      requires:'o que responder' },
+    { key:'snooze',   label:'Adiar',     tone:'amber', effect:'snooze',           requires:'até quando' },
+    { key:'delegate', label:'Delegar',   tone:'blue',  effect:'draft_delegation', requires:'destinatário' },
     { key:'archive',  label:'Arquivar',  tone:'slate', effect:'archive' },
   ],
   sugestao: 'Confirmar prazo mantido e propor call de 15min se o escopo crescer.'

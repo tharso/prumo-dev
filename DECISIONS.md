@@ -80,7 +80,7 @@ Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões ant
 - *Incluir o runtime na mesma issue* → adiado: expande o blast radius para `runtime/` (mudança de sistema). Fatiado em 2 fases para entregar valor incremental e testável.
 - *Embutir a fonte como base64 no HTML* → rejeitado p/ Fase 1: copiar `Boliand.otf` pra junto do arquivo mantém offline sem inflar o template. Fallback de sistema se a cópia faltar.
 
-**Touchpoint (prumo.me):** a avaliar. Um modo de decisão visual pode virar argumento de produto na landing; verificar antes de considerar a #102 concluída (item no checklist da issue).
+**Touchpoint (prumo.me):** avaliado (2026-06-23). A landing apresenta o briefing como interação em chat ("Você pede o dia. Prumo faz o resto.") e não enumera skills; a `decidir` é aditiva (opcional, acima de 6 itens, com fallback em chat) e não muda instalação, comandos nem filosofia — **sem mudança necessária na Fase 1**. Reavaliar na Fase 2: quando a geração automática pelo runtime tornar o modo visual parte da experiência diária, pode virar argumento de produto na landing.
 
 ---
 
