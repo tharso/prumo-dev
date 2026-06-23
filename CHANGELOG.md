@@ -6,6 +6,14 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.7.0] - 2026-06-23
+
+### Changed
+- **O briefing volta a ser a curadoria rica, não o cartão do runtime** (#104, Fatia 1) — corrige um beco sem saída: no caminho do runtime, a ação "briefing" rodava `prumo briefing` (circular) e a curadoria de email/agenda só acontecia quando o runtime falhava. Agora o cartão do runtime é a **prévia** (retrato rápido local) e o **briefing** é sempre a curadoria rica do agente (email/agenda via MCP + panorama numerado → `decidir`). A ação `briefing` do menu vira `host_prompt_action` que cede a vez ao agente; `prumo start`/`prumo:abrir` seguem entregando a prévia e encerrando. Sem MCP, o briefing entrega o panorama local e declara email/agenda indisponíveis (governança multi-cliente), nunca caindo de volta no cartão. Atualizados `briefing/SKILL.md`, `briefing-procedure.md` (Passo 0 reescrito, anti-loop), `cowork-runtime-bridge.md` (regra `/briefing`) e os templates. +3 testes.
+
+### Added
+- **`prumo briefing --mark-done`** (#104) — registra "briefing feito hoje" sem montar o painel. A curadoria rica marca o dia ao final, em vez de o runtime marcar ao montar o cartão.
+
 ## [5.6.0] - 2026-06-23
 
 ### Added

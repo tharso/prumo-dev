@@ -1,6 +1,6 @@
 # Cowork Runtime Bridge
 
-> **module_version: 4.17.0**
+> **module_version: 4.18.0**
 >
 > Fonte canônica do bridge experimental entre Cowork e o runtime local do Prumo.
 
@@ -45,24 +45,18 @@ Isso vale inclusive para workspace legado. O `start` existe justamente para orie
 
 ## Regra operacional do `/briefing`
 
-Antes de carregar o procedimento legado:
+O briefing é a **curadoria rica** (`briefing-procedure.md`) — email/agenda + panorama numerado único → `decidir`. O cartão do runtime é a **prévia**, não o briefing. Por isso o bridge **não finaliza `/briefing` na saída do runtime**.
 
-1. verificar se existe `AGENT.md` no workspace;
-2. verificar se existe `.prumo/state/workspace-schema.json`;
-3. verificar se há shell;
-4. tentar rodar:
+1. Conduzir o briefing rico do fluxo da skill: curar email/agenda via MCP quando disponível, entregar panorama numerado único e oferecer `decidir` se houver 6+ itens. **Sem MCP**, entregar o panorama local e declarar email/agenda indisponíveis em uma linha.
+2. `python3 <script-resolvido> --workspace <workspace> --command briefing --format json` pode ser lido como **painel local/semente** da parte determinística — mas **nunca** é a resposta final do briefing.
+3. Ao final, registrar o dia: `prumo briefing --workspace <workspace> --mark-done`.
+4. Workspace legado ou sem shell: fluxo manual da skill, não o bridge.
 
-```bash
-python3 <script-resolvido> --workspace <workspace> --command briefing
-```
-
-5. Se o bridge sair com código `0`, devolver a saída como resposta final e encerrar.
-6. Se o bridge sair com código `12` (`bridge-disabled`), seguir silenciosamente para o fluxo legado.
-7. Se o bridge sair com código `13` ou outro erro, avisar em uma linha curta que o runtime experimental falhou e seguir para o fluxo legado.
+A regra "rodar o runtime, devolver a saída e encerrar" continua valendo para a **prévia** (`/prumo`, invocação curta → `start`), nunca para o briefing.
 
 ## Guardrails
 
-1. Não paraphrasear a saída do runtime se o bridge funcionou. Devolver e encerrar.
+1. Na **prévia** (`start`), não paraphrasear a saída do runtime se o bridge funcionou: devolver e encerrar. No **briefing**, o oposto — o runtime é semente, a curadoria rica é a resposta.
 2. Não tratar ausência de bridge como bug fatal.
 3. Não bloquear o briefing por causa do experimento.
 4. Não reimplementar a lógica do runtime dentro do script do bridge.

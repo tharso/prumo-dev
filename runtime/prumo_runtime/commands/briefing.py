@@ -180,8 +180,11 @@ def build_briefing_payload(workspace: Path) -> dict:
 
     preview = load_inbox_preview(workspace, repo_root)
 
+    # Modelo A (#104): montar o painel NÃO marca "briefing feito". O painel é a
+    # prévia/semente, não o briefing — quem marca é a curadoria rica, ao final,
+    # via `prumo briefing --mark-done`. Senão um host que lê a semente (--format
+    # json) marcaria o dia antes da curadoria acontecer.
     migrate_briefing_state_to_last_briefing(workspace)
-    update_last_briefing(workspace, config.timezone_name)
     last_briefing_state = load_json(paths.last_briefing)
     last_briefing_at = str(last_briefing_state.get("at") or "").strip()
     has_briefed_today = same_local_day(last_briefing_at, config.timezone_name)
@@ -287,6 +290,14 @@ def build_briefing_payload(workspace: Path) -> dict:
 
 def run_briefing(args) -> int:
     workspace = Path(args.workspace).expanduser().resolve()
+    if getattr(args, "mark_done", False):
+        # Registra o briefing do dia como feito sem montar o painel. Usado ao
+        # final da curadoria rica (o agente marca quando o briefing de verdade
+        # termina, não quando o cartão local é montado).
+        config = build_config_from_existing(workspace)
+        update_last_briefing(workspace, config.timezone_name)
+        print("Briefing do dia registrado.")
+        return 0
     payload = build_briefing_payload(workspace)
     if getattr(args, "format", "text") == "json":
         print(json.dumps(payload, ensure_ascii=False, indent=2))

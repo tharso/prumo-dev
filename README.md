@@ -153,7 +153,7 @@ prumo migrate-skills --workspace /caminho/do/workspace
 
 ## Versão
 
-`5.6.0`
+`5.7.0`
 
 ## Licença
 

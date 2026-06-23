@@ -88,9 +88,14 @@ def build_parser() -> argparse.ArgumentParser:
     repair.add_argument("--format", choices=["json", "text"], default="text")
     repair.set_defaults(handler=run_repair)
 
-    briefing = subparsers.add_parser("briefing", help="Rodar um briefing local minimo")
+    briefing = subparsers.add_parser("briefing", help="Painel local do dia (seed/backcompat); o briefing rico é conduzido pelo agente")
     briefing.add_argument("--workspace", required=True, help="Caminho do workspace")
     briefing.add_argument("--format", choices=["text", "json"], default="text")
+    briefing.add_argument(
+        "--mark-done",
+        action="store_true",
+        help="Só registra o briefing do dia como feito (não monta o painel). Usado ao final da curadoria rica.",
+    )
     briefing.set_defaults(handler=run_briefing)
 
     update = subparsers.add_parser(

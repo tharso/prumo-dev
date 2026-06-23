@@ -120,6 +120,22 @@ class BuildDailyActionsTests(unittest.TestCase):
             self.assertEqual(ids[0], "briefing")
             self.assertNotIn("kickoff", ids)
 
+    def test_briefing_action_is_host_prompt_to_rich_curation(self) -> None:
+        # Modelo A (#104): a ação briefing cede a vez à curadoria rica (host-prompt),
+        # não roda o cartão do runtime — e não vira loop.
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = Path(tmpdir)
+            _make_nested_workspace(workspace, pauta_hot="Resolver IPTU atrasado")
+            actions = build_daily_actions(workspace, _empty_overview(), has_briefed_today=False)
+            briefing = next(a for a in actions if a["id"] == "briefing")
+            self.assertEqual(briefing["kind"], "host-prompt")
+            self.assertNotIn("shell_command", briefing)
+            prompt = briefing["host_prompt"]
+            self.assertIn("briefing-procedure.md", prompt)
+            self.assertIn("--mark-done", prompt)
+            self.assertIn("decidir", prompt)
+            self.assertIn("Não responda com o cartão do runtime", prompt)
+
     def test_seasoned_workspace_after_briefing_prefers_continuation(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             workspace = Path(tmpdir)
