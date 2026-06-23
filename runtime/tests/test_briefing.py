@@ -18,7 +18,7 @@ from prumo_runtime.commands.briefing import (
 )
 from prumo_runtime import __version__
 from prumo_runtime.platform_support import platform_label
-from prumo_runtime.workspace import workspace_paths
+from prumo_runtime.workspace import now_iso, workspace_paths
 
 
 class BriefingTests(unittest.TestCase):
@@ -48,7 +48,11 @@ class BriefingTests(unittest.TestCase):
                 encoding="utf-8",
             )
             (workspace / "PRUMO-CORE.md").write_text(f"> **prumo_version: {__version__}**\n", encoding="utf-8")
-            (state_dir / "last-briefing.json").write_text('{"at": ""}', encoding="utf-8")
+            # Cenário "já briefado hoje": montar o painel não marca mais (Modelo A),
+            # então a pré-condição precisa ser explícita para `continue` ser o next_move.
+            (state_dir / "last-briefing.json").write_text(
+                json.dumps({"at": now_iso("America/Sao_Paulo")}), encoding="utf-8"
+            )
             payload = build_briefing_payload(workspace)
             self.assertEqual(payload["workspace_path"], str(workspace.resolve()))
             self.assertEqual(payload["adapter_contract_version"], "2026-03-28")
@@ -104,6 +108,39 @@ class BriefingTests(unittest.TestCase):
             marked = json.loads(workspace_paths(workspace).last_briefing.read_text(encoding="utf-8"))
             self.assertTrue(marked.get("at"))
 
+    def test_json_panel_does_not_mark_briefing_done(self) -> None:
+        # Modelo A (#104): ler o painel/semente (`--format json`) NÃO marca o dia.
+        # Só a curadoria rica marca, ao final, via `--mark-done`. Sem isso, um host
+        # que lê a semente marcaria o briefing antes de ele acontecer.
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = Path(tmpdir)
+            state_dir = workspace / "_state"
+            state_dir.mkdir(parents=True, exist_ok=True)
+            (workspace / "PAUTA.md").write_text("# Pauta\n", encoding="utf-8")
+            (workspace / "INBOX.md").write_text("# Inbox\n\n_Inbox limpo._\n", encoding="utf-8")
+            (workspace / "PRUMO-CORE.md").write_text(
+                f"> **prumo_version: {__version__}**\n", encoding="utf-8"
+            )
+            (state_dir / "workspace-schema.json").write_text(
+                json.dumps(
+                    {
+                        "user_name": "Batata",
+                        "agent_name": "Prumo",
+                        "timezone": "America/Sao_Paulo",
+                        "briefing_time": "09:00",
+                        "files": {"generated": [], "authorial": [], "derived": []},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (state_dir / "last-briefing.json").write_text('{"at": ""}', encoding="utf-8")
+            args = Namespace(workspace=str(workspace), format="json")
+            buffer = io.StringIO()
+            with redirect_stdout(buffer):
+                run_briefing(args)
+            after = json.loads(workspace_paths(workspace).last_briefing.read_text(encoding="utf-8"))
+            self.assertEqual(after.get("at"), "")
+
     def test_run_briefing_json_output_uses_structured_payload(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             workspace = Path(tmpdir)
@@ -129,7 +166,9 @@ class BriefingTests(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
-            (state_dir / "last-briefing.json").write_text('{"at": ""}', encoding="utf-8")
+            (state_dir / "last-briefing.json").write_text(
+                json.dumps({"at": now_iso("America/Sao_Paulo")}), encoding="utf-8"
+            )
             args = Namespace(workspace=str(workspace), format="json")
             buffer = io.StringIO()
             with redirect_stdout(buffer):

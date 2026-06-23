@@ -187,7 +187,7 @@ Quando o panorama tiver **6+ itens acionáveis** (conta só item que pede decis�
 - **Como gerar:** seguir `skills/decidir/SKILL.md` (preencher `assets/template.html`, ações da allowlist por tipo, salvar em `.prumo/state/decidir/`, copiar a fonte, offline). O usuário abre no próprio browser, despacha, clica "Copiar respostas" e cola de volta; o Prumo lê o bloco JSON e executa em camadas.
 - **Acoplamento brando.** Se a skill `decidir` não estiver disponível ou a escrita do arquivo falhar, **cair no despacho em chat** — nunca travar o briefing.
 
-> O caminho automático pelo runtime (geração no payload do `prumo briefing`) é fase posterior. Nesta fase, a geração acontece quando o briefing roda pelo caminho de skill/markdown.
+> O runtime **não** gera a `decidir` (descartado na #104: altitude errada — o runtime não cura email/agenda). A `decidir` aparece na curadoria rica conduzida pelo agente; o runtime entrega só a prévia.
 
 ## Passo 6: escrita e fechamento
 

@@ -297,7 +297,7 @@ O usuário pode fazer dump, check-in, pedir cobrança futura ou rodar sanitizaç
 
 ## Observações de runtime
 
-- Com `prumo` no PATH: prefira o CLI (`prumo briefing`, `prumo start`, `prumo repair`) como caminho determinístico.
+- Com `prumo` no PATH: prefira o CLI para o caminho determinístico — `prumo start` (a prévia), `prumo repair`, etc. **Atenção:** `prumo briefing` é o painel local/semente, **não** o briefing — o briefing é a curadoria rica do agente (ver #104). Não encerrar no painel.
 - Sem runtime disponível: o agente executa o procedimento da skill manualmente, com paridade de curadoria e transparência sobre o que não consegue fazer no ambiente.
 - Se o preflight detectar versão nova mas não conseguir aplicar com segurança, informar e seguir. Briefing não vira refém de updater manco.
 
