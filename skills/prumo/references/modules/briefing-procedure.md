@@ -179,6 +179,17 @@ Depois da lista numerada, entregar a proposta do dia em uma linha curta e oferec
 
 A proposta deve considerar deadlines de hoje, blockers, agenda disponível e itens com cobrança elegível hoje.
 
+### Despacho visual (skill `decidir`)
+
+Quando o panorama tiver **6+ itens acionáveis** (conta só item que pede decisão — não evento puramente informativo), oferecer o despacho no formato visual além do chat: gerar o HTML interativo da skill `decidir` e linká-lo. Abaixo de 6, despachar em chat sai mais barato — não gerar.
+
+- **Aditivo, não substitutivo.** O panorama numerado em chat continua sendo a camada base (ASSERT do core: panorama único, sem blocos progressivos). O HTML é a camada rica de despacho. Os cards **reusam os mesmos números** do panorama (o item `7` do chat vira o card `id: '7'`).
+- **Override do usuário, sempre.** "quero visual" / "gera o decidir" → gerar mesmo com poucos itens. "resolve no chat" / "sem HTML" → não gerar. Sinais conflitantes → perguntar "visual ou chat?".
+- **Como gerar:** seguir `skills/decidir/SKILL.md` (preencher `assets/template.html`, ações da allowlist por tipo, salvar em `.prumo/state/decidir/`, copiar a fonte, offline). O usuário abre no próprio browser, despacha, clica "Copiar respostas" e cola de volta; o Prumo lê o bloco JSON e executa em camadas.
+- **Acoplamento brando.** Se a skill `decidir` não estiver disponível ou a escrita do arquivo falhar, **cair no despacho em chat** — nunca travar o briefing.
+
+> O caminho automático pelo runtime (geração no payload do `prumo briefing`) é fase posterior. Nesta fase, a geração acontece quando o briefing roda pelo caminho de skill/markdown.
+
 ## Passo 6: escrita e fechamento
 
 Depois do briefing:

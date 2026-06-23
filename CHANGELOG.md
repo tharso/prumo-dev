@@ -6,6 +6,15 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.6.0] - 2026-06-23
+
+### Added
+- **Skill `decidir` — superfície de decisão interativa (Fase 1)** (#102) — quando há muitos itens para despachar de uma vez (briefing com 6+ itens acionáveis, triagem de inbox, pilha de pendências), o Prumo gera um documento HTML offline onde o usuário decide item a item, com **ações contextuais por item** (responder, arquivar, adiar, delegar, confirmar, descartar...) escolhidas de uma allowlist por tipo. O usuário abre no próprio browser, despacha, clica "Copiar respostas" e cola de volta; o Prumo lê um bloco JSON (`prumo_decidir_report.v1`) e executa em camadas — rascunhar/registrar/arquivar-com-destino sem confirmar, mas pedindo confirmação para enviar email/cobrança, recusar/remarcar com terceiros ou remover item de inbox. Tema escuro alinhado à landing, 100% offline (sem rede). Forkada da mecânica do `crivo`. Inclui `SKILL.md`, `assets/template.html`, `assets/Boliand.otf` e references com a allowlist e exemplos de cards.
+
+### Changed
+- **Briefing oferece despacho visual acima de 6 itens** (#102) — quando o panorama tiver 6+ itens acionáveis, o briefing oferece o despacho no formato visual da skill `decidir` (reusando os números do panorama), além do chat. Aditivo: o panorama numerado em chat continua sendo a camada base; o usuário pode forçar "quero visual" / "resolve no chat". Acoplamento brando — se a geração falhar, cai no despacho em chat. A geração automática pelo fast-path do runtime fica para fase posterior.
+- **`sanitize` limpa documentos efêmeros da `decidir`** (#102) — HTMLs antigos em `.prumo/state/decidir/` (> 14 dias) entram nos gatilhos de sanitização.
+
 ## [5.5.0] - 2026-06-21
 
 ### Added
