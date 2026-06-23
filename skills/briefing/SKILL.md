@@ -76,6 +76,7 @@ A resposta do runtime vai como veio. Não reescrever, não enfeitar.
 - Usar Gmail MCP e Calendar MCP como fonte primária de email e calendário. Seguir o pipeline de curadoria em camadas definido em `briefing-procedure.md` (camada 1: canais prioritários, camada 2: emails diretos com filtragem pessoa/sistema, camada 3: roteamento de conteúdo).
 - Antes de curar emails, ler `Prumo/Referencias/EMAIL-CURADORIA.md` (se existir) para carregar regras aprendidas. Quando o usuário corrigir a curadoria, registrar a regra nesse arquivo.
 - Se existir `_preview-index.json`, linkar `inbox-preview.html` antes de abrir bruto.
+- Se o panorama tiver 6+ itens acionáveis, oferecer o despacho visual da skill `decidir` (HTML interativo offline) além do chat, reusando os números do panorama. Override do usuário sempre respeitado; se a geração falhar, cair no chat. Ver `briefing-procedure.md` → "Despacho visual" e `skills/decidir/SKILL.md`.
 - Update que não consegue se aplicar sozinho não trava o briefing.
 - Se houver versão nova detectável, o briefing deve avisar antes do panorama e seguir.
 - Se o `.prumo/system/PRUMO-CORE.md` do workspace estiver atrás do `Prumo/VERSION` local, isso deve ser tratado como core defasado do workspace, não como detalhe invisível.

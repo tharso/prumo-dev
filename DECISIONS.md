@@ -9,14 +9,14 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 | Tópico                | Entradas                                                                                  |
 |-----------------------|-------------------------------------------------------------------------------------------|
 | `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first), 2026-05-04 (#77), 2026-06-21 (#97 mapas)  |
-| `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77)  |
+| `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir) |
 | `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first), 2026-05-06 (quality-gate) |
 | `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist) |
 | `dispatch-bootstrap`  | 2026-04-21 (#69 despacho)                                                                 |
 | `multiagent-coord`    | 2026-04-20 (#68 HANDOVER)                                                                 |
 | `documentation`       | 2026-04-14 (CLAUDE.md), 2026-06-21 (#97 mapas)                                            |
 | `integrations`        | 2026-04-14 (Google Drive snapshots)                                                       |
-| `briefing`            | 2026-04-14 (Google Drive snapshots), 2026-04-21 (#69 despacho)                            |
+| `briefing`            | 2026-04-14 (Google Drive snapshots), 2026-04-21 (#69 despacho), 2026-06-23 (#102 decidir) |
 | `personalization`     | 2026-04-21 (tharso-voice)                                                                 |
 | `code-quality`        | 2026-05-06 (quality-gate)                                                                 |
 | `touchpoint`          | 2026-05-18 (landing page sync)                                                            |
@@ -56,6 +56,31 @@ A partir de 2026-05-04 (#78), toda entrada nova segue o formato:
 Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões anteriores" (introduzido na #78). Quando um conflito retrospectivo for descoberto, anotar a relação na entrada nova que o resolve — não reescrever entradas antigas.
 
 - `code-quality` — métricas de qualidade do codebase, quality gate, baseline.
+
+---
+
+## 2026-06-23 — Skill `decidir`: superfície de decisão interativa no briefing (#102, Fase 1)
+
+**Tópicos:** briefing, skills-distribution
+**Issues relacionadas:** #102 (executa esta decisão, Fase 1). Fase 2 (geração automática pelo runtime) vira issue separada.
+**Relações com decisões anteriores:**
+- **Estende:** 2026-04-21 (#69 — despacho por intenção). A `decidir` é a materialização visual do despacho em lote: quando há muitos itens, o usuário despacha item a item num HTML em vez de em prosa. Mantém o princípio "zero adivinhação" — cada despacho é explícito.
+- **Mantém integralmente:** o contrato de interface (`interaction-format.md` v4.19.0) e o ASSERT do core "panorama numerado único, sem blocos progressivos". O HTML é **aditivo**, não substitutivo: o panorama em chat continua a camada base e reusa os mesmos números; o HTML é camada rica opcional acima de 6 itens, com override do usuário e fallback em chat. Nenhuma decisão revogada.
+- **Mantém:** 2026-05-04 (#77 — skills/infra em `.prumo/`). O artefato efêmero vive em `.prumo/state/decidir/` (infra invisível); a limpeza é do `sanitize` (escopo exclusivo `.prumo/`), não da faxina.
+
+**Contexto:** O briefing entrega um panorama numerado e o usuário despacha em lote ("3, 7, 12"). Despacho em prosa mistura decisões e força o Prumo a adivinhar o aprovado — o mesmo problema que a skill `crivo` resolve para crítica de artefatos. Itens diferentes pedem ações diferentes (responder email ≠ confirmar evento ≠ descartar cobrança), e o chat não dá um veredito clicável por item. Revisão cruzada com o Codex (2 rodadas via CLI, registradas na #102) apontou: (a) "briefing gera automático" exige runtime, não só skills — por isso o faseamento; (b) a generalização da mecânica `verdicts`-global → `actions`-por-card é segura com diff disciplinado; (c) os efeitos destrutivos (enviar, recusar com terceiros, remover inbox) não podem executar sem confirmação, ancorado em ASSERT do core.
+
+**Decisão:** Criar a skill `prumo:decidir` (`skills/decidir/`), forkada da mecânica verificada do `crivo`, com tema escuro alinhado à landing e 100% offline. Ações são **contextuais por item**, escolhidas de uma allowlist por tipo (`references/acoes-allowlist.md`) — o Prumo seleciona, não inventa verbos. O relatório carrega um bloco JSON parseável (`prumo_decidir_report.v1`) além do markdown humano. A execução é em camadas: rascunhar/registrar/arquivar-com-destino direto; enviar/recusar-com-terceiros/remover-inbox confirmam antes (ASSERT do core).
+
+**Fase 1 (esta issue):** a skill + integração no nível da skill `briefing` (gera o HTML quando o briefing roda pelo caminho markdown/skill, acima de 6 itens acionáveis). **Sem tocar runtime.** **Fase 2 (issue separada):** o runtime (`commands/briefing.py`) passa a gerar/linkar o artefato no payload, fazendo o automático valer no fast-path.
+
+**Alternativas consideradas:**
+- *HTML substitui o panorama em chat* → rejeitado: viola o ASSERT do core (panorama único) e a portabilidade (nem todo momento justifica abrir browser). O HTML é aditivo.
+- *Ações fixas globais (como no crivo)* → rejeitado: item de briefing pede ação contextual (responder ≠ confirmar ≠ descartar). Allowlist por tipo resolve sem virar criatividade por execução.
+- *Incluir o runtime na mesma issue* → adiado: expande o blast radius para `runtime/` (mudança de sistema). Fatiado em 2 fases para entregar valor incremental e testável.
+- *Embutir a fonte como base64 no HTML* → rejeitado p/ Fase 1: copiar `Boliand.otf` pra junto do arquivo mantém offline sem inflar o template. Fallback de sistema se a cópia faltar.
+
+**Touchpoint (prumo.me):** a avaliar. Um modo de decisão visual pode virar argumento de produto na landing; verificar antes de considerar a #102 concluída (item no checklist da issue).
 
 ---
 

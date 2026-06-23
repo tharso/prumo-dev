@@ -11,7 +11,8 @@ Sanitize é executado pelo agente seguindo as regras abaixo. Roda sempre em dois
 1. Remove backups em `.prumo/backups/` (canônico) **e** `.prumo/backup/` (legado de runtimes pré-#81 P3.8) acima do threshold de idade (default: 90 dias). Sobreviventes em `.prumo/backup/` são consolidados em `.prumo/backups/legacy/` ao final pra alinhar com caminho canônico.
 2. Limpa cache expirado em `.prumo/cache/`.
 3. Arquiva arquivos de estado em `.prumo/state/` que cresceram além de threshold, movendo o excedente para `.prumo/state/archive/`.
-4. Registra qualquer movimento nos índices:
+4. Remove documentos de despacho efêmeros em `.prumo/state/decidir/` (HTMLs da skill `decidir` + a fonte `Boliand.otf` copiada) acima do threshold de idade (default: 14 dias). São descartáveis: quando o usuário colou as respostas, o relatório já voltou pro Prumo, e o documento é reproduzível.
+5. Registra qualquer movimento nos índices:
    - `.prumo/state/archive/ARCHIVE-INDEX.json`
    - `.prumo/state/archive/ARCHIVE-INDEX.md`
 ## Gatilhos padrão
@@ -19,7 +20,8 @@ Sanitize é executado pelo agente seguindo as regras abaixo. Roda sempre em dois
 1. Backups em `.prumo/backups/` (e `.prumo/backup/` legado) com idade > 90 dias.
 2. Arquivos em `.prumo/cache/` com idade > threshold configurado.
 3. Arquivos de estado em `.prumo/state/` acima de tamanho/linhas (definido por arquivo).
-4. `Inbox4Mobile/` com itens processados antigos (ver `faxina` para gestão de inbox — sanitize só toca o que está em `.prumo/`).
+4. Documentos em `.prumo/state/decidir/*.html` (e `Boliand.otf`) com idade > 14 dias.
+5. `Inbox4Mobile/` com itens processados antigos (ver `faxina` para gestão de inbox — sanitize só toca o que está em `.prumo/`).
 
 ## Segurança
 

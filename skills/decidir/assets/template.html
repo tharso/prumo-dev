@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<!--
+  ═══════════════════════════════════════════════════════════════
+  PRUMO · DECIDIR — template do documento de despacho/decisão
+  ═══════════════════════════════════════════════════════════════
+  Forkado da skill `crivo` (mecânica verificada) e adaptado ao Prumo:
+  tema escuro, OFFLINE (sem rede — nenhum http(s):// no arquivo),
+  AÇÕES CONTEXTUAIS por-card (cada card traz seu próprio conjunto de
+  botões via `actions`), e relatório com bloco JSON parseável além do
+  markdown humano.
+
+  COMO USAR
+  - Substitua os placeholders __ASSIM__, preencha CONFIG e os dados
+    SECTIONS/POINTS no bloco <script>.
+  - NÃO altere a mecânica (estado, relatório, clipboard) — verificada.
+  - O arquivo é aberto pelo usuário no próprio browser (file://),
+    offline. Ao terminar, o usuário clica "Copiar respostas" e cola
+    o relatório de volta no agente.
+  - Copie `Boliand.otf` (de skills/decidir/assets/) para a MESMA pasta
+    do HTML gerado, senão o título cai no fallback de sistema (tudo bem).
+
+  REGRA DE OFFLINE: nenhuma URL de rede. Fontes de corpo/mono usam a
+  stack do sistema; o display usa Boliand local com fallback.
+
+  Placeholders do corpo:
+    __DOC_TITLE__   <title> da aba
+    __KICKER__      linha mono pequena acima do título
+    __HEADLINE__    título grande (pode ter <br>)
+    __META__        linha de metadados (data, escopo, rodada)
+    __INTRO__       parágrafo de contexto (HTML leve: <b>, <i>)
+    __HOWTO__       instruções de uso (HTML leve)
+    __FINALE_TITLE__ título do bloco final
+    __FINALE_TEXT__  texto do bloco final
+    __FINALE_HINT__  nota miúda sob o botão final
+    __STORAGE_KEY__  chave ÚNICA por rodada (ex: prumo-decidir-2026-06-23-0830-a1b2)
+    __REPORT_TITLE__ primeira linha do relatório markdown
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>__DOC_TITLE__</title>
+<style>
+  /* Display do Prumo: Boliand local (copiada pra junto do HTML). Sem rede. */
+  @font-face {
+    font-family: 'Boliand';
+    src: url('Boliand.otf') format('opentype');
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+  }
+  :root {
+    --bg:        #101828;
+    --bg-2:      #162036;
+    --surface:   #1D2939;
+    --text:      #E7EAF0;
+    --text-soft: #AEB6C4;   /* passa AA p/ texto normal sobre bg e surface */
+    --text-faint:#8A94A6;   /* labels miúdos / metadados (>= 4.5:1 em normal) */
+    --line:      rgba(174, 182, 196, 0.16);
+    --accent:    #6DB8EC;   /* azul claro p/ texto/links sobre escuro */
+    --accent-solid: #4AA4E0;
+    --accent-soft: rgba(74, 164, 224, 0.12);
+    --accent-bd: rgba(74, 164, 224, 0.4);
+    /* tons de ação — versões claras que passam contraste sobre fundo escuro */
+    --green:  #56D49A;  --green-bg:  rgba(86, 212, 154, 0.14);  --green-bd:  rgba(86, 212, 154, 0.4);
+    --amber:  #E8B564;  --amber-bg:  rgba(232, 181, 100, 0.14); --amber-bd:  rgba(232, 181, 100, 0.4);
+    --red:    #F08C84;  --red-bg:    rgba(240, 140, 132, 0.14); --red-bd:    rgba(240, 140, 132, 0.42);
+    --slate-c:  #A8B2C7;  --slate-bg: rgba(168, 178, 199, 0.13); --slate-bd: rgba(168, 178, 199, 0.36);
+    --blue:   #6DB8EC;  --blue-bg:   rgba(109, 184, 236, 0.14); --blue-bd:   rgba(109, 184, 236, 0.42);
+    --purple: #B3A6F9;  --purple-bg: rgba(179, 166, 249, 0.15); --purple-bd: rgba(179, 166, 249, 0.42);
+    --display: 'Boliand', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: var(--sans); font-size: 15.5px; line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 0 24px 120px; }
+
+  header.doc { padding: 64px 0 12px; }
+  .doc-kicker {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--accent); display: block; margin-bottom: 16px;
+  }
+  h1 {
+    font-family: var(--display); font-weight: 700; font-size: clamp(34px, 5vw, 50px);
+    line-height: 1.08; margin: 0 0 16px; letter-spacing: -0.01em; color: var(--text);
+  }
+  .doc-meta { font-family: var(--mono); font-size: 12px; color: var(--text-faint); margin: 22px 0 24px; }
+  .doc-intro { color: var(--text-soft); max-width: 680px; }
+  .doc-intro b { color: var(--text); }
+  .howto {
+    background: var(--accent-soft); border: 1px solid var(--accent-bd, rgba(74,164,224,0.28));
+    border-radius: 12px; padding: 16px 20px; margin: 26px 0 8px;
+    font-size: 14px; color: var(--text-soft);
+  }
+  .howto b { color: var(--text); }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(16, 24, 40, 0.92); backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+  }
+  .topbar-inner {
+    max-width: 880px; margin: 0 auto; padding: 10px 24px;
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  }
+  .progress-label { font-family: var(--mono); font-size: 12px; color: var(--text-soft); white-space: nowrap; }
+  .progress-track { flex: 1; min-width: 120px; height: 5px; background: var(--line); border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; width: 0%; background: var(--accent-solid); transition: width 0.3s ease; }
+  .topbar-btn {
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.04em;
+    background: var(--accent-solid); color: #06121f; border: none; border-radius: 999px;
+    padding: 7px 16px; cursor: pointer; white-space: nowrap; font-weight: 600;
+  }
+  .topbar-btn:hover { background: var(--accent); }
+  .secnav { display: flex; gap: 6px; flex-wrap: wrap; width: 100%; padding-bottom: 8px; }
+  .secnav a {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.04em;
+    color: var(--text-soft); text-decoration: none; border: 1px solid var(--line);
+    border-radius: 999px; padding: 3px 10px; background: var(--surface);
+  }
+  .secnav a:hover { border-color: var(--accent); color: var(--accent); }
+
+  .section-h {
+    display: flex; align-items: baseline; gap: 14px;
+    margin: 64px 0 8px; padding-bottom: 12px; border-bottom: 2px solid var(--text);
+  }
+  .section-h .sec-num { font-family: var(--mono); font-size: 13px; color: var(--accent); }
+  .section-h h2 { font-family: var(--display); font-weight: 600; font-size: 28px; margin: 0; color: var(--text); }
+  .section-sub { color: var(--text-faint); font-size: 13.5px; margin: 10px 0 28px; max-width: 640px; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+    padding: 24px 26px 20px; margin: 0 0 20px;
+  }
+  .card-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  .pid { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--accent); }
+  .badge {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+    border-radius: 999px; padding: 3px 10px; border: 1px solid;
+  }
+  .badge.t-red    { color: var(--red);    border-color: var(--red-bd);    background: var(--red-bg); }
+  .badge.t-amber  { color: var(--amber);  border-color: var(--amber-bd);  background: var(--amber-bg); }
+  .badge.t-green  { color: var(--green);  border-color: var(--green-bd);  background: var(--green-bg); }
+  .badge.t-blue   { color: var(--blue);   border-color: var(--blue-bd);   background: var(--blue-bg); }
+  .badge.t-purple { color: var(--purple); border-color: var(--purple-bd); background: var(--purple-bg); }
+  .badge.t-slate  { color: var(--slate-c);border-color: var(--slate-bd);  background: var(--slate-bg); }
+  .card-link {
+    font-family: var(--mono); font-size: 10.5px; color: var(--text-faint);
+    text-decoration: none; border-bottom: 1px dotted var(--text-faint);
+  }
+  .card-link:hover { color: var(--accent); border-color: var(--accent); }
+  .card h3 {
+    font-family: var(--sans); font-size: 18.5px; font-weight: 600;
+    line-height: 1.32; margin: 0 0 12px; letter-spacing: -0.01em; color: var(--text);
+  }
+  .lbl {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--text-faint); display: block; margin: 18px 0 6px;
+  }
+  .card p { margin: 0 0 10px; color: var(--text-soft); }
+  .card p b, .card li b { color: var(--text); }
+
+  /* ── vocabulário de evidência ── */
+  .evid {
+    background: var(--bg-2); border-left: 3px solid var(--accent-solid);
+    border-radius: 0 10px 10px 0; padding: 14px 18px; margin: 6px 0 4px;
+    font-size: 14px; color: var(--text-soft);
+  }
+  .evid p { margin: 0 0 8px; } .evid p:last-child { margin: 0; }
+  .evid ul { margin: 4px 0; padding-left: 18px; } .evid li { margin-bottom: 5px; }
+  .q { font-style: italic; font-size: 15px; color: var(--text); }
+  .ref { font-family: var(--mono); font-size: 11px; color: var(--accent); }
+  mark { background: rgba(240, 140, 132, 0.2); color: var(--red); padding: 0 3px; border-radius: 3px; font-weight: 500; }
+  .chips { display: flex; flex-wrap: wrap; gap: 7px; margin: 8px 0 4px; }
+  .chip {
+    font-style: italic; font-size: 13.5px;
+    background: var(--bg-2); border: 1px solid var(--line); border-radius: 999px;
+    padding: 4px 13px; color: var(--text-soft);
+  }
+  .flow { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin: 8px 0; }
+  .flow .step {
+    font-family: var(--mono); font-size: 11px; background: var(--bg-2);
+    border: 1px solid var(--line); border-radius: 7px; padding: 4px 9px; color: var(--text);
+  }
+  .flow .step.bad  { border-color: var(--red-bd);   color: var(--red); }
+  .flow .step.good { border-color: var(--green-bd); color: var(--green); }
+  .flow .arr { color: var(--text-faint); font-size: 11px; }
+  .grid4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; margin: 8px 0; }
+  .grid4 .cell { background: var(--bg-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .grid4 .cell .where { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-faint); display: block; margin-bottom: 4px; }
+  .grid4 .cell .what { font-size: 13px; font-weight: 600; color: var(--text); }
+  .ba { margin: 10px 0; }
+  .ba-item { margin-bottom: 14px; }
+  .ba-where { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-faint); display: block; margin-bottom: 5px; }
+  .ba-before, .ba-after { border-radius: 9px; padding: 9px 14px; font-size: 14px; margin-bottom: 4px; }
+  .ba-before { background: var(--red-bg); border: 1px solid var(--red-bd); color: var(--text-soft); }
+  .ba-after  { background: var(--green-bg); border: 1px solid var(--green-bd); color: var(--text); }
+  .ba-tag { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; margin-right: 8px; }
+  .ba-before .ba-tag { color: var(--red); } .ba-after .ba-tag { color: var(--green); }
+  .sugg {
+    background: var(--green-bg); border: 1px solid var(--green-bd);
+    border-radius: 10px; padding: 13px 17px; font-size: 14.5px; color: var(--text);
+  }
+
+  /* ── opções (cards de escolha) ── */
+  .opts { display: flex; flex-direction: column; gap: 10px; margin: 10px 0 4px; }
+  .opt {
+    display: flex; gap: 14px; align-items: flex-start;
+    background: var(--bg-2); border: 1.5px solid var(--line); border-radius: 12px;
+    padding: 14px 16px; cursor: pointer; transition: border-color 0.15s, background 0.15s;
+  }
+  .opt:hover { border-color: var(--text-faint); }
+  .opt.sel { border-color: var(--accent-solid); background: var(--accent-soft); }
+  .opt-key {
+    font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--accent);
+    border: 1.5px solid var(--accent-bd, rgba(74,164,224,0.45)); border-radius: 999px;
+    min-width: 26px; height: 26px; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 1px;
+  }
+  .opt.sel .opt-key { background: var(--accent-solid); color: #06121f; border-color: var(--accent-solid); }
+  .opt-body { flex: 1; }
+  .opt-label { font-size: 14.5px; font-weight: 600; color: var(--text); }
+  .opt-rec {
+    font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--green); border: 1px solid var(--green-bd); border-radius: 999px;
+    padding: 1px 8px; margin-left: 8px; vertical-align: 2px;
+  }
+  .opt-desc { font-size: 13.5px; color: var(--text-soft); margin-top: 4px; }
+
+  /* ── ações de despacho (botões por-card) ── */
+  .seg { display: flex; flex-wrap: wrap; gap: 8px; }
+  .seg-btn {
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.02em;
+    background: var(--bg-2); color: var(--text-soft); border: 1px solid var(--line);
+    border-radius: 999px; padding: 7px 15px; cursor: pointer; transition: all 0.15s;
+  }
+  .seg-btn:hover { border-color: var(--text-faint); color: var(--text); }
+  .seg-btn .req { font-size: 9px; opacity: 0.7; margin-left: 5px; }
+  .seg-btn.sel { font-weight: 600; }
+  .seg-btn.sel[data-tone="green"]  { color: var(--green);   border-color: var(--green-bd);  background: var(--green-bg); }
+  .seg-btn.sel[data-tone="amber"]  { color: var(--amber);   border-color: var(--amber-bd);  background: var(--amber-bg); }
+  .seg-btn.sel[data-tone="red"]    { color: var(--red);     border-color: var(--red-bd);    background: var(--red-bg); }
+  .seg-btn.sel[data-tone="blue"]   { color: var(--blue);    border-color: var(--blue-bd);   background: var(--blue-bg); }
+  .seg-btn.sel[data-tone="purple"] { color: var(--purple);  border-color: var(--purple-bd); background: var(--purple-bg); }
+  .seg-btn.sel[data-tone="slate"]  { color: var(--slate-c); border-color: var(--slate-bd);  background: var(--slate-bg); }
+  .seg-btn.sel[data-tone="risk"]   { color: var(--red);     border-color: var(--red-bd);    background: var(--red-bg); }
+  .req-note { font-family: var(--mono); font-size: 10.5px; color: var(--amber); margin-top: 8px; display: none; }
+  .req-note.show { display: block; }
+
+  /* ── feedback ── */
+  .fb { margin-top: 18px; padding-top: 16px; border-top: 1px dashed var(--line); }
+  .fb textarea {
+    width: 100%; margin-top: 12px; min-height: 52px; resize: vertical;
+    font-family: var(--sans); font-size: 14px; line-height: 1.55; color: var(--text);
+    background: var(--bg); border: 1px solid var(--line); border-radius: 10px;
+    padding: 11px 14px; outline: none;
+  }
+  .fb textarea:focus { border-color: var(--accent-solid); }
+  .saved-flash { font-family: var(--mono); font-size: 10px; color: var(--green); margin-left: 10px; opacity: 0; transition: opacity 0.3s; }
+  .saved-flash.show { opacity: 1; }
+
+  .finale {
+    margin-top: 72px; text-align: center; background: var(--surface);
+    border: 1px solid var(--line); border-radius: 20px; padding: 52px 32px; color: var(--text-soft);
+  }
+  .finale h2 { font-family: var(--display); font-weight: 600; font-size: 30px; color: var(--text); margin: 0 0 10px; }
+  .finale p { font-size: 14px; max-width: 480px; margin: 0 auto 26px; color: var(--text-soft); }
+  .btn-big {
+    font-family: var(--sans); font-size: 16px; font-weight: 600;
+    background: var(--accent-solid); color: #06121f; border: none; border-radius: 999px;
+    padding: 16px 36px; cursor: pointer; transition: transform 0.15s, filter 0.15s;
+  }
+  .btn-big:hover { filter: brightness(1.08); transform: translateY(-1px); }
+  .finale .hint { font-family: var(--mono); font-size: 11px; color: var(--text-faint); margin-top: 16px; }
+
+  .modal-bg {
+    display: none; position: fixed; inset: 0; z-index: 100;
+    background: rgba(6, 12, 24, 0.7); backdrop-filter: blur(4px);
+    align-items: center; justify-content: center; padding: 24px;
+  }
+  .modal-bg.open { display: flex; }
+  .modal {
+    background: var(--bg); border: 1px solid var(--line); border-radius: 18px; max-width: 760px; width: 100%;
+    max-height: 86vh; display: flex; flex-direction: column; overflow: hidden;
+  }
+  .modal-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; border-bottom: 1px solid var(--line); }
+  .modal-head h3 { font-size: 16px; margin: 0; color: var(--text); }
+  .modal-head .status-msg { font-family: var(--mono); font-size: 11.5px; color: var(--green); }
+  .modal-close { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--text-faint); line-height: 1; }
+  .modal pre {
+    flex: 1; overflow: auto; margin: 0; padding: 20px 24px;
+    font-family: var(--mono); font-size: 12px; line-height: 1.6; color: var(--text);
+    white-space: pre-wrap; word-break: break-word; background: var(--surface);
+  }
+  .modal-foot { padding: 14px 24px; border-top: 1px solid var(--line); display: flex; gap: 10px; }
+  .modal-foot button {
+    font-family: var(--mono); font-size: 12px; border-radius: 999px; padding: 9px 20px; cursor: pointer;
+    border: 1px solid var(--accent-solid); background: var(--accent-solid); color: #06121f; font-weight: 600;
+  }
+  .modal-foot button.ghost { background: transparent; color: var(--text-soft); border-color: var(--line); }
+
+  @media (max-width: 640px) {
+    .wrap { padding: 0 16px 100px; }
+    .card { padding: 20px 18px 18px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <span class="progress-label" id="progressLabel"></span>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <button class="topbar-btn" id="topbarReportBtn" onclick="openReport()"></button>
+    <nav class="secnav" id="secnav"></nav>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <header class="doc">
+    <span class="doc-kicker">__KICKER__</span>
+    <h1>__HEADLINE__</h1>
+    <div class="doc-meta">__META__</div>
+    <p class="doc-intro">__INTRO__</p>
+    <div class="howto">__HOWTO__</div>
+  </header>
+
+  <main id="app"></main>
+
+  <div class="finale">
+    <h2>__FINALE_TITLE__</h2>
+    <p>__FINALE_TEXT__</p>
+    <button class="btn-big" id="finaleReportBtn" onclick="openReport()"></button>
+    <div class="hint">__FINALE_HINT__</div>
+  </div>
+
+</div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modalTitle"></h3>
+      <span class="status-msg" id="copyStatus"></span>
+      <button class="modal-close" onclick="closeReport()">×</button>
+    </div>
+    <pre id="reportPre"></pre>
+    <div class="modal-foot">
+      <button id="copyBtn" onclick="copyReport()"></button>
+      <button class="ghost" id="closeBtn" onclick="closeReport()"></button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+// CONFIG — ajuste por rodada.
+// ════════════════════════════════════════════════════════════
+const CONFIG = {
+  storageKey: '__STORAGE_KEY__',     // ÚNICA por rodada (data+hora+hash dos IDs)
+  reportSchema: 'prumo_decidir_report.v1',
+  progressNoun: 'Despachados',
+  reportTitle: '__REPORT_TITLE__',
+  labels: {
+    chooseOne: 'escolha uma opção',
+    recommended: 'recomendada',
+    context: 'Contexto',
+    evidence: 'Evidência',
+    proposal: 'Proposta',
+    suggestion: 'Sugestão',
+    options: 'Opções',
+    action: 'Ação',
+    requiresNote: 'Esta ação precisa de um detalhe no comentário (ex.: destinatário, data).',
+    commentPlaceholder: 'Comentário (entra no relatório como instrução)',
+    saved: 'salvo ✓',
+    generate: 'Copiar respostas',
+    generateAndCopy: 'Gerar e copiar respostas',
+    reportTitleUI: 'Respostas',
+    copy: 'Copiar pro clipboard',
+    close: 'Fechar',
+    copied: 'copiado ✓',
+    copyManual: 'selecione o texto e copie manualmente',
+    rDate: 'Data', rAnswered: 'respondidos', rDispatched: 'Despachados',
+    rChoices: 'Escolhas feitas', rNone: 'Sem resposta',
+    rDecision: 'Decisão', rOption: 'OPÇÃO', rAction: 'Ação', rComment: 'Comentário',
+  },
+};
+
+// ════════════════════════════════════════════════════════════
+// DADOS — preencha SECTIONS e POINTS
+//
+// SECTION: { id, num, title, sub }
+// POINT (dois tipos):
+//   despacho: { id, sec, type:'despacho', badges?, link?, title, contexto,
+//               evidencia?, sugestao?,
+//               actions: [{ key, label, tone, effect, requires? }] }
+//      tones: green|amber|red|blue|purple|slate (use 'red' p/ ação de risco)
+//      requires: texto curto do que o comentário precisa trazer (ex: 'destinatário')
+//      effect: identificador do que o Prumo executa (ex: 'reply','archive','snooze')
+//   escolha:  { id, sec, type:'escolha', badges?, link?, title, contexto,
+//               proposta?, options:[{ key, label, desc, rec?, effect? }] }
+//
+// badges: [{label:'P1', tone:'red'}]
+// link:   {label:'pauta #3', href:'...'}  (relativo/local; sem rede)
+// IDs reusam a numeração do panorama do briefing (1..N).
+// ATENÇÃO: escapar tags HTML literais no conteúdo (&lt;title&gt;), senão
+//   uma tag crua engole os cards seguintes.
+// ════════════════════════════════════════════════════════════
+const SECTIONS = [
+/*__SECTIONS__*/
+];
+
+const POINTS = [
+/*__POINTS__*/
+];
+
+// ════════════════════════════════════════════════════════════
+// MECÂNICA — não alterar daqui pra baixo
+// ════════════════════════════════════════════════════════════
+const KEY = CONFIG.storageKey;
+const L = CONFIG.labels;
+let state = {};
+try { state = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { state = {}; }
+
+function save() { localStorage.setItem(KEY, JSON.stringify(state)); }
+
+function actionsOf(p) { return Array.isArray(p.actions) ? p.actions : []; }
+function actionByKey(p, key) { return actionsOf(p).find(a => a.key === key) || null; }
+
+function initLabels() {
+  document.getElementById('topbarReportBtn').textContent = L.generate;
+  document.getElementById('finaleReportBtn').textContent = L.generateAndCopy;
+  document.getElementById('modalTitle').textContent = L.reportTitleUI;
+  document.getElementById('copyBtn').textContent = L.copy;
+  document.getElementById('closeBtn').textContent = L.close;
+}
+
+function render() {
+  const app = document.getElementById('app');
+  const nav = document.getElementById('secnav');
+  let html = '';
+  SECTIONS.forEach(sec => {
+    const pts = POINTS.filter(p => p.sec === sec.id);
+    if (!pts.length) return;
+    html += `<div class="section-h" id="sec-${sec.id}"><span class="sec-num">${sec.num} /</span><h2>${sec.title}</h2></div>`;
+    if (sec.sub) html += `<p class="section-sub">${sec.sub}</p>`;
+    pts.forEach(p => { html += cardHTML(p); });
+    nav.innerHTML += `<a href="#sec-${sec.id}">${sec.num}. ${sec.title}</a>`;
+  });
+  app.innerHTML = html;
+
+  POINTS.forEach(p => {
+    const fb = state[p.id] || {};
+    const root = document.querySelector(`[data-pt="${p.id}"]`);
+    if (!root) return;
+
+    if (p.type === 'escolha') {
+      root.querySelectorAll('.opt').forEach(opt => {
+        opt.addEventListener('click', () => toggleChoice(p.id, opt.dataset.key));
+      });
+      if (fb.choice) paintChoice(p.id, fb.choice);
+    } else {
+      root.querySelectorAll('.seg-btn').forEach(btn => {
+        btn.addEventListener('click', () => toggleStatus(p.id, btn.dataset.status));
+      });
+      if (fb.status) paintStatus(p.id, fb.status);
+    }
+
+    const ta = root.querySelector('textarea');
+    if (fb.comment) ta.value = fb.comment;
+    let t;
+    ta.addEventListener('input', () => {
+      state[p.id] = state[p.id] || {};
+      state[p.id].comment = ta.value;
+      save();
+      if (p.type !== 'escolha') updateReqNote(p.id);
+      const flash = root.querySelector('.saved-flash');
+      flash.classList.add('show');
+      clearTimeout(t);
+      t = setTimeout(() => flash.classList.remove('show'), 1200);
+    });
+  });
+  updateProgress();
+}
+
+function cardHTML(p) {
+  const badges = (p.badges || []).map(b => `<span class="badge t-${b.tone || 'slate'}">${b.label}</span>`).join('');
+  const link = p.link ? `<a class="card-link" href="${p.link.href}" target="_blank" rel="noopener">${p.link.label}</a>` : '';
+  const tipo = p.type === 'escolha' ? `<span class="badge t-purple">${L.chooseOne}</span>` : '';
+
+  let body = '';
+  if (p.evidencia) body += `<span class="lbl">${L.evidence}</span><div class="evid">${p.evidencia}</div>`;
+  if (p.proposta)  body += `<span class="lbl">${L.proposal}</span><div class="evid">${p.proposta}</div>`;
+  if (p.type !== 'escolha' && p.sugestao) body += `<span class="lbl">${L.suggestion}</span><div class="sugg">${p.sugestao}</div>`;
+  if (p.type === 'escolha') {
+    body += `<span class="lbl">${L.options}</span><div class="opts">` + (p.options || []).map(o => `
+      <div class="opt" data-key="${o.key}">
+        <span class="opt-key">${o.key}</span>
+        <div class="opt-body">
+          <span class="opt-label">${o.label}</span>${o.rec ? `<span class="opt-rec">${L.recommended}</span>` : ''}
+          <div class="opt-desc">${o.desc}</div>
+        </div>
+      </div>`).join('') + `</div>`;
+  }
+
+  const fbControls = p.type === 'escolha'
+    ? ''
+    : `<span class="lbl">${L.action}</span><div class="seg">` + actionsOf(p).map(a => `
+        <button class="seg-btn" data-status="${a.key}" data-tone="${a.tone || 'slate'}">${a.label}${a.requires ? `<span class="req">⚑</span>` : ''}</button>`).join('') +
+      `</div><div class="req-note">${L.requiresNote}</div>`;
+
+  return `
+  <article class="card" data-pt="${p.id}" id="${p.id}">
+    <div class="card-top">
+      <span class="pid">${p.id}</span>
+      ${tipo}${badges}${link}
+    </div>
+    <h3>${p.title}</h3>
+    <span class="lbl">${L.context}</span>
+    <p>${p.contexto}</p>
+    ${body}
+    <div class="fb">
+      ${fbControls}
+      <textarea placeholder="${L.commentPlaceholder}"></textarea>
+      <span class="saved-flash">${L.saved}</span>
+    </div>
+  </article>`;
+}
+
+function toggleChoice(id, key) {
+  state[id] = state[id] || {};
+  state[id].choice = (state[id].choice === key) ? null : key;
+  save();
+  paintChoice(id, state[id].choice);
+  updateProgress();
+}
+function paintChoice(id, key) {
+  document.querySelectorAll(`[data-pt="${id}"] .opt`).forEach(o => {
+    o.classList.toggle('sel', !!key && o.dataset.key === key);
+  });
+}
+
+function toggleStatus(id, status) {
+  state[id] = state[id] || {};
+  state[id].status = (state[id].status === status) ? null : status;
+  save();
+  paintStatus(id, state[id].status);
+  updateReqNote(id);
+  updateProgress();
+}
+// Fix vs. crivo: NÃO zerar className (apagaria a classe base e o data-tone styling).
+// Só alternar a classe 'sel'.
+function paintStatus(id, status) {
+  document.querySelectorAll(`[data-pt="${id}"] .seg-btn`).forEach(b => {
+    b.classList.toggle('sel', !!status && b.dataset.status === status);
+  });
+}
+
+function updateReqNote(id) {
+  const p = POINTS.find(x => x.id === id);
+  if (!p || p.type === 'escolha') return;
+  const root = document.querySelector(`[data-pt="${id}"]`);
+  const note = root && root.querySelector('.req-note');
+  if (!note) return;
+  const fb = state[id] || {};
+  const act = fb.status ? actionByKey(p, fb.status) : null;
+  const needs = !!(act && act.requires);
+  const filled = (fb.comment || '').trim().length > 0;
+  note.classList.toggle('show', needs && !filled);
+}
+
+function isDecided(p) {
+  const fb = state[p.id] || {};
+  return p.type === 'escolha' ? !!fb.choice : !!fb.status;
+}
+
+function updateProgress() {
+  const done = POINTS.filter(isDecided).length;
+  document.getElementById('progressLabel').textContent = `${CONFIG.progressNoun} ${done}/${POINTS.length}`;
+  document.getElementById('progressFill').style.width = (done / POINTS.length * 100) + '%';
+}
+
+function buildReportData() {
+  const items = [];
+  POINTS.forEach(p => {
+    const fb = state[p.id] || {};
+    const comment = (fb.comment || '').trim();
+    if (p.type === 'escolha') {
+      const opt = fb.choice ? (p.options || []).find(o => o.key === fb.choice) : null;
+      items.push({
+        item_id: String(p.id), type: 'escolha',
+        choice_key: fb.choice || null,
+        choice_label: opt ? opt.label : null,
+        effect: opt && opt.effect ? opt.effect : null,
+        comment: comment || null,
+      });
+    } else {
+      const act = fb.status ? actionByKey(p, fb.status) : null;
+      items.push({
+        item_id: String(p.id), type: 'despacho',
+        action_key: fb.status || null,
+        label: act ? act.label : null,
+        effect: act && act.effect ? act.effect : null,
+        requires: act && act.requires ? act.requires : null,
+        comment: comment || null,
+      });
+    }
+  });
+  return items;
+}
+
+function buildReport() {
+  const items = buildReportData();
+  let dispatched = 0, choices = 0, none = 0;
+  items.forEach(it => {
+    if (it.type === 'escolha') { it.choice_key ? choices++ : none++; }
+    else { it.action_key ? dispatched++ : none++; }
+  });
+  const done = POINTS.length - none;
+  const today = new Date().toLocaleDateString();
+
+  let md = `# ${CONFIG.reportTitle}\n`;
+  md += `${L.rDate}: ${today} · ${done}/${POINTS.length} ${L.rAnswered}`;
+  const parts = [];
+  if (dispatched) parts.push(`${L.rDispatched}: ${dispatched}`);
+  if (choices) parts.push(`${L.rChoices}: ${choices}`);
+  if (none) parts.push(`${L.rNone}: ${none}`);
+  if (parts.length) md += ` · ${parts.join(' · ')}`;
+  md += `\n`;
+
+  SECTIONS.forEach(sec => {
+    const pts = POINTS.filter(p => p.sec === sec.id);
+    if (!pts.length) return;
+    md += `\n## ${sec.num}. ${sec.title}\n`;
+    pts.forEach(p => {
+      const fb = state[p.id] || {};
+      md += `\n### ${p.id} — ${p.title}${p.link ? ` [${p.link.label}]` : ''}\n`;
+      if (p.type === 'escolha') {
+        if (fb.choice) {
+          const opt = (p.options || []).find(o => o.key === fb.choice);
+          md += `- **${L.rDecision}: ${L.rOption} ${fb.choice}** — ${opt ? opt.label : ''}\n`;
+        } else {
+          md += `- **${L.rDecision}: ${L.rNone.toUpperCase()}**\n`;
+        }
+      } else {
+        const act = fb.status ? actionByKey(p, fb.status) : null;
+        md += `- **${L.rAction}: ${act ? act.label.toUpperCase() : L.rNone.toUpperCase()}**\n`;
+      }
+      if (fb.comment && fb.comment.trim()) {
+        md += `- ${L.rComment}: ${fb.comment.trim().replace(/\n/g, '\n  ')}\n`;
+      }
+    });
+  });
+
+  // Bloco JSON parseável — o agente lê isto, não a prosa.
+  const payload = {
+    schema: CONFIG.reportSchema,
+    storageKey: KEY,
+    answered: done,
+    total: POINTS.length,
+    items: buildReportData(),
+  };
+  md += `\n\n<!-- PRUMO_DECIDIR_JSON -->\n\`\`\`json\n${JSON.stringify(payload, null, 2)}\n\`\`\`\n`;
+  return md;
+}
+
+function openReport() {
+  document.getElementById('reportPre').textContent = buildReport();
+  document.getElementById('copyStatus').textContent = '';
+  document.getElementById('modalBg').classList.add('open');
+}
+function closeReport() { document.getElementById('modalBg').classList.remove('open'); }
+
+async function copyReport() {
+  const text = buildReport();
+  const status = document.getElementById('copyStatus');
+  try {
+    await navigator.clipboard.writeText(text);
+    status.textContent = L.copied;
+  } catch (e) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+      status.textContent = L.copied;
+    } catch (e2) {
+      status.textContent = L.copyManual;
+    }
+    document.body.removeChild(ta);
+  }
+}
+
+document.getElementById('modalBg').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('modalBg')) closeReport();
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeReport(); });
+
+initLabels();
+render();
+</script>
+</body>
+</html>
