@@ -77,7 +77,7 @@ O cartão do runtime (`prumo start` / `prumo briefing`) é a **prévia** — ret
 - Se existir `_preview-index.json`, linkar `inbox-preview.html` antes de abrir bruto.
 - Se o panorama tiver 6+ itens acionáveis, oferecer o despacho visual da skill `decidir` (HTML interativo offline) além do chat, reusando os números do panorama. Override do usuário sempre respeitado; se a geração falhar, cair no chat. Ver `briefing-procedure.md` → "Despacho visual" e `skills/decidir/SKILL.md`.
 - Update que não consegue se aplicar sozinho não trava o briefing.
-- Se houver versão nova detectável, o briefing deve avisar antes do panorama e seguir.
+- Se houver versão nova detectável, o briefing deve avisar antes do panorama e seguir. **"Detectável" inclui o `VERSION` remoto** (`raw.githubusercontent.com/tharso/prumo/main/VERSION`): no fluxo manual sem runtime, buscar via WebFetch/`curl` é o caminho — comparar só o core local **não** é a checagem. Se não der pra buscar de jeito nenhum, avisar que não checou; nunca dizer "versão em dia" sem ter comparado.
 - Se o `.prumo/system/PRUMO-CORE.md` do workspace estiver atrás do `Prumo/VERSION` local, isso deve ser tratado como core defasado do workspace, não como detalhe invisível.
 - Se tiver `prumo` no PATH e o workspace estiver no formato novo, o runtime pode dar a **prévia** rápida (`prumo start`) — mas o briefing é a curadoria rica, não o cartão. Não encerrar na prévia.
 

@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.7.1] - 2026-06-24
+
+### Fixed
+- **Sem runtime no PATH, o briefing não avisava de versão nova** (#106) — o banner automático é do CLI do runtime; sem `prumo` no PATH, o fluxo manual deveria fazer a comparação remota (Passo 2 do `version-update.md`), mas a pulava: o passo tinha cara de "fonte disponível" e a regra "Nunca use WebFetch" (escopada a não corromper o core) era generalizada, deixando o agente sem caminho sancionado para buscar o `VERSION` remoto. Resultado: falso "sem drift" mesmo com versão nova publicada. Agora o Passo 2 é ação imperativa — **buscar o `VERSION` remoto via WebFetch/`curl` para comparação é explicitamente permitido** (a proibição vale só para aplicar update / reescrever o core); sem nenhum jeito de buscar, o agente **avisa** que não checou em vez de declarar "em dia". Reforçado em `briefing-procedure.md` e `briefing/SKILL.md` (preflight inclui comparação remota). Guard de conteúdo em `test_version_warn_manual.py`.
+
 ## [5.7.0] - 2026-06-23
 
 ### Changed

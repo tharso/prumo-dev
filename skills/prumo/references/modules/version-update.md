@@ -1,6 +1,6 @@
 # Version Update
 
-> **module_version: 4.21.0**
+> **module_version: 4.22.0**
 >
 > Fonte canônica do fluxo de verificação e aplicação de atualização do Prumo.
 
@@ -23,15 +23,19 @@ Ela deve acontecer como preflight antes do panorama principal.
 4. Se `prumo_version` do workspace for maior que `VERSION` do repo local, tratar como inconsistência de ambiente e avisar isso explicitamente.
 5. Só tratar como falha de release quando houver conflito impossível de explicar por drift normal de workspace.
 
-## Passo 2: comparar com a versão remota
+## Passo 2: comparar com a versão remota (ação, não opção)
 
-Fonte remota permitida para comparação:
+Esta comparação **não é opcional** no briefing. **Busque agora** o `VERSION` remoto bruto e compare com o `prumo_version` do workspace:
 
-- `https://raw.githubusercontent.com/tharso/prumo/main/VERSION`
+- Fonte: `https://raw.githubusercontent.com/tharso/prumo/main/VERSION`
+- **Sem runtime no PATH:** use **WebFetch** dessa URL raw (ou `curl` quando houver shell). **Isso é permitido e esperado** — sem runtime/shell, WebFetch do `VERSION` é o caminho sancionado. Não confunda esta busca com "drift local": comparar só o core do workspace contra si mesmo **não** é o Passo 2.
+- Se `VERSION` remoto > `prumo_version` do workspace, há **versão nova** → seguir para o Passo 4 (aviso).
 
-Regra dura:
+**Caso sem nenhum jeito de buscar** (sem runtime, sem shell e sem WebFetch): **avisar explicitamente** que não deu para checar — `"Não consegui checar a versão pública agora; sigo o briefing sem garantia de versão atual."` **Nunca** declarar "sem drift" ou "versão em dia" sem ter feito a comparação remota: silenciar aqui é como dizer que o tanque está cheio sem olhar o ponteiro.
 
-- Nunca use WebFetch, preview remoto, leitor inteligente ou resumo interpretado para reescrever `.prumo/system/PRUMO-CORE.md`.
+Regra dura (escopo limitado):
+
+- A proibição de **WebFetch / preview remoto / leitor inteligente / resumo interpretado** vale **apenas** para **aplicar update ou reescrever `.prumo/system/PRUMO-CORE.md`** (Passo 5). Para **comparar versão** (este passo), buscar o `VERSION` remoto é legítimo. Busque só o `VERSION` — não changelog, não core inteiro.
 
 ## Passo 3: descobrir transporte seguro de aplicação
 
