@@ -37,7 +37,8 @@ class VersionWarnManualGuards(unittest.TestCase):
         text = _read("skills/prumo/references/modules/version-update.md")
         # Sem nenhum jeito de buscar: avisar; nunca declarar "sem drift" sem comparar.
         self.assertIn("Não consegui checar a versão pública", text)
-        self.assertIn("sem drift", text)
+        # Rigor: exige a PROIBIÇÃO ("Nunca ... sem drift"), não só o termo solto.
+        self.assertRegex(text, r"[Nn]unca[^\n]*sem drift")
 
     def test_briefing_entrypoints_mention_remote_comparison(self):
         proc = _read("skills/prumo/references/modules/briefing-procedure.md")
