@@ -1,6 +1,6 @@
 # Briefing Procedure
 
-> **module_version: 4.22.0**
+> **module_version: 4.23.0**
 >
 > Fonte canônica do procedimento de briefing do Prumo.
 > Se este módulo conflitar com um resumo em `SKILL.md`, este módulo vence.
@@ -43,9 +43,9 @@ O cartão do runtime (`prumo start` / `prumo briefing`) é a **prévia** — um 
 
 ## Passo 2: preflight de versão
 
-Antes do panorama, comparar a versão local usando o módulo `version-update.md`.
+Antes do panorama, executar o **preflight completo** de `version-update.md` — **incluindo a comparação remota** (Passo 2 do módulo: buscar o `VERSION` público via WebFetch/`curl` quando não há runtime). Não parar no drift local: "comparar só o core do workspace contra si mesmo" não é a checagem de versão.
 
-1. Se houver versão nova detectável, avisar a diferença em uma linha e seguir o briefing. Não bloquear.
+1. Se houver versão nova detectável (incl. `VERSION` remoto > `prumo_version` do workspace), avisar a diferença em uma linha e seguir o briefing. Não bloquear.
 2. Se `Prumo/VERSION` local for maior que o `prumo_version` do `.prumo/system/PRUMO-CORE.md` do workspace, avisar que o core do workspace está defasado e seguir.
 3. Se a checagem falhar, registrar em uma linha e seguir. O briefing não vira refém de updater manco.
 
