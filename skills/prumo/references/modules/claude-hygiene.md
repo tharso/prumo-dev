@@ -25,7 +25,7 @@ Higiene aqui significa:
 
 ### Passo 2: Rodar diagnóstico
 
-Quando houver shell, usar `prumo_claude_hygiene.py` resolvendo os caminhos pela ordem definida em `runtime-paths.md`.
+A higiene é conduzida pelo **agente**: ler os arquivos do escopo (`PERFIL.md` e módulos do `Agente/`) e diagnosticar à mão, comparando com o contrato de `runtime-file-governance.md`. Há uma referência histórica a um script `prumo_claude_hygiene.py` que **não existe na arquitetura atual** (vivia em `cowork-plugin/`, removido na consolidação skills-first) — **não depender dele**; o diagnóstico e a proposta são do agente.
 
 O diagnóstico deve gerar:
 
@@ -41,7 +41,7 @@ Além da limpeza estrutural, o diagnóstico deve classificar drift de conteúdo:
 3. status transitório velho demais para continuar em configuração viva;
 4. item que exige confirmação factual antes de qualquer movimento;
 5. **ritual recorrente no PERFIL** (seção "Lembretes recorrentes", modelo legado anterior à 5.9) → propor migração por natureza: com hora → **agenda** (oferecer criar, sem escrever no calendário sem o ok); sem hora → **`Agente/ROTINA.md`**; sem mudar nenhuma decisão → **poda**;
-6. **redundância no `ROTINA.md`**: linha duplicada, ritual com hora que deveria estar só na agenda (exclusividade — não duplicar no ROTINA), ou contexto que não muda decisão nenhuma (candidato a poda).
+6. **redundância no `ROTINA.md`**: linha duplicada; **histórico de ocorrências disfarçado de padrão** ("segunda fiz X, terça fiz X, quarta fiz X" — o `ROTINA` guarda o *padrão estável*, não o log do que aconteceu); ritual com hora que deveria estar só na agenda (exclusividade — não duplicar no ROTINA); ou contexto que não muda decisão nenhuma (candidato a poda).
 
 Destino padrão:
 
@@ -81,10 +81,10 @@ Quando houver decisão para o usuário, preferir algo do tipo:
 
 ### Passo 4: Aplicar só com confirmação
 
-Se o usuário aprovar explicitamente:
+Se o usuário aprovar explicitamente, **nesta ordem** (backup antes de mudar):
 
-1. rodar o script com `--apply`;
-2. criar backup em `.prumo/backups/perfil-hygiene/<YYYYMMDDTHHMMSS>/PERFIL.md`;
+1. **backup primeiro** — copiar para `.prumo/backups/perfil-hygiene/<YYYYMMDDTHHMMSS>/` **todos** os arquivos que a mudança vai tocar, não só o `PERFIL.md`: se a migração move ritual para o `ROTINA.md`, fazer backup do `ROTINA.md` também (o destino também é cirurgia);
+2. aplicar a mudança proposta;
 3. atualizar `REGISTRO.md`.
 
 ## Guardrails

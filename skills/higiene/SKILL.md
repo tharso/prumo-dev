@@ -40,7 +40,7 @@ Isso já existia e continua funcionando.
 - `.prumo/system/PRUMO-CORE.md` defasado em relação ao runtime
 
 **Como funciona:**
-- Ler `skills/prumo/references/modules/claude-hygiene.md` para o procedimento detalhado (o nome do módulo é histórico — cobre a higiene de `PERFIL.md`)
+- Ler `skills/prumo/references/modules/claude-hygiene.md` para o procedimento detalhado (o nome do módulo é histórico — cobre a higiene do `PERFIL.md` e dos módulos do `Agente/`)
 - Apresentar em 3 blocos fixos: mudanças seguras, confirmações factuais, decisões de governança
 - Só aplicar com confirmação explícita
 
@@ -63,9 +63,11 @@ Isso já existia e continua funcionando.
 **Verificar:**
 - Data de última modificação dos arquivos em `Agente/`
 - Arquivos com mais de 6 meses sem alteração
-- **`ROTINA.md` inflado ou redundante**: linhas que repetem a mesma rotina,
-  ritual com hora que deveria estar só na agenda (não duplicado no ROTINA),
-  ou contexto que não muda nenhuma decisão do Prumo (candidato a poda)
+- **`ROTINA.md` inflado ou redundante**: linhas que repetem a mesma rotina;
+  histórico de ocorrências disfarçado ("segunda fiz X, terça fiz X" — o ROTINA
+  guarda o *padrão* estável, não o log do que aconteceu); ritual com hora que
+  deveria estar só na agenda (não duplicado no ROTINA); ou contexto que não
+  muda nenhuma decisão do Prumo (candidato a poda)
 
 **Propor (um arquivo por vez):**
 - "PROJETOS.md tem 8 meses sem mexer. Ainda vale ou posso arquivar?"
