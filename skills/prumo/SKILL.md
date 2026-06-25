@@ -227,7 +227,7 @@ Usar a resposta sobre tendência para gerar o `{{PROBLEMA_PRINCIPAL}}` no templa
 
 Cada compromisso recorrente coletado é roteado **por natureza** — nunca despejado numa lista genérica:
 
-- **com hora marcada** (reunião fixa, buscar a criança na escola) → oferecer criar na **agenda** (Calendar MCP); nunca escrever no calendário sem o ok do usuário;
+- **com hora marcada** (reunião fixa, buscar a criança na escola) → oferecer criar na **agenda** (Calendar MCP) seguindo `references/modules/escrita-calendario.md` (oferece, idempotência, série recorrente, fallback); nunca escrever no calendário sem o ok do usuário;
 - **sem hora, mas que ajuda a entender a rotina** (lanche da escola, janelas de indisponibilidade) → `Agente/ROTINA.md` como contexto;
 - **com data pontual** (conta a vencer no dia X) → `PAUTA.md` com `| cobrar: DD/MM`;
 - **que não muda nenhuma decisão do Prumo** → não registrar (poda).

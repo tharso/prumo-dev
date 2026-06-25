@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.12.0] - 2026-06-25
+
+### Added
+- **Contrato de escrita no calendário: ritual com hora vira evento** (#114 Fatia 4) — fecha o ciclo da convergência do perfil. O Prumo passa a poder **criar** um evento de calendário a partir de um ritual com hora (antes só lia a agenda e fazia RSVP/remarcar). Sempre **oferecido, nunca silencioso**: você aprova (em lote quando há vários), o Prumo cria uma **série recorrente** e remove o ritual do `PERFIL.md`/`ROTINA.md` (exclusividade). **Idempotência** por dupla checagem — tombstone no `REGISTRO.md` (`ritual X → agenda`) + evento no calendário —, então não duplica entre hosts. **Sem capacidade de escrita** (Calendar MCP read-only ou ausente): orienta a criar à mão e mantém o ritual no `ROTINA.md` até haver escrita, em vez de mascarar. Novo módulo canônico `escrita-calendario.md`, referenciado por setup, start e higiene.
+
 ## [5.11.1] - 2026-06-25
 
 ### Fixed

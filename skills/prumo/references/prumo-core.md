@@ -1,6 +1,6 @@
 # Prumo Core — Motor do sistema
 
-> **prumo_version: 5.11.1**
+> **prumo_version: 5.12.0**
 >
 > Núcleo estável do Prumo. Define regras, guardrails e localização dos módulos canônicos.
 > Procedimento detalhado não mora aqui.
@@ -133,6 +133,7 @@ Quando um comando específico for executado, o agente deve ler o módulo corresp
 | Bridge do runtime no Cowork | `.prumo/skills/prumo/references/modules/cowork-runtime-bridge.md` |
 | Contrato de interface | `.prumo/skills/prumo/references/modules/interaction-format.md` |
 | Governança de arquivos | `.prumo/skills/prumo/references/modules/runtime-file-governance.md` |
+| Escrita no calendário | `.prumo/skills/prumo/references/modules/escrita-calendario.md` |
 | Política de leitura | `.prumo/skills/prumo/references/modules/load-policy.md` |
 | Runtime paths | `.prumo/skills/prumo/references/modules/runtime-paths.md` |
 | Feedback do produto | `.prumo/skills/prumo/references/feedback-loop.md` |
