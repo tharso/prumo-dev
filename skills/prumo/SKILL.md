@@ -229,7 +229,8 @@ Cada compromisso recorrente coletado é roteado **por natureza** — nunca despe
 
 - **com hora marcada** (reunião fixa, buscar a criança na escola) → oferecer criar na **agenda** (Calendar MCP); nunca escrever no calendário sem o ok do usuário;
 - **sem hora, mas que ajuda a entender a rotina** (lanche da escola, janelas de indisponibilidade) → `Agente/ROTINA.md` como contexto;
-- **com data pontual** (conta a vencer no dia X) → `PAUTA.md` com `| cobrar: DD/MM`.
+- **com data pontual** (conta a vencer no dia X) → `PAUTA.md` com `| cobrar: DD/MM`;
+- **que não muda nenhuma decisão do Prumo** → não registrar (poda).
 
 Não despejar rituais na seção "Agendado / Lembretes" do PAUTA — rituais não viram pendência repetida.
 
@@ -302,7 +303,7 @@ Após coletar todas as respostas:
 - Raiz: ponteiros de compatibilidade (CLAUDE.md, AGENT.md, AGENTS.md). Todos apontam para `Prumo/AGENT.md`.
 - `Prumo/`: dados operacionais do usuário (PAUTA, INBOX, REGISTRO, IDEIAS, Agente/, Referencias/, Inbox4Mobile/). `Prumo/AGENT.md` é a fonte canônica.
 - `.prumo/`: infraestrutura invisível (state, system/PRUMO-CORE.md, skills/, logs, backups).
-- `Prumo/Agente/PERFIL.md`: configuração pessoal (áreas, tom, lembretes). Nunca atualizado automaticamente.
+- `Prumo/Agente/PERFIL.md`: configuração pessoal (áreas, tom, identidade). Nunca atualizado automaticamente.
 - `.prumo/system/PRUMO-CORE.md`: motor do sistema. Atualizável automaticamente.
 - `.prumo/state/`: estado técnico do runtime. Agente humano não mexe aqui.
 

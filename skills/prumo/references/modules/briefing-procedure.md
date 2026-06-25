@@ -16,7 +16,7 @@ Nunca reiniciar a contagem ao mudar de seção. Nunca usar sub-numeração (1.1,
 
 Antes de executar o briefing:
 
-1. Ler `Prumo/Agente/PERFIL.md`.
+1. Ler `Prumo/Agente/PERFIL.md` e `Prumo/Agente/ROTINA.md` (rituais e cadências sem hora, quando existir).
 2. Ler `.prumo/system/PRUMO-CORE.md`.
 3. Ler `skills/prumo/references/modules/load-policy.md` quando o repo local estiver disponível.
 4. Ler `skills/prumo/references/modules/version-update.md`.

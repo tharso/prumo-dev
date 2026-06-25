@@ -1,7 +1,7 @@
 # Template do Prumo/Agente/PERFIL.md (configuração pessoal)
 
 > Este template gera o arquivo `Prumo/Agente/PERFIL.md` — configuração
-> pessoal do usuário. Contém áreas de vida, tom, lembretes, integrações
+> pessoal do usuário. Contém áreas de vida, tom, integrações
 > e informações pessoais.
 >
 > Equivale ao antigo CLAUDE.md pessoal, mas agora vive dentro de `Prumo/Agente/`
