@@ -9,9 +9,9 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 | Tópico                | Entradas                                                                                  |
 |-----------------------|-------------------------------------------------------------------------------------------|
 | `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first), 2026-05-04 (#77), 2026-06-21 (#97 mapas)  |
-| `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir) |
+| `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo) |
 | `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first), 2026-05-06 (quality-gate) |
-| `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist) |
+| `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist), 2026-06-24 (#110 não-bundle) |
 | `dispatch-bootstrap`  | 2026-04-21 (#69 despacho), 2026-06-23 (#104 briefing rico)                                |
 | `multiagent-coord`    | 2026-04-20 (#68 HANDOVER)                                                                 |
 | `documentation`       | 2026-04-14 (CLAUDE.md), 2026-06-21 (#97 mapas)                                            |
@@ -56,6 +56,30 @@ A partir de 2026-05-04 (#78), toda entrada nova segue o formato:
 Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões anteriores" (introduzido na #78). Quando um conflito retrospectivo for descoberto, anotar a relação na entrada nova que o resolve — não reescrever entradas antigas.
 
 - `code-quality` — métricas de qualidade do codebase, quality gate, baseline.
+
+---
+
+## 2026-06-24 — `decidir` com ações por conteúdo + extração de vídeo sem API paga (#109/#110)
+
+**Tópicos:** skills-distribution, distribution, briefing
+**Issues relacionadas:** #109 (executa — decidir por conteúdo, Fatia 1), #110 (decide — soft-hook de vídeo).
+**Relações com decisões anteriores:**
+- **Estende:** 2026-06-23 (#102 — decidir). As ações deixam de ser só por tipo de item e passam a ser por **conteúdo** (vídeo/artigo/imagem/nota); corrige a regra offline que eu havia super-apertado (ela vale para a mecânica, não para os links de conteúdo).
+- **Mantém e aplica:** 2026-04-22 (multi-cliente — feature não pode depender de capacidade exclusiva de host / precisa caber em Markdown + runtime Python). Por isso a `youtube-extractor` **não** é empacotada (depende de yt-dlp + youtube-transcript-api + Gemini API); a extração vira **soft-hook** com fallback gratuito.
+
+**Contexto:** Feedback de uso real do Tharso: a `decidir` prometia "ações contextuais" mas entregava menu genérico para itens de inbox (vídeo, artigo, imagem e nota recebiam o mesmo "rotear / virar referência"); links vinham inertes; e "virar referência" era buraco negro. Além disso, a `youtube-extractor` (que faria o gancho de vídeo) depende de API paga e binários externos.
+
+**Decisão:**
+1. **Ações por conteúdo** na `decidir` (allowlist + SKILL.md): vídeo → extrair/transcrever/resumir/abrir/ver-até; artigo → resumir/debater/ler-com-prazo; imagem → descrever/OCR; nota → tarefa/pauta/ideia. **Links de conteúdo ativos** (`<a target="_blank">`); a regra offline protege só a mecânica (fontes/JS).
+2. **"Virar referência" passivo removido.** Guardar é committal (motivo + tag); fragmento sem próxima ação vira ideia (`IDEIAS.md`), não pauta — alinhado a "Ideias não são ações" (core, regra 5).
+3. **Extração de vídeo sem API paga (soft-hook):** `extract_transcript` usa `youtube-transcript-api` (legendas grátis, sem key) quando disponível; senão metadados via fetch; senão abrir + tarefa. **Sem Gemini, sem yt-dlp, sem Whisper.** Quem resume/analisa é o Claude. A `youtube-extractor` **não** entra no Prumo (portabilidade).
+
+**Alternativas consideradas:**
+- *Empacotar a `youtube-extractor` as-is* → rejeitado: depende de API do Google + binários → fere a regra multi-cliente.
+- *Bundlar versão leve (só `youtube-transcript-api`)* → adiado: ainda adiciona dep pip; por ora, soft-hook degradável cobre sem inflar o core. Pode virar dependência do runtime numa fatia futura.
+- *Manter "virar referência"* → rejeitado: é o anti-padrão "acumular o que nunca será visto", contra a própria filosofia do Prumo.
+
+**Touchpoint (prumo.me):** sem impacto imediato; ações por conteúdo são refinamento interno da `decidir` (que ainda nem está na landing). Reavaliar quando a `decidir` virar argumento de produto.
 
 ---
 

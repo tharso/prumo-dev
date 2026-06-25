@@ -4,7 +4,8 @@
   PRUMO · DECIDIR — template do documento de despacho/decisão
   ═══════════════════════════════════════════════════════════════
   Forkado da skill `crivo` (mecânica verificada) e adaptado ao Prumo:
-  tema escuro, OFFLINE (sem rede — nenhum http(s):// no arquivo),
+  tema escuro, MECÂNICA offline (fontes/JS/CSS sem rede — mas links de
+  CONTEÚDO do usuário podem ser externos),
   AÇÕES CONTEXTUAIS por-card (cada card traz seu próprio conjunto de
   botões via `actions`), e relatório com bloco JSON parseável além do
   markdown humano.
@@ -19,8 +20,11 @@
   - Copie `Boliand.otf` (de skills/decidir/assets/) para a MESMA pasta
     do HTML gerado, senão o título cai no fallback de sistema (tudo bem).
 
-  REGRA DE OFFLINE: nenhuma URL de rede. Fontes de corpo/mono usam a
-  stack do sistema; o display usa Boliand local com fallback.
+  REGRA DE OFFLINE (vale só para a MECÂNICA): fontes, JS e CSS não
+  dependem de rede — fontes de corpo/mono usam a stack do sistema e o
+  display usa Boliand local. Os LINKS DE CONTEÚDO do usuário (vídeo,
+  artigo) PODEM ser http(s) externos e vêm ativos (sanitizados por
+  `safeUrl`). A regra protege a mecânica, não cega o conteúdo.
 
   Placeholders do corpo:
     __DOC_TITLE__   <title> da aba
@@ -410,7 +414,10 @@ const CONFIG = {
 //               proposta?, options:[{ key, label, desc, rec?, effect? }] }
 //
 // badges: [{label:'P1', tone:'red'}]
-// link:   {label:'pauta #3', href:'...'}  (relativo/local; sem rede)
+// link:   {label, href}  pode ser URL externa de conteúdo (http/https) OU path
+//          local; vem como <a target="_blank"> sanitizado (safeUrl). Para itens
+//          de inbox (vídeo/artigo), USE este campo — não cole <a> cru no contexto.
+//          O href entra no JSON do relatório como `source_url`.
 // IDs reusam a numeração do panorama do briefing (1..N).
 // ATENÇÃO: escapar tags HTML literais no conteúdo (&lt;title&gt;), senão
 //   uma tag crua engole os cards seguintes.
@@ -435,6 +442,23 @@ function save() { localStorage.setItem(KEY, JSON.stringify(state)); }
 
 function actionsOf(p) { return Array.isArray(p.actions) ? p.actions : []; }
 function actionByKey(p, key) { return actionsOf(p).find(a => a.key === key) || null; }
+
+// Itens de inbox são entrada do usuário; href cru em innerHTML é porta lateral.
+// Só protocolos seguros (http/https/mailto) ou caminhos relativos/locais; o
+// resto (javascript:, data:, etc.) vira '#'. Label sempre escapado.
+function safeUrl(url) {
+  const u = String(url == null ? '' : url).trim();
+  if (/^(https?:|mailto:)/i.test(u)) return u;
+  // Relativos/locais: começa com #, / ou . (inclui ./foo e ../foo), ou é um
+  // caminho simples sem esquema. `javascript:`/`data:` caem fora (têm `:`).
+  if (/^[#/.]/.test(u) || /^[\w][\w./?=&%+~-]*$/.test(u)) return u;
+  return '#';
+}
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+  ));
+}
 
 function initLabels() {
   document.getElementById('topbarReportBtn').textContent = L.generate;
@@ -494,7 +518,7 @@ function render() {
 
 function cardHTML(p) {
   const badges = (p.badges || []).map(b => `<span class="badge t-${b.tone || 'slate'}">${b.label}</span>`).join('');
-  const link = p.link ? `<a class="card-link" href="${p.link.href}" target="_blank" rel="noopener">${p.link.label}</a>` : '';
+  const link = p.link ? `<a class="card-link" href="${escapeHtml(safeUrl(p.link.href))}" target="_blank" rel="noopener">${escapeHtml(p.link.label)}</a>` : '';
   const tipo = p.type === 'escolha' ? `<span class="badge t-purple">${L.chooseOne}</span>` : '';
 
   let body = '';
@@ -602,6 +626,8 @@ function buildReportData() {
         choice_key: fb.choice || null,
         choice_label: opt ? opt.label : null,
         effect: opt && opt.effect ? opt.effect : null,
+        source_url: p.link ? safeUrl(p.link.href) : null,
+        source_label: p.link ? p.link.label : null,
         comment: comment || null,
       });
     } else {
@@ -614,6 +640,10 @@ function buildReportData() {
         effect: act && act.effect ? act.effect : null,
         requires: requires,
         requires_missing: !!(requires && !comment),
+        // O link do item (vídeo/artigo) entra no JSON: extract_transcript/summarize/
+        // open_link precisam saber QUAL conteúdo, mesmo numa sessão nova.
+        source_url: p.link ? safeUrl(p.link.href) : null,
+        source_label: p.link ? p.link.label : null,
         comment: comment || null,
       });
     }

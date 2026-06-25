@@ -13,7 +13,7 @@ Cada ação tem:
 
 ## Regra de ouro da execução
 
-Tokens `draft_*` produzem **rascunho** (não enviam). "Executo sem perguntar de novo" vale para `draft_*`, registrar, `mark_seen`, `make_task`/`make_reference`/`make_pauta`, `snooze`/`wait_until`/`promote_today`, e `archive` **com destino explícito**. **NÃO** vale (confirma antes) para enviar de fato o que foi rascunhado, `rsvp_decline`/`propose_reschedule` com terceiros, e qualquer remoção de inbox (`archive`/`discard`) — o core exige confirmar o plano e registrar no `REGISTRO.md` antes de remover o original. Botão não é procuração vitalícia.
+Tokens `draft_*` produzem **rascunho** (não enviam). "Executo sem perguntar de novo" vale para `draft_*`, registrar, `mark_seen`, `make_task`/`make_pauta`/`make_idea`, `keep_with_reason` (com motivo+tag), `summarize`/`describe_image`/`extract_transcript`, `snooze`/`wait_until`/`promote_today`, e `archive` **com destino explícito**. **NÃO** vale (confirma antes) para enviar de fato o que foi rascunhado, `rsvp_decline`/`propose_reschedule` com terceiros, e qualquer remoção de inbox (`archive`/`discard`) — o core exige confirmar o plano e registrar no `REGISTRO.md` antes de remover o original. Botão não é procuração vitalícia.
 
 ## Por tipo
 
@@ -67,17 +67,57 @@ O calendário do briefing é "evento do dia", não necessariamente convite. Sem 
 | Delegar | `delegate` | blue | `draft_delegation` | destinatário | só ao enviar |
 | Descartar | `discard` | red | `discard` | motivo | sim (remoção) |
 
-### Item de inbox (conteúdo / arquivo / link)
+### Itens de inbox — ações POR CONTEÚDO
 
-Inbox4Mobile traz conteúdo, não nota pura. Remoção sempre confirma (ASSERT do core: confirmar plano + registrar no `REGISTRO.md` antes de remover o original).
+Inbox4Mobile traz conteúdo, não nota pura. **Classifique o conteúdo** e ofereça o menu certo — não um genérico. Subtipos: **vídeo** (link YouTube/Vimeo/etc.), **artigo/link** (URL de página), **imagem** (jpg/png), **nota** (texto sem URL).
+
+Duas regras transversais aqui:
+
+- **Links de conteúdo vêm ATIVOS** no card (`<a target="_blank" rel="noopener">`). A regra offline da `decidir` vale para a **mecânica** (fontes/JS embutidos), **não** para os links do usuário. Card com link inerte é triagem no escuro.
+- **Não existe "virar referência" passivo.** Guardar sem motivo, tag e caminho de volta é buraco negro — viola "Ideias não são ações" (`prumo-core`, regra 5). Onde "guardar" existir, é **committal**: exige motivo + tag.
+- Remoção (`discard`) sempre confirma (ASSERT do core: confirmar plano + registrar no `REGISTRO.md` antes de remover o original).
+
+#### Vídeo (YouTube/Vimeo/…)
 
 | label | key | tone | effect | requires | confirma? |
 |---|---|---|---|---|---|
-| Rotear p/ leitura | `route_reading` | blue | `route_reading` | — | não |
-| Virar referência | `make_reference` | green | `save_reference` | onde guardar | não |
+| Extrair/transcrever | `extract` | green | `extract_transcript` | — | não |
+| Resumir | `summarize` | green | `summarize` | — | não |
+| Abrir | `open` | blue | `open_link` | — | não |
+| Ver até `<data>` | `make_task` | amber | `make_task` | prazo | não |
+| Descartar | `discard` | red | `discard` | motivo | sim |
+
+`extract_transcript` é **soft-hook** (ver SKILL.md → "Receber e executar"): usa `youtube-transcript-api` se disponível; senão, metadados via fetch; quem resume é o Claude. Nunca quebra.
+
+#### Artigo / link
+
+| label | key | tone | effect | requires | confirma? |
+|---|---|---|---|---|---|
+| Resumir | `summarize` | green | `summarize` | — | não |
+| Debater comigo | `debate` | green | `debate` | — | não |
+| Ler depois (com prazo) | `read_later` | amber | `route_reading` | até quando | não |
 | Virar tarefa | `make_task` | blue | `make_task` | — | não |
-| Arquivar | `archive` | slate | `archive` | — | sim (remoção de inbox) |
-| Descartar | `discard` | red | `discard` | motivo | sim (remoção de inbox) |
+| Descartar | `discard` | red | `discard` | motivo | sim |
+
+#### Imagem
+
+| label | key | tone | effect | requires | confirma? |
+|---|---|---|---|---|---|
+| Descrever / OCR | `describe` | green | `describe_image` | — | não |
+| Virar tarefa | `make_task` | blue | `make_task` | — | não |
+| Guardar (com motivo) | `keep` | slate | `keep_with_reason` | motivo + tag | não |
+| Descartar | `discard` | red | `discard` | motivo | sim |
+
+#### Nota (texto sem link)
+
+| label | key | tone | effect | requires | confirma? |
+|---|---|---|---|---|---|
+| Virar tarefa | `make_task` | blue | `make_task` | — | não |
+| Virar pauta | `make_pauta` | blue | `make_pauta` | — | não |
+| Virar ideia | `make_idea` | slate | `make_idea` | — | não |
+| Descartar | `discard` | red | `discard` | motivo | sim |
+
+`make_idea` é para fragmento **sem próxima ação concreta** → vai pra `IDEIAS.md`, não pra `PAUTA.md`. Forçar tudo a virar tarefa é como `make_reference` de antigamente: incha a pauta com o que não vai andar.
 
 ### Decisão entre alternativas
 

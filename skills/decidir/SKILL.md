@@ -50,6 +50,7 @@ Use `assets/template.html`. A mecânica (estado em localStorage, ações por-car
 
 2. **Escolha tipo e ações por item:**
    - **`despacho`** — a maioria dos itens. Traz `actions: [{key, label, tone, effect, requires?}]`. As ações vêm da **allowlist por tipo** em `references/acoes-allowlist.md` — **selecione de lá, nunca invente verbos**. `effect` é o token canônico (snake_case) da allowlist, não prosa. Só ofereça ações que cabem naquele item: `Delegar` traz `requires: 'destinatário'` (o usuário informa no comentário) — não ofereça se não houver a quem delegar; `Confirmar/Recusar` só em convite com RSVP, não em evento do dia comum.
+     - **Itens de inbox: classifique o CONTEÚDO** (vídeo / artigo-link / imagem / nota) e use o **menu por conteúdo** da allowlist — não o genérico. Um vídeo recebe `Extrair/transcrever` e `Resumir`, não "virar referência". E traga o **link do item** no campo estruturado `link: {label, href}` (o template o renderiza ativo e sanitizado). Thumbnail/embed fica para fatia futura.
    - **`escolha`** — decisões entre alternativas (foco do dia, qual caminho). Opções A/B/C com **texto final** e uma `rec: true`.
 
 3. **Preencha CONFIG e os placeholders:**
@@ -59,7 +60,7 @@ Use `assets/template.html`. A mecânica (estado em localStorage, ações por-car
 4. **Salve e mantenha offline:**
    - Caminho: `.prumo/state/decidir/briefing-<data>-<hora>-<hash>.html`. **Nunca** em pasta de build (`public/`, `dist/`, `static/`).
    - **Copie `assets/Boliand.otf` para a mesma pasta do HTML** (o `@font-face` referencia `Boliand.otf` relativo). Sem a cópia, o título cai no fallback de sistema — funciona, só perde o display da marca.
-   - **Sem rede.** Nenhuma URL `http(s)://` no arquivo. Não adicionar Google Fonts, CDN ou analytics. O usuário abre offline, possivelmente sem internet.
+   - **Sem rede na mecânica.** A mecânica do documento (fontes, JS, CSS) **não pode depender de rede** — nada de Google Fonts, CDN ou analytics; a fonte é local (`Boliand.otf` copiada). **Mas os links de conteúdo do usuário vêm ATIVOS** (`<a href="…" target="_blank" rel="noopener">`): vídeo, artigo, qualquer URL que o item carrega. A regra offline protege a mecânica, não cega o conteúdo — card com link inerte é triagem no escuro.
 
 5. **Verifique antes de entregar** (a entrega é um artefato — entregue testado):
    - **Contagem:** nº de `<article class="card">` renderizados == nº de entradas em `POINTS`. Se renderizou menos, quase sempre há uma tag HTML literal não-escapada no conteúdo (ex.: `<title>` cru) engolindo os cards seguintes — escape como `&lt;title&gt;`.
@@ -74,13 +75,22 @@ Entregue com: caminho do arquivo, o que tem dentro (nº de itens, seções), com
 
 Quando o usuário colar o relatório:
 
-1. **Leia o bloco JSON** (`prumo_decidir_report.v1`), não a prosa. Cada item de despacho traz `item_id`, `action_key`, `label`, `effect` (token canônico — aja por ele), `requires`, `requires_missing` e `comment`; os de `escolha` trazem `choice_key`, `choice_label`, `effect`.
+1. **Leia o bloco JSON** (`prumo_decidir_report.v1`), não a prosa. Cada item de despacho traz `item_id`, `action_key`, `label`, `effect` (token canônico — aja por ele), `requires`, `requires_missing`, **`source_url`/`source_label`** (a URL do conteúdo — vídeo/artigo — pra `extract_transcript`/`summarize`/`open_link` saberem QUAL item, mesmo em sessão nova) e `comment`; os de `escolha` trazem `choice_key`, `choice_label`, `effect`, `source_url`/`source_label`.
 2. **`requires_missing: true`:** a ação exige um detalhe (`requires`) que o usuário não preencheu no comentário (ex.: `Delegar` sem destinatário, `Aguardar até` sem data). **Pedir o detalhe antes de executar** — não chutar.
 3. **Execute em camadas — a promessa "executo sem perguntar de novo" tem limite:**
    - **Direto (sem nova confirmação):** rascunhar resposta/cobrança (sem enviar), registrar, marcar visto, virar pauta/tarefa, adiar, arquivar **com destino explícito**.
    - **Confirmar antes de executar:** enviar email ou cobrança de fato, recusar/remarcar evento com terceiros, e **qualquer remoção de item de inbox** (`arquivar`/`descartar`) — o core exige confirmar o plano e registrar no `REGISTRO.md` antes de remover o original (ASSERT). Botão de despacho não é procuração para mandar mensagem ou apagar arquivo sem o usuário ver.
-4. **Comentário é instrução.** "Responder" + comentário = responder daquele jeito. Pergunta no comentário exige resposta concreta.
-5. **Feche informando o estado:** o que foi aplicado, o que foi só rascunhado/aguardando confirmação, o que ficou sem resposta.
+4. **Efeitos de conteúdo (itens de inbox) — quem analisa é o próprio Claude, sem API externa:**
+   - `extract_transcript` (vídeo): **soft-hook**, nesta ordem — (a) `youtube-transcript-api` se disponível (legendas grátis, **sem API key**); (b) fetch da página pra título/descrição/capítulos; (c) se nada, abrir + virar tarefa com prazo. Depois o Claude resume. **Nunca** exigir API do Google, yt-dlp, ffmpeg ou Whisper.
+   - `summarize` / `debate`: o Claude resume ou debate o conteúdo acessível (transcript/artigo). Sem acesso, dizer isso e oferecer abrir — não inventar resumo.
+   - `describe_image`: o Claude descreve / extrai texto (OCR) da imagem que ele já consegue ler.
+   - `keep_with_reason`: só guardar **com motivo + tag** (o `requires`). Sem isso, não é referência — é buraco negro.
+   - `make_idea`: fragmento **sem próxima ação** → `IDEIAS.md`, nunca `PAUTA.md`.
+   - `open_link`: apenas **apresentar o link ativo** (`source_url`) ao usuário pra ele abrir. Não marca o item como processado — é só abrir, a decisão real fica pra depois.
+
+   **Links de conteúdo:** ao gerar os cards, use o **campo estruturado `link: {label, href}`** (o template sanitiza via `safeUrl` e escapa o label). **Não** cole `<a>` cru no `contexto`/`evidencia` — inbox é entrada do usuário; HTML cru é porta lateral.
+5. **Comentário é instrução.** "Responder" + comentário = responder daquele jeito. Pergunta no comentário exige resposta concreta.
+6. **Feche informando o estado:** o que foi aplicado, o que foi só rascunhado/aguardando confirmação, o que ficou sem resposta.
 
 ## Referências
 

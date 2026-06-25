@@ -55,5 +55,46 @@ class DecidirTemplateOfflineTests(unittest.TestCase):
         self.assertIn("prumo_decidir_report.v1", html, "relatório precisa do schema JSON versionado")
 
 
+class DecidirContentAwareGuards(unittest.TestCase):
+    """#109: ações por conteúdo, links ativos, sem 'virar referência' passivo, sem API externa."""
+
+    def test_allowlist_is_content_aware(self):
+        text = (SKILL_DIR / "references" / "acoes-allowlist.md").read_text(encoding="utf-8")
+        self.assertIn("extract_transcript", text)  # gancho de vídeo (soft-hook)
+        self.assertIn("Vídeo", text)  # subtipo por conteúdo, não só "item de inbox"
+        # "virar referência" passivo morreu (era effect save_reference).
+        self.assertNotIn("save_reference", text)
+
+    def test_skill_offline_is_mechanics_only_and_no_external_api(self):
+        skill = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("ATIVOS", skill)  # links de conteúdo do usuário vêm ativos
+        self.assertIn("sem API key", skill)  # extract_transcript não exige API do Google
+
+    def test_template_offline_rule_scoped_to_mechanics(self):
+        html = (SKILL_DIR / "assets" / "template.html").read_text(encoding="utf-8")
+        # A regra offline é da MECÂNICA; links de conteúdo podem ser externos.
+        # (Sem isso, o template contradiz a SKILL.md e o agente amputa o link.)
+        self.assertIn("MECÂNICA", html)
+        self.assertIn("CONTEÚDO do usuário", html)
+
+    def test_template_report_carries_source_url(self):
+        html = (SKILL_DIR / "assets" / "template.html").read_text(encoding="utf-8")
+        # extract_transcript/summarize/open_link precisam da URL no JSON.
+        self.assertIn("source_url", html)
+
+    def test_template_sanitizes_content_link(self):
+        html = (SKILL_DIR / "assets" / "template.html").read_text(encoding="utf-8")
+        self.assertIn("function safeUrl", html)
+        self.assertIn("safeUrl(p.link.href)", html)  # aplicado no render do link
+
+    def test_inbox_preview_has_no_heavy_extractor_action(self):
+        text = (REPO_ROOT / "runtime" / "prumo_runtime" / "generate_inbox_preview.py").read_text(
+            encoding="utf-8"
+        )
+        # #110: o botão não anuncia a skill pesada; usa ação neutra/degradável.
+        self.assertNotIn("Copiar: youtube-extractor", text)
+        self.assertIn("extrair/transcrever", text)
+
+
 if __name__ == "__main__":
     unittest.main()

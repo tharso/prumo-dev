@@ -74,6 +74,43 @@ Por que funciona: as opções têm **texto final** (escolher = decidir), cada `d
 
 Por que falha: opções vagas que descrevem categorias em vez de conter a decisão. O usuário escolhe "A" e nada fica resolvido — você ainda vai ter que perguntar "trabalhar em quê?". A rodada perdeu o propósito.
 
+## Card de despacho — vídeo do inbox (ações por conteúdo)
+
+```js
+{
+  id: '14', sec: 'inbox', type: 'despacho',
+  badges: [{label:'vídeo', tone:'blue'}],
+  link: { label: 'abrir no YouTube', href: 'https://www.youtube.com/watch?v=...' },
+  title: 'YouTube (24/06): "your comprehension is worth more"',
+  contexto: 'Captura de 24/06, ~18min. O link do vídeo vai no campo `link` abaixo (sanitizado pelo template) — não cole `<a>` cru aqui.',
+  actions: [
+    { key:'extract',   label:'Extrair/transcrever', tone:'green', effect:'extract_transcript' },
+    { key:'summarize', label:'Resumir',             tone:'green', effect:'summarize' },
+    { key:'open',      label:'Abrir',               tone:'blue',  effect:'open_link' },
+    { key:'make_task', label:'Ver até',             tone:'amber', effect:'make_task', requires:'prazo' },
+    { key:'discard',   label:'Descartar',           tone:'red',   effect:'discard',  requires:'motivo' },
+  ]
+}
+```
+
+Por que funciona: ações **por conteúdo** (vídeo → extrair/resumir, não "virar referência"), **link ativo** no contexto e no `link` (a regra offline é da mecânica, não do conteúdo), e `extract_transcript` é **soft-hook** — legenda grátis via `youtube-transcript-api` quando há, senão metadados; quem resume é o Claude, **sem API do Google**. "Ver até" força prazo em vez de virar pilha eterna.
+
+## Card RUIM — conteúdo tratado como genérico
+
+```js
+{
+  id: '14', type: 'despacho',
+  title: 'Link do inbox',
+  contexto: 'Tem um vídeo do YouTube aqui.',
+  actions: [
+    { key:'route_reading', label:'Rotear p/ leitura', tone:'blue' },
+    { key:'make_reference', label:'Virar referência', tone:'green' },
+  ]
+}
+```
+
+Por que falha: é um **vídeo** e o menu não tem extrair/resumir/abrir; o link veio **inerte** (texto, não `<a>`); e "virar referência" é o buraco negro de sempre. O usuário decide no escuro e o item morre numa pasta.
+
 ## Padrões que elevam o despacho
 
 - **Agrupe o barato, separe o caro.** Cinco emails informativos com a mesma cara podem virar cards curtos; uma cobrança que vira atrito merece card próprio com contexto.
