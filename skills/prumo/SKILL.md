@@ -362,7 +362,7 @@ Se `Prumo/AGENT.md` já existe na pasta, o sistema já está configurado. Oferec
 
 1. **Adicionar área/projeto**: Perguntar nome e descrição, criar pasta + README, atualizar `Prumo/Agente/PERFIL.md`
 2. **Mudar tom**: Atualizar a seção de tom em `Prumo/Agente/PERFIL.md`
-3. **Ajustar rituais**: rituais com hora vão para a agenda (oferecer criar o evento); rituais sem hora, para `Prumo/Agente/ROTINA.md`. Não acumular ritual no `PERFIL.md`.
+3. **Ajustar rituais**: rituais com hora vão para a agenda (oferecer criar o evento, seguindo `references/modules/escrita-calendario.md` — idempotência dupla, série recorrente, tombstone, fallback); rituais sem hora, para `Prumo/Agente/ROTINA.md`. Não acumular ritual no `PERFIL.md`.
 4. **Adicionar integração**: Atualizar seção de integrações em `Prumo/Agente/PERFIL.md`
 5. **Reset completo**: Reconfigurar do zero. Ler `references/file-protection-rules.md` antes de regenerar: ponteiros, AGENT.md e PRUMO-CORE.md são regenerados (com backups em `.prumo/backups/<scope>/<timestamp>/` — ver `references/file-protection-rules.md` pra estrutura completa), todos os outros arquivos com dados acumulados são preservados.
 

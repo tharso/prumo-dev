@@ -2,7 +2,7 @@
 
 > **module_version: 1.0.0**
 >
-> Contrato canônico de quando e como o Prumo **cria** um evento de calendário a partir de um ritual com hora. Por padrão o Prumo só **lê** o calendário; criar evento é a única escrita, e é sempre **oferecida**, nunca silenciosa.
+> Contrato canônico de quando e como o Prumo **cria** um evento de calendário a partir de um ritual com hora. Por padrão o Prumo só **lê** o calendário; ações sobre eventos que já existem (RSVP, remarcar) vivem na `decidir`. A **criação** de evento é a escrita deste contrato — e é sempre **oferecida**, nunca silenciosa.
 
 ## Princípio
 
@@ -22,8 +22,8 @@ Sempre **oferecer**, nunca criar sozinho. Com vários de uma vez, oferecer **em 
 
 Antes de oferecer criar, checar em **dois** lugares:
 
-1. **`REGISTRO.md`** — existe um tombstone "ritual X → agenda"? Se sim, já foi migrado; não oferecer de novo.
-2. **Calendário** — já há um evento com o mesmo título/recorrência? Se sim, não recriar.
+1. **`REGISTRO.md`** — existe a linha de migração deste ritual (Origem=`ritual`, Resumo=`<nome do ritual>`, Ação=`migrado para agenda`, Destino=`calendário` — o formato gravado no passo "Ao criar")? Se sim, já foi migrado; não oferecer de novo.
+2. **Calendário** — já há um evento equivalente? Comparar por **título normalizado** (minúsculas, sem acento) **+ dias da semana + horário de início**, no calendário e fuso do usuário. Equivalência aproximada conta (ex.: "Ginástica" ≅ "ginástica" ter/qui 18h se dias e horário batem) — na dúvida, **perguntar antes de criar**, nunca duplicar no escuro.
 
 A dupla checagem cobre o caso sequencial (o comum, incluindo a troca de host). O caso raro de **dois hosts criando no mesmo instante** sobra como race residual aceitável e documentado — não vale um lock só para isso.
 
@@ -31,7 +31,7 @@ A dupla checagem cobre o caso sequencial (o comum, incluindo a troca de host). O
 
 1. Criar uma **série recorrente** — não eventos soltos: título do ritual + recorrência (ex.: "ter/qui 18h"), via a capacidade de criação de evento do **Calendar MCP do host**.
 2. **Registrar o tombstone** no `REGISTRO.md`: `| DD/MM | ritual | <nome do ritual> | migrado para agenda | calendário |`.
-3. **Remover o ritual** do `PERFIL.md`/`ROTINA.md` — exclusividade: agora mora só na agenda.
+3. **Remover o ritual** do `PERFIL.md`/`ROTINA.md` — exclusividade: agora mora só na agenda. A remoção está coberta pela aprovação única da criação, mas **antes de editar** fazer backup conforme `file-protection-rules.md` (PERFIL e os módulos do `Agente/` não são sobrescritos no escuro). O tombstone do passo 2 é o rastro da migração.
 
 ## Sem escrita disponível (Calendar MCP read-only ou ausente)
 
