@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.11.1] - 2026-06-25
+
+### Fixed
+- **`runtime-paths.md` deixava de listar um script de higiene inexistente** (chore, descoberto no review da #114 Fatia 3) — a seção "Scripts oficiais" citava `prumo_claude_hygiene.py`, que não existe na arquitetura atual (a higiene é conduzida pelo agente). Removido da lista, com nota explicativa. Os `prumo_cowork_*` permanecem — existem em `scripts/` e são usados pelo doctor/install (a auditoria confirmou: só o de higiene era órfão). A "Observação" passou a apontar `scripts/` como local canônico (antes citava `skills/prumo/references/`, onde não há scripts).
+
 ## [5.11.0] - 2026-06-25
 
 ### Changed

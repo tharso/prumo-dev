@@ -1,6 +1,6 @@
 # Runtime Paths
 
-> **module_version: 4.21.0**
+> **module_version: 4.22.0**
 >
 > Fonte canônica dos paths válidos de scripts no runtime do Prumo.
 
@@ -16,12 +16,13 @@ Resolver scripts nesta ordem:
 Observação importante:
 
 1. alguns scripts existem como artefato gerado no workspace do usuário;
-2. o repo também pode carregar um template/fallback canônico do mesmo script em `skills/prumo/references/`.
+2. o repo carrega os scripts canônicos em `scripts/` (ver SCRIPT_PATHS acima).
 
-- `prumo_claude_hygiene.py`
 - `prumo_cowork_doctor.sh`
 - `prumo_cowork_update.sh`
 - `prumo_cowork_bridge.py`
+
+A higiene **não** entra nesta lista: é conduzida pelo agente, sem script (ver `claude-hygiene.md`). O antigo `prumo_claude_hygiene.py` não existe na arquitetura atual.
 
 
 ## Regra
