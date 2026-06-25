@@ -85,7 +85,7 @@ Regras:
 - Parser de arquivo do usuario (PAUTA, INBOX, marcadores) nao pode depender de formato exato do template. Tolerar sufixos visuais (separador `—`, `(`, `:`, `-`, `/`, `|`) no header sem confundir secoes parecidas (ex: `Agendado` vs `Agendado Futuro`).
 - Unit test com fixture sintetica **nao basta**. Todo parser de formato do usuario precisa de smoke test contra o workspace real (`DailyLife/Prumo/PAUTA.md` na maquina do Tharso) antes do merge. Se o runtime le 0 itens numa secao que tem conteudo visivel, e bug de parser, nao ausencia de dados.
 - Quando o usuario reportar "o briefing esta ignorando isso" ou "nao me lembrou de X", a primeira hipotese nao e bug no briefing em si. E parser do workspace divergindo do formato que o usuario escreve hoje. Validar com smoke antes de mexer em logica de briefing.
-- Header match tolerante nao e permissao pra match solto. `_section_header_matches` em `workspace.py` so aceita tail apos separadores reconhecidos. Letra nao e separador (senao `Agendado` casaria `Agendado Futuro`, bug mais sutil que o primeiro).
+- Header match tolerante nao e permissao pra match solto. `_section_header_matches` em `pauta_parsing.py` so aceita tail apos separadores reconhecidos. Letra nao e separador (senao `Agendado` casaria `Agendado Futuro`, bug mais sutil que o primeiro).
 
 ## zoneinfo em Windows precisa do pacote tzdata
 
