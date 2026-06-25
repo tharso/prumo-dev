@@ -1,6 +1,6 @@
 {
-  "_note": "Atualizado em 2026-05-14. PRs só podem manter ou melhorar estas métricas.",
+  "_note": "Atualizado em 2026-06-25 (#122): largest_file 1061->930 apos extrair pauta_parsing.py de workspace.py (workspace.py 1061->928). PRs so podem manter ou melhorar estas metricas.",
   "ruff_violations": 11,
   "coverage_pct": 81,
-  "largest_file_lines": 1061
+  "largest_file_lines": 930
 }

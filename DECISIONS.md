@@ -18,7 +18,7 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 | `integrations`        | 2026-04-14 (Google Drive snapshots)                                                       |
 | `briefing`            | 2026-04-14 (Google Drive snapshots), 2026-04-21 (#69 despacho), 2026-06-23 (#102 decidir), 2026-06-23 (#104 briefing rico), 2026-06-25 (#114 perfil modular) |
 | `personalization`     | 2026-04-21 (tharso-voice)                                                                 |
-| `code-quality`        | 2026-05-06 (quality-gate)                                                                 |
+| `code-quality`        | 2026-05-06 (quality-gate), 2026-06-25 (#122 baseline 1061→930)                             |
 | `touchpoint`          | 2026-05-18 (landing page sync)                                                            |
 
 ## Vocabulário controlado de tópicos
@@ -56,6 +56,22 @@ A partir de 2026-05-04 (#78), toda entrada nova segue o formato:
 Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões anteriores" (introduzido na #78). Quando um conflito retrospectivo for descoberto, anotar a relação na entrada nova que o resolve — não reescrever entradas antigas.
 
 - `code-quality` — métricas de qualidade do codebase, quality gate, baseline.
+
+---
+
+## 2026-06-25 — Baseline de `largest_file` apertado de 1061 para 930 (#122)
+
+**Tópicos:** code-quality
+
+**Issues relacionadas:** #122 (executa), #114 (origem — o refactor é follow-up da Fatia 5).
+
+**Relações com decisões anteriores:** estende 2026-05-06 (quality gate com baseline congelado), que estabeleceu que o baseline só anda apertando e que toda atualização vira entrada aqui.
+
+**Contexto:** A Fatia 5 da #114 levou o `workspace.py` ao teto do baseline (1061), forçando código espremido pra caber. O #122 extraiu o parsing de pauta/markdown para `pauta_parsing.py`, derrubando o `workspace.py` para 928 linhas — o maior arquivo do runtime passou a ter folga.
+
+**Decisão:** Apertar `largest_file_lines` de 1061 para 930 (folga de 2 sobre o novo maior arquivo). A catraca anda só no sentido de apertar; 930 fica abaixo do baseline original (945, de 2026-05-06). Ruff e cobertura mantidos (11 / 81%) — a cobertura medida subiu para 82% com a extração, mas o aperto desse eixo fica para decisão futura. Proposto pelo agente, aprovado pelo Tharso.
+
+**Alternativas consideradas:** manter em 1061 (descartado — esconderia a melhoria e deixaria margem para o arquivo voltar a inchar); apertar até 928 exato (descartado — zero folga quebraria o CI na primeira linha nova legítima).
 
 ---
 
