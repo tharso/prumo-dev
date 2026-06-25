@@ -1,12 +1,12 @@
 # Perfil Hygiene
 
-> **module_version: 4.17.0**
+> **module_version: 4.18.0**
 >
-> Fonte canônica da higiene assistida do `Prumo/Agente/PERFIL.md`.
+> Fonte canônica da higiene assistida do `Prumo/Agente/PERFIL.md` e dos módulos do `Agente/`.
 
 ## Princípio
 
-`Prumo/Agente/PERFIL.md` é configuração viva do usuário. Não entra em autosanitização.
+`Prumo/Agente/PERFIL.md` e os módulos do `Agente/` (em especial o `ROTINA.md`) são configuração viva do usuário. Não entram em autosanitização.
 
 Higiene aqui significa:
 
@@ -18,7 +18,7 @@ Higiene aqui significa:
 
 ### Passo 1: Ler contexto
 
-1. Ler `Prumo/Agente/PERFIL.md`.
+1. Ler `Prumo/Agente/PERFIL.md` e `Prumo/Agente/ROTINA.md`.
 2. Ler `.prumo/system/PRUMO-CORE.md`.
 3. Ler `runtime-file-governance.md`.
 4. Se houver shell, ler `runtime-paths.md`.
@@ -39,7 +39,9 @@ Além da limpeza estrutural, o diagnóstico deve classificar drift de conteúdo:
 1. pendência datada que parece pertencer a `PAUTA.md`;
 2. registro histórico que parece pertencer a `REGISTRO.md` ou changelog;
 3. status transitório velho demais para continuar em configuração viva;
-4. item que exige confirmação factual antes de qualquer movimento.
+4. item que exige confirmação factual antes de qualquer movimento;
+5. **ritual recorrente no PERFIL** (seção "Lembretes recorrentes", modelo legado anterior à 5.9) → propor migração por natureza: com hora → **agenda** (oferecer criar, sem escrever no calendário sem o ok); sem hora → **`Agente/ROTINA.md`**; sem mudar nenhuma decisão → **poda**;
+6. **redundância no `ROTINA.md`**: linha duplicada, ritual com hora que deveria estar só na agenda (exclusividade — não duplicar no ROTINA), ou contexto que não muda decisão nenhuma (candidato a poda).
 
 Destino padrão:
 

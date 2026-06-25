@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.11.0] - 2026-06-25
+
+### Changed
+- **Higiene migra ritual legado e cuida do ROTINA** (#114 Fatia 3) — a higiene assistida passa a detectar rituais no modelo antigo (seção "Lembretes recorrentes" do `PERFIL.md`, anterior à 5.9) e a **propor a migração por natureza**, com confirmação + backup + REGISTRO (nunca autosanitização): com hora → oferecer agenda; sem hora → `Agente/ROTINA.md`; sem mudar decisão → poda. É o caminho de migração assistida para os **workspaces já instalados**. A higiene também passa a cobrir o `ROTINA.md` na anti-inflação (linhas duplicadas, ritual com hora que deveria estar só na agenda, contexto que não muda decisão). Atualizados `higiene/SKILL.md` e `claude-hygiene.md`.
+
 ## [5.10.0] - 2026-06-25
 
 ### Changed

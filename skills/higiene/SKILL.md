@@ -33,6 +33,10 @@ Isso já existia e continua funcionando.
 - Duplicações, redundâncias, conflitos dentro do PERFIL.md
 - Conteúdo que deveria estar em outro arquivo (pendências no PERFIL.md
   que pertencem à PAUTA.md, histórico que pertence ao REGISTRO.md)
+- **Rituais recorrentes no PERFIL** (seção "Lembretes recorrentes", modelo
+  legado anterior à 5.9) — devem migrar por natureza: com hora → agenda
+  (oferecer criar, sem escrever sem o ok); sem hora → `Agente/ROTINA.md`;
+  sem mudar nenhuma decisão → poda
 - `.prumo/system/PRUMO-CORE.md` defasado em relação ao runtime
 
 **Como funciona:**
@@ -59,6 +63,9 @@ Isso já existia e continua funcionando.
 **Verificar:**
 - Data de última modificação dos arquivos em `Agente/`
 - Arquivos com mais de 6 meses sem alteração
+- **`ROTINA.md` inflado ou redundante**: linhas que repetem a mesma rotina,
+  ritual com hora que deveria estar só na agenda (não duplicado no ROTINA),
+  ou contexto que não muda nenhuma decisão do Prumo (candidato a poda)
 
 **Propor (um arquivo por vez):**
 - "PROJETOS.md tem 8 meses sem mexer. Ainda vale ou posso arquivar?"
