@@ -16,10 +16,9 @@ from prumo_runtime.daily_operator import (
     selection_contract_payload,
 )
 from prumo_runtime.inbox_preview import load_inbox_preview, summarize_inbox_entry
+from prumo_runtime.pauta_parsing import extract_section, filter_by_due_date
 from prumo_runtime.workspace import (
     build_config_from_existing,
-    extract_section,
-    filter_by_due_date,
     load_json,
     migrate_briefing_state_to_last_briefing,
     parse_core_version,
