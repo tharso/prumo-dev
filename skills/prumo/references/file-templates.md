@@ -63,12 +63,11 @@ _Itens que têm progresso ativo. Formato: `- [Tag] Descrição. Próxima ação:
 
 ## Agendado / Lembretes
 
-_Itens com data específica ou lembretes recorrentes._
+_Compromissos e pendências com data específica (prazos, agendamentos pontuais)._
+_Rituais recorrentes não moram aqui — com hora vão para a agenda, sem hora para `Agente/ROTINA.md` (ver `PERFIL.md`)._
 _Quando houver agendamento futuro, registrar semântica de cobrança no próprio item:_
 _`- **25/02 (Qua)**: [Tag] Item... | cobrar: 25/02`_
 _`- **30/03 (Seg) 9h**: [Tag] Item... | cobrar: 28/03`_
-
-{{LEMBRETES_RECORRENTES_LISTA}}
 
 ## Horizonte (importante mas não urgente)
 

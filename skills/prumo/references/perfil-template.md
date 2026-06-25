@@ -44,7 +44,7 @@ INÍCIO DO TEMPLATE:
 
 ## Configuração
 
-### Horários e rituais
+### Horários
 
 - **Briefing**: {{BRIEFING_TIME}} (dizer "bom dia" ou "briefing")
 - **Revisão semanal**: {{REVIEW_DAY}}
@@ -58,11 +58,14 @@ INÍCIO DO TEMPLATE:
 
 {{TOM_BRIEFING}}
 
-### Lembretes recorrentes estáveis
+### Rituais e cadências
 
-{{LEMBRETES_RECORRENTES}}
-
-> Só entram aqui lembretes estáveis e recorrentes.
+> Rituais e compromissos recorrentes **não moram no PERFIL** — guardá-los aqui recria à mão um estado que outros lugares já mantêm melhor:
+>
+> - **Com hora marcada** (buscar a Nina 17h, ginástica ter/qui 18h) → vão para a **agenda**. O Prumo oferece criar o evento; o calendário cuida da repetição e do "já passou".
+> - **Sem hora, mas que ajudam o Prumo a te entender** (rotina, janelas de disponibilidade, hábitos) → vão para `Agente/ROTINA.md` como contexto.
+> - **O que não muda nenhuma decisão do Prumo** → não precisa existir.
+>
 > Pendência datada vai para `Prumo/PAUTA.md`. Coisa resolvida vai para `Prumo/REGISTRO.md`.
 
 ---

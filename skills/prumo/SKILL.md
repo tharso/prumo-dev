@@ -225,7 +225,13 @@ Usar a resposta sobre tendência para gerar o `{{PROBLEMA_PRINCIPAL}}` no templa
 - "Começar demais" → "tendência a iniciar muitos projetos simultaneamente sem concluir os anteriores"
 - "Hiperfoco" → "tendência a hiperfoco: mergulha profundamente em um projeto e deixa outros caírem"
 
-Os lembretes recorrentes coletados entram em dois lugares: na seção de briefing do CLAUDE.md e na seção "Agendado/Lembretes" do PAUTA.md.
+Cada compromisso recorrente coletado é roteado **por natureza** — nunca despejado numa lista genérica:
+
+- **com hora marcada** (reunião fixa, buscar a criança na escola) → oferecer criar na **agenda** (Calendar MCP); nunca escrever no calendário sem o ok do usuário;
+- **sem hora, mas que ajuda a entender a rotina** (lanche da escola, janelas de indisponibilidade) → `Agente/ROTINA.md` como contexto;
+- **com data pontual** (conta a vencer no dia X) → `PAUTA.md` com `| cobrar: DD/MM`.
+
+Não despejar rituais na seção "Agendado / Lembretes" do PAUTA — rituais não viram pendência repetida.
 
 ### Etapa 5: Integrações
 
@@ -352,7 +358,7 @@ Se `Prumo/AGENT.md` já existe na pasta, o sistema já está configurado. Oferec
 
 1. **Adicionar área/projeto**: Perguntar nome e descrição, criar pasta + README, atualizar `Prumo/Agente/PERFIL.md`
 2. **Mudar tom**: Atualizar a seção de tom em `Prumo/Agente/PERFIL.md`
-3. **Ajustar rituais**: Atualizar horários/dias em `Prumo/Agente/PERFIL.md` e `Prumo/AGENT.md`
+3. **Ajustar rituais**: rituais com hora vão para a agenda (oferecer criar o evento); rituais sem hora, para `Prumo/Agente/ROTINA.md`. Não acumular ritual no `PERFIL.md`.
 4. **Adicionar integração**: Atualizar seção de integrações em `Prumo/Agente/PERFIL.md`
 5. **Reset completo**: Reconfigurar do zero. Ler `references/file-protection-rules.md` antes de regenerar: ponteiros, AGENT.md e PRUMO-CORE.md são regenerados (com backups em `.prumo/backups/<scope>/<timestamp>/` — ver `references/file-protection-rules.md` pra estrutura completa), todos os outros arquivos com dados acumulados são preservados.
 
