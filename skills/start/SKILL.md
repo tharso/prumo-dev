@@ -404,6 +404,13 @@ estão organizados:
 Se o dump mencionou pessoas, adicionar em `Agente/PESSOAS.md` com
 contexto mínimo e pendências.
 
+**5.5 — Popular ROTINA.md**
+
+Se o dump mencionou rituais/cadências **sem hora** (rotina, hábitos, janelas
+de indisponibilidade), adicionar em `Agente/ROTINA.md` — uma linha por padrão
+estável, só o que muda alguma decisão do Prumo. Rituais **com hora**: oferecer
+criar na agenda, não despejar no ROTINA. O que não muda decisão nenhuma: podar.
+
 ### Fase 6: Fechamento
 
 Mostrar o que foi criado (breve, com links `computer://`). Não listar

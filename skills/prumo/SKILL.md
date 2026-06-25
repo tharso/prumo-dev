@@ -270,7 +270,9 @@ Perguntar ao usuário via AskUserQuestion:
 
 Conforme a resposta, ler `references/mobile-shortcut-guide.md` e seguir o guia de instalação para a plataforma escolhida.
 
-### Etapa 8: Rituais
+### Etapa 8: Horários do sistema
+
+> São os horários de **operação do Prumo** (briefing, revisão), não rituais de vida. Os compromissos recorrentes do usuário já foram coletados e roteados por natureza na Etapa 4 (com hora → agenda; sem hora → `ROTINA.md`; poda).
 
 Usar AskUserQuestion:
 - Que horas você costuma começar o dia de trabalho? (default: 9h) → define o horário do morning briefing
@@ -291,7 +293,8 @@ Após coletar todas as respostas:
    - `.prumo/logs/` (registros)
    - `.prumo/backups/` (backups, organizados por scope: setup, runtime-migrate, repair-version-bump, relocate-skills)
 3. Ler `references/agent-md-template.md` → gerar `Prumo/AGENT.md` (fonte canônica do workspace)
-4. Ler `references/perfil-template.md` → gerar `Prumo/Agente/PERFIL.md` (configuração pessoal)
+4. Ler `references/perfil-template.md` → gerar `Prumo/Agente/PERFIL.md` (configuração pessoal: identidade, áreas, tom — **sem** rituais)
+   - Criar `Prumo/Agente/ROTINA.md` (cabeçalho: "rituais, horários, hábitos e cadências sem hora") e **populá-lo** com os rituais **sem hora** coletados na Etapa 4 — uma linha por padrão estável, só o que muda alguma decisão do Prumo. Para os rituais **com hora**, oferecer criar na agenda (não escrever no calendário sem o ok). Descartar o que não muda decisão (poda).
 5. Copiar `references/prumo-core.md` → gerar `.prumo/system/PRUMO-CORE.md` (motor do sistema)
 6. Ler `references/claude-md-template.md` → gerar `CLAUDE.md` na raiz (ponteiro)
 7. Gerar `AGENT.md` na raiz (ponteiro, mesmo conteúdo adaptado)
