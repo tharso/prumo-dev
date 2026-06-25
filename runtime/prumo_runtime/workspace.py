@@ -187,6 +187,7 @@ def render_files(config: WorkspaceConfig) -> dict[str, str]:
             state_path=state_relative,
             skills_path=paths.relative(paths.skills_root) + "/" if paths.nested_layout else None,
         ),
+        paths.relative(paths.agente_root / "PERFIL.md"): templates.render_perfil_md(),
         paths.relative(paths.agente_root / "PESSOAS.md"): templates.render_people_md(),
         paths.relative(paths.agente_root / "SAUDE.md"): templates.render_health_md(),
         paths.relative(paths.agente_root / "ROTINA.md"): templates.render_routine_md(),
@@ -738,9 +739,10 @@ def repair_workspace(workspace: Path) -> dict:
     paths = workspace_paths(workspace)
     recreated: list[str] = []
     merged: list[str] = []
-    reported_authorial = list(missing["authorial"])
+    redo_perfil = [r for r in missing["authorial"] if r.endswith("Agente/PERFIL.md")]
+    reported_authorial = [r for r in missing["authorial"] if r not in redo_perfil]
 
-    for relative in [*missing["generated"], *missing["derived"]]:
+    for relative in [*missing["generated"], *missing["derived"], *redo_perfil]:
         content = rendered.get(relative)
         if content is None and relative == paths.relative(paths.workspace_schema):
             write_schema(config, preserve_created_at=read_schema(workspace).get("created_at"))

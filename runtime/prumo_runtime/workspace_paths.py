@@ -164,6 +164,7 @@ class WorkspacePaths:
         # não é mais arquivo esperado. A propriedade `agent_index` permanece
         # apenas como path de compatibilidade (leitura legada / tombstone).
         return (
+            self.relative(self.agente_root / "PERFIL.md"),
             self.relative(self.agente_root / "PESSOAS.md"),
             self.relative(self.agente_root / "SAUDE.md"),
             self.relative(self.agente_root / "ROTINA.md"),

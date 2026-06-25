@@ -104,7 +104,7 @@ def render_agent_md(
         )
     reading_order = "\n".join(opening_reads)
 
-    on_demand_items = ["- `Agente/PERFIL.md` e `Agente/PESSOAS.md` quando o playbook precisar de contexto pessoal."]
+    on_demand_items = ["- `Agente/PERFIL.md`, `Agente/PESSOAS.md`, `Agente/ROTINA.md` e demais módulos do `Agente/` quando o playbook precisar de contexto pessoal."]
     if skills_path:
         on_demand_items.append(
             "- `PAUTA.md` integral, `INBOX.md`, `REGISTRO.md` quando a intenção exigir (briefing, curadoria de email, revisão semanal, etc.)."
@@ -121,7 +121,7 @@ def render_agent_md(
 
     logs_path = state_path.replace("state", "logs")
     map_items = [
-        "- `Agente/`: contexto modular do usuário (perfil, pessoas)",
+        "- `Agente/`: contexto modular do usuário (PERFIL, PESSOAS, ROTINA, SAUDE, INFRA, PROJETOS, RELACOES)",
         "- `PAUTA.md`: estado vivo e pendências",
         "- `INBOX.md`: itens ainda não processados",
         "- `REGISTRO.md`: rastro do que aconteceu",
@@ -308,6 +308,26 @@ def render_health_md() -> str:
 ## Estado atual
 
 _Sem informações registradas ainda._
+"""
+
+
+def render_perfil_md() -> str:
+    return """# Perfil
+
+> Configuração pessoal: identidade, áreas de vida e tom. Núcleo estável do perfil.
+> Rituais com hora vão para a agenda; sem hora, para `ROTINA.md`. Pendência datada vai para `PAUTA.md`.
+
+## Identidade
+
+_Preencher no setup._
+
+## Áreas de vida
+
+_Preencher no setup._
+
+## Tom
+
+_Preencher no setup._
 """
 
 

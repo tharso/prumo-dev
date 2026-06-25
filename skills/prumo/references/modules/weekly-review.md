@@ -1,6 +1,6 @@
 # Weekly Review
 
-> **module_version: 4.17.0**
+> **module_version: 4.18.0**
 >
 > Fonte canônica da revisão semanal do Prumo.
 
@@ -24,14 +24,19 @@ Revisar a pauta inteira sem a miopia do briefing diário.
    - follow-ups;
    - quem sumiu;
    - pendências de relacionamento.
-7. Calcular mini-resumo de fluxo:
+7. Revisar `Agente/ROTINA.md` quando existir (poda de contexto — contenção do ROTINA):
+   - rotina que mudou ou morreu (não é mais verdade);
+   - ritual com hora que deveria estar só na agenda (não duplicar no ROTINA);
+   - virou histórico de ocorrências em vez de padrão estável;
+   - propor remoção do que não muda mais nenhuma decisão (sempre com confirmação).
+8. Calcular mini-resumo de fluxo:
    - itens entrados;
    - itens completados;
    - itens descartados;
    - item mais antigo parado.
-8. Mover "Semana atual — Concluídos" para "Semana passada — Concluídos".
-9. Limpar semana passada anterior.
-10. Registrar resumo em `.prumo/logs/YYYY-WXX.md`.
+9. Mover "Semana atual — Concluídos" para "Semana passada — Concluídos".
+10. Limpar semana passada anterior.
+11. Registrar resumo em `.prumo/logs/YYYY-WXX.md`.
 
 ## Tom
 

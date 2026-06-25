@@ -52,6 +52,7 @@ class SetupCommandTests(unittest.TestCase):
             self.assertTrue((workspace / "Prumo" / "PAUTA.md").exists())
             self.assertTrue((workspace / ".prumo" / "state" / "workspace-schema.json").exists())
             self.assertTrue((workspace / ".prumo" / "system" / "PRUMO-CORE.md").exists())
+            self.assertTrue((workspace / "Prumo" / "Agente" / "PERFIL.md").exists())
             self.assertFalse((workspace / "PAUTA.md").exists())
 
             rendered = buffer.getvalue()

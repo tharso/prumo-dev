@@ -90,6 +90,19 @@ class RepairVersionDriftTests(unittest.TestCase):
             existing = list(backup_dir.glob("repair-version-bump-*"))
             self.assertEqual(existing, [])
 
+    def test_repair_recreates_missing_perfil_md(self) -> None:
+        # PERFIL.md entrou no schema autoral (Fatia 5 / #114): se sumir,
+        # detect_missing o acusa e repair_workspace o recria. Antes ficava de
+        # fora do schema e o briefing abortava por falta do arquivo.
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = _make_test_workspace(Path(tmpdir))
+            perfil = workspace / "Prumo" / "Agente" / "PERFIL.md"
+            self.assertTrue(perfil.exists())
+            perfil.unlink()
+            result = repair_workspace(workspace)
+            self.assertTrue(perfil.exists())
+            self.assertIn("Prumo/Agente/PERFIL.md", result["recreated"])
+
     def test_repair_drifted_workspace_regenerates_system_and_canonical_files(self) -> None:
         # Sistema (PRUMO-CORE.md) e canonical do Prumo (Prumo/AGENT.md) entram em
         # `recreated`. Wrappers de raiz (CLAUDE.md, AGENTS.md, AGENT.md) NÃO devem
