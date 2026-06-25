@@ -55,5 +55,21 @@ class DecidirTemplateOfflineTests(unittest.TestCase):
         self.assertIn("prumo_decidir_report.v1", html, "relatório precisa do schema JSON versionado")
 
 
+class DecidirContentAwareGuards(unittest.TestCase):
+    """#109: ações por conteúdo, links ativos, sem 'virar referência' passivo, sem API externa."""
+
+    def test_allowlist_is_content_aware(self):
+        text = (SKILL_DIR / "references" / "acoes-allowlist.md").read_text(encoding="utf-8")
+        self.assertIn("extract_transcript", text)  # gancho de vídeo (soft-hook)
+        self.assertIn("Vídeo", text)  # subtipo por conteúdo, não só "item de inbox"
+        # "virar referência" passivo morreu (era effect save_reference).
+        self.assertNotIn("save_reference", text)
+
+    def test_skill_offline_is_mechanics_only_and_no_external_api(self):
+        skill = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("ATIVOS", skill)  # links de conteúdo do usuário vêm ativos
+        self.assertIn("sem API key", skill)  # extract_transcript não exige API do Google
+
+
 if __name__ == "__main__":
     unittest.main()

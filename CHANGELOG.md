@@ -6,6 +6,12 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.8.0] - 2026-06-24
+
+### Changed
+- **`decidir` mais inteligente: ações por conteúdo** (#109) — itens de inbox deixam de receber um menu genérico ("rotear / virar referência / arquivar") e passam a ter ações **por conteúdo**: vídeo (extrair/transcrever, resumir, abrir, ver-até), artigo/link (resumir, debater, ler-com-prazo), imagem (descrever/OCR), nota (virar tarefa/pauta/ideia). Os **links de conteúdo vêm ativos** (`<a target="_blank">`) — a regra offline da `decidir` vale para a mecânica (fontes/JS), não para os links do usuário. O `effect` de uma ação pode disparar outra capacidade (ex.: `extract_transcript`, `summarize`, `debate`), com o Claude fazendo a análise. O **"virar referência" passivo foi removido**: guardar exige motivo + tag (committal), e fragmento sem próxima ação vira ideia (`IDEIAS.md`), não pauta — alinhado a "Ideias não são ações". Guards de conteúdo em `test_decidir_skill.py`.
+- **Extração de vídeo sem API paga** (#110) — o gancho `extract_transcript` é **soft-hook**: usa `youtube-transcript-api` (legendas grátis, sem API key) quando disponível; senão, metadados via fetch; senão, abrir + tarefa com prazo. **Nunca exige a API do Google (Gemini)**, yt-dlp, ffmpeg ou Whisper — quem resume/analisa é o próprio Claude. A `youtube-extractor` não é empacotada no Prumo (feriria a portabilidade multi-cliente).
+
 ## [5.7.1] - 2026-06-24
 
 ### Fixed
