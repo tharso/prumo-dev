@@ -13,7 +13,7 @@ Antes de gerar QUALQUER arquivo, verificar se ele já existe na pasta do usuári
 | .prumo/system/PRUMO-CORE.md | **Sobrescrever** apenas em atualização de motor ou setup explícito. Sempre criar backup em `.prumo/backups/<scope>/<timestamp>/PRUMO-CORE.md` antes da troca. |
 | Prumo/Agente/PERFIL.md | **Não sobrescrever silenciosamente.** Em setup inicial pode criar; em reconfiguração, pedir confirmação explícita. Conteúdo histórico e drift de governança devem ser tratados pela higiene assistida, com backup em `.prumo/backups/perfil-hygiene/<timestamp>/PERFIL.md`. |
 | Prumo/PAUTA.md, Prumo/INBOX.md, Prumo/REGISTRO.md, Prumo/IDEIAS.md | **NÃO sobrescrever.** Informar: "Encontrei [arquivo] com conteúdo existente. Mantendo o atual." |
-| Prumo/Agente/PESSOAS.md, Prumo/Referencias/INDICE.md, Prumo/Referencias/EMAIL-CURADORIA.md | **NÃO sobrescrever.** Informar: "Encontrei [arquivo] com conteúdo existente. Mantendo o atual." |
+| Prumo/Agente/PESSOAS.md, Prumo/Agente/ROTINA.md, Prumo/Referencias/INDICE.md, Prumo/Referencias/EMAIL-CURADORIA.md | **NÃO sobrescrever.** Informar: "Encontrei [arquivo] com conteúdo existente. Mantendo o atual." |
 | Prumo/Agente/INDEX.md (legado) | **NÃO sobrescrever.** Aposentado (#97): não é mais gerado, mas workspaces antigos têm um tombstone aqui — preservar. |
 | [Area]/README.md | **NÃO sobrescrever.** Informar: "A pasta [Area] já tem um README com contexto. Mantendo." |
 | Pastas (.prumo/logs/, .prumo/state/, Prumo/Inbox4Mobile/, Prumo/Referencias/) | **Criar apenas se não existirem.** |
@@ -40,6 +40,7 @@ Ao final da geração de arquivos, mostrar resumo claro:
 | Prumo/REGISTRO.md | file-templates.md | Audit trail de itens processados. |
 | Prumo/IDEIAS.md | file-templates.md | Ideias sem ação imediata. |
 | Prumo/Agente/PESSOAS.md | file-templates.md | Tracking de pessoas e pendências de relacionamento. |
+| Prumo/Agente/ROTINA.md | cabeçalho inline (setup Etapa 9) | Rituais, horários, hábitos e cadências sem hora. Populado no onboarding. |
 | Prumo/Referencias/INDICE.md | file-templates.md | Índice de material de referência. |
 | Prumo/Referencias/EMAIL-CURADORIA.md | file-templates.md | Regras aprendidas de curadoria de email (feedback loop). |
 | [Area]/README.md | Gerar dinamicamente | Um README por área/projeto com nome e descrição breve. |

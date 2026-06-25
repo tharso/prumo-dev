@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.10.0] - 2026-06-25
+
+### Changed
+- **Onboarding classifica e popula o ritual por natureza** (#114 Fatia 2) — o setup e o start deixam de coletar "compromissos recorrentes" numa lista genérica e passam a roteá-los na hora: ritual **sem hora** → `Agente/ROTINA.md` (uma linha por padrão estável, só o que muda alguma decisão do Prumo); ritual **com hora** → oferecer criar na agenda (sem escrever no calendário sem o ok); o que não muda decisão → poda. O setup agora **cria e popula** o `ROTINA.md` no momento da geração — antes o ritual era roteado no texto mas nenhum passo o escrevia. A "Etapa 8: Rituais" do setup virou "Etapa 8: Horários do sistema": ela trata só horários de operação (briefing/revisão), não rituais de vida. Atualizados `prumo/SKILL.md` e `start/SKILL.md`.
+
 ## [5.9.0] - 2026-06-25
 
 ### Changed

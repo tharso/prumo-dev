@@ -381,7 +381,7 @@ Usar os mesmos templates do setup wizard:
 1. Ler `../prumo/references/perfil-template.md` → gerar PERFIL.md com dados inferidos
 2. Copiar `../prumo/references/prumo-core.md` → gerar `.prumo/system/PRUMO-CORE.md`
 3. Ler `../prumo/references/agent-md-template.md` → gerar AGENT.md
-4. Ler `../prumo/references/file-templates.md` → gerar arquivos auxiliares
+4. Ler `../prumo/references/file-templates.md` → gerar arquivos auxiliares (inclui `Agente/ROTINA.md`, populado na fase 5.5)
 5. Criar pastas: uma por área inferida (com README.md), `.prumo/logs/`, `.prumo/state/`,
    `Inbox4Mobile/`, `Referencias/`
 
@@ -403,6 +403,13 @@ estão organizados:
 
 Se o dump mencionou pessoas, adicionar em `Agente/PESSOAS.md` com
 contexto mínimo e pendências.
+
+**5.5 — Popular ROTINA.md**
+
+Se o dump mencionou rituais/cadências **sem hora** (rotina, hábitos, janelas
+de indisponibilidade), adicionar em `Agente/ROTINA.md` — uma linha por padrão
+estável, só o que muda alguma decisão do Prumo. Rituais **com hora**: oferecer
+criar na agenda, não despejar no ROTINA. O que não muda decisão nenhuma: podar.
 
 ### Fase 6: Fechamento
 
