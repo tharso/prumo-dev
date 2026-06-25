@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.13.0] - 2026-06-25
+
+### Changed
+- **O runtime materializa o `PERFIL.md` reduzido + árvore do workspace alinhada ao modelo modular** (#114 Fatia 5, fechamento) — fecha a convergência do perfil. O runtime passa a **criar o `PERFIL.md`** (identidade, áreas de vida, tom) no setup, junto com os outros módulos do `Agente/` — resolve a divergência em que o briefing exigia o `PERFIL.md` mas o runtime não o gerava (o "convidado sem crachá" apontado lá na Fatia 1). A árvore do workspace no `prumo-core.md` e no `file-templates.md` passa a mostrar os sete módulos do `Agente/` (PERFIL, PESSOAS, ROTINA, SAUDE, INFRA, PROJETOS, RELACOES), e todos entram na proteção contra sobrescrita. Novo `render_perfil_md` no runtime, coberto por teste.
+
 ## [5.12.0] - 2026-06-25
 
 ### Added

@@ -24,9 +24,13 @@
 │   ├── REGISTRO.md
 │   ├── IDEIAS.md
 │   ├── Agente/
-│   │   ├── PERFIL.md      ← config pessoal (áreas, tom, identidade)
+│   │   ├── PERFIL.md      ← identidade, áreas de vida, tom
 │   │   ├── PESSOAS.md     ← pessoas-chave e relacionamentos
-│   │   └── ROTINA.md      ← rituais, hábitos, cadências sem hora
+│   │   ├── ROTINA.md      ← rituais, hábitos, cadências sem hora
+│   │   ├── SAUDE.md       ← saúde, exames, médicos
+│   │   ├── INFRA.md       ← contas, domínios, ferramentas
+│   │   ├── PROJETOS.md    ← projetos e frentes de trabalho
+│   │   └── RELACOES.md    ← família, amigos, dinâmicas
 │   ├── Referencias/
 │   │   ├── INDICE.md
 │   │   └── EMAIL-CURADORIA.md  ← regras aprendidas de curadoria de email

@@ -187,6 +187,7 @@ def render_files(config: WorkspaceConfig) -> dict[str, str]:
             state_path=state_relative,
             skills_path=paths.relative(paths.skills_root) + "/" if paths.nested_layout else None,
         ),
+        paths.relative(paths.agente_root / "PERFIL.md"): templates.render_perfil_md(),
         paths.relative(paths.agente_root / "PESSOAS.md"): templates.render_people_md(),
         paths.relative(paths.agente_root / "SAUDE.md"): templates.render_health_md(),
         paths.relative(paths.agente_root / "ROTINA.md"): templates.render_routine_md(),

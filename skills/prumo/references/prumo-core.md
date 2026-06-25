@@ -1,6 +1,6 @@
 # Prumo Core — Motor do sistema
 
-> **prumo_version: 5.12.0**
+> **prumo_version: 5.13.0**
 >
 > Núcleo estável do Prumo. Define regras, guardrails e localização dos módulos canônicos.
 > Procedimento detalhado não mora aqui.
@@ -34,8 +34,13 @@
 │   ├── REGISTRO.md
 │   ├── IDEIAS.md
 │   ├── Agente/
-│   │   ├── PERFIL.md
-│   │   └── PESSOAS.md
+│   │   ├── PERFIL.md     ← identidade, áreas de vida, tom
+│   │   ├── PESSOAS.md    ← pessoas-chave e relacionamentos
+│   │   ├── ROTINA.md     ← rituais, hábitos, cadências sem hora
+│   │   ├── SAUDE.md      ← saúde, exames, médicos
+│   │   ├── INFRA.md      ← contas, domínios, ferramentas
+│   │   ├── PROJETOS.md   ← projetos e frentes de trabalho
+│   │   └── RELACOES.md   ← família, amigos, dinâmicas
 │   ├── Referencias/
 │   └── Inbox4Mobile/
 └── .prumo/

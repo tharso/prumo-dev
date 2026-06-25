@@ -311,6 +311,26 @@ _Sem informações registradas ainda._
 """
 
 
+def render_perfil_md() -> str:
+    return """# Perfil
+
+> Configuração pessoal: identidade, áreas de vida e tom. Núcleo estável do perfil.
+> Rituais com hora vão para a agenda; sem hora, para `ROTINA.md`. Pendência datada vai para `PAUTA.md`.
+
+## Identidade
+
+_Preencher no setup._
+
+## Áreas de vida
+
+_Preencher no setup._
+
+## Tom
+
+_Preencher no setup._
+"""
+
+
 def render_routine_md() -> str:
     return """# Rotina
 
