@@ -82,7 +82,7 @@ Por que falha: opções vagas que descrevem categorias em vez de conter a decis�
   badges: [{label:'vídeo', tone:'blue'}],
   link: { label: 'abrir no YouTube', href: 'https://www.youtube.com/watch?v=...' },
   title: 'YouTube (24/06): "your comprehension is worth more"',
-  contexto: 'Captura de 24/06, ~18min. Link ativo: <a href="https://www.youtube.com/watch?v=..." target="_blank" rel="noopener">abrir</a> (thumbnail abaixo quando útil).',
+  contexto: 'Captura de 24/06, ~18min. O link do vídeo vai no campo `link` abaixo (sanitizado pelo template) — não cole `<a>` cru aqui.',
   actions: [
     { key:'extract',   label:'Extrair/transcrever', tone:'green', effect:'extract_transcript' },
     { key:'summarize', label:'Resumir',             tone:'green', effect:'summarize' },

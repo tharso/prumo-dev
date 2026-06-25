@@ -11,7 +11,7 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 | `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first), 2026-05-04 (#77), 2026-06-21 (#97 mapas)  |
 | `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo) |
 | `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first), 2026-05-06 (quality-gate) |
-| `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist) |
+| `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist), 2026-06-24 (#110 não-bundle) |
 | `dispatch-bootstrap`  | 2026-04-21 (#69 despacho), 2026-06-23 (#104 briefing rico)                                |
 | `multiagent-coord`    | 2026-04-20 (#68 HANDOVER)                                                                 |
 | `documentation`       | 2026-04-14 (CLAUDE.md), 2026-06-21 (#97 mapas)                                            |
@@ -61,7 +61,7 @@ Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões ant
 
 ## 2026-06-24 — `decidir` com ações por conteúdo + extração de vídeo sem API paga (#109/#110)
 
-**Tópicos:** skills-distribution, briefing
+**Tópicos:** skills-distribution, distribution, briefing
 **Issues relacionadas:** #109 (executa — decidir por conteúdo, Fatia 1), #110 (decide — soft-hook de vídeo).
 **Relações com decisões anteriores:**
 - **Estende:** 2026-06-23 (#102 — decidir). As ações deixam de ser só por tipo de item e passam a ser por **conteúdo** (vídeo/artigo/imagem/nota); corrige a regra offline que eu havia super-apertado (ela vale para a mecânica, não para os links de conteúdo).

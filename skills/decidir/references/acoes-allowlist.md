@@ -13,7 +13,7 @@ Cada ação tem:
 
 ## Regra de ouro da execução
 
-Tokens `draft_*` produzem **rascunho** (não enviam). "Executo sem perguntar de novo" vale para `draft_*`, registrar, `mark_seen`, `make_task`/`make_reference`/`make_pauta`, `snooze`/`wait_until`/`promote_today`, e `archive` **com destino explícito**. **NÃO** vale (confirma antes) para enviar de fato o que foi rascunhado, `rsvp_decline`/`propose_reschedule` com terceiros, e qualquer remoção de inbox (`archive`/`discard`) — o core exige confirmar o plano e registrar no `REGISTRO.md` antes de remover o original. Botão não é procuração vitalícia.
+Tokens `draft_*` produzem **rascunho** (não enviam). "Executo sem perguntar de novo" vale para `draft_*`, registrar, `mark_seen`, `make_task`/`make_pauta`/`make_idea`, `keep_with_reason` (com motivo+tag), `summarize`/`describe_image`/`extract_transcript`, `snooze`/`wait_until`/`promote_today`, e `archive` **com destino explícito**. **NÃO** vale (confirma antes) para enviar de fato o que foi rascunhado, `rsvp_decline`/`propose_reschedule` com terceiros, e qualquer remoção de inbox (`archive`/`discard`) — o core exige confirmar o plano e registrar no `REGISTRO.md` antes de remover o original. Botão não é procuração vitalícia.
 
 ## Por tipo
 

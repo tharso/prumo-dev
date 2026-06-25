@@ -70,6 +70,31 @@ class DecidirContentAwareGuards(unittest.TestCase):
         self.assertIn("ATIVOS", skill)  # links de conteúdo do usuário vêm ativos
         self.assertIn("sem API key", skill)  # extract_transcript não exige API do Google
 
+    def test_template_offline_rule_scoped_to_mechanics(self):
+        html = (SKILL_DIR / "assets" / "template.html").read_text(encoding="utf-8")
+        # A regra offline é da MECÂNICA; links de conteúdo podem ser externos.
+        # (Sem isso, o template contradiz a SKILL.md e o agente amputa o link.)
+        self.assertIn("MECÂNICA", html)
+        self.assertIn("CONTEÚDO do usuário", html)
+
+    def test_template_report_carries_source_url(self):
+        html = (SKILL_DIR / "assets" / "template.html").read_text(encoding="utf-8")
+        # extract_transcript/summarize/open_link precisam da URL no JSON.
+        self.assertIn("source_url", html)
+
+    def test_template_sanitizes_content_link(self):
+        html = (SKILL_DIR / "assets" / "template.html").read_text(encoding="utf-8")
+        self.assertIn("function safeUrl", html)
+        self.assertIn("safeUrl(p.link.href)", html)  # aplicado no render do link
+
+    def test_inbox_preview_has_no_heavy_extractor_action(self):
+        text = (REPO_ROOT / "runtime" / "prumo_runtime" / "generate_inbox_preview.py").read_text(
+            encoding="utf-8"
+        )
+        # #110: o botão não anuncia a skill pesada; usa ação neutra/degradável.
+        self.assertNotIn("Copiar: youtube-extractor", text)
+        self.assertIn("extrair/transcrever", text)
+
 
 if __name__ == "__main__":
     unittest.main()

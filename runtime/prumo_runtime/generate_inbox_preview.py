@@ -245,7 +245,10 @@ def item_card(index: int, path: Path, output_dir: Path) -> str:
         ("Copiar: descartar", cmd_discard),
     ]
     if is_youtube:
-        commands.insert(1, ("Copiar: youtube-extractor", f"processar item {index} com youtube-extractor"))
+        # Ação neutra/degradável (#110): não depende da skill youtube-extractor nem
+        # de API paga — o agente usa o soft-hook `extract_transcript` (legenda grátis
+        # → metadados → abrir), e quem resume é o próprio Claude.
+        commands.insert(1, ("Copiar: extrair/transcrever", f"extrair/transcrever o vídeo do item {index} (legenda grátis; sem API paga)"))
 
     buttons = "".join(
         (
