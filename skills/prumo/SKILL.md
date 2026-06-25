@@ -212,7 +212,7 @@ NÃO insistir em detalhamento excessivo. O sistema vai se refinando com o uso. 3
 
 1. "Qual seu email principal?" (campo aberto)
 2. "Tem filhos?" → Se sim: "Nome e idade de cada um?" (Isso permite lembretes tipo "quarta = lanche da escola")
-3. "Tem compromissos recorrentes que você tende a esquecer? Tipo lanche da escola, contas no dia X, reuniões fixas..." → Coletar como lista
+3. "Tem compromissos recorrentes que você tende a esquecer? Tipo lanche da escola, contas no dia X, reuniões fixas..." → Coletar e **classificar cada um por natureza** (ver roteamento abaixo) — não despejar a lista inteira num só lugar
 4. "Qual a sua principal tendência?" Oferecer opções via AskUserQuestion:
    - Esqueço coisas (se não tá na minha frente, não existe)
    - Procrastino (especialmente quando envolve fricção)

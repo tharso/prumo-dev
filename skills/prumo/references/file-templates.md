@@ -25,7 +25,8 @@
 │   ├── IDEIAS.md
 │   ├── Agente/
 │   │   ├── PERFIL.md      ← config pessoal (áreas, tom, identidade)
-│   │   └── PESSOAS.md
+│   │   ├── PESSOAS.md     ← pessoas-chave e relacionamentos
+│   │   └── ROTINA.md      ← rituais, hábitos, cadências sem hora
 │   ├── Referencias/
 │   │   ├── INDICE.md
 │   │   └── EMAIL-CURADORIA.md  ← regras aprendidas de curadoria de email
