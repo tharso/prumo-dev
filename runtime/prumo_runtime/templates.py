@@ -370,7 +370,7 @@ _Nada ainda._
 
 ## Agendado / Lembretes
 
-_Nada ainda._
+_Compromissos e pendências com data específica. Rituais recorrentes não moram aqui — com hora vão para a agenda, sem hora para `Agente/ROTINA.md`._
 
 ## Horizonte
 

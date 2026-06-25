@@ -395,6 +395,7 @@ estão organizados:
 - Itens urgentes → seção "Quente"
 - Itens com ação essa semana → seção "Em andamento"
 - Itens com data futura → seção "Agendado" (com `| cobrar: DD/MM` se possível)
+- Rituais recorrentes: **com** hora → oferecer agenda; **sem** hora → `Agente/ROTINA.md` (contexto); se **não muda nenhuma decisão** → não registrar (poda). Não vão para "Agendado" — ritual não é pendência repetida.
 - Ideias → IDEIAS.md
 - Cada item com `(desde DD/MM)` da data de hoje
 

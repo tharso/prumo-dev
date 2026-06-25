@@ -56,7 +56,7 @@ Fora disso, abertura não abre mais nada. A saudação vem proativa, com 2-4 op�
 
 ## Leitura sob demanda (conforme a intenção)
 
-- `Prumo/Agente/PERFIL.md` e `Prumo/Agente/PESSOAS.md` quando o playbook precisar de contexto pessoal.
+- `Prumo/Agente/PERFIL.md`, `Prumo/Agente/PESSOAS.md` e `Prumo/Agente/ROTINA.md` quando o playbook precisar de contexto pessoal.
 - `Prumo/PAUTA.md` integral, `Prumo/INBOX.md`, `Prumo/REGISTRO.md` quando a intenção exigir (briefing, curadoria de email, revisão semanal, etc.).
 - `.prumo/system/PRUMO-CORE.md` — Parte 2 (playbooks operacionais) e demais módulos da tabela em `prumo-core.md`.
 

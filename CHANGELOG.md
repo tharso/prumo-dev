@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.9.0] - 2026-06-25
+
+### Changed
+- **Ritual deixa de morar no `PERFIL.md`: reclassificado por natureza** (#114 Fatia 1, do diagnóstico #111) — rituais recorrentes (lanche da escola, ginástica, buscar a criança) ressuscitavam entre hosts (Cowork ↔ Codex) porque viviam estáticos no `PERFIL.md` como "lembretes recorrentes", sem estado por ocorrência. Agora são roteados **por natureza**: com hora marcada → **agenda** (o Prumo oferece criar o evento, nunca escreve sem o ok do usuário); sem hora, mas que informa a rotina → **`Agente/ROTINA.md`** como contexto; sem mudar nenhuma decisão → não existe. A seção "Agendado / Lembretes" do `PAUTA.md` deixa de ser destino de lembrete recorrente (mantém o nome por compatibilidade do parser). O `PERFIL.md` é reduzido ao núcleo identidade/tom. **Sem Calendar MCP, o briefing alerta e orienta** a reestabelecer o acesso em vez de mascarar — compromisso com hora não lido não é o mesmo que agenda vazia. Atualizados `perfil-template.md`, `file-templates.md`, `runtime-file-governance.md`, `prumo/SKILL.md`, `start/SKILL.md`, `briefing-procedure.md`. Decisão arquitetural registrada no `DECISIONS.md` (2026-06-25); issue-mãe #114.
+
 ## [5.8.0] - 2026-06-24
 
 ### Changed

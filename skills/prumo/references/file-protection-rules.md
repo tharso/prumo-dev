@@ -33,7 +33,7 @@ Ao final da geração de arquivos, mostrar resumo claro:
 | AGENT.md (raiz) | Gerar dinamicamente | Ponteiro de compatibilidade (mesmo conteúdo do CLAUDE.md na raiz, com texto adaptado). |
 | AGENTS.md (raiz) | agents-md-template.md | Ponteiro de compatibilidade para Codex e outros agentes. |
 | Prumo/AGENT.md | agent-md-template.md | Fonte canônica: navegação, fallback chain, regras do workspace. |
-| Prumo/Agente/PERFIL.md | perfil-template.md | Configuração pessoal: áreas, tom, lembretes, integrações. Nunca atualizado automaticamente. |
+| Prumo/Agente/PERFIL.md | perfil-template.md | Configuração pessoal: áreas, tom, integrações. Nunca atualizado automaticamente. |
 | .prumo/system/PRUMO-CORE.md | prumo-core.md | Motor do sistema. Atualizável automaticamente. |
 | Prumo/PAUTA.md | file-templates.md | Estado atual. Itens quentes, andamento, agendados. |
 | Prumo/INBOX.md | file-templates.md | Itens não processados. |

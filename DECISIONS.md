@@ -8,7 +8,7 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 
 | Tópico                | Entradas                                                                                  |
 |-----------------------|-------------------------------------------------------------------------------------------|
-| `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first), 2026-05-04 (#77), 2026-06-21 (#97 mapas)  |
+| `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first), 2026-05-04 (#77), 2026-06-21 (#97 mapas), 2026-06-25 (#114 perfil modular) |
 | `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo) |
 | `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first), 2026-05-06 (quality-gate) |
 | `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist), 2026-06-24 (#110 não-bundle) |
@@ -16,7 +16,7 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 | `multiagent-coord`    | 2026-04-20 (#68 HANDOVER)                                                                 |
 | `documentation`       | 2026-04-14 (CLAUDE.md), 2026-06-21 (#97 mapas)                                            |
 | `integrations`        | 2026-04-14 (Google Drive snapshots)                                                       |
-| `briefing`            | 2026-04-14 (Google Drive snapshots), 2026-04-21 (#69 despacho), 2026-06-23 (#102 decidir), 2026-06-23 (#104 briefing rico) |
+| `briefing`            | 2026-04-14 (Google Drive snapshots), 2026-04-21 (#69 despacho), 2026-06-23 (#102 decidir), 2026-06-23 (#104 briefing rico), 2026-06-25 (#114 perfil modular) |
 | `personalization`     | 2026-04-21 (tharso-voice)                                                                 |
 | `code-quality`        | 2026-05-06 (quality-gate)                                                                 |
 | `touchpoint`          | 2026-05-18 (landing page sync)                                                            |
@@ -56,6 +56,35 @@ A partir de 2026-05-04 (#78), toda entrada nova segue o formato:
 Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões anteriores" (introduzido na #78). Quando um conflito retrospectivo for descoberto, anotar a relação na entrada nova que o resolve — não reescrever entradas antigas.
 
 - `code-quality` — métricas de qualidade do codebase, quality gate, baseline.
+
+---
+
+## 2026-06-25 — Convergência do perfil para o `Agente/` modular; ritual reclassificado por natureza (#114)
+
+**Tópicos:** workspace-layout, briefing
+**Issues relacionadas:** #114 (issue-mãe, executa em fatias), #112 (Fatia 1 — ritual), #111 (diagnóstico que originou).
+**Relações com decisões anteriores:**
+- **Estende:** 2026-06-21 (#97 — consolidação dos mapas). A #97 oficializou os módulos `Agente/` (PESSOAS, SAUDE, ROTINA, INFRA, PROJETOS, RELACOES) como auto-descritivos. Esta decisão completa o movimento: as skills convergem para esse modelo modular e o `PERFIL.md` monolítico é reduzido ao núcleo identidade/tom.
+- **Mantém e estende:** 2026-06-23 (#104 — briefing rico). O princípio "sem MCP, o briefing declara email/agenda indisponíveis e não mascara" passa a valer também para os rituais-evento.
+- **Mantém:** 2026-04-22 (workspace-first — identidade mora no workspace). A reorganização é interna ao workspace; nada migra para fora dele.
+- Nenhuma decisão revogada. A coexistência `PERFIL.md` monolítico (skills) vs `Agente/` modular (runtime) era **resíduo de evolução não-registrado**, não escolha — confirmado por consulta ao índice temático. Esta entrada reconcilia o vazio.
+
+**Contexto:** O spike #111 diagnosticou que rituais recorrentes (lanche da Nina, ginástica, Roda Viva) ressuscitam entre hosts (Cowork ↔ Codex). O review de design do Codex na #112, verificado no código, achou a causa de fundo: o ritual está espalhado em três moradas (`PERFIL.md` "Lembretes recorrentes", `PAUTA.md` "Agendado/Lembretes", `Agente/ROTINA.md`) porque duas arquiteturas de perfil coexistem — o `PERFIL.md` monolítico que as skills assumem e o `Agente/` modular que o runtime gera (sem nem materializar `PERFIL.md`, ver `runtime/prumo_runtime/workspace.py:180-202`). O ritual-com-hora é, no fundo, um evento de calendário disfarçado de traço de perfil: guardá-lo estático no perfil recria à mão o estado (recorrência, ocorrência, "passou") que o calendário dá nativamente.
+
+**Decisão:**
+1. **Perfil modular vence.** As skills (setup, start, briefing, templates, governança) convergem para o `Agente/` modular. O `PERFIL.md` é **reduzido** ao núcleo sem aba própria (identidade, tom, áreas de vida) — não deletado. O contexto temático migra para as abas (`ROTINA`, `PESSOAS`, `SAUDE`, etc.). Migração dos workspaces instalados é **assistida** (skill `higiene`, com confirmação + backup + REGISTRO; nunca autosanitização — respeita o ASSERT do core).
+2. **Ritual reclassificado por natureza** (teste de 3 saídas): com hora e compromisso → **agenda** (Calendar MCP); sem hora mas informa o julgamento → **contexto** (`ROTINA.md`); não muda decisão nenhuma → **poda**. Dissolve a categoria "lembrete recorrente estável sem hora e sem baixa". A seção "Agendado / Lembretes" do `PAUTA.md` deixa de ser destino de lembrete recorrente — **mantém o nome** (compat de `extract_section`), muda a semântica para pendência datada pontual.
+3. **Calendário: o Prumo oferece, o usuário aprova, o Prumo cria — com idempotência** (checa se o evento já existe antes de oferecer, para não duplicar entre hosts). Nunca escreve sem aprovação explícita.
+4. **Sem Calendar MCP: alertar e orientar, nunca mascarar.** O briefing declara a agenda indisponível e orienta reestabelecer o acesso (ou checar manual). O `ROTINA.md` guarda o ritual de forma durável, mas não substitui o alerta — porque a falta de acesso esconde também eventos reais não lidos (falha barulhenta > silêncio gracioso).
+5. **Contenção do `ROTINA.md` (anti-inflação).** O `ROTINA` não pode virar a nova lixeira que a seção "Lembretes recorrentes" do PERFIL era — trocar o endereço da gaveta não resolve. Duas portas, não uma: **entrada** rigorosa (o teste de natureza do ponto 2 — só entra o que não tem hora *e* muda alguma decisão do Prumo) e **saída** por poda/revisão (a baixa do contexto é revisão, não conclusão). A saída reusa ganchos existentes: a **revisão semanal** (que já é poda; hoje revisa `PESSOAS.md`, não `ROTINA`) estendida ao `ROTINA`, e a **higiene** (que já diagnostica duplicações/redundâncias com confirmação e backup) com escopo ampliado de `PERFIL.md`-only para os módulos do `Agente/`. A **faxina não toca** o `ROTINA` — conteúdo pessoal exige julgamento, não baixa por idade/status. Três regras de contrato: (a) **exclusividade** — ritual com hora mora só na agenda; o Prumo infere a indisponibilidade lendo o calendário, nunca duplica no `ROTINA`; (b) **padrão, não log** — uma linha por verdade estável, não histórico de ocorrências; (c) **sem sobreposição entre abas** — pessoa → `PESSOAS.md`, cadência de projeto → `PROJETOS.md`. Tudo assistido: nada apaga sozinho (preserva o mojo). Encaixe nas fatias da #114: entrada na F1; higiene dos módulos `Agente/` na F3; exclusividade na F4; revisão semanal estendida na F5.
+
+**Alternativas consideradas:**
+- *Reclassificar o ritual dentro do `PERFIL.md`* (proposta original da #112) → rejeitado: mira o modelo errado; o runtime já modularizou e tem `ROTINA.md`.
+- *Eliminar o `PERFIL.md`* → rejeitado: identidade/tom/áreas de vida não têm aba modular; reduzir, não deletar.
+- *Prumo cria o evento automaticamente* → rejeitado: escrita no calendário do usuário é sensível e duplica entre hosts; oferecer + idempotência cobre sem o risco.
+- *Fallback gracioso sem calendário (ritual vira contexto silenciosamente)* → rejeitado pelo Tharso: mascara a falta de acesso e esconde eventos reais não lidos.
+
+**Touchpoint (prumo.me):** a reavaliar na Fatia 2 (onboarding) e Fatia 4 (calendário) — verificar se a landing descreve o setup/perfil ou a leitura de agenda antes do merge dessas fatias. Fatia 1 é interna (templates + governança), sem mudança de instalação/comandos/filosofia visível.
 
 ---
 

@@ -1,6 +1,6 @@
 # Runtime File Governance
 
-> **module_version: 4.17.0**
+> **module_version: 4.18.0**
 >
 > Política canônica de ciclo de vida dos arquivos vivos do Prumo.
 
@@ -84,14 +84,15 @@ Mora aqui:
 
 Se ganhar próxima ação datada, migra para `PAUTA.md`. Ideia não é pendência — não disputa espaço na pauta.
 
-### `Agente/PERFIL.md` e `Agente/PESSOAS.md`
+### `Agente/PERFIL.md`, `Agente/PESSOAS.md` e `Agente/ROTINA.md`
 
 Mora aqui:
 
-1. `PERFIL.md`: configuração pessoal estável (áreas de vida, tom, lembretes recorrentes);
-2. `PESSOAS.md`: pessoas-chave e pendências de relacionamento.
+1. `PERFIL.md`: configuração pessoal estável (identidade, áreas de vida, tom);
+2. `PESSOAS.md`: pessoas-chave e pendências de relacionamento;
+3. `ROTINA.md`: rituais, horários, hábitos e cadências **sem** hora marcada — contexto que informa o julgamento, não pendência.
 
-Contexto pessoal que muda comportamento. Não é pendência datada (isso é `PAUTA.md`) nem trilha de auditoria (isso é `REGISTRO.md`).
+Contexto pessoal que muda comportamento. Rituais **com** hora marcada não moram aqui — vão para a agenda. Nada disso é pendência datada (isso é `PAUTA.md`) nem trilha de auditoria (isso é `REGISTRO.md`).
 
 ### `Referencias/`
 

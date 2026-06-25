@@ -18,7 +18,7 @@ O procedimento completo está nos módulos. Aqui só tem o mapa de onde cada coi
 
 ## Carregamento obrigatório
 
-1. Leia `Prumo/Agente/PERFIL.md`.
+1. Leia `Prumo/Agente/PERFIL.md` e `Prumo/Agente/ROTINA.md` (rituais e cadências sem hora, quando existir).
 2. Leia `.prumo/system/PRUMO-CORE.md`.
 3. Leia o módulo canônico:
    - `skills/prumo/references/modules/briefing-procedure.md`
@@ -72,7 +72,7 @@ O cartão do runtime (`prumo start` / `prumo briefing`) é a **prévia** — ret
 ## Regras que não podem ser puladas
 
 - **Numeração sequencial obrigatória**: todo item acionável (email, evento, pendência, item de inbox) recebe número sequencial único do 1 ao N, sem reiniciar entre seções. Se o panorama tem 5 emails (1-5), a agenda continua do 6. Isso permite ao usuário despachar vários itens de uma vez ("3, 7, 12").
-- Usar Gmail MCP e Calendar MCP como fonte primária de email e calendário **quando disponíveis**. Seguir o pipeline de curadoria em camadas definido em `briefing-procedure.md` (camada 1: canais prioritários, camada 2: emails diretos com filtragem pessoa/sistema, camada 3: roteamento de conteúdo). **Sem MCP**: entregar o panorama local (pauta, inbox, calendário se acessível) e declarar em uma linha que email/agenda estão indisponíveis — nunca cair de volta no cartão da prévia.
+- Usar Gmail MCP e Calendar MCP como fonte primária de email e calendário **quando disponíveis**. Seguir o pipeline de curadoria em camadas definido em `briefing-procedure.md` (camada 1: canais prioritários, camada 2: emails diretos com filtragem pessoa/sistema, camada 3: roteamento de conteúdo). **Sem MCP**: entregar o panorama local (pauta, inbox) e declarar em uma linha que email/agenda estão indisponíveis, **orientando** reestabelecer o acesso ou checar a agenda manualmente — não mascarar (compromisso com hora não lido não é agenda vazia). Nunca cair de volta no cartão da prévia.
 - Antes de curar emails, ler `Prumo/Referencias/EMAIL-CURADORIA.md` (se existir) para carregar regras aprendidas. Quando o usuário corrigir a curadoria, registrar a regra nesse arquivo.
 - Se existir `_preview-index.json`, linkar `inbox-preview.html` antes de abrir bruto.
 - Se o panorama tiver 6+ itens acionáveis, oferecer o despacho visual da skill `decidir` (HTML interativo offline) além do chat, reusando os números do panorama. Override do usuário sempre respeitado; se a geração falhar, cair no chat. Ver `briefing-procedure.md` → "Despacho visual" e `skills/decidir/SKILL.md`.

@@ -1,6 +1,6 @@
 # Briefing Procedure
 
-> **module_version: 4.23.0**
+> **module_version: 4.24.0**
 >
 > Fonte canônica do procedimento de briefing do Prumo.
 > Se este módulo conflitar com um resumo em `SKILL.md`, este módulo vence.
@@ -16,7 +16,7 @@ Nunca reiniciar a contagem ao mudar de seção. Nunca usar sub-numeração (1.1,
 
 Antes de executar o briefing:
 
-1. Ler `Prumo/Agente/PERFIL.md`.
+1. Ler `Prumo/Agente/PERFIL.md` e `Prumo/Agente/ROTINA.md` (rituais e cadências sem hora, quando existir).
 2. Ler `.prumo/system/PRUMO-CORE.md`.
 3. Ler `skills/prumo/references/modules/load-policy.md` quando o repo local estiver disponível.
 4. Ler `skills/prumo/references/modules/version-update.md`.
@@ -28,7 +28,7 @@ O cartão do runtime (`prumo start` / `prumo briefing`) é a **prévia** — um 
 
 1. **Nunca** entregar a saída do runtime como briefing final nem encerrar nela. Entregar o cartão e parar é beco sem saída — o usuário pediu o briefing, não a prévia.
 2. Conduzir a curadoria rica abaixo. `prumo briefing --workspace <path> --format json` pode ser lido como **painel local** (semente determinística da parte local), mas a resposta é sempre o panorama numerado rico.
-3. **Sem MCP de email/agenda:** entregar o panorama com o que há localmente (pauta, inbox, calendário se acessível) e **declarar em uma linha** que email e/ou agenda estão indisponíveis. Nunca cair de volta no cartão da prévia como "solução".
+3. **Sem MCP de email/agenda:** entregar o panorama com o que há localmente (pauta, inbox) e **declarar em uma linha** que email e/ou agenda estão indisponíveis — e **orientar** a reestabelecer o acesso ou checar a agenda manualmente. Não mascarar: sem o calendário, compromissos com hora (incluindo rituais que viram evento) podem não estar refletidos, e o silêncio passaria por "agenda vazia" quando na verdade é "agenda não lida". Nunca cair de volta no cartão da prévia como "solução".
 4. Ao final do briefing, registrar o dia: `prumo briefing --workspace <path> --mark-done` (quando há shell). Isso marca "briefing feito hoje" sem remontar o painel.
 
 ## Passo 1: configuração e data local
@@ -166,7 +166,7 @@ Entregar em uma resposta única, numerada de 1 a N:
 1. Abertura com data correta no fuso do usuário.
 2. Agenda do dia, consolidada por conta quando aplicável.
 3. Emails curados (Camadas 1, 2 e 3 aplicadas), com classificação Responder/Ver/Sem ação e prioridade P1/P2/P3.
-4. Pendências vivas de `PAUTA.md` (quente, em andamento, agendado), **respeitando o marker `| cobrar: DD/MM`**. Item com marker de cobrança só aparece no briefing quando falta no máximo 1 dia para a data (véspera ou dia). Itens com cobrança no passado (atrasados) sempre aparecem. Item sem marker aparece sempre. Marker mal formado ou ambíguo: mostrar o item (fail-open, melhor ruído que perda silenciosa).
+4. Pendências vivas de `PAUTA.md` (quente, em andamento, agendado), **respeitando o marker `| cobrar: DD/MM`**. Item com marker de cobrança só aparece no briefing quando falta no máximo 1 dia para a data (véspera ou dia). Itens com cobrança no passado (atrasados) sempre aparecem. Item sem marker aparece sempre. Marker mal formado ou ambíguo: mostrar o item (fail-open, melhor ruído que perda silenciosa). **Rituais do `PERFIL.md`/`ROTINA.md` não são pendências** — não entram aqui como itens; rituais com hora aparecem como eventos da agenda, não como pauta.
 5. Inbox4Mobile: se houver itens novos (detectados no Passo 4), apresentar a contagem e a triagem. Linkar `inbox-preview.html` quando o preview estiver atualizado. Na primeira resposta do briefing, não despejar conteúdo bruto dos arquivos — preferir resumo numerado com classificação. **Este item é sobre formato de apresentação. A triagem real acontece no Passo 4 — não pular o Passo 4 por causa deste item.**
 
 Depois da lista numerada, entregar a proposta do dia em uma linha curta e oferecer opções respondíveis:

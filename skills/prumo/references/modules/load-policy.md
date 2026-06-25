@@ -1,6 +1,6 @@
 # Load Policy
 
-> **module_version: 5.8.0**
+> **module_version: 5.9.0**
 >
 > Política canônica de leitura incremental do Prumo.
 
@@ -19,7 +19,7 @@
    - scan leve: cabeçalhos de `PAUTA.md` + últimas 5-10 linhas de `REGISTRO.md`
 2. **Playbook (sob demanda, conforme intenção do usuário):**
    - `.prumo/system/PRUMO-CORE.md` — Parte 2
-   - `Prumo/Agente/PERFIL.md`
+   - `Prumo/Agente/PERFIL.md` e `Prumo/Agente/ROTINA.md` (rituais/cadências)
    - `PAUTA.md` integral, `INBOX.md`, `REGISTRO.md` integral
    - demais módulos da tabela "Módulos canônicos" em `prumo-core.md`
 3. **Leve (preferencial dentro de playbook):**
