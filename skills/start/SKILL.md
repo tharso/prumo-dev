@@ -385,7 +385,7 @@ Usar os mesmos templates do setup wizard:
 5. Criar pastas: uma por área inferida (com README.md), `.prumo/logs/`, `.prumo/state/`,
    `Inbox4Mobile/`, `Referencias/`
 
-**Proteção de arquivos existentes:** consultar `../prumo/references/file-protection-rules.md` para regras detalhadas. Se algum arquivo já existir, não sobrescrever.
+**Proteção de arquivos existentes:** consultar `../prumo/references/file-protection-rules.md` para regras detalhadas. Se algum arquivo já existir com conteúdo do usuário, não sobrescrever — **mas** um `PERFIL.md` que é só esqueleto do runtime (`_Preencher no setup._`) deve ser **completado**, não pulado.
 
 **5.3 — Popular a PAUTA.md com itens reais**
 

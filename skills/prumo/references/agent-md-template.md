@@ -64,7 +64,7 @@ Fora disso, abertura não abre mais nada. A saudação vem proativa, com 2-4 op�
 
 > Fonte canônica de navegação do workspace. Se outra árvore divergir desta (ex: a "Estrutura do workspace" do PRUMO-CORE), esta prevalece.
 
-- `Prumo/Agente/`: contexto modular do usuário (perfil, pessoas)
+- `Prumo/Agente/`: contexto modular do usuário (PERFIL, PESSOAS, ROTINA, SAUDE, INFRA, PROJETOS, RELACOES)
 - `Prumo/PAUTA.md`: estado vivo e pendências
 - `Prumo/INBOX.md`: itens ainda não processados
 - `Prumo/REGISTRO.md`: rastro do que aconteceu
