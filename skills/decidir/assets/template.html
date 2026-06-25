@@ -449,7 +449,9 @@ function actionByKey(p, key) { return actionsOf(p).find(a => a.key === key) || n
 function safeUrl(url) {
   const u = String(url == null ? '' : url).trim();
   if (/^(https?:|mailto:)/i.test(u)) return u;
-  if (/^[#/]/.test(u) || /^[\w][\w./?=&%+~-]*$/.test(u)) return u;
+  // Relativos/locais: começa com #, / ou . (inclui ./foo e ../foo), ou é um
+  // caminho simples sem esquema. `javascript:`/`data:` caem fora (têm `:`).
+  if (/^[#/.]/.test(u) || /^[\w][\w./?=&%+~-]*$/.test(u)) return u;
   return '#';
 }
 function escapeHtml(s) {
@@ -516,7 +518,7 @@ function render() {
 
 function cardHTML(p) {
   const badges = (p.badges || []).map(b => `<span class="badge t-${b.tone || 'slate'}">${b.label}</span>`).join('');
-  const link = p.link ? `<a class="card-link" href="${safeUrl(p.link.href)}" target="_blank" rel="noopener">${escapeHtml(p.link.label)}</a>` : '';
+  const link = p.link ? `<a class="card-link" href="${escapeHtml(safeUrl(p.link.href))}" target="_blank" rel="noopener">${escapeHtml(p.link.label)}</a>` : '';
   const tipo = p.type === 'escolha' ? `<span class="badge t-purple">${L.chooseOne}</span>` : '';
 
   let body = '';
@@ -624,7 +626,7 @@ function buildReportData() {
         choice_key: fb.choice || null,
         choice_label: opt ? opt.label : null,
         effect: opt && opt.effect ? opt.effect : null,
-        source_url: p.link ? p.link.href : null,
+        source_url: p.link ? safeUrl(p.link.href) : null,
         source_label: p.link ? p.link.label : null,
         comment: comment || null,
       });
@@ -640,7 +642,7 @@ function buildReportData() {
         requires_missing: !!(requires && !comment),
         // O link do item (vídeo/artigo) entra no JSON: extract_transcript/summarize/
         // open_link precisam saber QUAL conteúdo, mesmo numa sessão nova.
-        source_url: p.link ? p.link.href : null,
+        source_url: p.link ? safeUrl(p.link.href) : null,
         source_label: p.link ? p.link.label : null,
         comment: comment || null,
       });
