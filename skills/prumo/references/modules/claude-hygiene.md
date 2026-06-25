@@ -40,7 +40,7 @@ Além da limpeza estrutural, o diagnóstico deve classificar drift de conteúdo:
 2. registro histórico que parece pertencer a `REGISTRO.md` ou changelog;
 3. status transitório velho demais para continuar em configuração viva;
 4. item que exige confirmação factual antes de qualquer movimento;
-5. **ritual recorrente no PERFIL** (seção "Lembretes recorrentes", modelo legado anterior à 5.9) → propor migração por natureza: com hora → **agenda** (oferecer criar, sem escrever no calendário sem o ok); sem hora → **`Agente/ROTINA.md`**; sem mudar nenhuma decisão → **poda**;
+5. **ritual recorrente no PERFIL** (seção "Lembretes recorrentes", modelo legado anterior à 5.9) → propor migração por natureza: com hora → **agenda** (seguir `escrita-calendario.md`: oferecer, idempotência, série recorrente, tombstone no REGISTRO); sem hora → **`Agente/ROTINA.md`**; sem mudar nenhuma decisão → **poda**;
 6. **redundância no `ROTINA.md`**: linha duplicada; **histórico de ocorrências disfarçado de padrão** ("segunda fiz X, terça fiz X, quarta fiz X" — o `ROTINA` guarda o *padrão estável*, não o log do que aconteceu); ritual com hora que deveria estar só na agenda (exclusividade — não duplicar no ROTINA); ou contexto que não muda decisão nenhuma (candidato a poda).
 
 Destino padrão:
