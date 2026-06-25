@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from prumo_runtime.workspace import extract_section
+from prumo_runtime.pauta_parsing import extract_section
 
 
 PAUTA_FIXTURE = """# Pauta

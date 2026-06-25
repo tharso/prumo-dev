@@ -4,7 +4,7 @@ import logging
 import unittest
 from datetime import date
 
-from prumo_runtime.workspace import (
+from prumo_runtime.pauta_parsing import (
     filter_by_due_date,
     is_item_visible_today,
     parse_cobrar_date,

@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.13.1] - 2026-06-25
+
+### Changed
+- **Refactor: parsing de pauta/markdown sai do `workspace.py` para `pauta_parsing.py`** (follow-up da #114) — `extract_section`, `parse_cobrar_date`, `is_item_visible_today`, `filter_by_due_date` e helpers (utilitários puros de texto/data, sem acoplamento com schema/render/repair) foram movidos para um módulo próprio. O `workspace.py` caiu de **1061 para 928 linhas** — saiu do teto do baseline do quality gate, onde uma adição legítima da Fatia 5 mal coubera. **Comportamento de execução inalterado** (lógica idêntica, nome do logger preservado), mas a localização importável dos helpers muda de `prumo_runtime.workspace` para `prumo_runtime.pauta_parsing` — módulo interno, sem API pública estável; todos os importadores do repositório (`daily_operator`, `briefing`, testes) foram atualizados.
+
 ## [5.13.0] - 2026-06-25
 
 ### Changed

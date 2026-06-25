@@ -6,10 +6,9 @@ from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+from prumo_runtime.pauta_parsing import extract_section, filter_by_due_date
 from prumo_runtime.workspace import (
     build_config_from_existing,
-    extract_section,
-    filter_by_due_date,
     load_json,
     read_text,
 )
