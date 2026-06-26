@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.15.0] - 2026-06-26
+
+### Added
+- **Skill `fim`: encerramento formal de sessão (`/fim`)** (#126) — bookend simétrico do briefing. Documenta os **deltas duráveis** da sessão nos canais existentes (`IDEIAS.md`/`PAUTA.md`/`REGISTRO.md`), roda a `faxina` automática, e — quando detecta acúmulo — **propõe** (nunca executa) `/higiene` ou `/sanitize`, resolvendo o problema desses comandos ficarem esquecidos. **Contrato conservador:** grava só deltas visíveis e confirmados; sob compactação de contexto, declara a lacuna em vez de inventar. **Mantém a #68:** zero artefato narrativo de sessão (sem `HANDOVER`/`PENDING_VALIDATION`). **Cerca contra overlap com o briefing:** não lê email/calendário, não marca `last-briefing.json`, não refaz a pauta do dia. Detector read-only `prumo fim --format json` computa os sinais de acúmulo reusando os thresholds da faxina/sanitize. Planejado com revisão dupla do Codex (ver DECISIONS.md 2026-06-26).
+
 ## [5.14.0] - 2026-06-26
 
 ### Added
