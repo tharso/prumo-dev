@@ -114,7 +114,8 @@ Quando o usuário colar o relatório:
 2. **Execute por verbo:**
    - **`include_pauta`** — adicionar o item à `PAUTA.md` como entrada acionável
      (seção `Horizonte` por padrão, salvo o comentário pedir outra). Direto, sem
-     reconfirmar. Use `prumo acervo apply` ou edite a `PAUTA.md` à mão.
+     reconfirmar. Use `prumo acervo --workspace <ws> apply` ou edite a
+     `PAUTA.md` à mão.
    - **`attack_now`** — trabalhar o item agora, na sessão (desenvolver a ideia,
      começar a tarefa). Julgamento do agente; não é mecânico.
    - **`delete`** — **arquivar, não apagar.** Remoção segura, nesta ordem:
@@ -128,7 +129,7 @@ Quando o usuário colar o relatório:
      4. **Mover** o fragmento/arquivo para `Prumo/Arquivo/Acervo/` (quarentena).
         Deleção **permanente** só se o usuário escrever explicitamente "apagar
         permanentemente".
-   - O runtime expõe isso testado: `prumo acervo apply --workspace <ws>
+   - O runtime expõe isso testado: `prumo acervo --workspace <ws> apply
      --report <arquivo.json>` (e `--permanent` só sob pedido explícito).
 
 3. **Comentário é instrução.** "Incluir na pauta" + comentário = incluir daquele

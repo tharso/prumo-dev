@@ -45,7 +45,7 @@ Cada item do relatório carrega:
    acervo, e a remoção recusa por garantia dupla.
 5. `delete` **sem registro prévio** no `REGISTRO.md` **falha**.
 
-O runtime implementa essas travas: `prumo acervo apply --workspace <ws>
+O runtime implementa essas travas: `prumo acervo --workspace <ws> apply
 --report <arquivo.json>` (read-modify seguro; `--permanent` só sob pedido
 explícito do usuário).
 

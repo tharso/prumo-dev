@@ -5,6 +5,7 @@ import argparse
 from prumo_runtime import __version__
 from prumo_runtime.commands import (
     run_acervo,
+    run_acervo_apply,
     run_briefing,
     run_context_dump,
     run_inbox_preview,
@@ -91,6 +92,18 @@ def build_parser() -> argparse.ArgumentParser:
     acervo.add_argument("--workspace", required=True, help="Caminho do workspace")
     acervo.add_argument("--format", choices=["text", "json"], default="text")
     acervo.set_defaults(handler=run_acervo)
+    acervo_sub = acervo.add_subparsers(dest="acervo_command")
+    acervo_apply = acervo_sub.add_parser(
+        "apply",
+        help="Aplicar um relatório do acervo (incluir/arquivar com remoção segura)",
+    )
+    acervo_apply.add_argument("--report", required=True, help="Caminho do JSON do relatório")
+    acervo_apply.add_argument(
+        "--permanent",
+        action="store_true",
+        help="Apaga de vez em vez de arquivar. Só sob pedido explícito do usuário.",
+    )
+    acervo_apply.set_defaults(handler=run_acervo_apply)
 
     repair = subparsers.add_parser("repair", help="Validar e reparar arquivos recriaveis do workspace")
     repair.add_argument("--workspace", required=True, help="Caminho do workspace")
