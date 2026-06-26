@@ -1,3 +1,4 @@
+from prumo_runtime.commands.acervo import run_acervo
 from prumo_runtime.commands.briefing import run_briefing
 from prumo_runtime.commands.context_dump import run_context_dump
 from prumo_runtime.commands.inbox_preview import run_inbox_preview
@@ -9,6 +10,7 @@ from prumo_runtime.commands.start import run_start
 from prumo_runtime.commands.update import run_update
 
 __all__ = [
+    "run_acervo",
     "run_briefing",
     "run_context_dump",
     "run_inbox_preview",

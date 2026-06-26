@@ -4,6 +4,7 @@ import argparse
 
 from prumo_runtime import __version__
 from prumo_runtime.commands import (
+    run_acervo,
     run_briefing,
     run_context_dump,
     run_inbox_preview,
@@ -82,6 +83,14 @@ def build_parser() -> argparse.ArgumentParser:
     inbox_preview.add_argument("--workspace", required=True, help="Caminho do workspace")
     inbox_preview.add_argument("--format", choices=["text", "json"], default="text")
     inbox_preview.set_defaults(handler=run_inbox_preview)
+
+    acervo = subparsers.add_parser(
+        "acervo",
+        help="Enumerar o limbo durável (ideias/hibernando/referências) read-only; alimenta a skill `acervo`",
+    )
+    acervo.add_argument("--workspace", required=True, help="Caminho do workspace")
+    acervo.add_argument("--format", choices=["text", "json"], default="text")
+    acervo.set_defaults(handler=run_acervo)
 
     repair = subparsers.add_parser("repair", help="Validar e reparar arquivos recriaveis do workspace")
     repair.add_argument("--workspace", required=True, help="Caminho do workspace")
