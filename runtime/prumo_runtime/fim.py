@@ -3,8 +3,9 @@
 O `/fim` é a porta única de encerramento de sessão. Roda a `faxina` (automática)
 e, quando detecta acúmulo que exige julgamento, **sugere** `/higiene` ou
 `/sanitize` — nunca executa por conta própria (elas pedem aprovação). Este
-módulo computa os sinais de acúmulo de forma determinística, reusando os
-thresholds da `faxina`/`sanitize`.
+módulo computa os sinais de acúmulo de forma determinística, usando os
+thresholds PADRÃO da `faxina`/`sanitize` (overrides em `Prumo/Custom/rules/`
+ainda não são lidos aqui — é só detecção pra sugerir, não execução).
 
 Read-only: nunca escreve. NÃO lê email/calendário e NÃO toca `last-briefing.json`
 (é encerramento, não briefing). Ver DECISIONS.md 2026-06-26 (#126).
@@ -107,7 +108,11 @@ def accumulation_signals(workspace: Path, *, today: date | None = None) -> dict:
     inbox_pending = _inbox_pending_count(read_text(paths.inbox))
     registro_rows = _registro_rows(read_text(paths.registro))
 
-    backups_old = _count_old_files(paths.system_root / "backups", today, BACKUP_EXPIRY_DAYS)
+    # Conta o dir atual e o legado (a sanitize cuida de ambos).
+    backups_old = (
+        _count_old_files(paths.system_root / "backups", today, BACKUP_EXPIRY_DAYS)
+        + _count_old_files(paths.system_root / "backup", today, BACKUP_EXPIRY_DAYS)
+    )
     ephemeral_old = (
         _count_old_files(paths.state_root / "decidir", today, EPHEMERAL_HTML_DAYS, ".html")
         + _count_old_files(paths.state_root / "acervo", today, EPHEMERAL_HTML_DAYS, ".html")

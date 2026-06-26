@@ -71,6 +71,21 @@ class FimDetectorTests(unittest.TestCase):
             self.assertFalse(result["suggest"]["higiene"])
             self.assertFalse(result["suggest"]["sanitize"])
 
+    def test_counts_legacy_backup_dir(self) -> None:
+        # Regressão do #8 do Codex: a sanitize cuida de .prumo/backups E do
+        # legado .prumo/backup; o detector tem que contar os dois.
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp)
+            (ws / "_state").mkdir(parents=True, exist_ok=True)
+            (ws / "backup").mkdir(parents=True, exist_ok=True)  # legado (flat: system_root == root)
+            (ws / "PAUTA.md").write_text("# Pauta\n", encoding="utf-8")
+            old = ws / "backup" / "antigo.tar"
+            old.write_text("x", encoding="utf-8")
+            os.utime(old, (OLD_TS, OLD_TS))
+            result = accumulation_signals(ws, today=TODAY)
+            self.assertEqual(result["signals"]["backups_old"], 1)
+            self.assertTrue(result["suggest"]["sanitize"])
+
     def test_read_only_and_does_not_touch_last_briefing(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             ws = self._accumulated_ws(Path(tmp))
