@@ -8,6 +8,7 @@ from prumo_runtime.commands import (
     run_acervo_apply,
     run_briefing,
     run_context_dump,
+    run_fim,
     run_inbox_preview,
     run_migrate,
     run_migrate_skills,
@@ -109,6 +110,14 @@ def build_parser() -> argparse.ArgumentParser:
         help="Apaga de vez em vez de arquivar. Só sob pedido explícito do usuário.",
     )
     acervo_apply.set_defaults(handler=run_acervo_apply)
+
+    fim = subparsers.add_parser(
+        "fim",
+        help="Detector de acúmulo do encerramento de sessão (read-only); alimenta a skill `fim`",
+    )
+    fim.add_argument("--workspace", required=True, help="Caminho do workspace")
+    fim.add_argument("--format", choices=["text", "json"], default="text")
+    fim.set_defaults(handler=run_fim)
 
     repair = subparsers.add_parser("repair", help="Validar e reparar arquivos recriaveis do workspace")
     repair.add_argument("--workspace", required=True, help="Caminho do workspace")

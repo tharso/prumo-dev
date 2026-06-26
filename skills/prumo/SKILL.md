@@ -322,6 +322,9 @@ Se o `Prumo/Agente/PERFIL.md` tiver duplicações, conflitos ou texto no lugar e
 **Comando `/acervo`:**
 Pra revisitar o que ficou parado (ideias soltas, pauta hibernando, referências guardadas), `/acervo` gera um HTML navegável (busca, filtro, ordenação por "mais parado primeiro") onde você garimpa item a item — incluir na pauta, atacar agora ou excluir (arquiva, não apaga). Dispara a skill `acervo`.
 
+**Comando `/fim`:**
+Pra encerrar a sessão sem perder o que foi decidido, `/fim` documenta os deltas duráveis nos canais existentes (IDEIAS/PAUTA/REGISTRO, só o que está visível e confirmado), roda a faxina automática, e — se detectar acúmulo — propõe `/higiene` ou `/sanitize` (nunca executa por conta própria). É o bookend do briefing; não lê email/calendário nem cria artefato de sessão. Dispara a skill `fim`.
+
 ### Etapa 10: Primeiro dump (obrigatório)
 
 O setup NÃO termina na geração de arquivos. Termina no primeiro dump.

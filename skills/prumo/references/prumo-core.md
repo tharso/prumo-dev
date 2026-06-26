@@ -1,6 +1,6 @@
 # Prumo Core — Motor do sistema
 
-> **prumo_version: 5.14.1**
+> **prumo_version: 5.15.0**
 >
 > Núcleo estável do Prumo. Define regras, guardrails e localização dos módulos canônicos.
 > Procedimento detalhado não mora aqui.
@@ -68,6 +68,7 @@ Arquivos de estado esperados em `.prumo/state/`:
 | `/higiene` | Higiene assistida do `Prumo/Agente/PERFIL.md` |
 | `/start` | Captura inicial e onboarding rápido |
 | `/acervo` | Navegar e revisitar o limbo (ideias soltas, pauta hibernando, referências) |
+| `/fim` | Encerrar a sessão (documenta deltas, roda faxina, propõe limpeza) |
 | `/prumo` | Alias legado de setup |
 
 No Cowork, os comandos canônicos aparecem sem prefixo do plugin.
