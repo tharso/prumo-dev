@@ -59,6 +59,12 @@ do inbox (cache volátil que a `faxina` apaga). Não use esses como fonte.
 Se o runtime não estiver disponível, o agente lê os Markdown direto (mesmas três
 fontes, mesmo escopo negativo) — a skill é portável.
 
+**Contrato de fragmento:** um item de `IDEIAS.md`/`Hibernando` é um bullet
+(`- `/`* `) **mais as linhas indentadas** que o seguem. Texto **não-indentado**
+após um bullet não pertence ao item — não entra no hash nem é cortado na
+exclusão. Mantenha ideias como bullets (com sub-bullets indentados) pra que o
+acervo as capture inteiras.
+
 ## Como gerar
 
 Use `assets/template.html`. A mecânica (estado em localStorage, busca/filtro/
@@ -70,9 +76,13 @@ não reescreva**.
    `content_hash`) — não invente nem descarte esses campos; eles sustentam a
    remoção segura.
 
-2. **Injete os itens** no lugar de `/*__ITEMS__*/`, no formato do contrato
-   (`item_id`, `source_kind`, `source_path`, `anchor`, `line_start`,
-   `line_end`, `content_hash`, `title`, `snippet`, `age_days`, `tags`). O
+2. **Injete os itens** no lugar de `/*__ITEMS__*/` (que fica dentro do bloco
+   `<script type="application/json" id="acervo-items">`). Use a saída de
+   **`prumo acervo --workspace <ws> --format html-items`** — ela já entrega o
+   array JSON com `<`/`>`/`&` escapados, pra um título com `</script>` **não**
+   virar XSS. Não monte o JSON na mão nem injete como JS cru. Cada item carrega
+   o contrato (`item_id`, `source_kind`, `source_path`, `anchor`, `line_start`,
+   `line_end`, `content_hash`, `title`, `snippet`, `age_days`, `tags`); o
    template agrupa por `source_kind`, dá busca/filtro/ordenação e os 3 verbos.
 
 3. **Preencha CONFIG e os placeholders:**

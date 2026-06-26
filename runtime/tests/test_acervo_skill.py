@@ -11,7 +11,7 @@ import re
 import unittest
 from pathlib import Path
 
-from prumo_runtime.acervo import ITEM_FIELDS
+from prumo_runtime.acervo import ITEM_FIELDS, safe_items_json
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SKILL_DIR = REPO_ROOT / "skills" / "acervo"
@@ -86,6 +86,30 @@ class AcervoVerbsAndProvenanceTests(unittest.TestCase):
         self.assertIn("permanente", self.html.lower())
         skill = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
         self.assertIn("arquivar, não apagar", skill.lower())
+
+
+class AcervoXssTests(unittest.TestCase):
+    """Regressão do achado #3/#10 do Codex: itens injetados não podem virar XSS."""
+
+    def setUp(self):
+        self.html = TEMPLATE.read_text(encoding="utf-8")
+
+    def test_template_loads_items_from_json_block(self):
+        # Itens entram via <script type="application/json">, não como JS cru.
+        self.assertIn('type="application/json"', self.html)
+        self.assertIn("acervo-items", self.html)
+        self.assertIn("JSON.parse", self.html)
+
+    def test_safe_items_json_escapes_script_break(self):
+        payload = [{"title": "</script><img src=x onerror=alert(1)>", "snippet": "a & b < c > d"}]
+        out = safe_items_json(payload)
+        self.assertNotIn("</script>", out)
+        self.assertNotIn("<img", out)
+        self.assertIn("\\u003c", out)   # '<' escapado
+        self.assertIn("\\u0026", out)   # '&' escapado
+        # ainda é JSON válido e preserva o conteúdo (só escapado)
+        import json
+        self.assertEqual(json.loads(out)[0]["title"], "</script><img src=x onerror=alert(1)>")
 
 
 if __name__ == "__main__":

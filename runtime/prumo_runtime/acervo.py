@@ -15,6 +15,7 @@ email/agenda (que motivou barrar o runtime na geração da `decidir`).
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 from datetime import date
 from pathlib import Path
@@ -75,6 +76,29 @@ def _hash_text(text: str) -> str:
 
 def _hash_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()[:16]
+
+
+def fragment_content_hash(lines_slice: list[str]) -> str:
+    """Hash NORMALIZADO do trecho (linhas do arquivo, com whitespace colapsado).
+
+    Fonte única usada pelo enumerador e pela remoção segura: recomputar o mesmo
+    hash a partir das linhas atuais, imediatamente antes de cortar, prova que o
+    conteúdo do trecho não mudou. `_normalize` colapsa whitespace — então funciona
+    com ou sem `keepends`, mas NÃO detecta mudança só de espaços/quebras (essa é
+    uma escolha: reformatação trivial não deve bloquear a remoção).
+    """
+    return _hash_text("".join(lines_slice))
+
+
+def safe_items_json(items: list[dict], *, indent: int = 2) -> str:
+    """Serializa os itens pra injeção segura num bloco `<script>` do template.
+
+    Escapa `<`/`>`/`&` (e, via `ensure_ascii`, U+2028/U+2029) — sem isso, um
+    título/snippet contendo `</script>` fecharia a tag e viraria XSS no
+    documento que o usuário abre. Ver DECISIONS.md 2026-06-26 (#125).
+    """
+    raw = json.dumps(items, ensure_ascii=True, indent=indent)
+    return raw.replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
 
 
 def _truncate(text: str, limit: int) -> str:
@@ -172,7 +196,9 @@ def _iter_bullets(lines: list[str], offset: int, limit: int):
         yield current
 
 
-def _fragment_item(item_id: str, source_kind: str, source_path: str, bullet: dict, today: date) -> dict:
+def _fragment_item(
+    item_id: str, source_kind: str, source_path: str, bullet: dict, lines: list[str], today: date
+) -> dict:
     raw = " ".join(p for p in bullet["raw_lines"] if p).strip()
     return {
         "item_id": item_id,
@@ -181,7 +207,9 @@ def _fragment_item(item_id: str, source_kind: str, source_path: str, bullet: dic
         "anchor": bullet.get("section") or None,
         "line_start": bullet["line_start"],
         "line_end": bullet["line_end"],
-        "content_hash": _hash_text(raw),
+        # Hash normalizado do trecho (linhas do arquivo): a remoção segura
+        # recomputa o mesmo hash a partir das linhas atuais antes de cortar.
+        "content_hash": fragment_content_hash(lines[bullet["line_start"] - 1 : bullet["line_end"]]),
         "title": _truncate(raw, _TITLE_MAX),
         "snippet": _truncate(raw, _SNIPPET_MAX),
         "age_days": _age_from_desde(raw, today),
@@ -197,7 +225,7 @@ def _enumerate_ideias(paths: WorkspacePaths, counter, today: date) -> list[dict]
     rel = paths.relative(paths.ideias)
     items = []
     for bullet in _iter_bullets(lines, 0, len(lines)):
-        items.append(_fragment_item(next(counter), "ideia", rel, bullet, today))
+        items.append(_fragment_item(next(counter), "ideia", rel, bullet, lines, today))
     return items
 
 
@@ -213,7 +241,7 @@ def _enumerate_hibernando(paths: WorkspacePaths, counter, today: date) -> list[d
     items = []
     for bullet in _iter_bullets(lines, span[0], span[1]):
         bullet["section"] = HIBERNANDO_HEADING
-        items.append(_fragment_item(next(counter), "pauta_hibernando", rel, bullet, today))
+        items.append(_fragment_item(next(counter), "pauta_hibernando", rel, bullet, lines, today))
     return items
 
 

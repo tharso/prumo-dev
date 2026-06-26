@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.14.1] - 2026-06-26
+
+### Fixed
+- **Correções de segurança/robustez no `acervo` (review de código do Codex)** (#125) — (1) **perda de dados em lote:** o `apply` enumerava o limbo uma vez para o lote, então um segundo `delete` no mesmo arquivo usava linhas já deslocadas pelo primeiro e cortava o trecho errado — agora **re-enumera antes de cada delete**; (2) a remoção **recomputa o hash do trecho literal** imediatamente antes de cortar (fonte única `fragment_content_hash`, compartilhada com o enumerador); (3) **XSS:** os itens passam a ser injetados num bloco `<script type="application/json">` via `prumo acervo --format html-items`, que escapa `<`/`>`/`&` — um título com `</script>` não fecha mais a tag; (4) arquivar referência usa **nome único** na quarentena (não sobrescreve um arquivo já arquivado); (5) `include_pauta` **normaliza** título/comentário para uma linha (comentário com newline não injeta heading/bullet na PAUTA); (6) ordenação por idade não repete mais headings de grupo. +6 testes de regressão (2 deletes no mesmo arquivo, colisão de nome, injeção por newline, prova de ordem registro→remoção, XSS).
+
 ## [5.14.0] - 2026-06-26
 
 ### Added

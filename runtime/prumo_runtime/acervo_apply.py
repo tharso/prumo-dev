@@ -22,6 +22,7 @@ from prumo_runtime.acervo import (
     OPERATIONAL_REFERENCIAS,
     SCHEMA_VERSION,
     enumerate_limbo,
+    fragment_content_hash,
 )
 from prumo_runtime.workspace import read_text
 from prumo_runtime.workspace_paths import workspace_paths
@@ -68,6 +69,11 @@ def _archive_fragment(paths, current: dict, title: str, today: date, permanent: 
     end = current["line_end"]
     if start < 0 or end > len(lines) or start >= end:
         raise AcervoSafetyError(f"linhas fora de alcance em {current['source_path']}")
+    # Recomputa o hash (normalizado) do trecho imediatamente antes de cortar.
+    # Mesmo com a re-enumeração por delete, isto fecha qualquer janela entre
+    # achar e remover: se o trecho nessas linhas não bate mais, bloqueia.
+    if fragment_content_hash(lines[start:end]) != current["content_hash"]:
+        raise AcervoSafetyError("trecho mudou entre a verificação e a remoção (hash divergente)")
     removed = "".join(lines[start:end])
     remaining = lines[:start] + lines[end:]
 
@@ -98,7 +104,16 @@ def _archive_file(paths, current: dict, title: str, today: date, permanent: bool
         return destino
     qdir = _quarantine_dir(paths)
     qdir.mkdir(parents=True, exist_ok=True)
-    src.replace(qdir / src.name)
+    # Nome único: nunca sobrescrever um arquivo já arquivado ("arquiva, não apaga").
+    dest = qdir / src.name
+    if dest.exists():
+        base = f"{src.stem}-{today.isoformat()}-{current['content_hash']}"
+        dest = qdir / f"{base}{src.suffix}"
+        n = 2
+        while dest.exists():  # mesmo nome+conteúdo+dia: vai pra -2, -3, ...
+            dest = qdir / f"{base}-{n}{src.suffix}"
+            n += 1
+    src.replace(dest)
     return destino
 
 
@@ -120,6 +135,10 @@ def _find_current(current_items: list[dict], item: dict) -> dict:
 def _append_pauta_horizonte(paths, title: str, comment: str | None) -> None:
     pauta = paths.pauta
     text = read_text(pauta)
+    # Normaliza pra uma linha só: title/comment com newline injetariam
+    # heading/bullet e bagunçariam a PAUTA.md.
+    title = " ".join(str(title).split())
+    comment = " ".join(str(comment).split()) if comment else None
     bullet = f"- {title}"
     if comment:
         bullet += f" ({comment})"
@@ -148,9 +167,6 @@ def apply_report(workspace: Path, report: dict, *, permanent: bool = False, toda
     workspace = workspace.expanduser().resolve()
     paths = workspace_paths(workspace)
 
-    # Snapshot atual = fonte de verdade pra localizar/validar itens.
-    current_items = enumerate_limbo(workspace, today=today)["items"]
-
     archived, included, for_agent, blocked = [], [], [], []
     for item in report.get("items", []):
         verb = item.get("verb")
@@ -162,6 +178,10 @@ def apply_report(workspace: Path, report: dict, *, permanent: bool = False, toda
                 _append_pauta_horizonte(paths, title, item.get("comment"))
                 included.append(title)
             elif verb == "delete":
+                # Re-enumera FRESCO antes de cada delete: um delete anterior no
+                # mesmo arquivo desloca as linhas, então um snapshot único do
+                # lote removeria o trecho errado no segundo item.
+                current_items = enumerate_limbo(workspace, today=today)["items"]
                 current = _find_current(current_items, item)
                 if current["source_kind"] == "referencia":
                     destino = _archive_file(paths, current, title, today, permanent)
