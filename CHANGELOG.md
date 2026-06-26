@@ -7,7 +7,7 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 ## [Unreleased]
 
 ### Fixed
-- **Instalação e atualização do runtime a partir do público voltam a funcionar** (#123) — o mirror espelhava um subset que omitia `plugin.json` e `marketplace.json` da raiz, mas o `pyproject.toml` (também espelhado) exige `plugin.json` no `force-include` do wheel. Resultado: `bash <(curl .../prumo_runtime_install.sh)` e `prumo update` falhavam no build (`Forced include not found: plugin.json`) a partir do público — o CI não pegava porque builda via sdist (que inclui o arquivo). O mirror passa a copiar `plugin.json` e `marketplace.json`; novo `test_mirror_dist_consistency.py` trava a regressão (todo `force-include` do wheel deve estar entre os arquivos espelhados).
+- **Instalação e atualização do runtime a partir do público voltam a funcionar** (#123) — o mirror espelhava um subset que omitia `plugin.json` e `marketplace.json` da raiz, mas o `pyproject.toml` (também espelhado) exige `plugin.json` no `force-include` do wheel. Resultado: `bash <(curl .../prumo_runtime_install.sh)` e `prumo update` falhavam no build (`Forced include not found: plugin.json`) a partir do público — o CI não pegava porque builda via sdist (que inclui o arquivo). O mirror passa a copiar `plugin.json` e `marketplace.json`; novo `test_mirror_dist_consistency.py` confere os `force-include` do wheel contra os `cp` do mirror — verificação textual de convenção (não um build do staging), que pega a omissão de um arquivo espelhado.
 
 ## [5.13.1] - 2026-06-25
 
