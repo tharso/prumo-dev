@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<!--
+  ═══════════════════════════════════════════════════════════════
+  PRUMO · ACERVO — navegador do limbo (ideias / hibernando / referências)
+  ═══════════════════════════════════════════════════════════════
+  Forkado da mecânica verificada da skill `decidir` (tema escuro, MECÂNICA
+  offline, estado em localStorage, relatório markdown + bloco JSON parseável,
+  clipboard). Diferença: aqui o usuário NAVEGA o que ficou parado (busca,
+  filtro por grupo, ordenação por idade) e GARIMPA — marca cada item com um
+  de 3 verbos fixos, não despacha a pauta do dia.
+
+  COMO USAR
+  - Substitua os placeholders __ASSIM__ e preencha CONFIG.storageKey.
+  - Injete os itens (vindos de `prumo acervo --format json`) no lugar de
+    /*__ITEMS__*/ — cada item carrega PROVENIÊNCIA (source_path, anchor,
+    line_start/line_end, content_hash) usada na remoção segura.
+  - NÃO altere a MECÂNICA (estado/relatório/clipboard) — verificada.
+  - Copie `Boliand.otf` (de skills/acervo/assets/) para a MESMA pasta do HTML.
+
+  REGRA DE OFFLINE (vale para a MECÂNICA): fontes, JS e CSS não dependem de
+  rede. O CONTEÚDO do usuário (títulos/snippets) é texto local, sempre
+  escapado (escapeHtml). Sanitizador `safeUrl` mantido por paridade/defesa.
+
+  Placeholders:
+    __DOC_TITLE__   <title> da aba
+    __KICKER__      linha mono pequena acima do título
+    __HEADLINE__    título grande
+    __META__        linha de metadados (data, workspace, contagem)
+    __INTRO__       parágrafo de contexto
+    __HOWTO__       instruções de uso
+    __FINALE_TITLE__/__FINALE_TEXT__/__FINALE_HINT__  bloco final
+    __STORAGE_KEY__  chave ÚNICA por rodada (ex: prumo-acervo-2026-06-26-1430-a1b2)
+    __REPORT_TITLE__ primeira linha do relatório markdown
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>__DOC_TITLE__</title>
+<style>
+  /* Display do Prumo: Boliand local (copiada pra junto do HTML). Sem rede. */
+  @font-face {
+    font-family: 'Boliand';
+    src: url('Boliand.otf') format('opentype');
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+  }
+  :root {
+    --bg:        #101828;
+    --bg-2:      #162036;
+    --surface:   #1D2939;
+    --text:      #E7EAF0;
+    --text-soft: #AEB6C4;
+    --text-faint:#8A94A6;
+    --line:      rgba(174, 182, 196, 0.16);
+    --accent:    #6DB8EC;
+    --accent-solid: #4AA4E0;
+    --accent-soft: rgba(74, 164, 224, 0.12);
+    --accent-bd: rgba(74, 164, 224, 0.4);
+    --green:  #56D49A;  --green-bg:  rgba(86, 212, 154, 0.14);  --green-bd:  rgba(86, 212, 154, 0.4);
+    --amber:  #E8B564;  --amber-bg:  rgba(232, 181, 100, 0.14); --amber-bd:  rgba(232, 181, 100, 0.4);
+    --red:    #F08C84;  --red-bg:    rgba(240, 140, 132, 0.14); --red-bd:    rgba(240, 140, 132, 0.42);
+    --slate-c:  #A8B2C7;  --slate-bg: rgba(168, 178, 199, 0.13); --slate-bd: rgba(168, 178, 199, 0.36);
+    --blue:   #6DB8EC;  --blue-bg:   rgba(109, 184, 236, 0.14); --blue-bd:   rgba(109, 184, 236, 0.42);
+    --purple: #B3A6F9;  --purple-bg: rgba(179, 166, 249, 0.15); --purple-bd: rgba(179, 166, 249, 0.42);
+    --display: 'Boliand', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: var(--sans); font-size: 15.5px; line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 0 24px 120px; }
+
+  header.doc { padding: 64px 0 12px; }
+  .doc-kicker {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--accent); display: block; margin-bottom: 16px;
+  }
+  h1 {
+    font-family: var(--display); font-weight: 700; font-size: clamp(34px, 5vw, 50px);
+    line-height: 1.08; margin: 0 0 16px; letter-spacing: -0.01em; color: var(--text);
+  }
+  .doc-meta { font-family: var(--mono); font-size: 12px; color: var(--text-faint); margin: 22px 0 24px; }
+  .doc-intro { color: var(--text-soft); max-width: 680px; }
+  .doc-intro b { color: var(--text); }
+  .howto {
+    background: var(--accent-soft); border: 1px solid var(--accent-bd);
+    border-radius: 12px; padding: 16px 20px; margin: 26px 0 8px;
+    font-size: 14px; color: var(--text-soft);
+  }
+  .howto b { color: var(--text); }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(16, 24, 40, 0.92); backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+  }
+  .topbar-inner {
+    max-width: 880px; margin: 0 auto; padding: 10px 24px;
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  }
+  .progress-label { font-family: var(--mono); font-size: 12px; color: var(--text-soft); white-space: nowrap; }
+  .progress-track { flex: 1; min-width: 120px; height: 5px; background: var(--line); border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; width: 0%; background: var(--accent-solid); transition: width 0.3s ease; }
+  .topbar-btn {
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.04em;
+    background: var(--accent-solid); color: #06121f; border: none; border-radius: 999px;
+    padding: 7px 16px; cursor: pointer; white-space: nowrap; font-weight: 600;
+  }
+  .topbar-btn:hover { background: var(--accent); }
+
+  /* ── controles de navegação (busca / filtro / ordenação) ── */
+  .controls {
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+    margin: 12px 0 28px; padding: 14px 16px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+  }
+  .controls input[type="search"] {
+    flex: 1; min-width: 180px;
+    font-family: var(--sans); font-size: 14px; color: var(--text);
+    background: var(--bg); border: 1px solid var(--line); border-radius: 10px;
+    padding: 9px 13px; outline: none;
+  }
+  .controls input[type="search"]:focus { border-color: var(--accent-solid); }
+  .controls select {
+    font-family: var(--mono); font-size: 11.5px; color: var(--text-soft);
+    background: var(--bg); border: 1px solid var(--line); border-radius: 999px;
+    padding: 8px 12px; cursor: pointer;
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 7px; }
+  .chip-btn {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.02em;
+    background: var(--bg); color: var(--text-soft); border: 1px solid var(--line);
+    border-radius: 999px; padding: 7px 13px; cursor: pointer; transition: all 0.15s;
+  }
+  .chip-btn:hover { border-color: var(--text-faint); color: var(--text); }
+  .chip-btn.sel { color: var(--accent); border-color: var(--accent-bd); background: var(--accent-soft); font-weight: 600; }
+  .toggle {
+    font-family: var(--mono); font-size: 11px; color: var(--text-soft);
+    display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;
+  }
+
+  .section-h {
+    display: flex; align-items: baseline; gap: 14px;
+    margin: 48px 0 8px; padding-bottom: 12px; border-bottom: 2px solid var(--text);
+  }
+  .section-h .sec-num { font-family: var(--mono); font-size: 13px; color: var(--accent); }
+  .section-h h2 { font-family: var(--display); font-weight: 600; font-size: 26px; margin: 0; color: var(--text); }
+  .empty { color: var(--text-faint); font-size: 14px; padding: 40px 0; text-align: center; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+    padding: 22px 24px 18px; margin: 0 0 18px;
+  }
+  .card-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .badge {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+    border-radius: 999px; padding: 3px 10px; border: 1px solid;
+  }
+  .badge.t-red    { color: var(--red);    border-color: var(--red-bd);    background: var(--red-bg); }
+  .badge.t-amber  { color: var(--amber);  border-color: var(--amber-bd);  background: var(--amber-bg); }
+  .badge.t-green  { color: var(--green);  border-color: var(--green-bd);  background: var(--green-bg); }
+  .badge.t-blue   { color: var(--blue);   border-color: var(--blue-bd);   background: var(--blue-bg); }
+  .badge.t-purple { color: var(--purple); border-color: var(--purple-bd); background: var(--purple-bg); }
+  .badge.t-slate  { color: var(--slate-c);border-color: var(--slate-bd);  background: var(--slate-bg); }
+  .badge.tag { text-transform: none; letter-spacing: 0; color: var(--text-soft); border-color: var(--line); background: var(--bg-2); }
+  .card h3 {
+    font-family: var(--sans); font-size: 17.5px; font-weight: 600;
+    line-height: 1.32; margin: 0 0 8px; letter-spacing: -0.01em; color: var(--text);
+  }
+  .card .snippet { margin: 0 0 10px; color: var(--text-soft); font-size: 14.5px; }
+  .card .prov {
+    font-family: var(--mono); font-size: 10.5px; color: var(--text-faint);
+    word-break: break-word; margin-bottom: 6px;
+  }
+  .lbl {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--text-faint); display: block; margin: 16px 0 6px;
+  }
+
+  /* ── verbos (botões por item) ── */
+  .seg { display: flex; flex-wrap: wrap; gap: 8px; }
+  .seg-btn {
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.02em;
+    background: var(--bg-2); color: var(--text-soft); border: 1px solid var(--line);
+    border-radius: 999px; padding: 7px 15px; cursor: pointer; transition: all 0.15s;
+  }
+  .seg-btn:hover { border-color: var(--text-faint); color: var(--text); }
+  .seg-btn.sel { font-weight: 600; }
+  .seg-btn.sel[data-tone="green"]  { color: var(--green);   border-color: var(--green-bd);  background: var(--green-bg); }
+  .seg-btn.sel[data-tone="blue"]   { color: var(--blue);    border-color: var(--blue-bd);   background: var(--blue-bg); }
+  .seg-btn.sel[data-tone="red"]    { color: var(--red);     border-color: var(--red-bd);    background: var(--red-bg); }
+  .warn-note { font-family: var(--mono); font-size: 10.5px; color: var(--red); margin-top: 8px; display: none; }
+  .warn-note.show { display: block; }
+
+  .fb { margin-top: 16px; padding-top: 14px; border-top: 1px dashed var(--line); }
+  .fb textarea {
+    width: 100%; margin-top: 10px; min-height: 46px; resize: vertical;
+    font-family: var(--sans); font-size: 14px; line-height: 1.55; color: var(--text);
+    background: var(--bg); border: 1px solid var(--line); border-radius: 10px;
+    padding: 10px 13px; outline: none;
+  }
+  .fb textarea:focus { border-color: var(--accent-solid); }
+  .saved-flash { font-family: var(--mono); font-size: 10px; color: var(--green); margin-left: 10px; opacity: 0; transition: opacity 0.3s; }
+  .saved-flash.show { opacity: 1; }
+
+  .finale {
+    margin-top: 64px; text-align: center; background: var(--surface);
+    border: 1px solid var(--line); border-radius: 20px; padding: 48px 32px; color: var(--text-soft);
+  }
+  .finale h2 { font-family: var(--display); font-weight: 600; font-size: 28px; color: var(--text); margin: 0 0 10px; }
+  .finale p { font-size: 14px; max-width: 480px; margin: 0 auto 26px; color: var(--text-soft); }
+  .btn-big {
+    font-family: var(--sans); font-size: 16px; font-weight: 600;
+    background: var(--accent-solid); color: #06121f; border: none; border-radius: 999px;
+    padding: 16px 36px; cursor: pointer; transition: transform 0.15s, filter 0.15s;
+  }
+  .btn-big:hover { filter: brightness(1.08); transform: translateY(-1px); }
+  .finale .hint { font-family: var(--mono); font-size: 11px; color: var(--text-faint); margin-top: 16px; }
+
+  .modal-bg {
+    display: none; position: fixed; inset: 0; z-index: 100;
+    background: rgba(6, 12, 24, 0.7); backdrop-filter: blur(4px);
+    align-items: center; justify-content: center; padding: 24px;
+  }
+  .modal-bg.open { display: flex; }
+  .modal {
+    background: var(--bg); border: 1px solid var(--line); border-radius: 18px; max-width: 760px; width: 100%;
+    max-height: 86vh; display: flex; flex-direction: column; overflow: hidden;
+  }
+  .modal-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; border-bottom: 1px solid var(--line); }
+  .modal-head h3 { font-size: 16px; margin: 0; color: var(--text); }
+  .modal-head .status-msg { font-family: var(--mono); font-size: 11.5px; color: var(--green); }
+  .modal-close { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--text-faint); line-height: 1; }
+  .modal pre {
+    flex: 1; overflow: auto; margin: 0; padding: 20px 24px;
+    font-family: var(--mono); font-size: 12px; line-height: 1.6; color: var(--text);
+    white-space: pre-wrap; word-break: break-word; background: var(--surface);
+  }
+  .modal-foot { padding: 14px 24px; border-top: 1px solid var(--line); display: flex; gap: 10px; }
+  .modal-foot button {
+    font-family: var(--mono); font-size: 12px; border-radius: 999px; padding: 9px 20px; cursor: pointer;
+    border: 1px solid var(--accent-solid); background: var(--accent-solid); color: #06121f; font-weight: 600;
+  }
+  .modal-foot button.ghost { background: transparent; color: var(--text-soft); border-color: var(--line); }
+
+  @media (max-width: 640px) {
+    .wrap { padding: 0 16px 100px; }
+    .card { padding: 18px 16px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <span class="progress-label" id="progressLabel"></span>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <button class="topbar-btn" id="topbarReportBtn" onclick="openReport()"></button>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <header class="doc">
+    <span class="doc-kicker">__KICKER__</span>
+    <h1>__HEADLINE__</h1>
+    <div class="doc-meta">__META__</div>
+    <p class="doc-intro">__INTRO__</p>
+    <div class="howto">__HOWTO__</div>
+  </header>
+
+  <div class="controls">
+    <input type="search" id="searchInput" placeholder="Buscar no acervo…" autocomplete="off">
+    <div class="chips" id="groupChips"></div>
+    <select id="sortSelect">
+      <option value="age">Mais parado primeiro</option>
+      <option value="group">Por grupo</option>
+    </select>
+    <label class="toggle"><input type="checkbox" id="pendingToggle"> só pendentes</label>
+  </div>
+
+  <main id="app"></main>
+
+  <div class="finale">
+    <h2>__FINALE_TITLE__</h2>
+    <p>__FINALE_TEXT__</p>
+    <button class="btn-big" id="finaleReportBtn" onclick="openReport()"></button>
+    <div class="hint">__FINALE_HINT__</div>
+  </div>
+
+</div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modalTitle"></h3>
+      <span class="status-msg" id="copyStatus"></span>
+      <button class="modal-close" onclick="closeReport()">×</button>
+    </div>
+    <pre id="reportPre"></pre>
+    <div class="modal-foot">
+      <button id="copyBtn" onclick="copyReport()"></button>
+      <button class="ghost" id="closeBtn" onclick="closeReport()"></button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+// CONFIG — ajuste por rodada.
+// ════════════════════════════════════════════════════════════
+const CONFIG = {
+  storageKey: '__STORAGE_KEY__',     // ÚNICA por rodada (data+hora+hash)
+  reportSchema: 'prumo_acervo_report.v1',
+  reportTitle: '__REPORT_TITLE__',
+  labels: {
+    snippet: 'Trecho',
+    action: 'Garimpar',
+    commentPlaceholder: 'Comentário (entra no relatório como instrução)',
+    saved: 'salvo ✓',
+    generate: 'Copiar respostas',
+    generateAndCopy: 'Gerar e copiar respostas',
+    reportTitleUI: 'Respostas',
+    copy: 'Copiar pro clipboard',
+    close: 'Fechar',
+    copied: 'copiado ✓',
+    copyManual: 'selecione o texto e copie manualmente',
+    progressNoun: 'Decididos',
+    deleteWarning: 'Excluir = arquivar em Prumo/Arquivo/Acervo/ + registro. Remoção permanente só com sua confirmação explícita.',
+    rDate: 'Data', rDecided: 'decididos', rComment: 'Comentário', rNone: 'sem decisão',
+  },
+};
+
+// VERBOS fixos do acervo (não é allowlist por item — são sempre estes três).
+const VERBS = [
+  { key: 'include_pauta', label: 'Incluir na pauta', tone: 'green' },
+  { key: 'attack_now',    label: 'Atacar agora',     tone: 'blue'  },
+  { key: 'delete',        label: 'Excluir',          tone: 'red'   },
+];
+const VERB_LABEL = Object.fromEntries(VERBS.map(v => [v.key, v.label]));
+
+const KIND_META = {
+  ideia:            { label: 'Ideia',      tone: 'purple', title: 'Ideias soltas' },
+  pauta_hibernando: { label: 'Hibernando', tone: 'amber',  title: 'Pauta hibernando' },
+  referencia:       { label: 'Referência', tone: 'slate',  title: 'Referências' },
+};
+const KIND_ORDER = ['ideia', 'pauta_hibernando', 'referencia'];
+
+// ════════════════════════════════════════════════════════════
+// DADOS — itens vindos de `prumo acervo --format json`.
+// Cada item: { item_id, source_kind, source_path, anchor, line_start,
+//   line_end, content_hash, title, snippet, age_days, tags }
+// A PROVENIÊNCIA (source_path/anchor/line_start/line_end/content_hash) é
+// preservada no relatório e usada na remoção segura. NÃO remover esses campos.
+// ════════════════════════════════════════════════════════════
+const ITEMS = [
+/*__ITEMS__*/
+];
+
+// ════════════════════════════════════════════════════════════
+// MECÂNICA — não alterar daqui pra baixo
+// ════════════════════════════════════════════════════════════
+const KEY = CONFIG.storageKey;
+const L = CONFIG.labels;
+let state = {};
+try { state = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { state = {}; }
+function save() { localStorage.setItem(KEY, JSON.stringify(state)); }
+
+const ui = { q: '', group: 'all', sort: 'age', pendingOnly: false };
+
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+  ));
+}
+// Mantido por paridade/defesa: se algum snippet/anchor virar link no futuro,
+// só protocolos seguros passam. Conteúdo do usuário é texto local, escapado.
+function safeUrl(url) {
+  const u = String(url == null ? '' : url).trim();
+  if (/^(https?:|mailto:)/i.test(u)) return u;
+  if (/^[#/.]/.test(u) || /^[\w][\w./?=&%+~-]*$/.test(u)) return u;
+  return '#';
+}
+
+function ageVal(it) { return (it.age_days == null) ? -Infinity : it.age_days; }
+
+function visibleItems() {
+  let arr = ITEMS.slice();
+  if (ui.group !== 'all') arr = arr.filter(it => it.source_kind === ui.group);
+  if (ui.pendingOnly) arr = arr.filter(it => !(state[it.item_id] || {}).verb);
+  if (ui.q) {
+    const q = ui.q.toLowerCase();
+    arr = arr.filter(it => (
+      `${it.title} ${it.snippet} ${(it.tags || []).join(' ')} ${it.anchor || ''}`
+    ).toLowerCase().includes(q));
+  }
+  if (ui.sort === 'age') arr.sort((a, b) => ageVal(b) - ageVal(a));
+  else arr.sort((a, b) => KIND_ORDER.indexOf(a.source_kind) - KIND_ORDER.indexOf(b.source_kind));
+  return arr;
+}
+
+function ageBadge(it) {
+  if (it.age_days == null) return '';
+  return `<span class="badge t-slate">${it.age_days}d parado</span>`;
+}
+function tagsBadges(it) {
+  return (it.tags || []).map(t => `<span class="badge tag">${escapeHtml(t)}</span>`).join('');
+}
+function provLine(it) {
+  let p = escapeHtml(it.source_path);
+  if (it.anchor) p += ' › ' + escapeHtml(it.anchor);
+  if (it.line_start != null) p += ` (L${it.line_start}${it.line_end && it.line_end !== it.line_start ? '–' + it.line_end : ''})`;
+  return p;
+}
+
+function cardHTML(it) {
+  const km = KIND_META[it.source_kind] || { label: it.source_kind, tone: 'slate' };
+  const segs = VERBS.map(v =>
+    `<button class="seg-btn" data-verb="${v.key}" data-tone="${v.tone}">${v.label}</button>`
+  ).join('');
+  return `
+  <article class="card" data-pt="${escapeHtml(it.item_id)}">
+    <div class="card-top">
+      <span class="badge t-${km.tone}">${km.label}</span>
+      ${ageBadge(it)}${tagsBadges(it)}
+    </div>
+    <h3>${escapeHtml(it.title)}</h3>
+    <div class="prov">${provLine(it)}</div>
+    <p class="snippet">${escapeHtml(it.snippet)}</p>
+    <div class="fb">
+      <span class="lbl">${L.action}</span>
+      <div class="seg">${segs}</div>
+      <div class="warn-note">⚠ ${escapeHtml(L.deleteWarning)}</div>
+      <textarea placeholder="${L.commentPlaceholder}"></textarea>
+      <span class="saved-flash">${L.saved}</span>
+    </div>
+  </article>`;
+}
+
+function render() {
+  const app = document.getElementById('app');
+  const items = visibleItems();
+  if (!items.length) {
+    app.innerHTML = `<div class="empty">Nada por aqui com esse filtro. O limbo agradece.</div>`;
+    updateProgress();
+    return;
+  }
+  let html = '';
+  let lastKind = null;
+  items.forEach(it => {
+    if (it.source_kind !== lastKind) {
+      const km = KIND_META[it.source_kind] || { title: it.source_kind };
+      html += `<div class="section-h"><span class="sec-num">/</span><h2>${escapeHtml(km.title)}</h2></div>`;
+      lastKind = it.source_kind;
+    }
+    html += cardHTML(it);
+  });
+  app.innerHTML = html;
+
+  items.forEach(it => {
+    const fb = state[it.item_id] || {};
+    const root = document.querySelector(`[data-pt="${CSS.escape(it.item_id)}"]`);
+    if (!root) return;
+    root.querySelectorAll('.seg-btn').forEach(btn => {
+      btn.addEventListener('click', () => toggleVerb(it.item_id, btn.dataset.verb));
+    });
+    if (fb.verb) paintVerb(it.item_id, fb.verb);
+    const ta = root.querySelector('textarea');
+    if (fb.comment) ta.value = fb.comment;
+    let t;
+    ta.addEventListener('input', () => {
+      state[it.item_id] = state[it.item_id] || {};
+      state[it.item_id].comment = ta.value;
+      save();
+      const flash = root.querySelector('.saved-flash');
+      flash.classList.add('show');
+      clearTimeout(t);
+      t = setTimeout(() => flash.classList.remove('show'), 1200);
+    });
+  });
+  updateProgress();
+}
+
+function toggleVerb(id, verb) {
+  state[id] = state[id] || {};
+  state[id].verb = (state[id].verb === verb) ? null : verb;
+  save();
+  paintVerb(id, state[id].verb);
+  updateProgress();
+}
+function paintVerb(id, verb) {
+  const root = document.querySelector(`[data-pt="${CSS.escape(id)}"]`);
+  if (!root) return;
+  root.querySelectorAll('.seg-btn').forEach(b => {
+    b.classList.toggle('sel', !!verb && b.dataset.verb === verb);
+  });
+  const warn = root.querySelector('.warn-note');
+  if (warn) warn.classList.toggle('show', verb === 'delete');
+}
+
+function updateProgress() {
+  const done = ITEMS.filter(it => (state[it.item_id] || {}).verb).length;
+  document.getElementById('progressLabel').textContent =
+    `${L.progressNoun} ${done}/${ITEMS.length}`;
+  document.getElementById('progressFill').style.width =
+    (ITEMS.length ? done / ITEMS.length * 100 : 0) + '%';
+}
+
+function buildReportData() {
+  // Só itens decididos (com verbo). Cada um carrega proveniência completa
+  // pra execução segura (remoção valida hash + unicidade antes de mover).
+  const out = [];
+  ITEMS.forEach(it => {
+    const fb = state[it.item_id] || {};
+    if (!fb.verb) return;
+    out.push({
+      item_id: String(it.item_id),
+      verb: fb.verb,
+      verb_label: VERB_LABEL[fb.verb] || fb.verb,
+      source_kind: it.source_kind,
+      source_path: it.source_path,
+      anchor: it.anchor != null ? it.anchor : null,
+      line_start: it.line_start != null ? it.line_start : null,
+      line_end: it.line_end != null ? it.line_end : null,
+      content_hash: it.content_hash,
+      title: it.title,
+      comment: (fb.comment || '').trim() || null,
+    });
+  });
+  return out;
+}
+
+function buildReport() {
+  const data = buildReportData();
+  const today = new Date().toLocaleDateString();
+  let md = `# ${CONFIG.reportTitle}\n`;
+  md += `${L.rDate}: ${today} · ${data.length}/${ITEMS.length} ${L.rDecided}\n`;
+
+  KIND_ORDER.forEach(kind => {
+    const rows = data.filter(d => d.source_kind === kind);
+    if (!rows.length) return;
+    const km = KIND_META[kind] || { title: kind };
+    md += `\n## ${km.title}\n`;
+    rows.forEach(d => {
+      md += `\n### ${d.title}\n`;
+      md += `- **${d.verb_label.toUpperCase()}** — \`${d.source_path}${d.anchor ? ' › ' + d.anchor : ''}\`\n`;
+      if (d.comment) md += `- ${L.rComment}: ${d.comment.replace(/\n/g, '\n  ')}\n`;
+    });
+  });
+  if (!data.length) md += `\n_${L.rNone}._\n`;
+
+  const payload = {
+    schema: CONFIG.reportSchema,
+    storageKey: KEY,
+    decided: data.length,
+    total: ITEMS.length,
+    items: data,
+  };
+  md += `\n\n<!-- PRUMO_ACERVO_JSON -->\n\`\`\`json\n${JSON.stringify(payload, null, 2)}\n\`\`\`\n`;
+  return md;
+}
+
+function initLabels() {
+  document.getElementById('topbarReportBtn').textContent = L.generate;
+  document.getElementById('finaleReportBtn').textContent = L.generateAndCopy;
+  document.getElementById('modalTitle').textContent = L.reportTitleUI;
+  document.getElementById('copyBtn').textContent = L.copy;
+  document.getElementById('closeBtn').textContent = L.close;
+}
+
+function initControls() {
+  // chips de grupo: 'todos' + grupos presentes nos itens
+  const present = KIND_ORDER.filter(k => ITEMS.some(it => it.source_kind === k));
+  const chips = document.getElementById('groupChips');
+  const mk = (key, label) => `<button class="chip-btn" data-group="${key}">${escapeHtml(label)}</button>`;
+  chips.innerHTML = mk('all', 'Todos') + present.map(k => mk(k, KIND_META[k].label)).join('');
+  chips.querySelectorAll('.chip-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      ui.group = btn.dataset.group;
+      chips.querySelectorAll('.chip-btn').forEach(b => b.classList.toggle('sel', b === btn));
+      render();
+    });
+  });
+  chips.querySelector('.chip-btn').classList.add('sel');
+
+  const search = document.getElementById('searchInput');
+  let st;
+  search.addEventListener('input', () => {
+    ui.q = search.value;
+    clearTimeout(st);
+    st = setTimeout(render, 120);
+  });
+  document.getElementById('sortSelect').addEventListener('change', e => {
+    ui.sort = e.target.value; render();
+  });
+  document.getElementById('pendingToggle').addEventListener('change', e => {
+    ui.pendingOnly = e.target.checked; render();
+  });
+}
+
+function openReport() {
+  document.getElementById('reportPre').textContent = buildReport();
+  document.getElementById('copyStatus').textContent = '';
+  document.getElementById('modalBg').classList.add('open');
+}
+function closeReport() { document.getElementById('modalBg').classList.remove('open'); }
+
+async function copyReport() {
+  const text = buildReport();
+  const status = document.getElementById('copyStatus');
+  try {
+    await navigator.clipboard.writeText(text);
+    status.textContent = L.copied;
+  } catch (e) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); status.textContent = L.copied; }
+    catch (e2) { status.textContent = L.copyManual; }
+    document.body.removeChild(ta);
+  }
+}
+
+document.getElementById('modalBg').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('modalBg')) closeReport();
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeReport(); });
+
+initLabels();
+initControls();
+render();
+</script>
+</body>
+</html>

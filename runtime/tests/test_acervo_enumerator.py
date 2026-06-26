@@ -12,7 +12,12 @@ import unittest
 from datetime import date
 from pathlib import Path
 
-from prumo_runtime.acervo import OPERATIONAL_REFERENCIAS, SCHEMA_VERSION, enumerate_limbo
+from prumo_runtime.acervo import (
+    ITEM_FIELDS,
+    OPERATIONAL_REFERENCIAS,
+    SCHEMA_VERSION,
+    enumerate_limbo,
+)
 
 TODAY = date(2026, 6, 26)
 
@@ -88,8 +93,9 @@ class AcervoEnumeratorTests(unittest.TestCase):
                 "line_start", "line_end", "content_hash", "title",
                 "snippet", "age_days", "tags",
             }
+            self.assertEqual(required, set(ITEM_FIELDS))
             for it in items:
-                self.assertEqual(set(it) & required, required, f"item incompleto: {it}")
+                self.assertEqual(set(it), set(ITEM_FIELDS), f"item fora do contrato: {it}")
                 self.assertRegex(it["content_hash"], r"^[0-9a-f]{16}$")
             fragments = [it for it in items if it["source_kind"] in ("ideia", "pauta_hibernando")]
             for it in fragments:

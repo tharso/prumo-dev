@@ -25,6 +25,23 @@ from prumo_runtime.workspace_paths import WorkspacePaths, workspace_paths
 
 SCHEMA_VERSION = "1.0"
 
+# Contrato de campos de cada item — fonte única de verdade entre o enumerador
+# (runtime), o fallback Markdown (skill) e o template HTML. Os testes cruzam
+# este conjunto contra o template pra travar drift (Codex, rodada 2).
+ITEM_FIELDS = (
+    "item_id",
+    "source_kind",
+    "source_path",
+    "anchor",
+    "line_start",
+    "line_end",
+    "content_hash",
+    "title",
+    "snippet",
+    "age_days",
+    "tags",
+)
+
 HIBERNANDO_HEADING = "Hibernando"
 
 # Arquivos operacionais de `Referencias/` que NUNCA entram no acervo: não são
