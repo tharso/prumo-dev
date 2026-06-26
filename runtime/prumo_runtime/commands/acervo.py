@@ -28,7 +28,7 @@ def _render_text(result: dict) -> str:
     if not result["items"]:
         lines.append(f"{n}. Limbo vazio — nada parado pra revisitar.")
     else:
-        lines.append(f"{n}. Use `--format json` pra alimentar a skill `acervo` (gera o HTML navegável).")
+        lines.append(f"{n}. Use `--format html-items` pra alimentar o template da skill `acervo` (gera o HTML navegável).")
     return "\n".join(lines)
 
 

@@ -211,6 +211,14 @@ class AcervoApplyTests(unittest.TestCase):
             self.assertEqual(len(r2["archived"]), 1)
             self.assertEqual(r2["blocked"], [])  # não bloqueou
             self.assertEqual(len(list((ws / "Arquivo" / "Acervo").glob("*.md"))), 2)
+            # terceira colisão idêntica → ramo do contador (-2), ainda sem bloqueio
+            (ws / "Referencias" / "artigo.md").write_text(same, encoding="utf-8")
+            item3 = self._find(ws, lambda it: it["source_kind"] == "referencia")
+            r3 = apply_report(ws, _report([_as_report_item(item3, "delete")]), today=TODAY)
+            self.assertEqual(r3["blocked"], [])
+            quar = list((ws / "Arquivo" / "Acervo").glob("*.md"))
+            self.assertEqual(len(quar), 3)
+            self.assertTrue(any(p.stem.endswith("-2") for p in quar), "contador -2 não foi usado")
 
     def test_include_pauta_normalizes_newlines(self) -> None:
         # Regressão do #6: comentário com newline não injeta heading/bullet na PAUTA.
