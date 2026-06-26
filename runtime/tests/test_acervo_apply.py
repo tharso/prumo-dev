@@ -197,6 +197,21 @@ class AcervoApplyTests(unittest.TestCase):
             quarantined = list((ws / "Arquivo" / "Acervo").glob("*.md"))
             self.assertEqual(len(quarantined), 2, "a segunda referência não pode sobrescrever a primeira")
 
+    def test_reference_collision_same_content_gets_unique_name(self) -> None:
+        # Mesmo nome + mesmo conteúdo + mesmo dia: nome único (contador), não bloqueia.
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = self._ws(Path(tmp))
+            same = "# Artigo\n\nCorpo.\n"  # conteúdo idêntico ao do _ws
+            item = self._find(ws, lambda it: it["source_kind"] == "referencia")
+            r1 = apply_report(ws, _report([_as_report_item(item, "delete")]), today=TODAY)
+            (ws / "Referencias" / "artigo.md").write_text(same, encoding="utf-8")
+            item2 = self._find(ws, lambda it: it["source_kind"] == "referencia")
+            r2 = apply_report(ws, _report([_as_report_item(item2, "delete")]), today=TODAY)
+            self.assertEqual(len(r1["archived"]), 1)
+            self.assertEqual(len(r2["archived"]), 1)
+            self.assertEqual(r2["blocked"], [])  # não bloqueou
+            self.assertEqual(len(list((ws / "Arquivo" / "Acervo").glob("*.md"))), 2)
+
     def test_include_pauta_normalizes_newlines(self) -> None:
         # Regressão do #6: comentário com newline não injeta heading/bullet na PAUTA.
         with tempfile.TemporaryDirectory() as tmp:
@@ -204,9 +219,15 @@ class AcervoApplyTests(unittest.TestCase):
             item = self._find(ws, lambda it: "Outra ideia" in it["snippet"])
             evil = "ok\n## Hacked\n- bullet injetado"
             apply_report(ws, _report([_as_report_item(item, "include_pauta", evil)]), today=TODAY)
+            # comentário E título com newline são normalizados
+            evil_title = _as_report_item(item, "include_pauta")
+            evil_title["title"] = "titulo\n## TitHeading\n- tit bullet"
+            apply_report(ws, _report([evil_title]), today=TODAY)
             for line in (ws / "PAUTA.md").read_text(encoding="utf-8").splitlines():
                 self.assertFalse(line.strip().startswith("## Hacked"), "comentário injetou heading")
+                self.assertFalse(line.strip().startswith("## TitHeading"), "título injetou heading")
                 self.assertNotEqual(line.strip(), "- bullet injetado", "comentário injetou bullet")
+                self.assertNotEqual(line.strip(), "- tit bullet", "título injetou bullet")
 
     def test_registro_written_before_removal(self) -> None:
         # Regressão do #9: prova de ordem — se o write do original falha, o

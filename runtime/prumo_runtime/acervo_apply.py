@@ -69,9 +69,9 @@ def _archive_fragment(paths, current: dict, title: str, today: date, permanent: 
     end = current["line_end"]
     if start < 0 or end > len(lines) or start >= end:
         raise AcervoSafetyError(f"linhas fora de alcance em {current['source_path']}")
-    # Recomputa o hash do trecho LITERAL imediatamente antes de cortar. Mesmo
-    # com a re-enumeração por delete, isto fecha qualquer janela entre achar e
-    # remover: se o trecho nessas linhas não bate mais, bloqueia.
+    # Recomputa o hash (normalizado) do trecho imediatamente antes de cortar.
+    # Mesmo com a re-enumeração por delete, isto fecha qualquer janela entre
+    # achar e remover: se o trecho nessas linhas não bate mais, bloqueia.
     if fragment_content_hash(lines[start:end]) != current["content_hash"]:
         raise AcervoSafetyError("trecho mudou entre a verificação e a remoção (hash divergente)")
     removed = "".join(lines[start:end])
@@ -107,9 +107,12 @@ def _archive_file(paths, current: dict, title: str, today: date, permanent: bool
     # Nome único: nunca sobrescrever um arquivo já arquivado ("arquiva, não apaga").
     dest = qdir / src.name
     if dest.exists():
-        dest = qdir / f"{src.stem}-{today.isoformat()}-{current['content_hash']}{src.suffix}"
-        if dest.exists():
-            raise AcervoSafetyError(f"destino de quarentena já existe: {dest.name}")
+        base = f"{src.stem}-{today.isoformat()}-{current['content_hash']}"
+        dest = qdir / f"{base}{src.suffix}"
+        n = 2
+        while dest.exists():  # mesmo nome+conteúdo+dia: vai pra -2, -3, ...
+            dest = qdir / f"{base}-{n}{src.suffix}"
+            n += 1
     src.replace(dest)
     return destino
 

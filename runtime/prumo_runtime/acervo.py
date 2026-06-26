@@ -79,10 +79,13 @@ def _hash_bytes(data: bytes) -> str:
 
 
 def fragment_content_hash(lines_slice: list[str]) -> str:
-    """Hash do trecho LITERAL (linhas do arquivo). Fonte única usada pelo
-    enumerador e pela remoção segura: recomputar o mesmo hash a partir das
-    linhas atuais, imediatamente antes de cortar, prova que o trecho não mudou.
-    `_normalize` colapsa whitespace, então funciona com ou sem `keepends`.
+    """Hash NORMALIZADO do trecho (linhas do arquivo, com whitespace colapsado).
+
+    Fonte única usada pelo enumerador e pela remoção segura: recomputar o mesmo
+    hash a partir das linhas atuais, imediatamente antes de cortar, prova que o
+    conteúdo do trecho não mudou. `_normalize` colapsa whitespace — então funciona
+    com ou sem `keepends`, mas NÃO detecta mudança só de espaços/quebras (essa é
+    uma escolha: reformatação trivial não deve bloquear a remoção).
     """
     return _hash_text("".join(lines_slice))
 
@@ -204,8 +207,8 @@ def _fragment_item(
         "anchor": bullet.get("section") or None,
         "line_start": bullet["line_start"],
         "line_end": bullet["line_end"],
-        # Hash do trecho LITERAL (não do texto limpo): a remoção segura recomputa
-        # o mesmo hash a partir das linhas atuais antes de cortar.
+        # Hash normalizado do trecho (linhas do arquivo): a remoção segura
+        # recomputa o mesmo hash a partir das linhas atuais antes de cortar.
         "content_hash": fragment_content_hash(lines[bullet["line_start"] - 1 : bullet["line_end"]]),
         "title": _truncate(raw, _TITLE_MAX),
         "snippet": _truncate(raw, _SNIPPET_MAX),

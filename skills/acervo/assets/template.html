@@ -11,9 +11,12 @@
 
   COMO USAR
   - Substitua os placeholders __ASSIM__ e preencha CONFIG.storageKey.
-  - Injete os itens (vindos de `prumo acervo --format json`) no lugar de
-    /*__ITEMS__*/ — cada item carrega PROVENIÊNCIA (source_path, anchor,
-    line_start/line_end, content_hash) usada na remoção segura.
+  - Injete os itens no lugar de /*__ITEMS__*/ (dentro do bloco
+    <script type="application/json" id="acervo-items">) usando a saída de
+    `prumo acervo --workspace <ws> --format html-items` — ela já escapa <,>,&
+    contra XSS. NÃO injetar JSON cru nem montar à mão. Cada item carrega
+    PROVENIÊNCIA (source_path, anchor, line_start/line_end, content_hash) usada
+    na remoção segura.
   - NÃO altere a MECÂNICA (estado/relatório/clipboard) — verificada.
   - Copie `Boliand.otf` (de skills/acervo/assets/) para a MESMA pasta do HTML.
 
@@ -359,7 +362,8 @@ const KIND_META = {
 const KIND_ORDER = ['ideia', 'pauta_hibernando', 'referencia'];
 
 // ════════════════════════════════════════════════════════════
-// DADOS — itens vindos de `prumo acervo --format json`.
+// DADOS — itens injetados pelo gerador via `prumo acervo --format html-items`
+// (saída JSON escapada) no bloco <script type="application/json"> acima.
 // Cada item: { item_id, source_kind, source_path, anchor, line_start,
 //   line_end, content_hash, title, snippet, age_days, tags }
 // A PROVENIÊNCIA (source_path/anchor/line_start/line_end/content_hash) é
