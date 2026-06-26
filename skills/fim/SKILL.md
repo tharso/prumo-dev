@@ -62,8 +62,8 @@ Rodar `prumo fim --workspace <ws> --format json` (read-only). Ele computa sinais
 determinísticos reusando os thresholds da faxina/sanitize:
 
 - `pauta_stalled` (itens parados > 14d) e `inbox_pending` → sugerem **`/higiene`**
-- `backups_old` (> 90d) e `ephemeral_old` (HTMLs do decidir/acervo > 14d) →
-  sugerem **`/sanitize`**
+- `backups_old` (> 90d) e `ephemeral_old` (artefatos efêmeros do decidir/acervo
+  — HTMLs e a fonte copiada — > 14d) → sugerem **`/sanitize`**
 
 Quando `suggest.higiene` ou `suggest.sanitize` vier `true`, **oferecer** o
 comando ao usuário — uma linha, escolha curta. **Nunca executar** `higiene`/

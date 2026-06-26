@@ -24,7 +24,7 @@ SCHEMA_VERSION = "1.0"
 # Thresholds reusados da faxina/sanitize (skills/faxina/references/thresholds.md).
 PAUTA_STALLED_DAYS = 14   # item da pauta parado há mais de 14d → higiene
 BACKUP_EXPIRY_DAYS = 90   # backup em .prumo/backups/ → sanitize
-EPHEMERAL_HTML_DAYS = 14  # HTML efêmero do decidir/acervo → sanitize
+EPHEMERAL_DAYS = 14       # artefato efêmero do decidir/acervo (HTML, fonte) → sanitize
 
 _DESDE_PATTERN = re.compile(
     r"desde\s+(?P<day>\d{1,2})/(?P<month>\d{1,2})(?:/(?P<year>\d{2,4}))?",
@@ -128,8 +128,8 @@ def accumulation_signals(workspace: Path, *, today: date | None = None) -> dict:
     inbox_pending = _inbox_pending_count(read_text(paths.inbox))
     registro_rows = _registro_rows(read_text(paths.registro))
 
-    # A infra (backups, HTMLs efêmeros) vive sempre em `.prumo/` — hardcoded no
-    # runtime (backup_root_for) e nas skills decidir/acervo —, independente do
+    # A infra (backups, artefatos efêmeros) vive sempre em `.prumo/` — hardcoded
+    # no runtime (backup_root_for) e nas skills decidir/acervo —, independente do
     # layout flat/nested. Por isso olhamos `.prumo` direto, não `system_root`.
     dot = workspace / ".prumo"
     backups_old = (
@@ -139,8 +139,8 @@ def accumulation_signals(workspace: Path, *, today: date | None = None) -> dict:
     # Conta TODOS os arquivos velhos (não só .html): a sanitize também trata a
     # cópia da `Boliand.otf` como efêmera nesses diretórios.
     ephemeral_old = (
-        _count_old_files(dot / "state" / "decidir", today, EPHEMERAL_HTML_DAYS)
-        + _count_old_files(dot / "state" / "acervo", today, EPHEMERAL_HTML_DAYS)
+        _count_old_files(dot / "state" / "decidir", today, EPHEMERAL_DAYS)
+        + _count_old_files(dot / "state" / "acervo", today, EPHEMERAL_DAYS)
     )
 
     suggest_higiene = pauta_stalled > 0 or inbox_pending > 0

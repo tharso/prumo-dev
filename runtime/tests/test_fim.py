@@ -91,6 +91,9 @@ class FimDetectorTests(unittest.TestCase):
             (ws / "Prumo" / "PAUTA.md").write_text(
                 "# Pauta\n\n- [Trabalho] item antigo (desde 29/02)\n", encoding="utf-8"
             )
+            # trava o ANO exato, não só o efeito: 2024 (último 29/02 ≤ 2026-06-26)
+            from prumo_runtime.fim import _DESDE_PATTERN, _parse_desde
+            self.assertEqual(_parse_desde(_DESDE_PATTERN.search("desde 29/02"), TODAY), date(2024, 2, 29))
             result = accumulation_signals(ws, today=TODAY)
             self.assertEqual(result["signals"]["pauta_stalled"], 1)
 

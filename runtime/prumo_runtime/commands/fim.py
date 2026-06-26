@@ -11,7 +11,7 @@ def _render_text(result: dict) -> str:
     lines = [
         f"1. Encerramento do workspace `{result['workspace_path']}`.",
         f"2. Pauta parada (>14d): {s['pauta_stalled']} · inbox pendente: {s['inbox_pending']} · registro: {s['registro_rows']} linhas.",
-        f"3. Infra: backups velhos (>90d): {s['backups_old']} · HTMLs efêmeros velhos (>14d): {s['ephemeral_old']}.",
+        f"3. Infra: backups velhos (>90d): {s['backups_old']} · artefatos efêmeros velhos (>14d): {s['ephemeral_old']}.",
     ]
     sug = result["suggest"]
     if sug["higiene"] or sug["sanitize"]:
