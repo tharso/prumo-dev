@@ -53,21 +53,29 @@ def _stalled_pauta_count(text: str, today: date) -> int:
         m = _DESDE_PATTERN.search(stripped)
         if not m:
             continue
-        month, day = int(m.group("month")), int(m.group("day"))
-        year_raw = m.group("year")
-        year = today.year if year_raw is None else (int(year_raw) + 2000 if int(year_raw) < 100 else int(year_raw))
-        marked = _safe_date(year, month, day)
-        if marked is None and year_raw is None:
-            marked = _safe_date(year - 1, month, day)  # ex.: 29/02 sem ano cai no ano bissexto anterior
+        marked = _parse_desde(m, today)
         if marked is None:
             continue
-        if year_raw is None and marked > today:
-            earlier = _safe_date(year - 1, month, day)
-            if earlier is not None:
-                marked = earlier
         if (today - marked).days > PAUTA_STALLED_DAYS:
             count += 1
     return count
+
+
+def _parse_desde(m: re.Match, today: date) -> date | None:
+    """Resolve `desde DD/MM[/AAAA]`. Sem ano, retorna a ocorrência mais recente
+    de DD/MM em ou antes de hoje — recuando anos quando preciso (ex.: `29/02`
+    cai no ano bissexto anterior; `30/12` lido em janeiro cai no ano passado).
+    """
+    month, day = int(m.group("month")), int(m.group("day"))
+    year_raw = m.group("year")
+    if year_raw is not None:
+        year = int(year_raw) + 2000 if int(year_raw) < 100 else int(year_raw)
+        return _safe_date(year, month, day)
+    for year in range(today.year, today.year - 5, -1):  # 5 anos cobre o ciclo bissexto
+        cand = _safe_date(year, month, day)
+        if cand is not None and cand <= today:
+            return cand
+    return None
 
 
 def _inbox_pending_count(text: str) -> int:
@@ -146,7 +154,7 @@ def accumulation_signals(workspace: Path, *, today: date | None = None) -> dict:
             "inbox_pending": inbox_pending,
             "registro_rows": registro_rows,
             "backups_old": backups_old,
-            "ephemeral_html_old": ephemeral_old,
+            "ephemeral_old": ephemeral_old,
         },
         "suggest": {
             "higiene": suggest_higiene,

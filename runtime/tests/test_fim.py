@@ -65,7 +65,7 @@ class FimDetectorTests(unittest.TestCase):
             self.assertEqual(s["inbox_pending"], 2)
             self.assertEqual(s["registro_rows"], 1)
             self.assertEqual(s["backups_old"], 1)
-            self.assertEqual(s["ephemeral_html_old"], 1)
+            self.assertEqual(s["ephemeral_old"], 1)
             self.assertTrue(result["suggest"]["higiene"])
             self.assertTrue(result["suggest"]["sanitize"])
 
@@ -80,6 +80,19 @@ class FimDetectorTests(unittest.TestCase):
             )
             result = accumulation_signals(ws, today=TODAY)
             self.assertEqual(result["signals"]["pauta_stalled"], 0)
+
+    def test_desde_29_02_resolves_to_prior_leap_year(self) -> None:
+        # Regressão: `desde 29/02` sem ano, com hoje em ano não-bissexto (2026),
+        # tem que cair em 2024 (último 29/02 válido ≤ hoje), não virar falso negativo.
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp)
+            (ws / ".prumo").mkdir(parents=True, exist_ok=True)
+            (ws / "Prumo").mkdir(parents=True, exist_ok=True)
+            (ws / "Prumo" / "PAUTA.md").write_text(
+                "# Pauta\n\n- [Trabalho] item antigo (desde 29/02)\n", encoding="utf-8"
+            )
+            result = accumulation_signals(ws, today=TODAY)
+            self.assertEqual(result["signals"]["pauta_stalled"], 1)
 
     def test_clean_workspace_no_suggestions(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -118,7 +131,7 @@ class FimDetectorTests(unittest.TestCase):
             (ws / "Prumo" / "PAUTA.md").write_text("# Pauta\n", encoding="utf-8")
             _old(ws / ".prumo" / "state" / "acervo" / "Boliand.otf", "fontbytes")
             result = accumulation_signals(ws, today=TODAY)
-            self.assertEqual(result["signals"]["ephemeral_html_old"], 1)
+            self.assertEqual(result["signals"]["ephemeral_old"], 1)
             self.assertTrue(result["suggest"]["sanitize"])
 
     def test_read_only_and_does_not_touch_last_briefing(self) -> None:
