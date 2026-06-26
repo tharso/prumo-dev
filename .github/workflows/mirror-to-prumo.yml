@@ -39,6 +39,8 @@ jobs:
           cp    VERSION                        "$STAGE/VERSION"
           cp    LICENSE                        "$STAGE/LICENSE"
           cp    pyproject.toml                 "$STAGE/pyproject.toml"
+          cp    plugin.json                    "$STAGE/plugin.json"
+          cp    marketplace.json               "$STAGE/marketplace.json"
           cp -R .claude-plugin                 "$STAGE/.claude-plugin"
           cp -R .codex-plugin                  "$STAGE/.codex-plugin"
 
