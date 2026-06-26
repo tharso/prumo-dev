@@ -312,6 +312,11 @@
   </div>
 </div>
 
+<!-- Itens injetados como JSON (NÃO como JS cru): um título com </script> não
+     fecha a tag. O gerador preenche /*__ITEMS__*/ com `safe_items_json` (escapa
+     <,>,&). Ver skills/acervo/SKILL.md. -->
+<script type="application/json" id="acervo-items">/*__ITEMS__*/</script>
+
 <script>
 // ════════════════════════════════════════════════════════════
 // CONFIG — ajuste por rodada.
@@ -360,9 +365,10 @@ const KIND_ORDER = ['ideia', 'pauta_hibernando', 'referencia'];
 // A PROVENIÊNCIA (source_path/anchor/line_start/line_end/content_hash) é
 // preservada no relatório e usada na remoção segura. NÃO remover esses campos.
 // ════════════════════════════════════════════════════════════
-const ITEMS = [
-/*__ITEMS__*/
-];
+const ITEMS = (() => {
+  try { return JSON.parse(document.getElementById('acervo-items').textContent || '[]'); }
+  catch (e) { return []; }
+})();
 
 // ════════════════════════════════════════════════════════════
 // MECÂNICA — não alterar daqui pra baixo
@@ -452,10 +458,14 @@ function render() {
     updateProgress();
     return;
   }
+  // Headings de grupo só no modo "por grupo". No modo "mais parado primeiro"
+  // (ordenação global por idade) a lista é plana — senão os headings repetiriam
+  // e intercalariam grupos.
+  const showHeadings = ui.sort === 'group';
   let html = '';
   let lastKind = null;
   items.forEach(it => {
-    if (it.source_kind !== lastKind) {
+    if (showHeadings && it.source_kind !== lastKind) {
       const km = KIND_META[it.source_kind] || { title: it.source_kind };
       html += `<div class="section-h"><span class="sec-num">/</span><h2>${escapeHtml(km.title)}</h2></div>`;
       lastKind = it.source_kind;

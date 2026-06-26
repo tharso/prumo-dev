@@ -90,7 +90,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Enumerar o limbo durável (ideias/hibernando/referências) read-only; alimenta a skill `acervo`",
     )
     acervo.add_argument("--workspace", required=True, help="Caminho do workspace")
-    acervo.add_argument("--format", choices=["text", "json"], default="text")
+    acervo.add_argument(
+        "--format",
+        choices=["text", "json", "html-items"],
+        default="text",
+        help="html-items: JSON seguro (escapado) pra injetar no template.",
+    )
     acervo.set_defaults(handler=run_acervo)
     acervo_sub = acervo.add_subparsers(dest="acervo_command")
     acervo_apply = acervo_sub.add_parser(

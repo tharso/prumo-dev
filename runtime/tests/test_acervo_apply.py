@@ -161,6 +161,74 @@ class AcervoApplyTests(unittest.TestCase):
             with self.assertRaises(AcervoSafetyError):
                 apply_report(ws, {"schema": "wrong.v9", "items": []}, today=TODAY)
 
+    def test_two_deletes_same_file_remove_the_right_lines(self) -> None:
+        # Regressão do achado crítico #1 do Codex: snapshot único do lote usaria
+        # line_start/end velhos no 2º delete e cortaria o trecho errado.
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp)
+            (ws / "_state").mkdir(parents=True, exist_ok=True)
+            (ws / "REGISTRO.md").write_text("# Registro\n", encoding="utf-8")
+            (ws / "IDEIAS.md").write_text(
+                "# Ideias\n\n- alpha primeira\n- beta meio\n- gamma terceira\n", encoding="utf-8"
+            )
+            items = enumerate_limbo(ws, today=TODAY)["items"]
+            alpha = next(it for it in items if "alpha" in it["snippet"])
+            gamma = next(it for it in items if "gamma" in it["snippet"])
+            result = apply_report(
+                ws, _report([_as_report_item(alpha, "delete"), _as_report_item(gamma, "delete")]), today=TODAY
+            )
+            self.assertEqual(len(result["archived"]), 2)
+            self.assertEqual(result["blocked"], [])
+            remaining = (ws / "IDEIAS.md").read_text(encoding="utf-8")
+            self.assertNotIn("alpha", remaining)
+            self.assertNotIn("gamma", remaining)
+            self.assertIn("beta", remaining)  # o trecho do meio NÃO foi cortado por engano
+
+    def test_reference_collision_does_not_overwrite(self) -> None:
+        # Regressão do #4: arquivar duas referências de mesmo nome não sobrescreve.
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = self._ws(Path(tmp))
+            item = self._find(ws, lambda it: it["source_kind"] == "referencia")
+            apply_report(ws, _report([_as_report_item(item, "delete")]), today=TODAY)
+            # nova referência de mesmo nome, conteúdo diferente
+            (ws / "Referencias" / "artigo.md").write_text("# Artigo v2\n\nOutro corpo.\n", encoding="utf-8")
+            item2 = self._find(ws, lambda it: it["source_kind"] == "referencia")
+            apply_report(ws, _report([_as_report_item(item2, "delete")]), today=TODAY)
+            quarantined = list((ws / "Arquivo" / "Acervo").glob("*.md"))
+            self.assertEqual(len(quarantined), 2, "a segunda referência não pode sobrescrever a primeira")
+
+    def test_include_pauta_normalizes_newlines(self) -> None:
+        # Regressão do #6: comentário com newline não injeta heading/bullet na PAUTA.
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = self._ws(Path(tmp))
+            item = self._find(ws, lambda it: "Outra ideia" in it["snippet"])
+            evil = "ok\n## Hacked\n- bullet injetado"
+            apply_report(ws, _report([_as_report_item(item, "include_pauta", evil)]), today=TODAY)
+            for line in (ws / "PAUTA.md").read_text(encoding="utf-8").splitlines():
+                self.assertFalse(line.strip().startswith("## Hacked"), "comentário injetou heading")
+                self.assertNotEqual(line.strip(), "- bullet injetado", "comentário injetou bullet")
+
+    def test_registro_written_before_removal(self) -> None:
+        # Regressão do #9: prova de ordem — se o write do original falha, o
+        # registro já existe e o original fica intacto (registrou ANTES de cortar).
+        from unittest import mock
+
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = self._ws(Path(tmp))
+            item = self._find(ws, lambda it: "unica" in it["snippet"])
+            real_write = Path.write_text
+
+            def fake_write(self, *a, **k):
+                if self.name == "IDEIAS.md":
+                    raise OSError("disco cheio simulado")
+                return real_write(self, *a, **k)
+
+            with mock.patch.object(Path, "write_text", fake_write):
+                with self.assertRaises(OSError):
+                    apply_report(ws, _report([_as_report_item(item, "delete")]), today=TODAY)
+            self.assertIn("ACERVO", (ws / "REGISTRO.md").read_text(encoding="utf-8"))
+            self.assertIn("unica", (ws / "IDEIAS.md").read_text(encoding="utf-8"))  # original intacto
+
 
 if __name__ == "__main__":
     unittest.main()

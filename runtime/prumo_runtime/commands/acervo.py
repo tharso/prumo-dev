@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from prumo_runtime.acervo import enumerate_limbo
+from prumo_runtime.acervo import enumerate_limbo, safe_items_json
 from prumo_runtime.acervo_apply import AcervoSafetyError, apply_report
 
 _KIND_LABEL = {
@@ -35,8 +35,12 @@ def _render_text(result: dict) -> str:
 def run_acervo(args) -> int:
     workspace = Path(args.workspace).expanduser().resolve()
     result = enumerate_limbo(workspace)
-    if getattr(args, "format", "text") == "json":
+    fmt = getattr(args, "format", "text")
+    if fmt == "json":
         print(json.dumps(result, ensure_ascii=True, indent=2))
+    elif fmt == "html-items":
+        # Pronto pra colar em /*__ITEMS__*/ do template (escapa <,>,& contra XSS).
+        print(safe_items_json(result["items"]))
     else:
         print(_render_text(result))
     return 0
