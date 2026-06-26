@@ -31,6 +31,14 @@ _DESDE_PATTERN = re.compile(
     re.IGNORECASE,
 )
 _BULLET = ("- ", "* ")
+_DONE_CHECKBOX = re.compile(r"\[[xX]\]")  # GFM checkbox marcado (item concluído)
+
+
+def _safe_date(year: int, month: int, day: int) -> date | None:
+    try:
+        return date(year, month, day)
+    except ValueError:
+        return None
 
 
 def _stalled_pauta_count(text: str, today: date) -> int:
@@ -39,20 +47,24 @@ def _stalled_pauta_count(text: str, today: date) -> int:
         stripped = line.strip()
         if stripped[:2] not in _BULLET:
             continue
+        body = stripped[2:].lstrip()
+        if _DONE_CHECKBOX.match(body):
+            continue  # item concluído (GFM `- [x]`) não é acúmulo
         m = _DESDE_PATTERN.search(stripped)
         if not m:
             continue
+        month, day = int(m.group("month")), int(m.group("day"))
         year_raw = m.group("year")
         year = today.year if year_raw is None else (int(year_raw) + 2000 if int(year_raw) < 100 else int(year_raw))
-        try:
-            marked = date(year, int(m.group("month")), int(m.group("day")))
-        except ValueError:
+        marked = _safe_date(year, month, day)
+        if marked is None and year_raw is None:
+            marked = _safe_date(year - 1, month, day)  # ex.: 29/02 sem ano cai no ano bissexto anterior
+        if marked is None:
             continue
         if year_raw is None and marked > today:
-            try:
-                marked = date(year - 1, int(m.group("month")), int(m.group("day")))
-            except ValueError:
-                continue
+            earlier = _safe_date(year - 1, month, day)
+            if earlier is not None:
+                marked = earlier
         if (today - marked).days > PAUTA_STALLED_DAYS:
             count += 1
     return count
@@ -108,14 +120,19 @@ def accumulation_signals(workspace: Path, *, today: date | None = None) -> dict:
     inbox_pending = _inbox_pending_count(read_text(paths.inbox))
     registro_rows = _registro_rows(read_text(paths.registro))
 
-    # Conta o dir atual e o legado (a sanitize cuida de ambos).
+    # A infra (backups, HTMLs efêmeros) vive sempre em `.prumo/` — hardcoded no
+    # runtime (backup_root_for) e nas skills decidir/acervo —, independente do
+    # layout flat/nested. Por isso olhamos `.prumo` direto, não `system_root`.
+    dot = workspace / ".prumo"
     backups_old = (
-        _count_old_files(paths.system_root / "backups", today, BACKUP_EXPIRY_DAYS)
-        + _count_old_files(paths.system_root / "backup", today, BACKUP_EXPIRY_DAYS)
+        _count_old_files(dot / "backups", today, BACKUP_EXPIRY_DAYS)
+        + _count_old_files(dot / "backup", today, BACKUP_EXPIRY_DAYS)  # legado
     )
+    # Conta TODOS os arquivos velhos (não só .html): a sanitize também trata a
+    # cópia da `Boliand.otf` como efêmera nesses diretórios.
     ephemeral_old = (
-        _count_old_files(paths.state_root / "decidir", today, EPHEMERAL_HTML_DAYS, ".html")
-        + _count_old_files(paths.state_root / "acervo", today, EPHEMERAL_HTML_DAYS, ".html")
+        _count_old_files(dot / "state" / "decidir", today, EPHEMERAL_HTML_DAYS)
+        + _count_old_files(dot / "state" / "acervo", today, EPHEMERAL_HTML_DAYS)
     )
 
     suggest_higiene = pauta_stalled > 0 or inbox_pending > 0

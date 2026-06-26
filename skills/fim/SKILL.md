@@ -47,7 +47,7 @@ narrativo de sessão"; gerar qualquer artefato narrativo (`HANDOVER`,
 1. DOCUMENTAR → deltas visíveis e confirmados → IDEIAS / PAUTA / REGISTRO
 2. FAXINA     → roda a rotina automática (já é no-confirm)
 3. RESUMO     → o que registrou + o que a faxina arrumou
-4. DETECTAR   → `prumo fim --format json` aponta acúmulo; PROPOR higiene/sanitize
+4. DETECTAR   → `prumo fim --workspace <ws> --format json` aponta acúmulo; PROPOR higiene/sanitize
 ```
 
 ### Passo 2 — Faxina (automático)
@@ -92,7 +92,7 @@ então o agente começa up-to-date naturalmente — sem artefato extra.
 
 ## Referências
 
-- `prumo fim --format json` — detector de acúmulo (read-only).
+- `prumo fim --workspace <ws> --format json` — detector de acúmulo (read-only).
 - Thresholds reusados: `skills/faxina/references/thresholds.md`.
 - Limpezas que o `/fim` apenas propõe: `skills/higiene/SKILL.md`,
   `skills/sanitize/SKILL.md`.
