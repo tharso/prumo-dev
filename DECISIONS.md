@@ -8,11 +8,11 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 
 | Tópico                | Entradas                                                                                  |
 |-----------------------|-------------------------------------------------------------------------------------------|
-| `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first), 2026-05-04 (#77), 2026-06-21 (#97 mapas), 2026-06-25 (#114 perfil modular) |
-| `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo) |
-| `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first), 2026-05-06 (quality-gate) |
+| `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first), 2026-05-04 (#77), 2026-06-21 (#97 mapas), 2026-06-25 (#114 perfil modular), 2026-06-26 (#125/#126 acervo+fim) |
+| `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo), 2026-06-26 (#125/#126 acervo+fim) |
+| `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first), 2026-05-06 (quality-gate), 2026-06-26 (#125/#126 acervo+fim) |
 | `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist), 2026-06-24 (#110 não-bundle) |
-| `dispatch-bootstrap`  | 2026-04-21 (#69 despacho), 2026-06-23 (#104 briefing rico)                                |
+| `dispatch-bootstrap`  | 2026-04-21 (#69 despacho), 2026-06-23 (#104 briefing rico), 2026-06-26 (#125/#126 acervo+fim) |
 | `multiagent-coord`    | 2026-04-20 (#68 HANDOVER)                                                                 |
 | `documentation`       | 2026-04-14 (CLAUDE.md), 2026-06-21 (#97 mapas)                                            |
 | `integrations`        | 2026-04-14 (Google Drive snapshots)                                                       |
@@ -56,6 +56,37 @@ A partir de 2026-05-04 (#78), toda entrada nova segue o formato:
 Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões anteriores" (introduzido na #78). Quando um conflito retrospectivo for descoberto, anotar a relação na entrada nova que o resolve — não reescrever entradas antigas.
 
 - `code-quality` — métricas de qualidade do codebase, quality gate, baseline.
+
+---
+
+## 2026-06-26 — Skills `acervo` (navegador do limbo) e `fim` (encerramento de sessão) (#125/#126)
+
+**Tópicos:** skills-distribution, governance, workspace-layout, dispatch-bootstrap
+
+**Issues relacionadas:** #125 (acervo — executa), #126 (fim — executa; sequenciada **depois** da #125).
+
+**Relações com decisões anteriores:**
+- **Estende / forka:** 2026-06-23 (#102 — decidir) e 2026-06-24 (#109/#110 — decidir por conteúdo). O `acervo` forka a mecânica verificada do `decidir` (HTML offline, bloco JSON versionado `prumo_acervo_report.v1`, execução em camadas, limpeza pelo `sanitize`) numa superfície mais leve, orientada a **garimpar** (3 verbos: incluir na pauta / atacar agora / excluir; navegação + busca + filtro + ordenação por idade). Reusa o princípio "guardar é committal → `IDEIAS.md` / `Referencias/`" do #109/#110.
+- **Mantém:** 2026-06-23 (#104 — altitude do runtime). O enumerador read-only `prumo acervo --format json` **não** contradiz a #104: enumerar Markdown local é parsing determinístico, não curadoria de email/agenda (o que motivou barrar o runtime na geração da `decidir`). É da mesma categoria da semente `prumo briefing --format json` que a #104 preservou. A skill mantém fallback portável (lê o Markdown direto se o runtime faltar).
+- **Mantém:** 2026-04-20 (#68 — HANDOVER fora do produto). O `/fim` documenta a sessão gravando **fatos em canais existentes** (`IDEIAS.md`/`PAUTA.md`/`REGISTRO.md`), com confirmação e contrato conservador sob compactação. **Zero artefato narrativo**, sem `PENDING_VALIDATION`/handover/"resumo de sessão". Esclarece que "encerramento de sessão" (produto, voltado ao usuário) ≠ "handover de coordenação entre agentes" (dev, o que a #68 removeu). Não revoga; reafirma o limite.
+- **Estende:** 2026-04-21 (#69 — despacho por intenção). `/acervo` e `/fim` entram no dispatch como intenções novas, carregadas sob demanda.
+- **Mantém:** 2026-05-04 (#77) e 2026-04-22 (workspace-first). O artefato efêmero do `acervo` vive em `.prumo/state/acervo/` (infra invisível); a quarentena de itens removidos vai pra `Prumo/Arquivo/Acervo/` (dado do usuário, nunca deletado no escuro).
+- **Mantém:** 2026-05-06 (quality-gate) e 2026-05-18 (touchpoint). Novo código de runtime obedece o baseline congelado; os comandos novos são verificados contra prumo.me antes do merge.
+
+**Contexto:** Dois pedidos do dono: (1) uma interface pra **navegar e revisitar o limbo** — ideias soltas e conteúdo durável que entrou e parou; (2) um **encerramento formal de sessão** (`/fim`) que documente o que foi feito, higienize o necessário e deixe a próxima sessão limpa. O limbo, hoje, está espalhado (`IDEIAS.md`, `Hibernando` da `PAUTA.md`, `Referencias/`) e raramente revisitado; e os comandos de limpeza (`faxina`/`higiene`/`sanitize`) ficam esquecidos, deixando o workspace inchar. Planejado com o Tharso e revisado em **2 rodadas pelo Codex** (CLI, read-only), que endureceu o desenho com travas de segurança.
+
+**Decisão:**
+1. **`acervo` (skill nova, `/acervo`):** forka a mecânica do `decidir`. Fontes **duráveis** (`IDEIAS.md` + `Hibernando` + `Referencias/`); **fora**: `Arquivo/` histórico e `_processed.json` (cache volátil que a faxina apaga >14d). Ganha **enumerador read-only de runtime** (`prumo acervo --format json`, com `schema_version`), justificado contra a #104 por ser parsing determinístico. **Escopo negativo** de `Referencias/` (reusa `file-protection-rules.md`; arquivos operacionais como `INDICE.md`/`WORKFLOWS.md`/`EMAIL-CURADORIA.md` são inapagáveis). Verbo **"excluir" arquiva-por-padrão** (move pra `Prumo/Arquivo/Acervo/` + registra; deleção permanente só com confirmação explícita). Remoção segura exige **proveniência + validação de hash** (bloqueia se divergir ou houver múltiplas ocorrências). Implementar **primeiro**.
+2. **`/fim` (skill nova):** porta única de encerramento, bookend do `/briefing`. Contrato **conservador**: lista candidatos com origem visível → confirma → grava **só o confirmado** nos canais existentes; sob compactação, **não** registra fato anterior ao trecho visível (declara a lacuna). Roda `faxina` (automático) e **propõe** (não executa) `/higiene`//`/sanitize` quando thresholds de acúmulo cruzam. **Cerca contra overlap:** não lê email/calendário, não marca `last-briefing.json`, não refaz a proposta do dia, não duplica a detecção da higiene. Implementar **depois** da #125.
+
+**Alternativas consideradas:**
+- *`acervo` 100% skill-only (igual `decidir`)* → preterido: enumeração é determinística e ganha testabilidade/DRY com runtime; a skill mantém fallback portável, então skills-first é preservado.
+- *`excluir` como deleção real com confirmação* → rejeitado: o Prumo nunca deleta conteúdo do usuário (a `faxina` move). Arquivar-por-padrão + deleção permanente opt-in cobre sem o risco.
+- *`/fim` documentar a sessão reconstruindo contexto* → rejeitado: contexto é volátil (compactação destrói memória textual — CLAUDE.md). Só deltas visíveis e confirmados; ressalva é cinto de segurança, não licença.
+- *`/fim` rodar `higiene`/`sanitize` automaticamente* → rejeitado: exigem julgamento/aprovação. `/fim` orquestra na altitude certa (propõe), não duplica.
+- *Extrair um template HTML base compartilhado entre `decidir` e `acervo`* → adiado: divergência real (busca/filtro/ordenação); copiar + testes de invariante paralelos agora, extrair só na 3ª superfície HTML.
+
+**Touchpoint (prumo.me):** a verificar antes do merge de cada feature. Provável sem mudança imediata — a landing não enumera skills/comandos (ver touchpoint da #102); confirmar que nada de instalação/filosofia muda. Reavaliar se `acervo`//`fim` virarem argumento de produto.
 
 ---
 
