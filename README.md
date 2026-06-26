@@ -105,6 +105,7 @@ Quer duas instâncias (ex: pessoal vs. trabalho)? É opt-in declarado: rode `/pr
 | `/sanitize` | Compacta estado e arquiva histórico |
 | `/higiene` | Diagnostica e propõe limpeza do CLAUDE.md |
 | `/doctor` | Diagnóstico técnico do runtime |
+| `/acervo` | Navega e revisita o limbo (ideias soltas, pauta hibernando, referências) |
 
 Pelo runtime CLI também: `prumo setup`, `prumo start`, `prumo briefing`, `prumo migrate` (workspaces flat → nested), `prumo migrate-skills` (workspaces pré-5.2.0 → estrutura nova; ver seção abaixo) e `prumo repair` (regenera arquivos recriáveis).
 
@@ -153,7 +154,7 @@ prumo migrate-skills --workspace /caminho/do/workspace
 
 ## Versão
 
-`5.13.1`
+`5.14.0`
 
 ## Licença
 

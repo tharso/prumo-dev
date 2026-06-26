@@ -1,6 +1,6 @@
 # Dispatch
 
-> **module_version: 5.13.1**
+> **module_version: 5.14.0**
 >
 > Como o Prumo abre sessão e decide o que fazer. Substitui o bootstrap just-in-case (ler tudo antes de saber a intenção) por despacho baseado no que o usuário quer.
 
@@ -72,6 +72,7 @@ Mapeamento de gatilhos do usuário para intenção e ação. Primeiro filtro do 
 | projeto X, continuar (projeto) | trabalho em projeto | localizar contexto do projeto no workspace, carregar referências específicas |
 | captura, anota, registra pendência, pra não esquecer | captura de pendência | receber dump, triar entre `PAUTA.md`, `IDEIAS.md` e `INBOX.md` conforme regras estáveis do core |
 | revisão semanal, poda | revisão semanal | carregar `weekly-review.md` e executar |
+| acervo, limbo, revisitar ideias, garimpar, o que ficou parado, ideias soltas | navegar o acervo | ativar a skill `acervo` (enumera o limbo durável e gera o HTML navegável) |
 
 ## Fallback de dispatch
 

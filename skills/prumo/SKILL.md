@@ -319,6 +319,9 @@ Se o território técnico do sistema ficar pesado (backups velhos em `.prumo/bac
 **Comando `/higiene`:**
 Se o `Prumo/Agente/PERFIL.md` tiver duplicações, conflitos ou texto no lugar errado, `/higiene` detecta, propõe o que mudar e só mexe com confirmação. Diferente da faxina, que age sozinha — aqui quem decide é você.
 
+**Comando `/acervo`:**
+Pra revisitar o que ficou parado (ideias soltas, pauta hibernando, referências guardadas), `/acervo` gera um HTML navegável (busca, filtro, ordenação por "mais parado primeiro") onde você garimpa item a item — incluir na pauta, atacar agora ou excluir (arquiva, não apaga). Dispara a skill `acervo`.
+
 ### Etapa 10: Primeiro dump (obrigatório)
 
 O setup NÃO termina na geração de arquivos. Termina no primeiro dump.

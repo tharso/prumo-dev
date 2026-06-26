@@ -20,7 +20,7 @@ PERFIL.md pesado), use `/higiene`.
 1. Remove backups antigos de `.prumo/backups/` (> 90 dias)
 2. Limpa cache expirado de `.prumo/cache/`
 3. Arquiva arquivos de estado em `.prumo/state/` que crescerem além de threshold
-4. Remove documentos de despacho efêmeros da skill `decidir` em `.prumo/state/decidir/` (> 14 dias)
+4. Remove documentos efêmeros das skills `decidir` e `acervo` em `.prumo/state/decidir/` e `.prumo/state/acervo/` (> 14 dias)
 5. Registra qualquer movimento em `.prumo/state/archive/ARCHIVE-INDEX.json`
 
 ## Como rodar
