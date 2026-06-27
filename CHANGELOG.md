@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.16.0] - 2026-06-26
+
+### Added
+- **Skill `menu`: manual de instruções (`/menu`)** (#130) — porta de ajuda conversacional. Apresenta todos os comandos do Prumo com uma explicação curta de cada e **fecha proativo**, perguntando se o usuário tem dúvida sobre o funcionamento (alinhado à regra "Proatividade obrigatória" do core), pronto pra responder. **Fonte única:** a lista deriva da tabela `## Comandos disponíveis` do `PRUMO-CORE.md` — nada de segunda cópia, com teste anti-drift que falha se a tabela quebrar ou o `/menu` sumir dela. Detector read-only `prumo menu --format json` (parseia o core). Fallback portável: a skill lê a tabela do core direto se o runtime faltar. Planejado e revisado com o Codex (issue #130).
+
 ## [5.15.0] - 2026-06-26
 
 ### Added

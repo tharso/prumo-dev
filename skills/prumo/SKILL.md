@@ -325,6 +325,9 @@ Pra revisitar o que ficou parado (ideias soltas, pauta hibernando, referências 
 **Comando `/fim`:**
 Pra encerrar a sessão sem perder o que foi decidido, `/fim` documenta os deltas duráveis nos canais existentes (IDEIAS/PAUTA/REGISTRO, só o que está visível e confirmado), roda a faxina automática, e — se detectar acúmulo — propõe `/higiene` ou `/sanitize` (nunca executa por conta própria). É o bookend do briefing; não lê email/calendário nem cria artefato de sessão. Dispara a skill `fim`.
 
+**Comando `/menu`:**
+Pra ver o que o Prumo faz, `/menu` apresenta o manual de instruções — lista os comandos disponíveis (derivados do core, fonte única) com uma explicação curta de cada — e fecha perguntando, de forma proativa, se você tem alguma dúvida sobre o funcionamento, pronto pra responder. Dispara a skill `menu`.
+
 ### Etapa 10: Primeiro dump (obrigatório)
 
 O setup NÃO termina na geração de arquivos. Termina no primeiro dump.

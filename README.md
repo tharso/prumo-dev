@@ -107,6 +107,7 @@ Quer duas instâncias (ex: pessoal vs. trabalho)? É opt-in declarado: rode `/pr
 | `/doctor` | Diagnóstico técnico do runtime |
 | `/acervo` | Navega e revisita o limbo (ideias soltas, pauta hibernando, referências) |
 | `/fim` | Encerra a sessão — documenta deltas, roda faxina, propõe limpeza |
+| `/menu` | Manual de instruções — lista os comandos e tira dúvidas sobre o funcionamento |
 
 Pelo runtime CLI também: `prumo setup`, `prumo start`, `prumo briefing`, `prumo migrate` (workspaces flat → nested), `prumo migrate-skills` (workspaces pré-5.2.0 → estrutura nova; ver seção abaixo) e `prumo repair` (regenera arquivos recriáveis).
 
@@ -155,7 +156,7 @@ prumo migrate-skills --workspace /caminho/do/workspace
 
 ## Versão
 
-`5.15.0`
+`5.16.0`
 
 ## Licença
 

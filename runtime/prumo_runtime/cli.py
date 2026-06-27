@@ -10,6 +10,7 @@ from prumo_runtime.commands import (
     run_context_dump,
     run_fim,
     run_inbox_preview,
+    run_menu,
     run_migrate,
     run_migrate_skills,
     run_repair,
@@ -118,6 +119,14 @@ def build_parser() -> argparse.ArgumentParser:
     fim.add_argument("--workspace", required=True, help="Caminho do workspace")
     fim.add_argument("--format", choices=["text", "json"], default="text")
     fim.set_defaults(handler=run_fim)
+
+    menu = subparsers.add_parser(
+        "menu",
+        help="Manual de comandos (derivado do core) read-only; alimenta a skill `menu`",
+    )
+    menu.add_argument("--workspace", required=True, help="Caminho do workspace")
+    menu.add_argument("--format", choices=["text", "json"], default="text")
+    menu.set_defaults(handler=run_menu)
 
     repair = subparsers.add_parser("repair", help="Validar e reparar arquivos recriaveis do workspace")
     repair.add_argument("--workspace", required=True, help="Caminho do workspace")
