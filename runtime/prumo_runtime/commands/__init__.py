@@ -3,6 +3,7 @@ from prumo_runtime.commands.briefing import run_briefing
 from prumo_runtime.commands.context_dump import run_context_dump
 from prumo_runtime.commands.fim import run_fim
 from prumo_runtime.commands.inbox_preview import run_inbox_preview
+from prumo_runtime.commands.menu import run_menu
 from prumo_runtime.commands.migrate import run_migrate
 from prumo_runtime.commands.migrate_skills import run_migrate_skills
 from prumo_runtime.commands.repair import run_repair
@@ -17,6 +18,7 @@ __all__ = [
     "run_context_dump",
     "run_fim",
     "run_inbox_preview",
+    "run_menu",
     "run_migrate",
     "run_migrate_skills",
     "run_repair",
