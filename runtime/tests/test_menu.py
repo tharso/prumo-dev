@@ -53,6 +53,19 @@ class MenuParserTests(unittest.TestCase):
     def test_empty_core_is_safe(self) -> None:
         self.assertEqual(parse_command_table(""), [])
 
+    def test_subtable_within_section_is_not_parsed(self) -> None:
+        # Regressão (review Codex): só a 1ª tabela contígua após o heading entra;
+        # uma sub-tabela (### Notas) dentro da seção NÃO vira comando.
+        core = (
+            "## Comandos disponíveis\n\n"
+            "| Comando | Função |\n|---|---|\n| `/setup` | Configura |\n\n"
+            "### Notas\n\n"
+            "| Aviso | Detalhe |\n|---|---|\n| `/fake` | não é comando |\n"
+        )
+        commands = [c["command"] for c in parse_command_table(core)]
+        self.assertEqual(commands, ["/setup"])
+        self.assertNotIn("/fake", commands)
+
 
 class MenuManualTests(unittest.TestCase):
     def test_command_manual_reads_workspace_core(self) -> None:

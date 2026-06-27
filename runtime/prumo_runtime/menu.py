@@ -22,19 +22,36 @@ _BACKTICK = re.compile(r"`([^`]+)`")
 
 
 def parse_command_table(core_text: str) -> list[dict]:
-    """Extrai [{command, description}] da tabela "## Comandos disponíveis".
+    """Extrai [{command, description}] da PRIMEIRA tabela após "## Comandos
+    disponíveis".
 
-    Tolera o cabeçalho (`| Comando | Função |`) e a linha separadora (`|---|`).
+    Captura só a tabela contígua imediatamente seguinte ao heading — para no
+    primeiro bloco não-tabela ou no próximo heading. Assim uma sub-tabela (ex.:
+    `### Notas` dentro da seção) não vira comando. Tolera o cabeçalho
+    (`| Comando | Função |`) e a separadora (`|---|`). Contrato: a descrição
+    não pode conter `|` cru (é célula de tabela Markdown).
     """
-    commands: list[dict] = []
-    in_section = False
-    for line in core_text.splitlines():
+    lines = core_text.splitlines()
+    start = None
+    for i, line in enumerate(lines):
         s = line.strip()
-        if s.startswith("## "):
-            in_section = _SECTION in s
-            continue
-        if not in_section or not s.startswith("|"):
-            continue
+        if s.startswith("## ") and _SECTION in s:
+            start = i + 1
+            break
+    if start is None:
+        return []
+
+    commands: list[dict] = []
+    started = False
+    for line in lines[start:]:
+        s = line.strip()
+        if s.startswith("#"):  # próximo heading encerra a seção
+            break
+        if not s.startswith("|"):
+            if started:
+                break  # acabou a tabela contígua
+            continue   # texto entre o heading e a tabela
+        started = True
         cells = [c.strip() for c in s.strip("|").split("|")]
         if len(cells) < 2:
             continue
@@ -44,8 +61,7 @@ def parse_command_table(core_text: str) -> list[dict]:
         if cmd_cell.lower() == "comando":  # cabeçalho
             continue
         m = _BACKTICK.search(cmd_cell)
-        command = m.group(1).strip() if m else cmd_cell
-        commands.append({"command": command, "description": desc})
+        commands.append({"command": m.group(1).strip() if m else cmd_cell, "description": desc})
     return commands
 
 
