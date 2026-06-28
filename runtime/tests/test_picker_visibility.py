@@ -66,11 +66,13 @@ class PickerVisibilityTests(unittest.TestCase):
             self.assertNotRegex(fm, _DISABLE_RE, f"{name} não pode cortar a invocação do agente")
 
     def test_only_frontmatter_counts(self):
-        # Regressão (review Codex): uma menção a `user-invocable: false` no CORPO
-        # do SKILL.md (exemplo/doc) NÃO pode contar — só o frontmatter conta.
-        body_only = "---\nname: x\ndescription: y\n---\n\nExemplo: `user-invocable: false` no corpo.\n"
+        # Regressão (review Codex): uma linha YAML `user-invocable: false` no CORPO
+        # (ex.: doc/exemplo de frontmatter) casaria no arquivo inteiro — o bug
+        # antigo. Tem que NÃO contar; só o frontmatter conta.
+        body_only = "---\nname: x\ndescription: y\n---\n\nExemplo de frontmatter:\nuser-invocable: false\n"
+        self.assertRegex(body_only, _HIDDEN_RE)            # arquivo inteiro casaria (bug antigo)
+        self.assertNotRegex(_frontmatter(body_only), _HIDDEN_RE)  # mas o frontmatter não → correto
         self.assertEqual(_frontmatter(body_only).strip(), "name: x\ndescription: y")
-        self.assertNotRegex(_frontmatter(body_only), _HIDDEN_RE)
         in_front = "---\nname: x\nuser-invocable: false\n---\n\ncorpo\n"
         self.assertRegex(_frontmatter(in_front), _HIDDEN_RE)
 
