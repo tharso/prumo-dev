@@ -1,5 +1,6 @@
 ---
 name: faxina
+user-invocable: false
 description: >
   Faxina automática do workspace. Arquiva registro velho, atualiza índices,
   limpa inbox processado, move itens concluídos. Use com /faxina, "limpar",

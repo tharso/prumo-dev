@@ -1,5 +1,6 @@
 ---
 name: sanitize
+user-invocable: false
 description: >
   Compacta estado técnico do sistema (backups velhos, cache expirado,
   arquivos de estado que crescem demais em .prumo/). Se o pedido for

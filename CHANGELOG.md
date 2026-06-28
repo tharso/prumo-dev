@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.17.0] - 2026-06-28
+
+### Changed
+- **Picker `/` enxuto: mecânica do agente sai do menu** (#132) — o picker do host listava as ~12 skills misturando comando que o usuário digita com mecânica que o agente dispara sozinho. Agora 7 skills ganham `user-invocable: false` (escondidas do picker, **seguem invocáveis** pelo agente e listadas no `/menu`): `abrir`, `decidir`, `faxina` (mecânica pura), `higiene`, `sanitize`, `doctor` (ocasionais — `higiene`/`sanitize` já são propostas pelo `/fim`), e `start` (onboarding redundante com `setup`). **Front-line digitável:** `briefing`, `acervo`, `fim`, `menu`, `setup`. Arquitetura: **picker = atalhos do dia a dia; `/menu` = manual completo**. A ordem do picker é do host (não configurável), mas a tabela de comandos do `prumo-core` (fonte do `/menu`) foi **reordenada por função** (dia a dia → onboarding → manutenção). Teste anti-regressão trava a política de visibilidade. _Caveat: `user-invocable` é documentado no Claude Code; confirmar no picker do Cowork após o update._
+
 ## [5.16.0] - 2026-06-26
 
 ### Added

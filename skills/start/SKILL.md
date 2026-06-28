@@ -1,5 +1,6 @@
 ---
 name: start
+user-invocable: false
 description: >
   Onboarding rápido do Prumo via dump-first. Alternativa ao setup wizard
   para quem quer sentir valor em 5 minutos. O usuário despeja o que tem na
