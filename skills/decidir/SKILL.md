@@ -1,5 +1,6 @@
 ---
 name: decidir
+user-invocable: false
 description: >
   Superfície de decisão interativa do Prumo: quando há muitos itens para
   despachar de uma vez (briefing com 6+ itens acionáveis, triagem de inbox,

@@ -1,6 +1,6 @@
 # Prumo Core — Motor do sistema
 
-> **prumo_version: 5.16.0**
+> **prumo_version: 5.17.0**
 >
 > Núcleo estável do Prumo. Define regras, guardrails e localização dos módulos canônicos.
 > Procedimento detalhado não mora aqui.
@@ -61,15 +61,15 @@ Arquivos de estado esperados em `.prumo/state/`:
 
 | Comando | Função |
 |---|---|
-| `/setup` | Configuração inicial e reconfiguração |
 | `/briefing` | Briefing diário |
-| `/doctor` | Diagnóstico do runtime do Prumo no Cowork |
-| `/sanitize` | Sanitizar estado operacional |
-| `/higiene` | Higiene assistida do `Prumo/Agente/PERFIL.md` |
-| `/start` | Captura inicial e onboarding rápido |
 | `/acervo` | Navegar e revisitar o limbo (ideias soltas, pauta hibernando, referências) |
-| `/fim` | Encerrar a sessão (documenta deltas, roda faxina, propõe limpeza) |
 | `/menu` | Manual de instruções: lista os comandos e tira dúvidas sobre o funcionamento |
+| `/fim` | Encerrar a sessão (documenta deltas, roda faxina, propõe limpeza) |
+| `/setup` | Configuração inicial e reconfiguração |
+| `/start` | Captura inicial e onboarding rápido |
+| `/higiene` | Higiene assistida do `Prumo/Agente/PERFIL.md` |
+| `/sanitize` | Sanitizar estado operacional |
+| `/doctor` | Diagnóstico do runtime do Prumo no Cowork |
 | `/prumo` | Alias legado de setup |
 
 No Cowork, os comandos canônicos aparecem sem prefixo do plugin.

@@ -1,5 +1,6 @@
 ---
 name: abrir
+user-invocable: false
 description: >
   Porta de entrada do Prumo para invocação curta. Use APENAS quando o
   usuário disser "prumo" cru, "ei prumo", "olá prumo", "prumo, vamos lá",

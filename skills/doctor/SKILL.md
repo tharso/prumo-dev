@@ -1,5 +1,6 @@
 ---
 name: doctor
+user-invocable: false
 description: >
   Diagnóstico do runtime do Prumo no Cowork. Inspeciona store local, checkout
   do marketplace, versão instalada e drift de catálogo. Use com /doctor.
