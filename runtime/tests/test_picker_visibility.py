@@ -18,10 +18,23 @@ FRONT_LINE = {"briefing", "acervo", "fim", "menu", "prumo"}  # prumo == setup
 HIDDEN = {"abrir", "decidir", "faxina", "start", "doctor", "higiene", "sanitize"}
 
 _HIDDEN_RE = re.compile(r"(?m)^user-invocable:\s*false\s*$")
+_DISABLE_RE = re.compile(r"(?m)^disable-model-invocation:\s*true\s*$")
+_DESC_RE = re.compile(r"(?m)^description:")
+
+
+def _frontmatter(text: str) -> str:
+    """Bloco YAML entre o primeiro par de `---`. É o que o host lê — uma menção
+    no CORPO do SKILL.md (exemplo, doc) não pode contar como configuração."""
+    m = re.match(r"(?s)\s*---\n(.*?)\n---", text)
+    return m.group(1) if m else ""
+
+
+def _front(skill_dir: Path) -> str:
+    return _frontmatter((skill_dir / "SKILL.md").read_text(encoding="utf-8"))
 
 
 def _is_hidden(skill_dir: Path) -> bool:
-    return bool(_HIDDEN_RE.search((skill_dir / "SKILL.md").read_text(encoding="utf-8")))
+    return bool(_HIDDEN_RE.search(_front(skill_dir)))
 
 
 class PickerVisibilityTests(unittest.TestCase):
@@ -48,9 +61,18 @@ class PickerVisibilityTests(unittest.TestCase):
         # (gatilho de invocação pelo agente) tem que continuar lá, e nenhuma pode
         # ter `disable-model-invocation: true` (isso as cortaria do agente).
         for name in HIDDEN:
-            text = (SKILLS_DIR / name / "SKILL.md").read_text(encoding="utf-8")
-            self.assertRegex(text, r"(?m)^description:", f"{name} sem description (não seria invocável)")
-            self.assertNotIn("disable-model-invocation: true", text, f"{name} não pode cortar a invocação do agente")
+            fm = _front(SKILLS_DIR / name)
+            self.assertRegex(fm, _DESC_RE, f"{name} sem description no frontmatter (não seria invocável)")
+            self.assertNotRegex(fm, _DISABLE_RE, f"{name} não pode cortar a invocação do agente")
+
+    def test_only_frontmatter_counts(self):
+        # Regressão (review Codex): uma menção a `user-invocable: false` no CORPO
+        # do SKILL.md (exemplo/doc) NÃO pode contar — só o frontmatter conta.
+        body_only = "---\nname: x\ndescription: y\n---\n\nExemplo: `user-invocable: false` no corpo.\n"
+        self.assertEqual(_frontmatter(body_only).strip(), "name: x\ndescription: y")
+        self.assertNotRegex(_frontmatter(body_only), _HIDDEN_RE)
+        in_front = "---\nname: x\nuser-invocable: false\n---\n\ncorpo\n"
+        self.assertRegex(_frontmatter(in_front), _HIDDEN_RE)
 
 
 if __name__ == "__main__":
