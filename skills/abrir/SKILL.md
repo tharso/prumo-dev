@@ -7,9 +7,9 @@ description: >
   "/prumo:abrir", ou equivalente curto sem intenção específica. Carrega
   identidade mínima, faz scan leve do contexto e devolve saudação
   proativa com opções concretas ancoradas no estado real do workspace.
-  Não dispara em "configurar prumo" (use setup), "quero começar o prumo"
-  (use start), "briefing"/"painel do dia"/"começar o dia" (use briefing),
-  nem em descrição longa de problema (use setup).
+  Não dispara em "configurar prumo" / "quero começar o prumo" / "começar
+  rápido" (use setup), nem em "briefing"/"painel do dia"/"começar o dia"
+  (use briefing), nem em descrição longa de problema (use setup).
 ---
 
 # Prumo Abrir — porta de entrada do despacho
@@ -65,8 +65,7 @@ referencia.
 
 ## Quando NÃO usar esta skill
 
-- Usuário disse "configurar prumo", "setup" → `prumo:setup`.
-- Usuário disse "quero começar o prumo", "/prumo:start" → `prumo:start`.
+- Usuário disse "configurar prumo", "setup", "quero começar o prumo", "começar rápido" → `prumo:setup` (que cobre wizard e modo rápido).
 - Usuário disse "briefing", "painel do dia", "o que tem pra hoje" →
   `prumo:briefing`.
 - Usuário descreveu problema longo ("tô perdido", "me ajuda a

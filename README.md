@@ -99,8 +99,7 @@ Quer duas instâncias (ex: pessoal vs. trabalho)? É opt-in declarado: rode `/pr
 
 | Comando | O que faz |
 |---------|-----------|
-| `/setup` | Configura o Prumo (wizard conversacional, ~15 min) |
-| `/start` | Onboarding rápido — despeje e o sistema organiza |
+| `/setup` | Configura o Prumo — wizard conversacional ou modo rápido (despeje e o sistema organiza) |
 | `/briefing` | Briefing diário |
 | `/sanitize` | Compacta estado e arquiva histórico |
 | `/higiene` | Diagnostica e propõe limpeza do CLAUDE.md |
@@ -156,7 +155,7 @@ prumo migrate-skills --workspace /caminho/do/workspace
 
 ## Versão
 
-`5.17.0`
+`5.18.0`
 
 ## Licença
 

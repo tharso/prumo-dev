@@ -76,7 +76,7 @@ Este contrato vale especialmente para:
 
 1. `briefing`
 2. `higiene`
-3. `start`
+3. `setup`
 4. `doctor`
 
 Se um desses fluxos responder sem continuidade ou sem alternativas úteis, isso é regressão de interface, não “variação de estilo”.

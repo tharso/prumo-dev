@@ -1,6 +1,6 @@
 # Prumo Core — Motor do sistema
 
-> **prumo_version: 5.17.0**
+> **prumo_version: 5.18.0**
 >
 > Núcleo estável do Prumo. Define regras, guardrails e localização dos módulos canônicos.
 > Procedimento detalhado não mora aqui.
@@ -65,15 +65,13 @@ Arquivos de estado esperados em `.prumo/state/`:
 | `/acervo` | Navegar e revisitar o limbo (ideias soltas, pauta hibernando, referências) |
 | `/menu` | Manual de instruções: lista os comandos e tira dúvidas sobre o funcionamento |
 | `/fim` | Encerrar a sessão (documenta deltas, roda faxina, propõe limpeza) |
-| `/setup` | Configuração inicial e reconfiguração |
-| `/start` | Captura inicial e onboarding rápido |
+| `/setup` | Onboarding e configuração (wizard ou rápido); também reconfigura |
 | `/higiene` | Higiene assistida do `Prumo/Agente/PERFIL.md` |
 | `/sanitize` | Sanitizar estado operacional |
 | `/doctor` | Diagnóstico do runtime do Prumo no Cowork |
-| `/prumo` | Alias legado de setup |
 
 No Cowork, os comandos canônicos aparecem sem prefixo do plugin.
-Alias legado ainda pode existir por compatibilidade, mas documentação nova deve usar o formato curto.
+Pra **abrir o sistema**, é só dizer "prumo" (ou "oi prumo"), sem barra — o Prumo cumprimenta e oferece o que dá pra fazer (skill `abrir`).
 
 Se o runtime CLI não estiver disponível, usar a cadeia de fallback definida em `Prumo/AGENT.md` (skill direto).
 

@@ -12,7 +12,7 @@ O Prumo nunca escreve no calendário do usuário sem aprovação explícita. Cri
 
 Onde um ritual **com hora** é identificado:
 
-- no **onboarding** (`prumo/SKILL.md`, `start/SKILL.md`);
+- no **onboarding** (`prumo/SKILL.md`);
 - na **migração assistida** (`claude-hygiene.md`, ritual legado da seção "Lembretes recorrentes" do PERFIL);
 - quando o usuário **menciona um novo ritual com hora** no chat ou no briefing.
 

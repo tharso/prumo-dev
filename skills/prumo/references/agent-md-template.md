@@ -40,7 +40,6 @@ Se o runtime não estiver no PATH, ler a skill correspondente no workspace:
 | abrir | `.prumo/skills/abrir/SKILL.md` |
 | briefing | `.prumo/skills/briefing/SKILL.md` |
 | setup | `.prumo/skills/prumo/SKILL.md` |
-| start | `.prumo/skills/start/SKILL.md` |
 | faxina | `.prumo/skills/faxina/SKILL.md` |
 | higiene | `.prumo/skills/higiene/SKILL.md` |
 | sanitize | `.prumo/skills/sanitize/SKILL.md` |
