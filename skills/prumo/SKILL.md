@@ -55,9 +55,18 @@ Quando o sistema já existe e o usuário quer ajustar.
 Triggers: "adicionar área", "mudar tom", "reconfigurar", "nova área".
 
 ### 3. Modo rápido (dump-first)
-Caminho alternativo ao wizard, pra quem quer sentir valor em ~5 min ou se sente intimidado pelas etapas. **Inverte a ordem:** em vez de perguntar tudo antes, o usuário **despeja** o que tem na cabeça primeiro, o Prumo **organiza**, infere áreas de vida e gera os arquivos de configuração a partir de dados reais — e as perguntas vêm depois, ancoradas no que ele disse.
+Caminho alternativo ao wizard, pra quem quer sentir valor em ~5 min ou se sente intimidado pelas etapas. **Inverte a ordem:** o usuário despeja primeiro, o Prumo organiza, e as perguntas vêm depois — ancoradas no que ele disse.
 Triggers: "/prumo:setup rápido", "quero começar o prumo", "começar rápido", "despeja e organiza".
-O gatekeeper do workspace (abaixo) vale igual: nada de workspace nasce silencioso. Depois do dump, completar o que faltou com as perguntas do wizard (Etapas 2+), sem repetir o que já dá pra inferir.
+
+O gatekeeper do workspace (abaixo) **vale igual** — nada de workspace nasce silencioso (confirmação nomeada antes de criar arquivo). Passado o gatekeeper, o procedimento é:
+
+1. **O convite (uma mensagem curta).** Sem explicar o que é o Prumo, sem tutorial: *"Me conta o que tá na sua cabeça — pendências, projetos, ideias soltas, o que te tira o sono. Não precisa organizar; despeja que eu organizo."*
+2. **O dump é sagrado.** Não interromper pra perguntar nada enquanto o usuário despeja. Se vier em partes ("espera, tem mais"), esperar ("Vai, tô ouvindo."). Nada de termos técnicos (PERFIL.md, .prumo/) nesta fase.
+3. **Organizar e devolver.** Triar o dump entre `PAUTA.md`/`IDEIAS.md`/`INBOX.md`, e **inferir áreas de vida e tom a partir dos dados reais**. Devolver a organização e confirmar ("Faz sentido?").
+4. **Perguntar só o que falta** — conversa, não formulário; uma pergunta por vez; cada pergunta ancorada no que o usuário disse. **Não re-perguntar o que já dá pra inferir** do dump.
+5. **Gerar os arquivos** (mesma fase do wizard, Etapas 9+), a partir do que foi dumpado e confirmado.
+
+O wizard completo (perguntas antes) continua disponível pra quem preferir — oferecer a escolha quando o usuário não sinalizar.
 
 Para determinar o modo: verificar se já existe um `Prumo/AGENT.md` na pasta workspace do usuário. Se existir, é reconfiguração. Se não, é setup — wizard ou rápido, conforme o usuário preferir (oferecer a escolha). (Workspaces legados podem ter CLAUDE.md na raiz sem `Prumo/` — nesse caso, oferecer migração.)
 
