@@ -13,9 +13,11 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 SKILLS_DIR = REPO_ROOT / "skills"
 
 # Front-line: comandos que o usuário digita no dia a dia (NÃO escondidos).
-FRONT_LINE = {"briefing", "acervo", "fim", "menu", "prumo"}  # prumo == setup
-# Escondidos do picker (mecânica do agente / ocasionais / onboarding redundante).
-HIDDEN = {"abrir", "decidir", "faxina", "start", "doctor", "higiene", "sanitize"}
+FRONT_LINE = {"briefing", "acervo", "fim", "menu"}
+# Escondidos do picker: mecânica do agente (abrir/decidir/faxina), manutenção
+# ocasional (doctor/higiene/sanitize) e o onboarding (prumo==setup, que
+# auto-dispara em workspace novo e não polui quem já configurou — #134/#135).
+HIDDEN = {"abrir", "decidir", "faxina", "doctor", "higiene", "sanitize", "prumo"}
 
 _HIDDEN_RE = re.compile(r"(?m)^user-invocable:\s*false\s*$")
 _DISABLE_RE = re.compile(r"(?m)^disable-model-invocation:\s*true\s*$")

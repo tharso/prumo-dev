@@ -1,16 +1,24 @@
 ---
 name: setup
+user-invocable: false
 description: >
-  Setup e configuração do Prumo. Use esta skill APENAS quando o usuário
-  expressar intenção explícita de configurar o Prumo ("setup", "configurar
-  prumo", "montar meu sistema", "/prumo:setup"), adicionar novas áreas de
-  vida, reconfigurar tom ou rituais. Também dispara em variações longas
-  ("sistema de produtividade", "quero parar de esquecer coisas", "life OS",
-  "me ajuda a organizar minha vida", "preciso de um sistema pra não deixar
-  as coisas caírem"). Não dispara em invocação curta tipo "prumo" cru ou
-  saudação — use `prumo:abrir`. Não dispara em onboarding rápido — use
-  `prumo:start`.
+  Setup, onboarding e configuração do Prumo. Use esta skill quando o usuário
+  expressar intenção de configurar/começar o Prumo ("setup", "configurar
+  prumo", "montar meu sistema", "/prumo:setup", "quero começar o prumo",
+  "começar rápido"), adicionar novas áreas de vida, reconfigurar tom ou
+  rituais. Também dispara em variações longas ("sistema de produtividade",
+  "quero parar de esquecer coisas", "life OS", "me ajuda a organizar minha
+  vida", "preciso de um sistema pra não deixar as coisas caírem") e quando o
+  workspace ainda não está configurado. Oferece dois caminhos: wizard completo
+  ou rápido (dump-first). Não dispara em invocação curta tipo "prumo" cru ou
+  saudação — use `prumo:abrir`.
 ---
+
+<!-- user-invocable: false → fora do picker `/`. O setup auto-dispara quando o
+     workspace não está configurado ou quando o usuário pede ("configurar",
+     "começar"); quem já configurou não vê o comando poluindo o dia a dia.
+     Reconfiguração segue por `/prumo:setup` explícito ou linguagem natural. -->
+
 
 # Prumo
 
@@ -46,7 +54,12 @@ Triggers: `/prumo:setup`, "configurar prumo", "setup", "montar sistema", "começ
 Quando o sistema já existe e o usuário quer ajustar.
 Triggers: "adicionar área", "mudar tom", "reconfigurar", "nova área".
 
-Para determinar o modo: verificar se já existe um `Prumo/AGENT.md` na pasta workspace do usuário. Se existir, é reconfiguração. Se não, é setup. (Workspaces legados podem ter CLAUDE.md na raiz sem `Prumo/` — nesse caso, oferecer migração.)
+### 3. Modo rápido (dump-first)
+Caminho alternativo ao wizard, pra quem quer sentir valor em ~5 min ou se sente intimidado pelas etapas. **Inverte a ordem:** em vez de perguntar tudo antes, o usuário **despeja** o que tem na cabeça primeiro, o Prumo **organiza**, infere áreas de vida e gera os arquivos de configuração a partir de dados reais — e as perguntas vêm depois, ancoradas no que ele disse.
+Triggers: "/prumo:setup rápido", "quero começar o prumo", "começar rápido", "despeja e organiza".
+O gatekeeper do workspace (abaixo) vale igual: nada de workspace nasce silencioso. Depois do dump, completar o que faltou com as perguntas do wizard (Etapas 2+), sem repetir o que já dá pra inferir.
+
+Para determinar o modo: verificar se já existe um `Prumo/AGENT.md` na pasta workspace do usuário. Se existir, é reconfiguração. Se não, é setup — wizard ou rápido, conforme o usuário preferir (oferecer a escolha). (Workspaces legados podem ter CLAUDE.md na raiz sem `Prumo/` — nesse caso, oferecer migração.)
 
 ---
 

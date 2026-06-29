@@ -50,7 +50,7 @@ normal (ver `dispatch.md`).
 
 ## O que o `/menu` NÃO é
 
-- Não é onboarding/setup (isso é `/start` e `/prumo:setup`).
+- Não é onboarding/setup (isso é `/prumo:setup`, que cobre wizard e modo rápido).
 - Não executa comando sozinho — apresenta e, se o usuário pedir, despacha pela
   intenção.
 - Não mantém lista própria de comandos — deriva do core (fonte única).

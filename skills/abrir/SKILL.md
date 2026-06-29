@@ -65,8 +65,7 @@ referencia.
 
 ## Quando NÃO usar esta skill
 
-- Usuário disse "configurar prumo", "setup" → `prumo:setup`.
-- Usuário disse "quero começar o prumo", "/prumo:start" → `prumo:start`.
+- Usuário disse "configurar prumo", "setup", "quero começar o prumo", "começar rápido" → `prumo:setup` (que cobre wizard e modo rápido).
 - Usuário disse "briefing", "painel do dia", "o que tem pra hoje" →
   `prumo:briefing`.
 - Usuário descreveu problema longo ("tô perdido", "me ajuda a

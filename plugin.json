@@ -1,7 +1,7 @@
 {
   "name": "prumo",
   "description": "Sistema de organização de vida pessoal com IA. Transforma o Claude em interface única para capturar, processar, lembrar e cobrar — tudo em arquivos locais, sem cloud, sem lock-in.",
-  "version": "5.17.0",
+  "version": "5.18.0",
   "author": {
     "name": "Prumo Maintainers"
   },
@@ -18,7 +18,6 @@
     "./skills/faxina",
     "./skills/sanitize",
     "./skills/higiene",
-    "./skills/start",
     "./skills/fim",
     "./skills/menu"
   ]

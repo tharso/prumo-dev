@@ -9,10 +9,10 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 | Tópico                | Entradas                                                                                  |
 |-----------------------|-------------------------------------------------------------------------------------------|
 | `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first), 2026-05-04 (#77), 2026-06-21 (#97 mapas), 2026-06-25 (#114 perfil modular), 2026-06-26 (#125/#126 acervo+fim) |
-| `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo), 2026-06-26 (#125/#126 acervo+fim) |
+| `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada) |
 | `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first), 2026-05-06 (quality-gate), 2026-06-26 (#125/#126 acervo+fim) |
 | `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist), 2026-06-24 (#110 não-bundle) |
-| `dispatch-bootstrap`  | 2026-04-21 (#69 despacho), 2026-06-23 (#104 briefing rico), 2026-06-26 (#125/#126 acervo+fim) |
+| `dispatch-bootstrap`  | 2026-04-21 (#69 despacho), 2026-06-23 (#104 briefing rico), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada) |
 | `multiagent-coord`    | 2026-04-20 (#68 HANDOVER)                                                                 |
 | `documentation`       | 2026-04-14 (CLAUDE.md), 2026-06-21 (#97 mapas)                                            |
 | `integrations`        | 2026-04-14 (Google Drive snapshots)                                                       |
@@ -59,7 +59,31 @@ Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões ant
 
 ---
 
-## 2026-06-26 — Skills `acervo` (navegador do limbo) e `fim` (encerramento de sessão) (#125/#126)
+## 2026-06-28 — Onboarding consolidado e entrada do sistema; `skills/prumo` é o core, não o setup (#134/#135)
+
+**Tópicos:** skills-distribution, dispatch-bootstrap
+
+**Issues relacionadas:** #134 (consolidar onboarding — executa), #135 (`prumo` = abrir, não setup — executa), #132 (declutter do picker — origem).
+
+**Relações com decisões anteriores:**
+- **Mantém:** 2026-04-21 (#69 — despacho por intenção). "prumo" cru continua caindo no `abrir` (saudação proativa + dispatch); esta decisão só corrige a estrutura/superfície pra refletir isso e remove o alias morto `/prumo`→setup. Abertura ≠ briefing, inalterado.
+- **Estende:** a política de visibilidade do picker introduzida na #132 (5.17.0): `setup` passa a `user-invocable: false` (fora do picker, auto-disparável); front-line do picker = `briefing`/`acervo`/`fim`/`menu`.
+- **Mantém:** 2026-05-04 (#77) e 2026-04-22 (workspace-first). Nada migra; `skills/prumo/` permanece a casa canônica do core.
+
+**Contexto:** A #135 nasceu de uma premissa **errada** (do agente, ao redigir a issue): que `skills/prumo/` era "a skill de setup" e poderia ser renomeada pra `skills/setup/`. A inspeção mostrou que `skills/prumo/` é a **skill-CORE do plugin** — carrega `references/prumo-core.md` e os **15 módulos** (dispatch, briefing-procedure, inbox-processing, …), com **18+ caminhos hardcoded** (`.prumo/skills/prumo/references/...`) no core, runtime e geração do AGENT.md. O `SKILL.md` dela só tem `name: setup` por resíduo. Renomear moveria a biblioteca-core inteira e seria semanticamente errado. Verificado também: `skills/start/` (skill de onboarding) ≠ `prumo start` (comando de runtime, painel de entrada) — nomes colididos, coisas distintas.
+
+**Decisão:**
+1. **`skills/prumo/` NÃO é renomeada.** É o core; fica como está. (Registrado aqui pra o próximo agente não repetir a tentação do rename.)
+2. **Onboarding consolidado:** o modo rápido (dump-first) do antigo `start` vira um **modo** dentro da skill de setup (`skills/prumo/SKILL.md`); `skills/start/` é **removida**. Uma skill de onboarding só.
+3. **Setup sai do picker** (`user-invocable: false`): auto-dispara em workspace não-configurado ou a pedido ("configurar"/"começar"); segue acessível por `/prumo:setup`, linguagem natural e listado no `/menu`. Quem já configurou não vê o comando.
+4. **`prumo` = abrir o sistema:** removido o alias morto `/prumo`→setup da tabela de comandos do core. "prumo"/"oi prumo" (sem barra) → `abrir`. O comando de runtime `prumo start` (painel) é coisa separada e fica intocado.
+
+**Alternativas consideradas:**
+- *Renomear `skills/prumo/` → `skills/setup/`* (premissa original da #135) → **rejeitado**: `skills/prumo/` é o core; quebraria 18+ refs e é semanticamente errado.
+- *Extrair o setup pra `skills/setup/` deixando o core em `skills/prumo/`* → adiado: resolve o cheiro de nome, mas adiciona escopo/risco sem ganho pro usuário agora. Pode virar refactor futuro.
+- *Esconder o setup só "depois de configurar"* → impossível por frontmatter (visibilidade é estática). `user-invocable: false` + auto-trigger cobre o objetivo (novo usuário ainda é onboardado).
+
+**Touchpoint (prumo.me):** sem impacto de instalação/filosofia; a landing não enumera skills/comandos. Confirmar só que nada quebrou após o update.
 
 **Tópicos:** skills-distribution, governance, workspace-layout, dispatch-bootstrap
 

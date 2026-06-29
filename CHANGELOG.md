@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.18.0] - 2026-06-28
+
+### Changed
+- **Onboarding consolidado + entrada do sistema esclarecida (#134, #135)** — (1) **`start` fundido no `setup`:** o onboarding rápido (dump-first) virou um **modo** dentro da skill de setup; `skills/start/` foi removida (uma skill de onboarding só, menos manutenção duplicada). (2) **Setup fora do picker** (`user-invocable: false`): quem já configurou não vê mais o comando poluindo o dia a dia; ele **auto-dispara** em workspace não-configurado ou quando o usuário pede ("configurar", "começar"), e segue no `/menu` e em `/prumo:setup`. **Front-line do picker:** `briefing`, `acervo`, `fim`, `menu`. (3) **`prumo` = abrir o sistema:** removido o alias morto `/prumo`→setup da tabela de comandos; dizer "prumo"/"oi prumo" (sem barra) cai no `abrir` (saudação proativa), como já era a intenção das descriptions. **Importante:** `skills/prumo/` é a skill-CORE (carrega `prumo-core.md` + os 15 módulos), **não** a skill de setup — por isso NÃO foi renomeada (renomear quebraria 18+ caminhos e seria semanticamente errado). _Caveat: confirmar no picker do Cowork após o `prumo update` que o setup sumiu e que "prumo" abre._
+
 ## [5.17.0] - 2026-06-28
 
 ### Changed
