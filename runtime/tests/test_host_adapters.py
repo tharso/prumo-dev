@@ -25,7 +25,7 @@ def _setup_workspace(tmpdir: str) -> Path:
     """Cria workspace mínimo com skills em .prumo/skills/."""
     workspace = Path(tmpdir)
     skills_root = workspace / ".prumo" / "skills"
-    for name in ("briefing", "start", "doctor"):
+    for name in ("briefing", "menu", "doctor"):
         skill_dir = skills_root / name
         skill_dir.mkdir(parents=True)
         (skill_dir / "SKILL.md").write_text(f"# {name}\nSkill content.")
@@ -39,7 +39,7 @@ class CreateHostAdaptersTests(unittest.TestCase):
             result = create_host_adapters(workspace)
             claude_skills = workspace / ".claude" / "skills"
             self.assertTrue(claude_skills.exists())
-            for name in ("briefing", "start", "doctor"):
+            for name in ("briefing", "menu", "doctor"):
                 adapter = claude_skills / name
                 self.assertTrue(adapter.is_symlink())
                 self.assertTrue(adapter.resolve().is_dir())
@@ -94,7 +94,7 @@ class CreateHostAdaptersTests(unittest.TestCase):
             with patch("prumo_runtime.host_adapters.os.symlink", side_effect=OSError("no symlink")):
                 result = create_host_adapters(workspace)
             claude_skills = workspace / ".claude" / "skills"
-            for name in ("briefing", "start", "doctor"):
+            for name in ("briefing", "menu", "doctor"):
                 adapter = claude_skills / name
                 self.assertTrue(adapter.is_dir())
                 self.assertFalse(adapter.is_symlink())
@@ -177,7 +177,7 @@ class RepairHostAdaptersTests(unittest.TestCase):
             workspace = _setup_workspace(tmpdir)
             create_host_adapters(workspace)
             # Remover um adapter
-            link = workspace / ".claude" / "skills" / "start"
+            link = workspace / ".claude" / "skills" / "menu"
             link.unlink()
             result = repair_host_adapters(workspace)
             self.assertTrue(result["repaired"] > 0)

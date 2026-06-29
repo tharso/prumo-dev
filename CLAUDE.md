@@ -16,9 +16,8 @@ Sistema de organização de vida pessoal com IA. Transforma o Claude (ou qualque
 
 ```
 skills/              ← fonte canônica das skills (portáveis, qualquer agente lê)
-  prumo/             ← skill principal (setup, core, references, modules)
+  prumo/             ← skill principal (setup/onboarding, core, references, modules)
   briefing/          ← morning briefing
-  start/             ← onboarding dump-first
   doctor/            ← diagnóstico
   faxina/            ← ciclo de vida da informação
   sanitize/          ← compactação de estado
