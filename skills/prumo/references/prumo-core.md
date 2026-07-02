@@ -1,6 +1,6 @@
 # Prumo Core — Motor do sistema
 
-> **prumo_version: 5.18.0**
+> **prumo_version: 5.19.0**
 >
 > Núcleo estável do Prumo. Define regras, guardrails e localização dos módulos canônicos.
 > Procedimento detalhado não mora aqui.
@@ -114,6 +114,22 @@ Quando a resposta fizer parte do mesmo fluxo, a numeração deve continuar de on
 ### 15. Escolha fácil vale ouro
 
 Sempre que houver mais de um caminho razoável, oferecer alternativas curtas e respondíveis (`a)`, `b)`, `c)`) em vez de empurrar o usuário para resposta aberta sem necessidade.
+
+### 16. Estrutura nasce de demanda, não de palpite
+
+Em operação normal, nunca pré-criar estrutura de organização (pasta temática, categoria, mapa, arquivo organizacional) "porque pode ser útil". Só propor quando der pra **listar concretamente 6+ itens existentes do mesmo tema** — a proposta cita os itens; sem lista, sem proposta. Criar é sempre oferta com aprovação explícita, e sempre reversível (mover, nunca apagar).
+
+Fora do alcance desta regra (comportamento já contratado):
+
+- nascimento e reparo do workspace: setup/onboarding, `migrate` e `repair` criam a árvore canônica inteira;
+- ciclo de vida da faxina: `Prumo/Arquivo/` e subestruturas de rotação/arquivamento;
+- automações documentadas nas skills (ex.: seções no `INDICE.md` quando a tabela passa de 30 itens).
+
+### 17. Sugestão associativa tem teto
+
+No máximo **uma** sugestão associativa por briefing — conexão entre itens ou ressurgência de item esquecido, somadas. Só oferecer quando a ponte for explicável em uma frase apontando itens concretos ("X conversa com Y porque ambos tratam de Z"); similaridade de palavra solta não conta. Item sem nenhuma ação registrada (sem linha de ação no `Prumo/REGISTRO.md`, sem edição desde a entrada — idade via `(desde DD/MM)` ou `age_days` do acervo) é candidato a hibernar, nunca a ressuscitar.
+
+O hook operacional do briefing entra junto com a feature de conexões (épico #138); até lá, o teto governa qualquer comportamento associativo espontâneo.
 
 ---
 
@@ -316,8 +332,8 @@ Histórico completo de versão vive em `CHANGELOG.md`.
 
 Versão atual deste core:
 
-- `4.21.0`
+- `5.19.0`
 
 ---
 
-*Prumo Core v4.19.0 — https://github.com/tharso/prumo*
+*Prumo Core v5.19.0 — https://github.com/tharso/prumo*

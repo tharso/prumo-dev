@@ -1,6 +1,6 @@
 # Load Policy
 
-> **module_version: 5.18.0**
+> **module_version: 5.19.0**
 >
 > Política canônica de leitura incremental do Prumo.
 
@@ -38,3 +38,7 @@ Abrir bruto imediatamente se qualquer condição for verdadeira:
 2. vencimento em até 72h;
 3. item `P1`;
 4. ambiguidade que impeça ação segura.
+
+## Teto associativo
+
+Sugestão associativa (conexão entre itens, ressurgência de esquecido) custa leitura além do mínimo. Vale o teto da regra 17 do core: no máximo **uma** por briefing, e nenhuma varredura pesada fora de ritual que a contrate explicitamente. Detalhe da regra em `prumo-core.md`.

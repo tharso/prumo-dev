@@ -6,6 +6,14 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.19.0] - 2026-07-02
+
+### Added
+- **Guarda-corpos do segundo cérebro (#139, épico #138)** — duas regras transversais novas no `prumo-core.md`: **(16) Estrutura nasce de demanda, não de palpite** — em operação normal o agente nunca pré-cria estrutura de organização; propor exige **listar concretamente 6+ itens do mesmo tema**; criar é sempre oferta com aprovação, sempre reversível; exceções nomeadas pro comportamento já contratado (setup/`migrate`/`repair`, ciclo de vida da faxina em `Prumo/Arquivo/`, automações documentadas como as seções do INDICE >30 itens); **(17) Sugestão associativa tem teto** — máx. **1 por briefing** (conexão ou ressurgência, somadas), ponte explicável em uma frase apontando itens concretos, item sem ação registrada hiberna em vez de ressuscitar; o hook operacional do briefing entra com a feature de conexões (épico #138). Eco do teto na `load-policy.md` (varredura pesada só em ritual que a contrate). Etapa 0 do épico "segundo cérebro" — plano aprovado pelo Tharso em 2026-07-02, design revisado pelo Codex em 3 rodadas ("DESIGN APROVADO"). Puramente normativo: nenhum comportamento novo de escrita.
+
+### Fixed
+- **Rodapé do `prumo-core.md` dessincronizado** — o fim do arquivo exibia `4.21.0` ("Versão atual deste core") e `v4.19.0` (assinatura) com o header já em 5.x — drift herdado de antes da unificação de versão (#83). Alinhado ao bump.
+
 ## [5.18.0] - 2026-06-28
 
 ### Changed
