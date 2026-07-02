@@ -34,8 +34,9 @@
 │   ├── Referencias/
 │   │   ├── INDICE.md
 │   │   └── EMAIL-CURADORIA.md  ← regras aprendidas de curadoria de email
-│   └── Inbox4Mobile/
-│       └── _processed.json
+│   ├── Inbox4Mobile/
+│   │   └── _processed.json
+│   └── Diario/                ← diários do /fim (nasce no primeiro uso; o setup não pré-cria)
 └── .prumo/
     ├── skills/            ← cópia das skills do repo (portáveis, fallback)
     ├── state/

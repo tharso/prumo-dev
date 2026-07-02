@@ -8,9 +8,9 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 
 | Tópico                | Entradas                                                                                  |
 |-----------------------|-------------------------------------------------------------------------------------------|
-| `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first), 2026-05-04 (#77), 2026-06-21 (#97 mapas), 2026-06-25 (#114 perfil modular), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#139 guarda-corpos), 2026-07-02 (#140 fichário) |
+| `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first), 2026-05-04 (#77), 2026-06-21 (#97 mapas), 2026-06-25 (#114 perfil modular), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#139 guarda-corpos), 2026-07-02 (#140 fichário), 2026-07-02 (#141 diário) |
 | `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada) |
-| `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first), 2026-05-06 (quality-gate), 2026-06-26 (#125/#126 acervo+fim) |
+| `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first), 2026-05-06 (quality-gate), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#141 diário — emenda à #68) |
 | `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist), 2026-06-24 (#110 não-bundle) |
 | `dispatch-bootstrap`  | 2026-04-21 (#69 despacho), 2026-06-23 (#104 briefing rico), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada) |
 | `multiagent-coord`    | 2026-04-20 (#68 HANDOVER)                                                                 |
@@ -56,6 +56,29 @@ A partir de 2026-05-04 (#78), toda entrada nova segue o formato:
 Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões anteriores" (introduzido na #78). Quando um conflito retrospectivo for descoberto, anotar a relação na entrada nova que o resolve — não reescrever entradas antigas.
 
 - `code-quality` — métricas de qualidade do codebase, quality gate, baseline.
+
+---
+
+## 2026-07-02 — Diário do dia no `/fim`: relato derivado do extrato; emenda à proibição de artefato narrativo (#141)
+
+**Tópicos:** workspace-layout, governance
+
+**Issues relacionadas:** #141 (executa), #138 (épico), #68 (emenda parcialmente), #125/#126 (emenda parcialmente a cláusula do /fim), #139/#140 (predecessoras na largada).
+
+**Relações com decisões anteriores:**
+- **Revoga parcialmente / estende:** 2026-04-20 (#68 — HANDOVER fora do produto) e 2026-06-26 (#125/#126, cláusula "Zero artefato narrativo... sem resumo de sessão" do `/fim`). **O que muda:** o `/fim` passa a gerar UM artefato narrativo contratado — o **diário do dia** (`Prumo/Diario/AAAA-MM-DD.md`), projeção **confirmada** de fatos **gravados**, pedido pelo dono como recurso do produto (2026-07-02). **O que não muda:** narrativa reconstruída **de memória** continua proibida; artefatos de coordenação entre agentes (`HANDOVER`/`PENDING_VALIDATION`) continuam vedados em qualquer lugar; nada narrativo em `skills/`, `runtime/`, `.prumo/state/`. O que a #68 protegia (anti-alucinação; anti-peso-morto de coordenação no briefing) fica intacto — o alvo dela nunca foi um diário derivado do extrato com confirmação integral. Conflito declarado desde o design (nunca revogação silenciosa).
+- **Mantém:** o contrato conservador do `/fim` (origem visível, confirmação, lacuna declarada sob compactação) — o diário o **herda** e acrescenta a confirmação do texto completo.
+- **Mantém:** 2026-07-02 (#139 — regra 16): `Prumo/Diario/` nasce no primeiro uso; o setup não pré-cria (travado por teste).
+- **Estende:** o contrato da faxina — novo item de rotação por data (>90 dias → `Prumo/Arquivo/Diario/`), idade pelo **nome** do arquivo, sem ler conteúdo (consistente com "faxina nunca decide o que é importante").
+
+**Contexto:** Etapa 2 do épico #138 (segundo cérebro). Pedido direto do dono: "quero que o Prumo gere um diário com a documentação do que rolou no dia". Inversão do daily note do LYT/Ideaverse: lá o humano escreve freewriting; aqui o agente **projeta fatos**. O conflito com a letra do `fim/SKILL.md` e da #125/#126 foi identificado na exploração, declarado na issue desde o design e revisado pelo Codex (3 rodadas, "DESIGN APROVADO"; a rodada 2 acrescentou o contrato de múltiplos `/fim` no mesmo dia).
+
+**Decisão:** Contrato do diário no `fim/SKILL.md` (passo 2 do fluxo): fonte exclusiva = fatos gravados/confirmados, cada linha rastreável; conteúdo enxuto (sem agenda/emails — decisão do dono, reavaliar com uso); **confirmação do texto completo** antes de gravar; lacuna de compactação declarada no próprio diário; **sem retro-geração**; segundo `/fim` do dia **anexa** seção (`## Sessão HH:MM`), nunca sobrescreve nem duplica; pasta nasce no primeiro uso. Faxina rotaciona por data no nome (>90d, mover nunca apagar). Layout documentado em `file-templates.md` (anotação "o setup não pré-cria") e no mapa do `agent-md-template.md`. Trava anti-drift: `runtime/tests/test_diario.py` (contrato novo existe E proibições antigas não afrouxaram E setup não pré-cria).
+
+**Alternativas consideradas:**
+- *Regenerar o dia inteiro a cada `/fim`* → rejeitado: sobrescreveria texto já confirmado (achado do Codex, rodada 2); anexar seção preserva o confirmado.
+- *Diário automático sem confirmação* → rejeitado: quebraria o contrato conservador que a #68 protege.
+- *Guardar o relato dentro do `REGISTRO.md`* → rejeitado: o REGISTRO é tabela-extrato com rotação própria; o diário é leitura humana por dia, endereçável por data (e ganha visão de calendário no Obsidian como bônus — sem dependência).
 
 ---
 

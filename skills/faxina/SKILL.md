@@ -102,6 +102,26 @@ de 14 dias são lixo residual.
 
 **Reportar:** "Limpei X entrada(s) antiga(s) do inbox processado."
 
+### 5. Diario/ — rotação por data
+
+O diário (gerado pelo `/fim`) é fechado por data: cada arquivo é a
+fotografia de um dia. Fotografia não apodrece, mas pilha de fotografia
+vira entulho na mesa.
+
+**Verificar:**
+- Listar `Prumo/Diario/*.md` cuja data no **nome** do arquivo (AAAA-MM-DD)
+  seja de mais de 90 dias atrás
+
+**Executar:**
+- Mover pra `Prumo/Arquivo/Diario/` (mover, nunca apagar)
+
+**Não fazer:**
+- Não ler o conteúdo dos diários — a idade vem do nome do arquivo
+  (faxina nunca decide o que é importante)
+- Não tocar no diário de hoje
+
+**Reportar:** "Arquivei X diário(s) com mais de 90 dias."
+
 ## Relatório da faxina
 
 Depois de rodar tudo, montar um resumo curto. Exemplo:
