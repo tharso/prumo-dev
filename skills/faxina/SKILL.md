@@ -72,11 +72,12 @@ A biblioteca de referências precisa de índice. Sem índice, o usuário
 pergunta "onde guardei aquele artigo?" e Prumo não sabe.
 
 **Verificar:**
-- Listar arquivos em `Referencias/` (ignorar INDICE.md e WORKFLOWS.md)
+- Listar arquivos em `Referencias/` (ignorar os operacionais: INDICE.md, WORKFLOWS.md, EMAIL-CURADORIA.md — mesma lista de exclusão do acervo)
 - Comparar com a tabela em INDICE.md
 
 **Executar se houver diferença:**
 - Adicionar arquivos novos à tabela com: #, título (do cabeçalho), arquivo, data, descrição, keywords
+- Ficha de fonte (ver `ficha-de-fonte.md` nas references do core): título = cabeçalho da ficha; data = campo Entrada; descrição = "Por que guardei" resumido; keywords = campo Keywords
 - Se > 30 itens na tabela: agrupar por tema e criar seções
 
 **Não fazer:**

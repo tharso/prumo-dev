@@ -1,6 +1,6 @@
 # Inbox Processing
 
-> **module_version: 4.17.0**
+> **module_version: 4.18.0**
 >
 > Fonte canônica da triagem e do commit de inbox do Prumo.
 
@@ -100,12 +100,23 @@ Regras:
 
 ## Material de referência
 
-Quando o item for referência:
+Quando o item for referência, **oferecer** a catalogação (nunca criar no escuro)
+seguindo o template de `../ficha-de-fonte.md`:
 
-1. mover para `Referencias/`;
-2. renomear com padrão descritivo;
-3. registrar no `Referencias/INDICE.md`;
-4. remover o original do inbox.
+1. **Motivo obrigatório** (`keep_with_reason`): se o porquê não for inferível do
+   contexto, perguntar — uma pergunta curta. Sem motivo, não vira referência.
+2. **Dois caminhos, conforme onde o conteúdo mora:**
+   - conteúdo que o usuário quer **dentro** do workspace (arquivo trazido no
+     inbox): mover para `Referencias/` e renomear com padrão descritivo, como
+     sempre;
+   - conteúdo que **mora fora** (URL, vault do usuário, drive): criar
+     **ficha-ponteiro** em `Referencias/` apontando pra onde mora — catalogar,
+     não armazenar; nunca copiar conteúdo externo sem pedido explícito.
+   - texto do próprio usuário: mesma ficha, `Tipo: texto próprio`, apontando
+     pra onde o texto vive.
+3. registrar no `Referencias/INDICE.md` (mapeamento definido na
+   `ficha-de-fonte.md`);
+4. remover o original do inbox (fluxo normal de commit, com `REGISTRO.md`).
 
 ## Regras de apresentação
 

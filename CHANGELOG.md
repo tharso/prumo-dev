@@ -6,6 +6,16 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.20.0] - 2026-07-02
+
+### Added
+- **Fichário de fontes (#140, épico #138)** — catalogação de conteúdo próprio e de terceiros com a **ficha de fonte** (`skills/prumo/references/ficha-de-fonte.md`): tipo, autor, **onde mora**, **por que guardei** (obrigatório — `keep_with_reason`), 3-5 pontos-chave, keywords e conexões em `[[wikilink]]` (decisão do dono; nenhum fluxo depende dos links — degradam como texto). Modelo **"catalogar, não armazenar"**: a ficha aponta pra onde o conteúdo mora (vault do usuário, drive, URL); o Prumo é o fichário, não o depósito. Fluxo no inbox (`inbox-processing.md` 4.18.0): oferta → motivo obrigatório → **dois caminhos** (mover pra dentro vs. ficha-ponteiro). Teste anti-drift novo (`test_ficha_de_fonte.py`) trava o contrato entre ficha, inbox, faxina, acervo e runtime.
+
+### Changed
+- **Contrato de `Referencias/` estendido** (`runtime-file-governance.md` 4.20.0) — passa a admitir ficha-ponteiro além de material salvo; arquivos operacionais (`INDICE.md`, `WORKFLOWS.md`, `EMAIL-CURADORIA.md`) declarados infraestrutura (nunca viram ficha nem entram no índice). Ver DECISIONS.md 2026-07-02 (#140).
+- **Faxina alinhada ao acervo** — a lista de exclusão da indexação de `Referencias/` agora inclui `EMAIL-CURADORIA.md` (antes só INDICE/WORKFLOWS; o runtime do acervo já excluía os três); documentado o mapeamento ficha→INDICE (descrição = motivo; keywords = keywords).
+- **Acervo** — semântica explícita da ficha-ponteiro: "excluir" arquiva a ficha (quarentena), nunca toca o conteúdo externo apontado.
+
 ## [5.19.0] - 2026-07-02
 
 ### Added
