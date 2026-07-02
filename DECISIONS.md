@@ -8,7 +8,7 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 
 | Tópico                | Entradas                                                                                  |
 |-----------------------|-------------------------------------------------------------------------------------------|
-| `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first), 2026-05-04 (#77), 2026-06-21 (#97 mapas), 2026-06-25 (#114 perfil modular), 2026-06-26 (#125/#126 acervo+fim) |
+| `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first), 2026-05-04 (#77), 2026-06-21 (#97 mapas), 2026-06-25 (#114 perfil modular), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#139 guarda-corpos) |
 | `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada) |
 | `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first), 2026-05-06 (quality-gate), 2026-06-26 (#125/#126 acervo+fim) |
 | `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist), 2026-06-24 (#110 não-bundle) |
@@ -16,7 +16,7 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 | `multiagent-coord`    | 2026-04-20 (#68 HANDOVER)                                                                 |
 | `documentation`       | 2026-04-14 (CLAUDE.md), 2026-06-21 (#97 mapas)                                            |
 | `integrations`        | 2026-04-14 (Google Drive snapshots)                                                       |
-| `briefing`            | 2026-04-14 (Google Drive snapshots), 2026-04-21 (#69 despacho), 2026-06-23 (#102 decidir), 2026-06-23 (#104 briefing rico), 2026-06-25 (#114 perfil modular) |
+| `briefing`            | 2026-04-14 (Google Drive snapshots), 2026-04-21 (#69 despacho), 2026-06-23 (#102 decidir), 2026-06-23 (#104 briefing rico), 2026-06-25 (#114 perfil modular), 2026-07-02 (#139 guarda-corpos) |
 | `personalization`     | 2026-04-21 (tharso-voice)                                                                 |
 | `code-quality`        | 2026-05-06 (quality-gate), 2026-06-25 (#122 baseline 1061→930)                             |
 | `touchpoint`          | 2026-05-18 (landing page sync)                                                            |
@@ -56,6 +56,32 @@ A partir de 2026-05-04 (#78), toda entrada nova segue o formato:
 Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões anteriores" (introduzido na #78). Quando um conflito retrospectivo for descoberto, anotar a relação na entrada nova que o resolve — não reescrever entradas antigas.
 
 - `code-quality` — métricas de qualidade do codebase, quality gate, baseline.
+
+---
+
+## 2026-07-02 — Guarda-corpos do segundo cérebro: estrutura sob demanda e teto associativo (#139)
+
+**Tópicos:** workspace-layout, briefing
+
+**Issues relacionadas:** #139 (executa), #138 (épico — contexto e plano aprovado), #140/#141 (desbloqueia — próximas etapas da largada, em série).
+
+**Relações com decisões anteriores:**
+- **Mantém:** 2026-04-21 (#69 — despacho por intenção). Zero adivinhação continua; a regra 16 estende o mesmo espírito para a criação de estrutura no workspace.
+- **Mantém e institucionaliza:** 2026-06-21 (#97 — mapas consolidados, `Agente/INDEX.md` aposentado). A lição da #97 (artefato sem consumo comprovado é manutenção morta) vira norma geral do agente em operação: estrutura só nasce com demanda listável.
+- **Mantém:** 2026-06-26 (#125/#126 — acervo+fim). Faxina, acervo e fim inalterados; as exceções da regra 16 apenas **reconhecem** comportamento já contratado dessas skills (rotação em `Prumo/Arquivo/`, seções do INDICE >30 itens).
+
+**Contexto:** Épico #138 ("segundo cérebro" — incorporar organização de conhecimento ao Prumo roubando conceitos do LYT/Ideaverse sem os mecanismos do Obsidian; plano aprovado pelo Tharso em 2026-07-02, design das issues revisado pelo Codex em 3 rodadas até "DESIGN APROVADO"). Antes das features associativas (fichário #140, diário #141, conexões/mapas em etapas futuras), o core precisa de travas que impeçam o agente de virar "bibliotecário compulsivo": criar estrutura especulativa e inundar o briefing de sugestões. Os princípios ("structure must be earned", anti-Collector's-Fallacy) já existiam implicitamente no repo dev (CLAUDE.md "não construir para cenário imaginário"; `referencias_subcategorize_at`; `keep_with_reason`), mas nada governava o agente **no workspace do usuário**.
+
+**Decisão:** Duas regras transversais novas no `prumo-core.md` (numeração contínua: 16 e 17) + eco na `load-policy.md`:
+1. **Regra 16 — estrutura nasce de demanda:** em operação normal, o agente nunca pré-cria estrutura de organização; propor exige listar concretamente 6+ itens existentes do mesmo tema; criar é sempre oferta aprovada e reversível. Exceções nomeadas no texto da regra: setup/`migrate`/`repair` (nascimento/reparo do workspace), ciclo de vida da faxina (`Prumo/Arquivo/`), automações documentadas nas skills.
+2. **Regra 17 — teto associativo:** máx. 1 sugestão associativa por briefing (conexão ou ressurgência, somadas); ponte explicável em uma frase apontando itens concretos; item sem ação registrada (evidências: `REGISTRO.md`, edição, idade via `(desde DD/MM)`/`age_days`) hiberna, não ressuscita. O hook operacional do briefing entra com a feature de conexões (etapa futura do épico); até lá o teto governa comportamento associativo espontâneo.
+
+Etapa puramente normativa — nenhum comportamento novo de escrita. Aproveitado o bump (5.18.0→5.19.0) para corrigir o rodapé dessincronizado do core (`4.21.0`/`v4.19.0` → alinhados), drift herdado de antes da unificação da #83.
+
+**Alternativas consideradas:**
+- *Regras direto no `briefing-procedure.md`* → rejeitado: o teto vale para comportamento espontâneo em qualquer fluxo, não só briefing; a casa é o core (transversal).
+- *Esperar as features e regular depois* → rejeitado: guarda-corpo entra antes do tráfego; é o que torna as etapas seguintes seguras.
+- *Threshold configurável pelo usuário para o teto* → adiado: começa fixo (1/briefing); configurabilidade só se o uso real pedir (a própria regra 16 em ação).
 
 ---
 
