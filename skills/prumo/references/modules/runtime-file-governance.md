@@ -1,6 +1,6 @@
 # Runtime File Governance
 
-> **module_version: 4.19.0**
+> **module_version: 4.20.0**
 >
 > Política canônica de ciclo de vida dos arquivos vivos do Prumo.
 
@@ -103,9 +103,10 @@ Contexto pessoal que muda comportamento. Rituais **com** hora marcada não moram
 Mora aqui:
 
 1. material de referência salvo (artigos, PDFs, links, relatórios);
-2. `INDICE.md`: catálogo do que foi salvo, com keywords.
+2. **fichas de fonte** — catalogação de conteúdo que mora fora do workspace (URL, vault do usuário, drive): a ficha aponta, não copia (template em `../ficha-de-fonte.md`);
+3. `INDICE.md`: catálogo do que foi salvo ou catalogado, com keywords.
 
-Conteúdo para consultar depois, não para agir agora. Item acionável não é referência — vira pendência.
+Conteúdo para consultar depois, não para agir agora. Item acionável não é referência — vira pendência. Os arquivos operacionais (`INDICE.md`, `WORKFLOWS.md`, `EMAIL-CURADORIA.md`) são infraestrutura de `Referencias/`, não referência catalogável — nunca viram ficha nem entram no índice.
 
 ### `Inbox4Mobile/`
 

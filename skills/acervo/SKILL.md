@@ -139,6 +139,9 @@ Quando o usuário colar o relatório:
      4. **Mover** o fragmento/arquivo para `Prumo/Arquivo/Acervo/` (quarentena).
         Deleção **permanente** só se o usuário escrever explicitamente "apagar
         permanentemente".
+     5. **Ficha de fonte (ponteiro):** arquivar a ficha remove só o catálogo —
+        o **conteúdo externo** apontado (URL, vault do usuário, drive) nunca é
+        tocado. O Prumo cataloga; não é dono das estantes.
    - O runtime expõe isso testado: `prumo acervo --workspace <ws> apply
      --report <arquivo.json>` (e `--permanent` só sob pedido explícito).
 

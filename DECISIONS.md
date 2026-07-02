@@ -8,7 +8,7 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 
 | Tópico                | Entradas                                                                                  |
 |-----------------------|-------------------------------------------------------------------------------------------|
-| `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first), 2026-05-04 (#77), 2026-06-21 (#97 mapas), 2026-06-25 (#114 perfil modular), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#139 guarda-corpos) |
+| `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first), 2026-05-04 (#77), 2026-06-21 (#97 mapas), 2026-06-25 (#114 perfil modular), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#139 guarda-corpos), 2026-07-02 (#140 fichário) |
 | `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada) |
 | `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first), 2026-05-06 (quality-gate), 2026-06-26 (#125/#126 acervo+fim) |
 | `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist), 2026-06-24 (#110 não-bundle) |
@@ -56,6 +56,35 @@ A partir de 2026-05-04 (#78), toda entrada nova segue o formato:
 Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões anteriores" (introduzido na #78). Quando um conflito retrospectivo for descoberto, anotar a relação na entrada nova que o resolve — não reescrever entradas antigas.
 
 - `code-quality` — métricas de qualidade do codebase, quality gate, baseline.
+
+---
+
+## 2026-07-02 — Fichário de fontes: `Referencias/` admite ficha-ponteiro; catalogar, não armazenar (#140)
+
+**Tópicos:** workspace-layout
+
+**Issues relacionadas:** #140 (executa), #138 (épico — plano aprovado), #139 (predecessora na largada — guarda-corpos), #141 (sucessora — diário).
+
+**Relações com decisões anteriores:**
+- **Estende:** o contrato de `Referencias/` em `runtime-file-governance.md` (até aqui: "material de referência **salvo**") e o fluxo de `inbox-processing.md` (até aqui: "**mover** para `Referencias/`"). Passam a admitir a **ficha-ponteiro** — arquivo em `Referencias/` que cataloga conteúdo morando **fora** do workspace (URL, vault do usuário, drive). O caminho antigo (mover pra dentro) continua válido; a ficha é o segundo caminho, para o que mora fora.
+- **Estende:** 2026-06-24 (#109/#110 — "guardar é committal"). O `keep_with_reason` vira campo obrigatório da ficha ("Por que guardei"). Sem motivo, não cataloga.
+- **Mantém:** 2026-06-26 (#125/#126 — acervo). O acervo já enumerava `Referencias/` com a lista de exclusão operacional (`INDICE.md`, `EMAIL-CURADORIA.md`, `WORKFLOWS.md`); esta decisão **alinha a faxina** à mesma lista (ela ignorava só INDICE/WORKFLOWS — divergência latente) e explicita que "excluir" numa ficha arquiva a ficha, nunca o conteúdo externo.
+- **Mantém:** 2026-07-02 (#139 — guarda-corpos). A ficha é sempre **oferta** (regra 16: estrutura nasce de demanda); nunca criada no escuro.
+- **Mantém:** workspace-first (2026-04-22, #65/#77). A ficha aponta pra fora, mas todo estado do Prumo continua no workspace.
+
+**Contexto:** Etapa 1 do épico #138 (segundo cérebro). Pedido do dono: facilitar captura/catalogação de conteúdos (dele e de terceiros). Decisão do dono (2026-07-02): **"catalogar, não armazenar"** — os arquivos continuam morando onde estão; o Prumo cataloga com fichas que apontam. Conexões em `[[wikilink]]` por decisão do dono (Obsidian como plus) com garantia de não-dependência: nenhum fluxo lê os links; a busca do agente é por significado; prosa é fallback válido. Design revisado pelo Codex (3 rodadas, "DESIGN APROVADO"): a rodada 1 flagrou que a issue original alegava "não emenda decisão ativa" — **alegação errada**; esta entrada é a emenda declarada que faltava.
+
+**Decisão:**
+1. **Template canônico** em `skills/prumo/references/ficha-de-fonte.md`: tipo, autor, onde mora, por que guardei (obrigatório), entrada, keywords, 3-5 pontos-chave, conexões em wikilink; exemplo preenchido; regras (oferta, indexação, exclusões, semântica no acervo).
+2. **`runtime-file-governance.md` (4.20.0):** `Referencias/` admite ficha-ponteiro; operacionais declarados infraestrutura não-catalogável.
+3. **`inbox-processing.md` (4.18.0):** material de referência ganha os dois caminhos (mover pra dentro vs. ficha-ponteiro) + motivo obrigatório + oferta.
+4. **Faxina:** lista de exclusão alinhada ao acervo/runtime (`OPERATIONAL_REFERENCIAS`); mapeamento ficha→INDICE documentado (título=cabeçalho, data=Entrada, descrição=motivo resumido, keywords=Keywords). Colunas do INDICE **inalteradas**.
+5. **Trava anti-drift:** `runtime/tests/test_ficha_de_fonte.py` — falha se qualquer ponta do contrato (ficha, inbox, governance, faxina, acervo, runtime) desalinhar.
+
+**Alternativas consideradas:**
+- *Ficha como seção do `file-templates.md`* → rejeitado: file-templates é o que o setup gera; a ficha nasce em operação, por item. Reference própria.
+- *Mudar colunas do INDICE pra campos ricos (tipo/autor)* → rejeitado por ora: a ficha carrega os campos ricos; o índice segue enxuto (estrutura earned — muda só se o uso pedir).
+- *Ingestão automática (fetch de URL, OCR)* → fora de escopo, decisão futura.
 
 ---
 
