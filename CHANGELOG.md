@@ -6,6 +6,15 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.21.0] - 2026-07-02
+
+### Added
+- **Diário do dia no `/fim` (#141, épico #138)** — ao fechar o dia, o `/fim` gera `Prumo/Diario/AAAA-MM-DD.md`: relato curto e legível derivado **exclusivamente dos fatos gravados** (REGISTRO do dia, concluídos da PAUTA, deltas confirmados) — nunca reconstrução de memória. Contrato: **confirmação do texto completo** antes de gravar; cada linha rastreável a um fato; conteúdo enxuto (sem agenda/emails por ora — decisão do dono); lacuna de compactação declarada no próprio diário; **sem retro-geração**; segundo `/fim` do dia **anexa** seção (`## Sessão HH:MM`), nunca sobrescreve. A pasta nasce no primeiro uso — o setup não pré-cria (regra 16). Faxina ganha rotação por data no nome (>90 dias → `Prumo/Arquivo/Diario/`, sem ler conteúdo). Inversão do daily note do LYT: lá o humano escreve; aqui o agente projeta fatos. Bônus sem dependência: no Obsidian, os arquivos datados viram calendário navegável (extensão gratuita).
+
+### Changed
+- **Emenda declarada à #68/#125-126 (DECISIONS.md 2026-07-02/#141):** o `/fim` deixa de proibir *todo* artefato narrativo e passa a distinguir — narrativa reconstruída **de memória** continua proibida; **relato derivado do extrato com confirmação integral** (o diário) é a exceção contratada. `HANDOVER`/`PENDING_VALIDATION` seguem vedados. Trava anti-drift nova (`test_diario.py`) garante que o contrato existe E que as proibições antigas não afrouxaram E que o setup não pré-cria `Diario/`.
+
+
 ## [5.20.0] - 2026-07-02
 
 ### Added

@@ -70,6 +70,7 @@ Fora disso, abertura não abre mais nada. A saudação vem proativa, com 2-4 op�
 - `Prumo/IDEIAS.md`: ideias sem ação imediata
 - `Prumo/Referencias/`: material de referência
 - `Prumo/Inbox4Mobile/`: captura mobile
+- `Prumo/Diario/`: diários do dia gerados pelo `/fim` (a pasta nasce no primeiro uso)
 - `.prumo/skills/`: skills do Prumo (portáveis, lidas diretamente quando CLI não estiver disponível)
 - `.prumo/system/PRUMO-CORE.md`: regras do motor e guardrails do sistema
 - `.prumo/state/`: estado técnico e metadados do runtime

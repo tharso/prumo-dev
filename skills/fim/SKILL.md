@@ -4,11 +4,12 @@ description: >
   Encerramento formal de sessão do Prumo. Quando o usuário diz "/fim", "terminar
   por hoje", "encerrar a sessão", "fechar o dia", "acabei", a skill documenta os
   deltas duráveis da sessão nos canais existentes (sem perder ideia ou status
-  entre sessões), roda a faxina automática, mostra um resumo, e — se detectar
-  acúmulo — PROPÕE (não executa) `/higiene` ou `/sanitize`. É o bookend
-  simétrico do briefing: o briefing abre, o fim fecha. NÃO é briefing (não lê
-  email/calendário, não monta a pauta do dia) e NÃO cria artefato narrativo de
-  sessão.
+  entre sessões), gera o diário do dia em Prumo/Diario/ (projeção confirmada
+  dos fatos gravados — nunca reconstrução de memória), roda a faxina
+  automática, mostra um resumo, e — se detectar acúmulo — PROPÕE (não executa)
+  `/higiene` ou `/sanitize`. É o bookend simétrico do briefing: o briefing
+  abre, o fim fecha. NÃO é briefing (não lê email/calendário, não monta a
+  pauta do dia).
 ---
 
 # Fim
@@ -36,27 +37,63 @@ segue um procedimento **verificável**, não fé na própria honestidade:
    consigo garantir o começo da sessão"). A ressalva é cinto de segurança, não
    licença pra dirigir no escuro.
 
-**Proibido (mantém a #68):** reconstruir sessão no escuro; criar "resumo
-narrativo de sessão"; gerar qualquer artefato narrativo (`HANDOVER`,
-`PENDING_VALIDATION`, doc de sessão) em `skills/`, `runtime/` ou
-`.prumo/state/`. O `/fim` grava **fatos em canais existentes**, nada de narrativa.
+**Proibido (mantém a #68, emendada pela decisão 2026-07-02/#141):** reconstruir
+sessão no escuro; redigir narrativa **de memória** (sem fato gravado que a
+sustente); gerar artefato de coordenação entre agentes (`HANDOVER`,
+`PENDING_VALIDATION`, doc de validação) em qualquer lugar — e qualquer artefato
+narrativo em `skills/`, `runtime/` ou `.prumo/state/`. O `/fim` grava **fatos em
+canais existentes** e uma única exceção contratada: o **diário do dia** (passo
+2) — projeção confirmada dos fatos gravados, em `Prumo/Diario/`, nunca
+reconstrução.
 
 ## O fluxo
 
 ```
 1. DOCUMENTAR → deltas visíveis e confirmados → IDEIAS / PAUTA / REGISTRO
-2. FAXINA     → roda a rotina automática (já é no-confirm)
-3. RESUMO     → o que registrou + o que a faxina arrumou
-4. DETECTAR   → `prumo fim --workspace <ws> --format json` aponta acúmulo; PROPOR higiene/sanitize
+2. DIÁRIO     → projeção dos fatos do dia → confirmação do texto completo → Prumo/Diario/AAAA-MM-DD.md
+3. FAXINA     → roda a rotina automática (já é no-confirm)
+4. RESUMO     → o que registrou + o diário + o que a faxina arrumou
+5. DETECTAR   → `prumo fim --workspace <ws> --format json` aponta acúmulo; PROPOR higiene/sanitize
 ```
 
-### Passo 2 — Faxina (automático)
+### Passo 2 — Diário do dia
+
+Depois de gravar os deltas, gerar o relato do dia em `Prumo/Diario/AAAA-MM-DD.md`
+(data local do usuário). O diário é **projeção dos fatos confirmados — não
+redação livre**:
+
+1. **Fonte exclusiva:** fatos gravados/confirmados — `REGISTRO.md` do dia,
+   movimentos da `PAUTA.md` (concluídos), deltas que o passo 1 acabou de
+   confirmar. Cada linha rastreável a um fato gravado. Prosa conectiva mínima;
+   **inferência nova, não** (nada de "parece que o dia foi produtivo").
+2. **Conteúdo enxuto:** o que foi concluído, o que foi decidido, o que entrou
+   de novo, o que travou, o que ficou pra amanhã. Sem agenda/emails (decisão
+   do dono, 2026-07-02 — reavaliar com o uso).
+3. **Confirmação do texto completo:** exibir o diário inteiro e só gravar após
+   OK do usuário. Confirmar bullets e gerar prosa nova por fora é reconstrução
+   disfarçada — vedado.
+4. **Sob compactação:** herda o contrato conservador do passo 1 — só o
+   visível/confirmado; declarar a lacuna **no próprio diário** ("sessão
+   compactada; começo do dia não coberto").
+5. **Sem retro-geração:** se o `/fim` não rodou num dia, não há diário daquele
+   dia. Nunca inventar dias passados.
+6. **Segundo `/fim` no mesmo dia:** se o arquivo já existe, **anexar** uma
+   seção nova (`## Sessão HH:MM`) só com os fatos novos, com a mesma
+   confirmação do texto completo do trecho anexado. Nunca sobrescrever nem
+   regenerar texto já confirmado; fato já registrado no diário do dia não se
+   repete.
+7. **A pasta nasce aqui:** `Prumo/Diario/` é criada pelo primeiro `/fim` que
+   gerar diário — o setup não a pré-cria (regra 16 do core). Se o usuário
+   recusar o diário da vez, tudo bem: os fatos continuam nos canais do passo
+   1; o diário é conveniência de leitura, não requisito.
+
+### Passo 3 — Faxina (automático)
 
 Rodar a `faxina` (rotaciona REGISTRO, migra pauta concluída, atualiza índices,
 limpa processados antigos). É a limpeza que **não exige julgamento** — corre
 sozinha, como já corre no início do briefing.
 
-### Passo 4 — Detecção de acúmulo (propõe, não executa)
+### Passo 5 — Detecção de acúmulo (propõe, não executa)
 
 Rodar `prumo fim --workspace <ws> --format json` (read-only). Ele computa sinais
 determinísticos reusando os thresholds da faxina/sanitize:
@@ -84,11 +121,12 @@ O `/fim` é encerramento, não mini-briefing. Ele **NÃO**:
 
 ## Como apresentar
 
-Encerrar com: o que foi **registrado** (e onde), o que a **faxina** arrumou, e —
-se houver acúmulo — a **sugestão** de higiene/sanitize como escolha curta. Se a
-sessão foi compactada, dizer o que **não** dá pra garantir. Fechar deixando a
-próxima sessão limpa: o `/briefing` seguinte já lê `IDEIAS`/`PAUTA`/`REGISTRO`,
-então o agente começa up-to-date naturalmente — sem artefato extra.
+Encerrar com: o que foi **registrado** (e onde), o **diário** do dia (link
+clicável), o que a **faxina** arrumou, e — se houver acúmulo — a **sugestão**
+de higiene/sanitize como escolha curta. Se a sessão foi compactada, dizer o que
+**não** dá pra garantir. Fechar deixando a próxima sessão limpa: o `/briefing`
+seguinte já lê `IDEIAS`/`PAUTA`/`REGISTRO`, então o agente começa up-to-date
+naturalmente — o diário é leitura do usuário, não estado do sistema.
 
 ## Referências
 
