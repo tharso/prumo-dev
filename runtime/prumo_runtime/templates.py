@@ -127,6 +127,7 @@ def render_agent_md(
         "- `IDEIAS.md`: ideias sem ação imediata",
         "- `Referencias/`: material de referência",
         "- `Inbox4Mobile/`: captura mobile",
+        "- `Diario/`: diários do dia gerados pelo `/fim` (a pasta nasce no primeiro uso)",
     ]
     if skills_path:
         map_items.append(f"- `{skills_path}`: skills do Prumo (fallback quando CLI não existe)")

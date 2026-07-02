@@ -66,6 +66,22 @@ class DiarioTests(unittest.TestCase):
         self.assertIn("não pré-cria", templates)
         self.assertIn("Diario/", agent)
 
+    def test_runtime_agent_md_inclui_diario_no_mapa(self) -> None:
+        """O AGENT.md gerado pelo RUNTIME também lista Diario/ — o template
+        markdown e o render do runtime são duas cópias do mesmo mapa (drift
+        pego pelo Codex na revisão de código da #141)."""
+        from prumo_runtime.templates import render_agent_md
+
+        rendered = render_agent_md(
+            user_name="Teste",
+            agent_name="Prumo",
+            timezone_name="America/Sao_Paulo",
+            briefing_time="9h",
+        )
+        self.assertIn("Diario/", rendered)
+        # E a pasta continua fora da criação: o mapa documenta, o setup não cria.
+        self.assertIn("nasce no primeiro uso", rendered)
+
     def test_setup_nao_pre_cria_diario(self) -> None:
         """O bloco 'Criar estrutura de diretórios' do setup não inclui Diario/."""
         text = SETUP_SKILL.read_text(encoding="utf-8")
