@@ -1,6 +1,6 @@
 # Weekly Review
 
-> **module_version: 4.18.0**
+> **module_version: 4.19.0**
 >
 > Fonte canônica da revisão semanal do Prumo.
 
@@ -20,6 +20,21 @@ Revisar a pauta inteira sem a miopia do briefing diário.
 5. Revisar `IDEIAS.md`:
    - ideia amadureceu -> vira ação;
    - ideia ainda é só ideia -> fica onde está.
+   - **Garimpo associativo** (hook da regra 17 do core): ao revisar as ideias
+     (e as fichas de `Referencias/`), propor conexões entre itens que
+     conversam — "X e Y tratam de Z; ligo?". Regras:
+     - Conexão aprovada é escrita **nos próprios itens**, como `[[wikilink]]`
+       ou prosa "Veja também:", com **confirmação verificável**: antes de
+       gravar, mostrar arquivo, item-alvo e o **texto exato** a inserir
+       ("em `IDEIAS.md`, no item 'X', acrescento ` — veja também [[Y]]`.
+       OK?"). Nada de aprovação em lote sem o texto à vista.
+     - **Nenhum índice materializado de pontes** (lição da #97): as conexões
+       moram nos itens; não existe arquivo/mapa/índice de conexões.
+     - A varredura associativa pesada mora **aqui** (semanal) — não no
+       briefing (load-policy) e não na faxina (que nunca julga).
+     - Efeito no `acervo`: conexão escrita muda o `content_hash` do item;
+       relatório antigo do acervo fica bloqueado para delete daquele item
+       (hash divergente → pede revisão) — proteção correta, não bug.
 6. Revisar `Agente/PESSOAS.md` quando existir:
    - follow-ups;
    - quem sumiu;

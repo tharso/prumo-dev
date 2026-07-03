@@ -1,6 +1,6 @@
 # Prumo Core — Motor do sistema
 
-> **prumo_version: 5.23.0**
+> **prumo_version: 5.24.0**
 >
 > Núcleo estável do Prumo. Define regras, guardrails e localização dos módulos canônicos.
 > Procedimento detalhado não mora aqui.
@@ -129,7 +129,7 @@ Fora do alcance desta regra (comportamento já contratado):
 
 No máximo **uma** sugestão associativa por briefing — conexão entre itens ou ressurgência de item esquecido, somadas. Só oferecer quando a ponte for explicável em uma frase apontando itens concretos ("X conversa com Y porque ambos tratam de Z"); similaridade de palavra solta não conta. Item sem nenhuma ação registrada (sem linha de ação no `Prumo/REGISTRO.md`, sem edição desde a entrada — idade via `(desde DD/MM)` ou `age_days` do acervo) é candidato a hibernar, nunca a ressuscitar.
 
-O hook operacional do briefing entra junto com a feature de conexões (épico #138); até lá, o teto governa qualquer comportamento associativo espontâneo.
+O hook operacional vive no `briefing-procedure.md` (ponte associativa única, junto à proposta do dia) e no `weekly-review.md` (garimpo associativo, onde mora a varredura pesada). Fora deles, o teto governa qualquer comportamento associativo espontâneo.
 
 ---
 
@@ -332,8 +332,8 @@ Histórico completo de versão vive em `CHANGELOG.md`.
 
 Versão atual deste core:
 
-- `5.23.0`
+- `5.24.0`
 
 ---
 
-*Prumo Core v5.23.0 — https://github.com/tharso/prumo*
+*Prumo Core v5.24.0 — https://github.com/tharso/prumo*
