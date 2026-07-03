@@ -14,12 +14,12 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 | `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist), 2026-06-24 (#110 não-bundle) |
 | `dispatch-bootstrap`  | 2026-04-21 (#69 despacho), 2026-06-23 (#104 briefing rico), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada) |
 | `multiagent-coord`    | 2026-04-20 (#68 HANDOVER)                                                                 |
-| `documentation`       | 2026-04-14 (CLAUDE.md), 2026-06-21 (#97 mapas)                                            |
+| `documentation`       | 2026-04-14 (CLAUDE.md), 2026-06-21 (#97 mapas), 2026-07-03 (#149 guia Obsidian)           |
 | `integrations`        | 2026-04-14 (Google Drive snapshots)                                                       |
 | `briefing`            | 2026-04-14 (Google Drive snapshots), 2026-04-21 (#69 despacho), 2026-06-23 (#102 decidir), 2026-06-23 (#104 briefing rico), 2026-06-25 (#114 perfil modular), 2026-07-02 (#139 guarda-corpos), 2026-07-03 (#148 conexões) |
 | `personalization`     | 2026-04-21 (tharso-voice)                                                                 |
 | `code-quality`        | 2026-05-06 (quality-gate), 2026-06-25 (#122 baseline 1061→930)                             |
-| `touchpoint`          | 2026-05-18 (landing page sync)                                                            |
+| `touchpoint`          | 2026-05-18 (landing page sync), 2026-07-03 (#149 guia Obsidian — candidato à landing)     |
 
 ## Vocabulário controlado de tópicos
 
@@ -56,6 +56,27 @@ A partir de 2026-05-04 (#78), toda entrada nova segue o formato:
 Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões anteriores" (introduzido na #78). Quando um conflito retrospectivo for descoberto, anotar a relação na entrada nova que o resolve — não reescrever entradas antigas.
 
 - `code-quality` — métricas de qualidade do codebase, quality gate, baseline.
+
+---
+
+## 2026-07-03 — Guia Obsidian: bônus documentado, dependência zero (#149)
+
+**Tópicos:** documentation, touchpoint
+
+**Issues relacionadas:** #149 (executa), #138 (épico — fecha a leva 2), #140/#141/#148 (produzem o dado Obsidian-friendly que o guia colhe).
+
+**Relações com decisões anteriores:**
+- **Mantém (e materializa) a restrição-mãe do épico #138:** o Obsidian nunca é requisito. O guia existe justamente pra dizer isso em voz alta: os `[[wikilinks]]` das fichas (#140), os nomes datados do diário (#141) e as conexões (#148) degradam como texto; o Obsidian só desenha por cima.
+- **Mantém:** 2026-04-22 (workspace-first) e #140 ("catalogar, não armazenar") — o vault pessoal do usuário é dele; o Prumo não escreve lá; `.obsidian/` não é estado do Prumo.
+- **Estende:** a tabela de intenções do `dispatch.md` com o gatilho Obsidian/vault/grafo/backlinks → guia (sem comando novo, sem picker — achado do Codex no design: sem o gatilho, a pergunta cairia em categoria genérica).
+
+**Contexto:** Etapa 6 do épico (leva 2). Decisão do dono (2026-07-02): Obsidian como plus. Design revisado pelo Codex (2 rodadas, DESIGN APROVADO).
+
+**Decisão:** `references/guia-obsidian.md` (1 página: abrir como vault; grafo/backlinks/busca; Diario/ como calendário via extensão Calendar — declarada como de terceiro; 4 fronteiras) + gatilho no dispatch + seção curta no README. Travado por `test_guia_obsidian.py`. **Touchpoint:** "funciona com seu Obsidian" é candidato a argumento da landing — proposto ao dono, não aplicado (mudança de landing exige aprovação dele).
+
+**Alternativas consideradas:**
+- *Comando `/obsidian` ou entrada no picker* → rejeitado (picker é pros atalhos do dia a dia — #132; o guia é consulta ocasional).
+- *Recomendar lista de plugins* → rejeitado (curadoria de terceiros apodrece; só a Calendar, porque destrava o Diario/).
 
 ---
 
