@@ -18,7 +18,7 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 | `integrations`        | 2026-04-14 (Google Drive snapshots)                                                       |
 | `briefing`            | 2026-04-14 (Google Drive snapshots), 2026-04-21 (#69 despacho), 2026-06-23 (#102 decidir), 2026-06-23 (#104 briefing rico), 2026-06-25 (#114 perfil modular), 2026-07-02 (#139 guarda-corpos), 2026-07-03 (#148 conexões) |
 | `personalization`     | 2026-04-21 (tharso-voice)                                                                 |
-| `code-quality`        | 2026-05-06 (quality-gate), 2026-06-25 (#122 baseline 1061→930)                             |
+| `code-quality`        | 2026-05-06 (quality-gate), 2026-06-25 (#122 baseline 1061→930), 2026-07-03 (baseline 82/904) |
 | `touchpoint`          | 2026-05-18 (landing page sync), 2026-07-03 (#149 guia Obsidian — candidato à landing)     |
 
 ## Vocabulário controlado de tópicos
@@ -56,6 +56,23 @@ A partir de 2026-05-04 (#78), toda entrada nova segue o formato:
 Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões anteriores" (introduzido na #78). Quando um conflito retrospectivo for descoberto, anotar a relação na entrada nova que o resolve — não reescrever entradas antigas.
 
 - `code-quality` — métricas de qualidade do codebase, quality gate, baseline.
+
+---
+
+## 2026-07-03 — Baseline apertado: cobertura 81→82, maior arquivo 930→904
+
+**Tópicos:** code-quality
+
+**Issues relacionadas:** #138 (épico — melhorias sinalizadas no fechamento da leva 2), #146 (origem da redução do maior arquivo: `skills_install.py` extraído de `workspace.py`), #122 (aperto anterior, 1061→930).
+
+**Relações com decisões anteriores:**
+- **Estende:** 2026-05-06 (quality-gate) e 2026-06-25 (#122). A catraca anda mais um dente no mesmo sentido: cobertura 81→**82**; maior arquivo 930→**904** (`workspace.py` pós-extração da #146). Ruff mantém 11.
+
+**Contexto:** As duas métricas ficaram folgadas em relação ao baseline durante a largada e a leva 2 do épico #138. Sinalizado ativamente ao Tharso (regra do CLAUDE.md), com valores antigos e novos lado a lado. Aprovação explícita em 2026-07-03 ("Aperta, pls").
+
+**Decisão:** `scripts/baseline.json`: `coverage_pct` 81→82; `largest_file_lines` 930→904; `_note` atualizada com data e razão. Mudança de governança aprovada pelo dono — não é decisão de código.
+
+**Alternativas consideradas:** deixar folga para absorver flutuações → rejeitado pelo dono; a catraca existe pra andar.
 
 ---
 
