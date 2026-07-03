@@ -8,7 +8,7 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 
 | Tópico                | Entradas                                                                                  |
 |-----------------------|-------------------------------------------------------------------------------------------|
-| `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first), 2026-05-04 (#77), 2026-06-21 (#97 mapas), 2026-06-25 (#114 perfil modular), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#139 guarda-corpos), 2026-07-02 (#140 fichário), 2026-07-02 (#141 diário), 2026-07-03 (#147 ideias) |
+| `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first), 2026-05-04 (#77), 2026-06-21 (#97 mapas), 2026-06-25 (#114 perfil modular), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#139 guarda-corpos), 2026-07-02 (#140 fichário), 2026-07-02 (#141 diário), 2026-07-03 (#147 ideias), 2026-07-03 (#148 conexões) |
 | `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada) |
 | `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first), 2026-05-06 (quality-gate), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#141 diário — emenda à #68) |
 | `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist), 2026-06-24 (#110 não-bundle) |
@@ -16,7 +16,7 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 | `multiagent-coord`    | 2026-04-20 (#68 HANDOVER)                                                                 |
 | `documentation`       | 2026-04-14 (CLAUDE.md), 2026-06-21 (#97 mapas)                                            |
 | `integrations`        | 2026-04-14 (Google Drive snapshots)                                                       |
-| `briefing`            | 2026-04-14 (Google Drive snapshots), 2026-04-21 (#69 despacho), 2026-06-23 (#102 decidir), 2026-06-23 (#104 briefing rico), 2026-06-25 (#114 perfil modular), 2026-07-02 (#139 guarda-corpos) |
+| `briefing`            | 2026-04-14 (Google Drive snapshots), 2026-04-21 (#69 despacho), 2026-06-23 (#102 decidir), 2026-06-23 (#104 briefing rico), 2026-06-25 (#114 perfil modular), 2026-07-02 (#139 guarda-corpos), 2026-07-03 (#148 conexões) |
 | `personalization`     | 2026-04-21 (tharso-voice)                                                                 |
 | `code-quality`        | 2026-05-06 (quality-gate), 2026-06-25 (#122 baseline 1061→930)                             |
 | `touchpoint`          | 2026-05-18 (landing page sync)                                                            |
@@ -56,6 +56,30 @@ A partir de 2026-05-04 (#78), toda entrada nova segue o formato:
 Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões anteriores" (introduzido na #78). Quando um conflito retrospectivo for descoberto, anotar a relação na entrada nova que o resolve — não reescrever entradas antigas.
 
 - `code-quality` — métricas de qualidade do codebase, quality gate, baseline.
+
+---
+
+## 2026-07-03 — Conexões e ressurgência: hook da regra 17 no briefing e garimpo na revisão semanal (#148)
+
+**Tópicos:** briefing, workspace-layout
+
+**Issues relacionadas:** #148 (executa), #138 (épico — leva 2), #147 (predecessora — átomos destilados), #149 (sucessora).
+
+**Relações com decisões anteriores:**
+- **Estende e ativa:** 2026-07-02 (#139 — regra 17). O teto existia com o hook declarado como futuro; esta decisão liga o hook em dois lugares e atualiza a regra 17 pra apontá-los: **ponte única no briefing** (junto à proposta do dia) e **garimpo associativo na revisão semanal** (onde mora a varredura pesada).
+- **Mantém:** 2026-06-21 (#97 — índice aposentado). **Nenhum artefato-índice de pontes**: as conexões moram nos próprios itens (`[[wikilink]]` ou prosa), escritas com confirmação verificável (arquivo + item-alvo + texto exato à vista). Não existe arquivo/mapa/índice de conexões.
+- **Mantém:** load-policy. A ponte do briefing tem **fonte restrita ao já-carregado** (PAUTA integral com `Hibernando`, cauda do REGISTRO, capturas do dia) — zero leitura nova; `IDEIAS.md`/`Referencias/` ganham pontes só no garimpo semanal.
+- **Mantém:** contrato da faxina ("nunca julga, roda rápido") — nada associativo mora nela.
+- **Mantém e depende:** 2026-07-03 (#147). Conexão escrita muda o `content_hash` do item no acervo — relatório antigo bloqueia delete (mesma proteção declarada no adensamento).
+
+**Contexto:** Etapa 4 do épico #138 — o "maior roubo" do plano: a descoberta associativa que o LYT faz com query Dataview (determinística, refém de plugin, só casa link literal), o Prumo faz com julgamento do agente, por significado, sem plugin. Design revisado pelo Codex (2 rodadas, DESIGN APROVADO) — a rodada 1 definiu a fonte barata da ponte e endureceu a confirmação de escrita.
+
+**Decisão:** (1) `weekly-review.md` (4.19.0): garimpo associativo dentro do item de revisão do IDEIAS — propõe conexões, escreve nos itens com confirmação verificável, varredura pesada mora aqui. (2) `briefing-procedure.md` (4.25.0): seção "Ponte associativa" junto à proposta do dia — máx. 1 por briefing, fonte restrita ao já-carregado, opcional e não-bloqueante; ressurgência por relevância opera sobre o `Hibernando` da PAUTA. (3) Regra 17 do core atualizada (hook ativo). Travado por `test_conexoes_ressurgencia.py`.
+
+**Alternativas consideradas:**
+- *Índice/arquivo de pontes candidatas entre revisão e briefing* → rejeitado (classe de risco da #97: artefato materializado que apodrece).
+- *Briefing varrer IDEIAS/Referencias pra achar pontes* → rejeitado (fere load-policy; custo cresce com o acervo).
+- *Embedding/busca vetorial* → rejeitado (infra nova; a descoberta é julgamento do agente — "mojo, não determinismo").
 
 ---
 

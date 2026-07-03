@@ -1,6 +1,6 @@
 # Briefing Procedure
 
-> **module_version: 4.24.0**
+> **module_version: 4.25.0**
 >
 > Fonte canônica do procedimento de briefing do Prumo.
 > Se este módulo conflitar com um resumo em `SKILL.md`, este módulo vence.
@@ -177,6 +177,15 @@ Depois da lista numerada, entregar a proposta do dia em uma linha curta e oferec
 - `d) Tá bom por hoje`
 
 A proposta deve considerar deadlines de hoje, blockers, agenda disponível e itens com cobrança elegível hoje.
+
+### Ponte associativa (opcional, teto da regra 17)
+
+Junto à proposta do dia, **no máximo uma** sugestão associativa por briefing (regra 17 do core) — conexão ("o que você anotou ontem conversa com aquilo de março — costuro?") **ou** ressurgência por relevância ("faz 40 dias que você anotou X; hoje você mexeu em Y — ataca, deixa cozinhando, ou arquiva?" — os verbos do acervo). Regras:
+
+1. **Fonte restrita ao já-carregado:** `PAUTA.md` integral (incluindo `## Hibernando` — o limbo que já está no contexto), a cauda do `REGISTRO.md` e as capturas do dia — mais as conexões `[[...]]` visíveis nesses itens (escritas pelo garimpo da revisão semanal). **Zero leitura nova** por causa da ponte: o briefing não abre `IDEIAS.md` nem `Referencias/` pra procurá-la.
+2. A ponte precisa ser explicável em uma frase apontando itens concretos; similaridade de palavra solta não conta (regra 17).
+3. **Opcional e não-bloqueante:** sem ponte com significado real hoje → sem ponte. Ela nunca atrasa nem trava o briefing.
+4. Ressurgir item de `IDEIAS.md`/`Referencias/` não é papel do briefing — é do garimpo semanal e do `/acervo`.
 
 ### Despacho visual (skill `decidir`)
 

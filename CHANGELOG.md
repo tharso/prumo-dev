@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.24.0] - 2026-07-03
+
+### Added
+- **Conexões e ressurgência — o hook da regra 17 (#148, épico #138)** — a descoberta associativa entra em operação em dois lugares, com o teto criado na #139: **garimpo associativo na revisão semanal** (`weekly-review.md` 4.19.0 — propõe conexões entre ideias/fichas; conexão aprovada é escrita **nos próprios itens** como `[[wikilink]]`/prosa, com confirmação verificável: arquivo + item + **texto exato** à vista; nenhum índice materializado de pontes — lição da #97; a varredura pesada mora aqui) e **ponte única no briefing** (`briefing-procedure.md` 4.25.0 — máx. 1 sugestão associativa junto à proposta do dia: conexão ou ressurgência por relevância sobre o `Hibernando` da PAUTA; **fonte restrita ao já-carregado**, zero leitura nova; opcional, nunca trava o briefing). Regra 17 do core atualizada pra apontar o hook ativo. Travado por `test_conexoes_ressurgencia.py` (TDD).
+
 ## [5.23.0] - 2026-07-03
 
 ### Added
