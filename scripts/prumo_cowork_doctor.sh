@@ -9,13 +9,15 @@ OUTPUT_FORMAT="text"
 # Stores globais (#146): o plugin INSTALADO do Cowork mora em
 # ~/.claude/cowork_plugins e o do Claude Code CLI em ~/.claude/plugins.
 # Só varrer o sessions-root dava falso-negativo ("nada urgente") enquanto
-# um plugin de era antiga apodrecia no store global.
-EXTRA_ROOTS="${HOME}/.claude/cowork_plugins:${HOME}/.claude/plugins"
+# um plugin de era antiga apodrecia no store global. Array (não string com
+# separador) pra path com ':' não quebrar o parse.
+EXTRA_ROOTS=("${HOME}/.claude/cowork_plugins" "${HOME}/.claude/plugins")
+EXTRA_ROOTS_OVERRIDDEN=0
 
 usage() {
   cat <<'EOF'
 Uso:
-  scripts/prumo_cowork_doctor.sh [--sessions-root PATH] [--extra-roots P1:P2] [--marketplace-name NAME] [--plugin-id ID] [--json]
+  scripts/prumo_cowork_doctor.sh [--sessions-root PATH] [--extra-root PATH]... [--marketplace-name NAME] [--plugin-id ID] [--json]
 
 O que faz:
   1. Localiza os stores reais de plugins (sessões do Cowork + ~/.claude/cowork_plugins + ~/.claude/plugins)
@@ -23,10 +25,12 @@ O que faz:
   3. Compara versão do plugin instalado, versão do checkout local e HEAD remoto do repositório
   4. Flagra plugin de era antiga (pré-5.x) e catálogo fresco com instalação defasada
 
+Nota: --extra-root é repetível e SUBSTITUI os defaults (~/.claude/*) na primeira ocorrência.
+
 Exemplos:
   scripts/prumo_cowork_doctor.sh
   scripts/prumo_cowork_doctor.sh --json
-  scripts/prumo_cowork_doctor.sh --sessions-root "/tmp/fake-cowork" --extra-roots "/tmp/fake-store"
+  scripts/prumo_cowork_doctor.sh --sessions-root "/tmp/fake-cowork" --extra-root "/tmp/fake-store"
 EOF
 }
 
@@ -36,8 +40,12 @@ while [ "$#" -gt 0 ]; do
       SESSIONS_ROOT="${2:-}"
       shift 2
       ;;
-    --extra-roots)
-      EXTRA_ROOTS="${2:-}"
+    --extra-root)
+      if [ "$EXTRA_ROOTS_OVERRIDDEN" -eq 0 ]; then
+        EXTRA_ROOTS=()
+        EXTRA_ROOTS_OVERRIDDEN=1
+      fi
+      EXTRA_ROOTS+=("${2:-}")
       shift 2
       ;;
     --marketplace-name)
@@ -71,7 +79,7 @@ fi
 
 export PRUMO_COWORK_DOCTOR_SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
-python3 - "$SESSIONS_ROOT" "$MARKETPLACE_NAME" "$PLUGIN_ID" "$OUTPUT_FORMAT" "$EXTRA_ROOTS" <<'PY'
+python3 - "$SESSIONS_ROOT" "$MARKETPLACE_NAME" "$PLUGIN_ID" "$OUTPUT_FORMAT" "${EXTRA_ROOTS[@]}" <<'PY'
 import json
 import os
 import subprocess
@@ -82,7 +90,7 @@ sessions_root = Path(sys.argv[1]).expanduser()
 marketplace_name = sys.argv[2]
 plugin_id = sys.argv[3]
 output_format = sys.argv[4]
-extra_roots = [Path(p).expanduser() for p in (sys.argv[5] if len(sys.argv) > 5 else "").split(":") if p]
+extra_roots = [Path(p).expanduser() for p in sys.argv[5:] if p]
 script_dir = Path(os.environ["PRUMO_COWORK_DOCTOR_SCRIPT_DIR"])
 repo_root = script_dir.parent
 
@@ -292,10 +300,17 @@ def inspect_root(root: Path):
 roots = collect_roots(sessions_root, extra_roots)
 inspections = [inspect_root(root) for root in roots]
 # Target = o store onde o plugin está INSTALADO (é lá que a invocação resolve).
+# Empate entre stores instalados: preferir o do COWORK (cowork_plugins) — este
+# doctor diagnostica o Cowork; o CLI aparece na lista de stores de todo jeito.
 # Sem instalação em nenhum, cai no mais recente. Antes o doctor pegava só o
 # 1º store e dizia "nada urgente" com um plugin de março instalado em outro.
 with_install = [i for i in inspections if i["plugin_installed"]]
-target = (with_install[0] if with_install else (inspections[0] if inspections else None))
+cowork_installed = [i for i in with_install if "cowork_plugins" in i["root"]]
+target = (
+    cowork_installed[0]
+    if cowork_installed
+    else (with_install[0] if with_install else (inspections[0] if inspections else None))
+)
 
 result = {
     "sessions_root": str(sessions_root),

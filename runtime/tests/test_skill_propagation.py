@@ -132,7 +132,7 @@ class AdapterPruneTests(unittest.TestCase):
 class UpdateChainsRepairTests(unittest.TestCase):
     """#146: `prumo update` propaga pro workspace rodando o repair do binário novo."""
 
-    def test_runs_repair_via_post_update_binary(self) -> None:
+    def test_runs_repair_only_after_verifying_binary_version(self) -> None:
         from unittest import mock
 
         from prumo_runtime.commands.update import _run_post_update_repair
@@ -141,15 +141,54 @@ class UpdateChainsRepairTests(unittest.TestCase):
 
         def fake_run(cmd, **kwargs):
             calls.append(cmd)
+            if cmd[1] == "--version":
+                return mock.Mock(returncode=0, stdout="prumo 5.22.0\n")
             return mock.Mock(returncode=0)
 
         with mock.patch("prumo_runtime.commands.update.shutil.which", return_value="/fake/bin/prumo"), \
              mock.patch("prumo_runtime.commands.update.subprocess.run", side_effect=fake_run):
-            result = _run_post_update_repair(Path("/tmp/ws"))
+            result = _run_post_update_repair(Path("/tmp/ws"), expected_version="5.22.0")
 
         self.assertTrue(result["repair_executed"])
-        self.assertEqual(calls[0][:3], ["/fake/bin/prumo", "repair", "--workspace"])
-        self.assertEqual(calls[0][3], "/tmp/ws")
+        # 1ª chamada verifica a versão; a 2ª é o repair
+        self.assertEqual(calls[0], ["/fake/bin/prumo", "--version"])
+        self.assertEqual(calls[1][:3], ["/fake/bin/prumo", "repair", "--workspace"])
+        self.assertEqual(calls[1][3], "/tmp/ws")
+
+    def test_stale_path_binary_aborts_repair(self) -> None:
+        # Review Codex (#146): PATH apontando pra prumo ANTIGO não pode
+        # sincronizar o workspace com a fonte errada (a poda removeria
+        # skills novas). Versão divergente → aborta com nota.
+        from unittest import mock
+
+        from prumo_runtime.commands.update import _run_post_update_repair
+
+        calls: list[list[str]] = []
+
+        def fake_run(cmd, **kwargs):
+            calls.append(cmd)
+            return mock.Mock(returncode=0, stdout="prumo 5.16.0\n")
+
+        with mock.patch("prumo_runtime.commands.update.shutil.which", return_value="/stale/bin/prumo"), \
+             mock.patch("prumo_runtime.commands.update.subprocess.run", side_effect=fake_run):
+            result = _run_post_update_repair(Path("/tmp/ws"), expected_version="5.22.0")
+
+        self.assertFalse(result["repair_executed"])
+        self.assertIn("5.16.0", result["repair_note"])
+        self.assertEqual(len(calls), 1, "com versão divergente, o repair NÃO pode rodar")
+
+    def test_unknown_expected_version_aborts_repair(self) -> None:
+        from unittest import mock
+
+        from prumo_runtime.commands.update import _run_post_update_repair
+
+        def fake_run(cmd, **kwargs):
+            return mock.Mock(returncode=0, stdout="prumo 5.22.0\n")
+
+        with mock.patch("prumo_runtime.commands.update.shutil.which", return_value="/fake/bin/prumo"), \
+             mock.patch("prumo_runtime.commands.update.subprocess.run", side_effect=fake_run):
+            result = _run_post_update_repair(Path("/tmp/ws"), expected_version=None)
+        self.assertFalse(result["repair_executed"], "sem versão esperada não há como verificar — aborta")
 
     def test_missing_binary_degrades_to_suggestion(self) -> None:
         from unittest import mock
@@ -157,7 +196,7 @@ class UpdateChainsRepairTests(unittest.TestCase):
         from prumo_runtime.commands.update import _run_post_update_repair
 
         with mock.patch("prumo_runtime.commands.update.shutil.which", return_value=None):
-            result = _run_post_update_repair(Path("/tmp/ws"))
+            result = _run_post_update_repair(Path("/tmp/ws"), expected_version="5.22.0")
         self.assertFalse(result["repair_executed"])
         self.assertIn("repair", result["repair_note"])
 
@@ -166,12 +205,14 @@ class UpdateChainsRepairTests(unittest.TestCase):
 
         from prumo_runtime.commands.update import _run_post_update_repair
 
+        def fake_run(cmd, **kwargs):
+            if cmd[1] == "--version":
+                return mock.Mock(returncode=0, stdout="prumo 5.22.0\n")
+            raise OSError("permission denied")
+
         with mock.patch("prumo_runtime.commands.update.shutil.which", return_value="/fake/bin/prumo"), \
-             mock.patch(
-                 "prumo_runtime.commands.update.subprocess.run",
-                 side_effect=OSError("permission denied"),
-             ):
-            result = _run_post_update_repair(Path("/tmp/ws"))
+             mock.patch("prumo_runtime.commands.update.subprocess.run", side_effect=fake_run):
+            result = _run_post_update_repair(Path("/tmp/ws"), expected_version="5.22.0")
         self.assertFalse(result["repair_executed"])
         self.assertIn("falhou", result["repair_note"])
 
@@ -206,7 +247,7 @@ class DoctorStoreDiscoveryTests(unittest.TestCase):
 
         completed = subprocess.run(
             ["bash", str(self.SCRIPT), "--sessions-root", str(sessions_root),
-             "--extra-roots", str(extra), "--json"],
+             "--extra-root", str(extra), "--json"],
             capture_output=True, text=True, timeout=60,
         )
         self.assertEqual(completed.returncode, 0, completed.stderr)
@@ -245,6 +286,45 @@ class DoctorStoreDiscoveryTests(unittest.TestCase):
                 result["target_root"], str(global_store),
                 "o alvo tem que ser o store onde o plugin está INSTALADO",
             )
+
+    def test_two_installed_stores_prefer_cowork(self) -> None:
+        # Review Codex (#146): CLI moderno + Cowork antigo, ambos instalados —
+        # o doctor do COWORK tem que mirar o cowork_plugins, não o CLI.
+        import subprocess
+
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            sessions = base / "s"
+            sessions.mkdir()
+            cli_store = base / "plugins"
+            cli_store.mkdir()
+            (cli_store / "installed_plugins.json").write_text(json.dumps({
+                "version": 2,
+                "plugins": {"prumo@prumo-marketplace": [{
+                    "scope": "user", "version": "5.21.0",
+                    "installPath": str(cli_store / "x"),
+                    "installedAt": "2026-07-01T00:00:00Z", "lastUpdated": "2026-07-01T00:00:00Z",
+                }]},
+            }), encoding="utf-8")
+            cowork_store = base / "cowork_plugins"
+            cowork_store.mkdir()
+            (cowork_store / "installed_plugins.json").write_text(json.dumps({
+                "version": 2,
+                "plugins": {"prumo@prumo-marketplace": [{
+                    "scope": "user", "version": "4.1.0",
+                    "installPath": str(cowork_store / "x"),
+                    "installedAt": "2026-03-03T00:00:00Z", "lastUpdated": "2026-03-03T00:00:00Z",
+                }]},
+            }), encoding="utf-8")
+            completed = subprocess.run(
+                ["bash", str(self.SCRIPT), "--sessions-root", str(sessions),
+                 "--extra-root", str(cli_store), "--extra-root", str(cowork_store), "--json"],
+                capture_output=True, text=True, timeout=60,
+            )
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            result = json.loads(completed.stdout)
+            self.assertEqual(result["target_root"], str(cowork_store),
+                             "empate de instalados: o alvo é o store do Cowork")
 
     def test_marketplace_path_that_is_a_file_does_not_crash(self) -> None:
         # Regressão vista na máquina real: marketplaces/<nome> era um ARQUIVO;
