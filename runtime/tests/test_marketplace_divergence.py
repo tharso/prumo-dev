@@ -132,6 +132,33 @@ class UpdateDivergenceTests(unittest.TestCase):
                 "a modificação local tem que sobreviver intacta",
             )
 
+    def test_nunca_reseta_commits_locais(self) -> None:
+        """Checkout LIMPO mas com commits locais (ancestral comum existe):
+        ff falha e o update NÃO pode resetar — commits não são nossos
+        (achado do Codex na revisão de código, rodada 1)."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            remote = tmp_path / "remote"
+            _make_history(remote, "4.7.0")
+            sessions, _store, market = _make_store(tmp_path, remote)
+            # Commit LOCAL no checkout (working tree fica limpa).
+            (market / "NOTA-LOCAL.md").write_text("commit meu\n", encoding="utf-8")
+            _git(["add", "."], market)
+            _git(["commit", "-q", "-m", "commit local no checkout"], market)
+            # Remoto avança na MESMA história (ancestral comum preservado).
+            (remote / "VERSION").write_text("5.25.0\n", encoding="utf-8")
+            _git(["add", "."], remote)
+            _git(["commit", "-q", "-m", "v5.25.0"], remote)
+
+            payload = _run_update(sessions)
+            result = payload["results"][0]
+            self.assertIsNotNone(result["error"], "commits locais não podem ser descartados")
+            self.assertIn("commits locais", result["error"].lower())
+            self.assertTrue(
+                (market / "NOTA-LOCAL.md").exists(),
+                "o commit local tem que sobreviver intacto",
+            )
+
     def test_caminho_feliz_fast_forward_sem_reset(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
@@ -177,6 +204,31 @@ class DoctorDivergenceTests(unittest.TestCase):
             self.assertEqual(target.get("marketplace_checkout_divergence"), "divergente")
             diagnosis = " ".join(target.get("diagnosis", []))
             self.assertIn("DIVERGIU", diagnosis, f"doctor deveria nomear a divergência: {diagnosis}")
+
+    def test_doctor_distingue_commits_locais_de_historia_reescrita(self) -> None:
+        """Ancestral comum + commits locais NÃO é 'atrás' nem 'divergente' —
+        é a terceira natureza, e o doctor não pode prometer ff nem reset."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            remote = tmp_path / "remote"
+            _make_history(remote, "4.7.0")
+            sessions, _store, market = _make_store(tmp_path, remote)
+            (market / "NOTA-LOCAL.md").write_text("commit meu\n", encoding="utf-8")
+            _git(["add", "."], market)
+            _git(["commit", "-q", "-m", "commit local"], market)
+            (remote / "VERSION").write_text("5.25.0\n", encoding="utf-8")
+            _git(["add", "."], remote)
+            _git(["commit", "-q", "-m", "v5.25.0"], remote)
+            _git(["fetch", "origin", "main"], market)
+
+            completed = subprocess.run(
+                ["bash", str(DOCTOR_SCRIPT), "--sessions-root", str(sessions), "--json"],
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=False, timeout=60,
+            )
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            result = json.loads(completed.stdout)
+            target = next(r for r in result["roots"] if r["root"] == str(_store))
+            self.assertEqual(target.get("marketplace_checkout_divergence"), "commits_locais")
 
 
 if __name__ == "__main__":

@@ -221,13 +221,24 @@ def inspect_root(root: Path):
         if checkout_head and remote_head:
             checkout_stale = checkout_head != remote_head
         if checkout_stale:
-            # Classificar sem mutar o cache: só dá pra saber se divergiu quando
+            # Classificar sem mutar o cache: só dá pra saber a natureza quando
             # o objeto remoto já existe localmente (fetch anterior). Sem ele,
-            # fica indeterminado — o update resolve nos dois casos (#145).
+            # fica indeterminado — o update resolve com segurança em qualquer
+            # caso (#145). Três naturezas:
+            #   atras          → HEAD é ancestral do remoto (ff possível)
+            #   commits_locais → ancestral comum existe, mas há commits locais
+            #   divergente     → sem ancestral comum (história reescrita)
             has_remote_obj = run_git(["cat-file", "-e", remote_head], install_location)
             if has_remote_obj is not None:
-                merge_base = run_git(["merge-base", checkout_head, remote_head], install_location)
-                checkout_divergence = "atras" if merge_base else "divergente"
+                is_ancestor = run_git(
+                    ["merge-base", "--is-ancestor", checkout_head, remote_head],
+                    install_location,
+                )
+                if is_ancestor is not None:
+                    checkout_divergence = "atras"
+                else:
+                    merge_base = run_git(["merge-base", checkout_head, remote_head], install_location)
+                    checkout_divergence = "commits_locais" if merge_base else "divergente"
 
     installed_items = installed.get("plugins", {}).get(plugin_id, [])
     installed_item = None
@@ -261,6 +272,9 @@ def inspect_root(root: Path):
             if checkout_divergence == "divergente":
                 notes.append("O checkout local do marketplace DIVERGIU do remoto — sem ancestral comum (história do espelho reescrita). Fast-forward nunca vai funcionar aqui (#145).")
                 actions.append("Rode scripts/prumo_cowork_update.sh — ele detecta a divergência e reseta o checkout limpo para o remoto.")
+            elif checkout_divergence == "commits_locais":
+                notes.append("O checkout do marketplace tem COMMITS LOCAIS que o remoto não tem — fast-forward impossível, e o update NÃO vai resetar por cima deles. Estado anômalo para um cache de espelho.")
+                actions.append("Inspecione o checkout à mão (git log origin/main..HEAD) e decida o destino dos commits antes de atualizar.")
             else:
                 notes.append("O checkout local do marketplace está defasado em relação ao HEAD remoto.")
                 actions.append("Rode scripts/prumo_cowork_update.sh para atualizar o checkout do marketplace do Cowork.")
@@ -378,6 +392,8 @@ else:
     print(f"- checkout defasado: {'sim' if target['marketplace_checkout_stale'] else 'não'}")
 if target.get("marketplace_checkout_divergence") == "divergente":
     print("- natureza: o checkout DIVERGIU do remoto (sem ancestral comum — história do espelho reescrita)")
+elif target.get("marketplace_checkout_divergence") == "commits_locais":
+    print("- natureza: commits locais no checkout (fast-forward impossível; update não vai resetar)")
 elif target.get("marketplace_checkout_divergence") == "atras":
     print("- natureza: atrás do remoto (fast-forward possível)")
 

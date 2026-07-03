@@ -167,12 +167,12 @@ for root in roots:
                 try:
                     run_git(["pull", "--ff-only", "origin", ref], market_dir)
                 except RuntimeError as ff_exc:
-                    # Fast-forward impossível: história do espelho reescrita
-                    # (#145 — checkout órfão, sem ancestral comum). O checkout
-                    # do marketplace é CACHE de um espelho, não working tree do
-                    # usuário — reset pro remoto é a operação semanticamente
-                    # correta. Mas só com o checkout LIMPO: nunca resetar por
-                    # cima de modificação local.
+                    # Fast-forward impossível. O caso CONTRATADO (#145) é o
+                    # checkout órfão: história do espelho reescrita, SEM
+                    # ancestral comum. Aí o checkout é cache de espelho e o
+                    # reset pro remoto é a operação correta. Qualquer outra
+                    # causa (modificação local, commits locais) aborta — o
+                    # reset destruiria trabalho que não é nosso.
                     status = run_git(["status", "--porcelain"], market_dir).stdout.strip()
                     if status:
                         raise RuntimeError(
@@ -180,10 +180,21 @@ for root in roots:
                             "não vou resetar por cima delas. Resolva à mão (git status no "
                             f"checkout) e rode de novo. Detalhe: {ff_exc}"
                         )
+                    merge_base = run_git(
+                        ["merge-base", "HEAD", f"origin/{ref}"], market_dir, check=False
+                    )
+                    if merge_base.returncode == 0 and merge_base.stdout.strip():
+                        raise RuntimeError(
+                            "fast-forward impossível por COMMITS LOCAIS no checkout "
+                            "(há ancestral comum com o remoto) — não vou descartá-los "
+                            "com reset. Inspecione com 'git log origin/"
+                            f"{ref}..HEAD' no checkout e decida o destino deles. "
+                            f"Detalhe: {ff_exc}"
+                        )
                     run_git(["reset", "--hard", f"origin/{ref}"], market_dir)
                     recovered = (
-                        f"história do espelho divergiu do checkout; checkout limpo "
-                        f"resetado para origin/{ref}"
+                        f"história do espelho divergiu do checkout (sem ancestral "
+                        f"comum); checkout limpo resetado para origin/{ref}"
                     )
                 if marketplace_known:
                     known[marketplace_name]["lastUpdated"] = timestamp
