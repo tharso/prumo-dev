@@ -146,6 +146,7 @@ for root in roots:
     marketplace_known = False
     plugin_version = inspect_plugin_version(root)
     error = None
+    recovered = None
 
     if known_path.exists():
         known = read_json(known_path)
@@ -163,7 +164,27 @@ for root in roots:
             try:
                 run_git(["fetch", "origin", ref], market_dir)
                 run_git(["checkout", ref], market_dir)
-                run_git(["pull", "--ff-only", "origin", ref], market_dir)
+                try:
+                    run_git(["pull", "--ff-only", "origin", ref], market_dir)
+                except RuntimeError as ff_exc:
+                    # Fast-forward impossível: história do espelho reescrita
+                    # (#145 — checkout órfão, sem ancestral comum). O checkout
+                    # do marketplace é CACHE de um espelho, não working tree do
+                    # usuário — reset pro remoto é a operação semanticamente
+                    # correta. Mas só com o checkout LIMPO: nunca resetar por
+                    # cima de modificação local.
+                    status = run_git(["status", "--porcelain"], market_dir).stdout.strip()
+                    if status:
+                        raise RuntimeError(
+                            "fast-forward impossível E o checkout tem modificações locais — "
+                            "não vou resetar por cima delas. Resolva à mão (git status no "
+                            f"checkout) e rode de novo. Detalhe: {ff_exc}"
+                        )
+                    run_git(["reset", "--hard", f"origin/{ref}"], market_dir)
+                    recovered = (
+                        f"história do espelho divergiu do checkout; checkout limpo "
+                        f"resetado para origin/{ref}"
+                    )
                 if marketplace_known:
                     known[marketplace_name]["lastUpdated"] = timestamp
                     write_json(known_path, known)
@@ -187,6 +208,7 @@ for root in roots:
             "after_version": after_version,
             "plugin_version": plugin_version,
             "plugin_reinstall_recommended": bool(plugin_version and after_version and plugin_version != after_version),
+            "recovered": recovered,
             "error": error,
         }
     )
@@ -224,6 +246,8 @@ for item in results:
     print(f"- HEAD antes: {(item['before_head'] or 'n/d')[:7] if item['before_head'] else 'n/d'}")
     print(f"- HEAD depois: {(item['after_head'] or 'n/d')[:7] if item['after_head'] else 'n/d'}")
     print(f"- plugin instalado: {item['plugin_version'] or 'n/d'}")
+    if item.get("recovered"):
+        print(f"- recuperação: {item['recovered']}")
     if item["error"]:
         print(f"- erro: {item['error']}")
     elif item["plugin_reinstall_recommended"]:
