@@ -1,6 +1,6 @@
 # Cowork Runtime Maintenance
 
-> **module_version: 4.17.0**
+> **module_version: 4.18.0**
 >
 > Fonte canônica para instalação, diagnóstico e atualização do Prumo no Cowork.
 
@@ -25,6 +25,16 @@ https://github.com/tharso/prumo.git
    - mostrar versão antiga;
    - deixar `Atualizar` desabilitado;
    - parecer sincronizada sem estar.
+4. O congelamento tem **três naturezas** (#145), e a diferença importa:
+   - **atrás do remoto**: fast-forward resolve — caso comum;
+   - **divergente** (sem ancestral comum — a história do espelho foi
+     reescrita): fast-forward **nunca** vai funcionar; o
+     `prumo_cowork_update.sh` detecta e recupera com reset seguro do
+     checkout **limpo** para o remoto;
+   - **commits locais** (ancestral comum existe, mas o checkout tem
+     commits próprios): estado anômalo para um cache de espelho — o
+     update **não** reseta nem descarta; aborta e explica. O mesmo vale
+     para modificação local não-commitada: nada é resetado por cima.
 
 ## Scripts canônicos
 
@@ -32,7 +42,7 @@ https://github.com/tharso/prumo.git
   Diagnostica store local, checkout do marketplace, versão instalada e drift de catálogo.
 
 - `prumo_cowork_update.sh`
-  Atualiza os checkouts do marketplace do Prumo usados pelo Cowork e renova o timestamp de sync.
+  Atualiza os checkouts do marketplace do Prumo usados pelo Cowork e renova o timestamp de sync. Fast-forward por padrão; quando a história do espelho divergiu e o checkout está limpo, recupera com reset para o remoto (reportando a recuperação). Nunca reseta por cima de modificação local.
 
 ## Política de update
 

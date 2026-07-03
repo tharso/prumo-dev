@@ -146,6 +146,7 @@ for root in roots:
     marketplace_known = False
     plugin_version = inspect_plugin_version(root)
     error = None
+    recovered = None
 
     if known_path.exists():
         known = read_json(known_path)
@@ -163,7 +164,38 @@ for root in roots:
             try:
                 run_git(["fetch", "origin", ref], market_dir)
                 run_git(["checkout", ref], market_dir)
-                run_git(["pull", "--ff-only", "origin", ref], market_dir)
+                try:
+                    run_git(["pull", "--ff-only", "origin", ref], market_dir)
+                except RuntimeError as ff_exc:
+                    # Fast-forward impossível. O caso CONTRATADO (#145) é o
+                    # checkout órfão: história do espelho reescrita, SEM
+                    # ancestral comum. Aí o checkout é cache de espelho e o
+                    # reset pro remoto é a operação correta. Qualquer outra
+                    # causa (modificação local, commits locais) aborta — o
+                    # reset destruiria trabalho que não é nosso.
+                    status = run_git(["status", "--porcelain"], market_dir).stdout.strip()
+                    if status:
+                        raise RuntimeError(
+                            "fast-forward impossível E o checkout tem modificações locais — "
+                            "não vou resetar por cima delas. Resolva à mão (git status no "
+                            f"checkout) e rode de novo. Detalhe: {ff_exc}"
+                        )
+                    merge_base = run_git(
+                        ["merge-base", "HEAD", f"origin/{ref}"], market_dir, check=False
+                    )
+                    if merge_base.returncode == 0 and merge_base.stdout.strip():
+                        raise RuntimeError(
+                            "fast-forward impossível por COMMITS LOCAIS no checkout "
+                            "(há ancestral comum com o remoto) — não vou descartá-los "
+                            "com reset. Inspecione com 'git log origin/"
+                            f"{ref}..HEAD' no checkout e decida o destino deles. "
+                            f"Detalhe: {ff_exc}"
+                        )
+                    run_git(["reset", "--hard", f"origin/{ref}"], market_dir)
+                    recovered = (
+                        f"história do espelho divergiu do checkout (sem ancestral "
+                        f"comum); checkout limpo resetado para origin/{ref}"
+                    )
                 if marketplace_known:
                     known[marketplace_name]["lastUpdated"] = timestamp
                     write_json(known_path, known)
@@ -187,6 +219,7 @@ for root in roots:
             "after_version": after_version,
             "plugin_version": plugin_version,
             "plugin_reinstall_recommended": bool(plugin_version and after_version and plugin_version != after_version),
+            "recovered": recovered,
             "error": error,
         }
     )
@@ -224,6 +257,8 @@ for item in results:
     print(f"- HEAD antes: {(item['before_head'] or 'n/d')[:7] if item['before_head'] else 'n/d'}")
     print(f"- HEAD depois: {(item['after_head'] or 'n/d')[:7] if item['after_head'] else 'n/d'}")
     print(f"- plugin instalado: {item['plugin_version'] or 'n/d'}")
+    if item.get("recovered"):
+        print(f"- recuperação: {item['recovered']}")
     if item["error"]:
         print(f"- erro: {item['error']}")
     elif item["plugin_reinstall_recommended"]:

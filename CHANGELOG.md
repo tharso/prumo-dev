@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.26.0] - 2026-07-03
+
+### Fixed
+- **Checkout do marketplace divergente não congela mais o usuário (#145)** — caso real: a história do espelho público foi reescrita e todo checkout anterior ficou órfão (sem ancestral comum); o `prumo_cowork_update.sh` usava só fast-forward e falhava pra sempre, a UI mostrava versão velha com `Atualizar` apagado e a reinstalação servia o catálogo fóssil. Agora: (1) **update recupera** — quando o ff falha e o checkout está **limpo**, reseta pro remoto e reporta a recuperação; com modificação local, **aborta com mensagem clara** (nunca reset por cima); (2) **doctor nomeia a natureza** — distingue "atrás do remoto (ff possível)" de "DIVERGIU (história reescrita)", classificando sem mutar o cache (só quando o objeto remoto já existe localmente); (3) **doctor não inspeciona mais o CWD por engano** — entrada de marketplace sem `installLocation` virava `Path("")` (= diretório atual); agora cai no fallback `marketplaces/<nome>`. Modo de falha documentado no `cowork-runtime-maintenance.md` (4.18.0). +4 testes (`test_marketplace_divergence`, com repos git fake e reescrita de história real).
+
 ## [5.25.0] - 2026-07-03
 
 ### Added
