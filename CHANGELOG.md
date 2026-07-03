@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.22.0] - 2026-07-03
+
+### Fixed
+- **Skills novas agora chegam de verdade ao usuário** (#146 — caso real: `/fim` dava "Habilidade desconhecida" no Cowork). Quatro correções encadeadas: (1) **`prumo update` propaga**: após update bem-sucedido com workspace no CWD, roda `prumo repair --workspace .` automaticamente com o binário pós-update — antes só imprimia uma sugestão que ninguém lia, e o runtime atualizava com as skills do workspace congeladas; (2) **`install_skills` poda**: skill removida do produto (ex.: `start`) sai do `.prumo/skills/` em vez de ficar pra sempre (nunca toca `Prumo/Custom/`); extraído pra `skills_install.py` (precedente #122, `workspace.py` 941→904 linhas), com re-export; (3) **host adapters podam**: `repair` remove symlinks gerenciados de skills que sumiram (+ symlinks quebrados apontando pra `.prumo/skills/`), preservando dirs não-gerenciados do usuário; (4) **doctor acha o store real**: `prumo_cowork_doctor.sh` passa a varrer também `~/.claude/cowork_plugins` e `~/.claude/plugins` (onde o plugin INSTALADO mora), mira o store com instalação, lista todos os stores, e **flagra plugin de era pré-skills-first (<5.x)** com a ação exata — na máquina real, um prumo 4.1.0 de março passava como "nada urgente". Bônus: doctor não crasha mais quando `marketplaces/<nome>` é um arquivo. +16 testes (`test_skill_propagation`, incl. execução do doctor com store fake).
+
 ## [5.21.0] - 2026-07-02
 
 ### Added

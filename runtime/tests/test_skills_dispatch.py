@@ -209,25 +209,48 @@ class RepairUpdatesDispatchTests(unittest.TestCase):
     """Repair deve atualizar wrappers quando dispatch muda, mesmo sem drift."""
 
     def test_repair_adds_new_skill_to_claude_md_without_drift(self) -> None:
+        """Skill nova chega via FONTE (install_skills), e o repair a leva pro
+        dispatch dos wrappers mesmo sem drift de versão. (Reescrito na #146:
+        plantar skill à mão em `.prumo/skills/` deixou de ser cenário válido —
+        a poda remove o que não veio da fonte; skill do usuário mora em
+        `Prumo/Custom/skills/`.) Simulamos "skill nova na fonte" apagando a
+        `fim` do workspace e do wrapper — o repair tem que reinstalá-la e
+        recolocá-la no dispatch."""
+        import re
+        import shutil
+
         with tempfile.TemporaryDirectory() as tmpdir:
             workspace = _make_test_workspace(Path(tmpdir))
             claude_md = workspace / "CLAUDE.md"
-            content_before = claude_md.read_text(encoding="utf-8")
 
-            # Adicionar skill fake
+            shutil.rmtree(workspace / ".prumo" / "skills" / "fim")
+            content = claude_md.read_text(encoding="utf-8")
+            content = re.sub(r"(?m)^\| fim \|.*\n", "", content)
+            claude_md.write_text(content, encoding="utf-8")
+            self.assertNotIn(".prumo/skills/fim/SKILL.md", claude_md.read_text(encoding="utf-8"))
+
+            repair_workspace(workspace)
+
+            content_after = claude_md.read_text(encoding="utf-8")
+            self.assertIn(".prumo/skills/fim/SKILL.md", content_after)
+            self.assertTrue((workspace / ".prumo" / "skills" / "fim" / "SKILL.md").exists())
+
+    def test_repair_prunes_manually_planted_skill_from_dispatch(self) -> None:
+        """#146: skill plantada à mão em `.prumo/skills/` (infra gerenciada) é
+        podada pelo repair e NÃO aparece no dispatch. Lugar de skill do
+        usuário é `Prumo/Custom/skills/`."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = _make_test_workspace(Path(tmpdir))
             fake_skill = workspace / ".prumo" / "skills" / "nova-skill"
             fake_skill.mkdir(parents=True)
             (fake_skill / "SKILL.md").write_text(
-                "---\nname: nova-skill\ndescription: Skill adicionada\n---\n",
+                "---\nname: nova-skill\ndescription: plantada à mão\n---\n",
                 encoding="utf-8",
             )
-
-            # Repair sem drift de versão
-            result = repair_workspace(workspace)
-
-            content_after = claude_md.read_text(encoding="utf-8")
-            self.assertIn("nova-skill", content_after)
-            self.assertIn(".prumo/skills/nova-skill/SKILL.md", content_after)
+            repair_workspace(workspace)
+            self.assertFalse(fake_skill.exists(), "infra gerenciada: plantio manual é podado")
+            content_after = (workspace / "CLAUDE.md").read_text(encoding="utf-8")
+            self.assertNotIn("nova-skill", content_after)
 
 
 class RepairPreIssue90WrapperTests(unittest.TestCase):

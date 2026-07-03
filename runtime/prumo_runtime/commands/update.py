@@ -12,6 +12,7 @@ from __future__ import annotations
 import importlib.metadata
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -368,8 +369,59 @@ def run_update(args) -> int:
             "workspace_detected": workspace_detected,
             "repair_suggested": workspace_detected,
         }
+        # Propaga o update pro workspace (#146): sem isto, o runtime atualiza
+        # mas as skills do workspace ficam velhas e comandos novos "não existem".
+        if workspace_detected:
+            payload["post_update"].update(
+                _run_post_update_repair(Path.cwd(), expected_version=new_version)
+            )
 
     return _emit(payload, output_format, exit_code=rc)
+
+
+def _run_post_update_repair(workspace: Path, *, expected_version: str | None) -> dict:
+    """Roda `prumo repair --workspace <ws>` com o binário PÓS-update.
+
+    VERIFICA a versão do binário antes (review Codex, #146): se o `prumo` do
+    PATH for outro (pipx/uv/venv antigo), o repair convergiria o workspace pra
+    fonte ERRADA — e a poda do install_skills removeria skills novas. Binário
+    divergente → não roda, degrada pra sugestão manual.
+    """
+    exe = shutil.which("prumo")
+    if exe is None:
+        return {
+            "repair_executed": False,
+            "repair_note": "binário `prumo` não encontrado no PATH; rode `prumo repair --workspace .` manualmente",
+        }
+    try:
+        version_check = subprocess.run(
+            [exe, "--version"], capture_output=True, text=True, timeout=15
+        )
+    except (subprocess.SubprocessError, OSError) as exc:
+        return {"repair_executed": False, "repair_note": f"não deu pra verificar o binário do PATH: {exc}"}
+    binary_version = version_check.stdout.strip().replace("prumo ", "") if version_check.returncode == 0 else None
+    if expected_version is None or binary_version != expected_version:
+        return {
+            "repair_executed": False,
+            "repair_note": (
+                f"o `prumo` do PATH ({exe}) está em {binary_version or 'versão desconhecida'}, "
+                f"não na recém-instalada {expected_version or '?'} — repair automático abortado "
+                "pra não sincronizar o workspace com a fonte errada"
+            ),
+        }
+    try:
+        completed = subprocess.run(
+            [exe, "repair", "--workspace", str(workspace)],
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+    except (subprocess.SubprocessError, OSError) as exc:
+        return {"repair_executed": False, "repair_note": f"repair automático falhou: {exc}"}
+    return {
+        "repair_executed": completed.returncode == 0,
+        "repair_exit_code": completed.returncode,
+    }
 
 
 def _emit(payload: dict, output_format: str, exit_code: int = 0) -> int:
@@ -415,7 +467,12 @@ def _emit(payload: dict, output_format: str, exit_code: int = 0) -> int:
     if post:
         if post.get("new_version"):
             print(f"Versão pós-update: {post['new_version']}")
-        if post.get("repair_suggested"):
+        if post.get("repair_executed"):
+            print("Workspace detectado no CWD — `prumo repair` executado automaticamente (skills propagadas).")
+        elif post.get("repair_suggested"):
+            note = post.get("repair_note")
+            if note:
+                print(f"⚠ {note}")
             print("Workspace detectado no CWD. Rode `prumo repair --workspace .` para alinhar.")
 
     return exit_code
