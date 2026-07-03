@@ -8,7 +8,7 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 
 | Tópico                | Entradas                                                                                  |
 |-----------------------|-------------------------------------------------------------------------------------------|
-| `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first), 2026-05-04 (#77), 2026-06-21 (#97 mapas), 2026-06-25 (#114 perfil modular), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#139 guarda-corpos), 2026-07-02 (#140 fichário), 2026-07-02 (#141 diário) |
+| `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first), 2026-05-04 (#77), 2026-06-21 (#97 mapas), 2026-06-25 (#114 perfil modular), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#139 guarda-corpos), 2026-07-02 (#140 fichário), 2026-07-02 (#141 diário), 2026-07-03 (#147 ideias) |
 | `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada) |
 | `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first), 2026-05-06 (quality-gate), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#141 diário — emenda à #68) |
 | `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist), 2026-06-24 (#110 não-bundle) |
@@ -56,6 +56,29 @@ A partir de 2026-05-04 (#78), toda entrada nova segue o formato:
 Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões anteriores" (introduzido na #78). Quando um conflito retrospectivo for descoberto, anotar a relação na entrada nova que o resolve — não reescrever entradas antigas.
 
 - `code-quality` — métricas de qualidade do codebase, quality gate, baseline.
+
+---
+
+## 2026-07-03 — Ideias que amadurecem: título-afirmação, adensamento indentado e divisão de item duplo (#147)
+
+**Tópicos:** workspace-layout
+
+**Issues relacionadas:** #147 (executa), #138 (épico — leva 2), #148/#149 (sucessoras na leva, em série).
+
+**Relações com decisões anteriores:**
+- **Estende:** o fluxo de processamento do inbox (`inbox-processing.md`) com a seção "Destilação de ideias" — três comportamentos de oferta (título-afirmação, dividir item duplo, adensar sob demanda). Nenhum contrato revogado.
+- **Mantém:** 2026-07-02 (#139 — regras 15/16/17). Tudo é oferta com alternativas; nada é criado ou fundido no escuro; o veto à varredura automática preserva a load-policy.
+- **Mantém e depende:** 2026-06-26 (#125/#126 — contrato de fragmento do acervo). O adensamento usa **sub-bullet datado indentado sob o bullet-pai** exatamente porque o acervo captura "bullet + linhas indentadas" como um fragmento só — a indentação é contrato (achado do Codex no design). Efeito declarado: adensar muda o `content_hash`, e relatório antigo do acervo bloqueia delete do item (proteção correta).
+- **Complementa:** 2026-07-02 (#140 — fichário). Ficha cataloga fonte; a ideia destilada mora no `IDEIAS.md` — espécies distintas, sem sobreposição.
+
+**Contexto:** Etapa 3 do épico #138 (segundo cérebro), leva 2 pedida pelo dono. `IDEIAS.md` era depósito de pensamento cru; sem átomos com tese não há o que conectar (Etapa 4). Roubo do conceito evergreen/note-making do LYT: destilar em afirmação, adensar em vez de espalhar. Design revisado pelo Codex (2 rodadas, DESIGN APROVADO).
+
+**Decisão:** (1) Título-afirmação como **oferta** no processamento (nunca na captura — cooling pad intacto); fragmento sem tese continua válido. (2) Item com duas ideias divide em dois; UMA pergunta só se genuinamente ambíguo. (3) Adensamento **sob demanda** (sinal do usuário ou percepção incidental — nunca scan): sub-bullet datado indentado; na dúvida, item separado; poda só via higiene. Convenção documentada no template do `IDEIAS.md` (`file-templates.md`) e travada por teste (`test_ideias_amadurecem.py`).
+
+**Alternativas consideradas:**
+- *Varredura de parentesco a cada item processado* → vetada (custo O(n) por item; briga com cooling pad e load-policy; a busca associativa é da revisão semanal — Etapa 4).
+- *Sub-bullet sem indentação obrigatória* → rejeitado: quebraria o contrato de fragmento do acervo (viraria item novo).
+- *Forçar título-afirmação em todo item de ideia* → rejeitado: fragmento sem tese é válido; imposição viraria fricção.
 
 ---
 

@@ -1,6 +1,6 @@
 # Inbox Processing
 
-> **module_version: 4.18.0**
+> **module_version: 4.19.0**
 >
 > Fonte canônica da triagem e do commit de inbox do Prumo.
 
@@ -117,6 +117,46 @@ seguindo o template de `../ficha-de-fonte.md`:
 3. registrar no `Referencias/INDICE.md` (mapeamento definido na
    `ficha-de-fonte.md`);
 4. remover o original do inbox (fluxo normal de commit, com `REGISTRO.md`).
+
+## Destilação de ideias
+
+Quando o item da triagem for **ideia** (sem próxima ação concreta — regra 5 do
+core), aplicar no **processamento** — nunca na captura; o INBOX continua porta
+de baixa fricção:
+
+1. **Título-afirmação (oferta):** propor um título que **afirme a tese** da
+   ideia — "Sistemas vencem disciplina quando o gatilho é ambiental" em vez de
+   "pensar sobre hábitos". Ideia com tese fica localizável e combinável. Sempre
+   como oferta com alternativas (regra 15); fragmento sem tese real continua
+   válido como fragmento — não forçar afirmação onde não há.
+
+2. **Duas ideias num item, dividir:** item que carrega duas ideias vira dois
+   itens na triagem. Devolver UMA pergunta curta ao usuário só quando a divisão
+   for genuinamente ambígua.
+
+3. **Adensar sob demanda:** quando o usuário sinalizar "isso tem a ver com X"
+   (ou o agente perceber no processamento e **oferecer**), o pensamento novo
+   entra como **sub-bullet datado indentado sob o bullet-pai** da ideia
+   existente em `IDEIAS.md`. A indentação é contrato, não estilo — é ela que
+   faz o `acervo` capturar o adensamento como parte do item (contrato de
+   fragmento: bullet + linhas indentadas):
+
+   ```markdown
+   - **Sistemas vencem disciplina quando o gatilho é ambiental.** (desde 20/06)
+     - 01/07: contra-evidência — na viagem, sem ambiente controlado, o hábito caiu.
+   ```
+
+   Freios:
+
+   - **Na dúvida, criar item separado** — fusão errada é pior que duplicação.
+   - **Nenhuma varredura automática** de parentesco por item processado (a
+     busca associativa pesada é da revisão semanal). O adensamento nasce de
+     sinal do usuário ou de percepção incidental — nunca de scan.
+   - Nenhuma rotina automática poda os sub-bullets datados; se um dia precisar
+     de poda, é a `higiene` (que conversa).
+   - Efeito no `acervo` (correto e desejado): adensar muda o `content_hash` do
+     item; relatório antigo do acervo fica **bloqueado para delete** daquele
+     item (hash divergente → pede revisão). É proteção, não bug.
 
 ## Regras de apresentação
 

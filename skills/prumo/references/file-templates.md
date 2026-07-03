@@ -137,6 +137,12 @@ _Inbox limpo._
 
 > Ideias sem ação imediata. Revisado na revisão semanal.
 > Se uma ideia amadureceu e tem próxima ação concreta, migrar para PAUTA.md.
+> Convenção de adensamento: pensamento novo sobre ideia que já existe entra
+> como sub-bullet datado **indentado sob o bullet-pai** — a indentação é o que
+> faz o acervo capturar o desdobramento como parte do item. Exemplo:
+>
+> - **Título que afirma uma tese.** (desde DD/MM)
+>   - DD/MM: desdobramento, contra-evidência ou nuance nova.
 
 _Nenhuma ideia registrada ainda._
 

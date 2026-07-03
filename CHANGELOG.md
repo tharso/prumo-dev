@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.23.0] - 2026-07-03
+
+### Added
+- **Ideias que amadurecem (#147, épico #138)** — seção "Destilação de ideias" no `inbox-processing.md` (4.19.0), três comportamentos de **oferta** no processamento (nunca na captura): **título-afirmação** ("Sistemas vencem disciplina quando o gatilho é ambiental" em vez de "pensar sobre hábitos"; fragmento sem tese continua válido); **dividir item duplo** (duas ideias viram dois itens; UMA pergunta só se ambíguo); **adensar sob demanda** (pensamento novo entra como **sub-bullet datado indentado sob o bullet-pai** — a indentação é contrato: é o que faz o acervo capturar o desdobramento como parte do item; na dúvida, item separado; nenhuma varredura automática; poda só via higiene; efeito no `content_hash` do acervo declarado — relatório antigo bloqueia delete, proteção correta). Convenção documentada no template do `IDEIAS.md` e travada por teste novo (`test_ideias_amadurecem.py`, TDD).
+
 ## [5.22.0] - 2026-07-03
 
 ### Fixed
