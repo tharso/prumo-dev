@@ -153,9 +153,13 @@ prumo migrate-skills --workspace /caminho/do/workspace
 └── VERSION                 # Versão atual
 ```
 
+## Usando com Obsidian (opcional)
+
+O workspace do Prumo é Markdown puro — se você usa o [Obsidian](https://obsidian.md), pode abrir a pasta `Prumo/` como vault e ganhar grafo, backlinks e busca de graça (as fichas e conexões usam `[[wikilinks]]`; os diários têm nome por data e viram calendário com a extensão gratuita Calendar). **Nada disso é requisito:** o Prumo funciona 100% sem o Obsidian. Guia completo em `skills/prumo/references/guia-obsidian.md`.
+
 ## Versão
 
-`5.24.0`
+`5.25.0`
 
 ## Licença
 

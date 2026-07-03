@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.25.0] - 2026-07-03
+
+### Added
+- **Guia Obsidian — bônus opcional (#149, épico #138)** — `skills/prumo/references/guia-obsidian.md` (1 página): abrir a pasta `Prumo/` como vault, o que ganha de graça (grafo/backlinks dos `[[wikilinks]]` das fichas, busca full-text, `Diario/` como calendário via extensão gratuita Calendar — de terceiro, não nativa) e as fronteiras (**o Obsidian nunca é requisito**; o vault pessoal do usuário é dele — o Prumo não escreve lá; `.obsidian/` não é estado do Prumo; sem curadoria de plugins). Gatilho de intenção no `dispatch.md` (Obsidian/vault/grafo/backlinks → guia; sem comando novo, sem picker) + seção curta no README. Fecha a leva 2 do épico. Travado por `test_guia_obsidian.py` (TDD).
+
 ## [5.24.0] - 2026-07-03
 
 ### Added
