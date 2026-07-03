@@ -12,6 +12,7 @@ from __future__ import annotations
 import importlib.metadata
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -368,8 +369,40 @@ def run_update(args) -> int:
             "workspace_detected": workspace_detected,
             "repair_suggested": workspace_detected,
         }
+        # Propaga o update pro workspace (#146): sem isto, o runtime atualiza
+        # mas as skills do workspace ficam velhas e comandos novos "não existem".
+        if workspace_detected:
+            payload["post_update"].update(_run_post_update_repair(Path.cwd()))
 
     return _emit(payload, output_format, exit_code=rc)
+
+
+def _run_post_update_repair(workspace: Path) -> dict:
+    """Roda `prumo repair --workspace <ws>` com o binário PÓS-update.
+
+    O shim do PATH resolve pra versão recém-instalada, então o repair copia
+    as skills novas (install_skills) e sincroniza os host adapters — o
+    usuário não precisa lembrar do segundo comando (#146).
+    """
+    exe = shutil.which("prumo")
+    if exe is None:
+        return {
+            "repair_executed": False,
+            "repair_note": "binário `prumo` não encontrado no PATH; rode `prumo repair --workspace .` manualmente",
+        }
+    try:
+        completed = subprocess.run(
+            [exe, "repair", "--workspace", str(workspace)],
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+    except (subprocess.SubprocessError, OSError) as exc:
+        return {"repair_executed": False, "repair_note": f"repair automático falhou: {exc}"}
+    return {
+        "repair_executed": completed.returncode == 0,
+        "repair_exit_code": completed.returncode,
+    }
 
 
 def _emit(payload: dict, output_format: str, exit_code: int = 0) -> int:
@@ -415,7 +448,12 @@ def _emit(payload: dict, output_format: str, exit_code: int = 0) -> int:
     if post:
         if post.get("new_version"):
             print(f"Versão pós-update: {post['new_version']}")
-        if post.get("repair_suggested"):
+        if post.get("repair_executed"):
+            print("Workspace detectado no CWD — `prumo repair` executado automaticamente (skills propagadas).")
+        elif post.get("repair_suggested"):
+            note = post.get("repair_note")
+            if note:
+                print(f"⚠ {note}")
             print("Workspace detectado no CWD. Rode `prumo repair --workspace .` para alinhar.")
 
     return exit_code

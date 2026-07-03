@@ -162,10 +162,55 @@ def repair_host_adapters(workspace: Path) -> dict[str, Any]:
                 needs_manifest_update = True
                 repaired += 1
 
+    # Poda (#146): adapter cuja skill sumiu da fonte continua aparecendo nos
+    # hosts como comando fantasma. Dois casos seguros:
+    # 1) entry GERENCIADA no manifest pra skill inexistente → remover
+    #    (symlink direto; cópia só com o marcador .prumo-managed);
+    # 2) symlink quebrado apontando pra dentro de .prumo/skills/ (legado
+    #    sem manifest) → remover.
+    # Dir real do usuário (não-gerenciado) nunca é tocado.
+    pruned = 0
+    skills_set = set(skills)
+    for host, skill_name in list(managed_entries.keys()):
+        if skill_name in skills_set:
+            continue
+        convention_path = HOST_CONVENTIONS.get(host)
+        if convention_path is None:
+            continue
+        adapter_path = workspace / convention_path / skill_name
+        if adapter_path.is_symlink():
+            adapter_path.unlink()
+            pruned += 1
+        elif adapter_path.is_dir():
+            if (adapter_path / _MANAGED_MARKER).is_file():
+                shutil.rmtree(adapter_path)
+                pruned += 1
+        managed_set.discard((host, skill_name))
+        needs_manifest_update = True
+
+    for host, convention_path in HOST_CONVENTIONS.items():
+        host_skills_dir = workspace / convention_path
+        if not host_skills_dir.is_dir():
+            continue
+        for child in host_skills_dir.iterdir():
+            if not child.is_symlink():
+                continue
+            raw_target = os.readlink(str(child))
+            resolved = (child.parent / raw_target).resolve() if not os.path.isabs(raw_target) else Path(raw_target)
+            try:
+                resolved.relative_to(skills_root.resolve())
+            except ValueError:
+                continue  # aponta pra fora da nossa infra — não é assunto nosso
+            if not resolved.exists():
+                child.unlink()
+                managed_set.discard((host, child.name))
+                pruned += 1
+                needs_manifest_update = True
+
     if needs_manifest_update:
         _rebuild_manifest(workspace, skills_root, managed_set)
 
-    return {"repaired": repaired, "status": "ok"}
+    return {"repaired": repaired, "status": "ok", "pruned": pruned}
 
 
 def _rebuild_manifest(

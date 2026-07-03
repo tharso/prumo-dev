@@ -329,33 +329,9 @@ def create_missing_files(config: WorkspaceConfig) -> dict[str, list[str]]:
     return result
 
 
-def install_skills(workspace: Path, *, layout_mode: str = "nested") -> list[str]:
-    """Copy base skills from repo into .prumo/system/skills/ in the workspace."""
-    from prumo_runtime.workspace_paths import workspace_paths as ws_paths
-
-    paths = ws_paths(workspace, layout_mode=layout_mode)
-    if not paths.nested_layout:
-        return []
-    repo = repo_root_from(Path(__file__))
-    if repo is None:
-        # Em wheel install, repo_root_from cai no fallback _bundled/. Se mesmo
-        # assim retornou None, é estado patológico (wheel sem _bundled, ou
-        # execução fora de contexto). Retorna lista vazia em vez de crashar.
-        return []
-    source = repo / "skills"
-    if not source.is_dir():
-        return []
-    target = paths.system_skills_root
-    installed: list[str] = []
-    for skill_dir in sorted(source.iterdir()):
-        if not skill_dir.is_dir() or skill_dir.name.startswith("."):
-            continue
-        dest = target / skill_dir.name
-        if dest.exists():
-            shutil.rmtree(dest)
-        shutil.copytree(skill_dir, dest)
-        installed.append(skill_dir.name)
-    return installed
+# install_skills mudou de morada (#146): agora em `skills_install.py` (com a
+# poda de skills removidas). Re-export mantém os importadores existentes.
+from prumo_runtime.skills_install import install_skills  # noqa: E402,F401
 
 
 def parse_skill_frontmatter(skill_md: Path) -> dict[str, str]:
