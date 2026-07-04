@@ -6,6 +6,9 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+### Added
+- **Suíte de conformidade comportamental — A0 (#157, épico #161)** — infra de teste (não muda o produto, sem bump): `conformance/` prova contratos críticos como **comportamento de um agente real** operando as skills, com oráculos determinísticos (`filesystem`). Host `replay` roda em CI (prova o pipeline e a discriminação dos oráculos sem LLM); host `claude_code` (`claude -p`) roda na cadência do dono. Três cenários safety em par negativo/positivo: diário só grava após OK (C3), remoção de inbox só com confirmação + trilha (C5), setup não pré-cria `Diario/` (C7). Ver `conformance/SPEC.md`. A1 (multi-host + transcript/tool-call, incl. C12 consumindo as fixtures de injeção da #156) e A2 (gate) são follow-up. DECISIONS.md 2026-07-04.
+
 ## [5.27.0] - 2026-07-04
 
 ### Security
