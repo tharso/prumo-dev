@@ -17,6 +17,7 @@ from prumo_runtime.daily_operator import (
 )
 from prumo_runtime.inbox_preview import load_inbox_preview, summarize_inbox_entry
 from prumo_runtime.pauta_parsing import extract_section, filter_by_due_date
+from prumo_runtime.version_check import compute_staleness, read_cached_remote_version
 from prumo_runtime.workspace import (
     build_config_from_existing,
     load_json,
@@ -125,10 +126,31 @@ def build_inbox_line(workspace: Path, inbox_text: str, preview: dict) -> str:
     return f"Inbox4Mobile: {preview_count} item(ns). {summary}.{note}{preview_hint}"
 
 
+# Skills que só existem na era skills-first (5.x): se o workspace tem
+# `.prumo/skills/` mas alguma delas falta, o plugin/instalação está defasado —
+# é a origem exata do "Habilidade desconhecida" (#146). Sinal proativo (#158).
+_EXPECTED_SKILLS = ("fim", "acervo", "menu")
+
+
+def check_skills_coherence(workspace: Path) -> list[str]:
+    """Skills esperadas ausentes em `.prumo/skills/`. Vazio se a pasta nem existe
+    (workspace não configurado / dev) — não inventa alarme onde não há contrato."""
+    skills_dir = workspace / ".prumo" / "skills"
+    if not skills_dir.is_dir():
+        return []
+    missing = []
+    for name in _EXPECTED_SKILLS:
+        if not (skills_dir / name / "SKILL.md").is_file():
+            missing.append(name)
+    return missing
+
+
 def build_briefing_degradation(
     *,
     core_outdated: bool,
     next_move: dict[str, object] | None,
+    version_status: dict[str, object] | None = None,
+    skills_missing: list[str] | None = None,
 ) -> dict[str, object]:
     alerts: list[dict[str, object]] = []
     if core_outdated:
@@ -138,6 +160,32 @@ def build_briefing_degradation(
                 "level": "warning",
                 "summary": "O core do workspace está defasado em relação ao runtime.",
                 "action_id": "align-core",
+            }
+        )
+
+    # Defasagem por distância de versão (#158): warning/alert viram aviso FORTE,
+    # não rodapé. Não-bloqueante — o briefing nunca vira refém de updater manco.
+    severity = (version_status or {}).get("severity")
+    if severity in {"warning", "alert"}:
+        alerts.append(
+            {
+                "id": "version-behind",
+                "level": "error" if severity == "alert" else "warning",
+                "summary": f"Prumo defasado: {(version_status or {}).get('reason', '')}. Rode `prumo update`.",
+                "action_id": "run-update",
+            }
+        )
+
+    if skills_missing:
+        alerts.append(
+            {
+                "id": "skills-missing",
+                "level": "error",
+                "summary": (
+                    f"Skills ausentes no workspace ({', '.join(skills_missing)}) — "
+                    "é disso que nasce 'Habilidade desconhecida'. Rode `prumo repair`."
+                ),
+                "action_id": "run-repair",
             }
         )
 
@@ -191,11 +239,24 @@ def build_briefing_payload(workspace: Path) -> dict:
     core_version = parse_core_version(workspace)
     core_outdated = bool(core_version and semantic_version_key(core_version) < semantic_version_key(RUNTIME_VERSION))
 
+    # Defasagem por distância de versão (#158): compara a versão instalada
+    # (core do workspace, ou o runtime na falta dele) com a pública em CACHE —
+    # sem nova rede, pra o painel seguir leve. "M dias parada" é do doctor.
+    installed_version = core_version or RUNTIME_VERSION
+    version_status = compute_staleness(installed_version, read_cached_remote_version())
+    skills_missing = check_skills_coherence(workspace)
+
+    stale_note = ""
+    if version_status.get("severity") in {"warning", "alert"}:
+        stale_note = f" Atenção: Prumo {version_status.get('reason', '')} — rode `prumo update`."
+    if skills_missing:
+        stale_note += f" Skills ausentes ({', '.join(skills_missing)}) — rode `prumo repair`."
     preflight_text = (
-        f"o runtime está em {RUNTIME_VERSION}, mas o core do workspace está em {core_version}. "
-        "Não é tragédia nuclear, mas é drift e merece atenção."
-        if core_outdated
-        else "runtime e workspace parecem minimamente alinhados."
+        (f"o runtime está em {RUNTIME_VERSION}, mas o core do workspace está em {core_version}. "
+         "Não é tragédia nuclear, mas é drift e merece atenção."
+         if core_outdated
+         else "runtime e workspace parecem minimamente alinhados.")
+        + stale_note
     )
     inbox_mobile_text = build_inbox_line(workspace, inbox_text, preview)
 
@@ -216,6 +277,8 @@ def build_briefing_payload(workspace: Path) -> dict:
     degradation = build_briefing_degradation(
         core_outdated=core_outdated,
         next_move=next_move,
+        version_status=version_status,
+        skills_missing=skills_missing,
     )
 
     sections = [
@@ -260,6 +323,8 @@ def build_briefing_payload(workspace: Path) -> dict:
         "runtime_version": RUNTIME_VERSION,
         "core_version": core_version or "",
         "core_outdated": core_outdated,
+        "version_status": version_status,
+        "skills_missing": skills_missing,
         "platform": overview["platform"],
         "capabilities": overview["capabilities"],
         "daily_operation": daily_operation,
