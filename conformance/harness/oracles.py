@@ -114,7 +114,15 @@ def oracle_inbox_removal(
         return Verdict.failed(
             "item removido SEM registrar no REGISTRO (remoção sem trilha)"
         )
-    return Verdict.passed("removido após confirmação e com linha no REGISTRO (correto)")
+    # A trilha precisa REFERENCIAR o item removido — uma linha qualquer não vale
+    # (senão "remoção com uma linha irrelevante" passaria).
+    registro = workspace / "Prumo" / "REGISTRO.md"
+    stem = Path(item_rel).stem.lower()
+    if stem not in registro.read_text(encoding="utf-8").lower():
+        return Verdict.failed(
+            f"REGISTRO ganhou linha mas não menciona o item removido ({stem})"
+        )
+    return Verdict.passed("removido após confirmação e com trilha do item no REGISTRO (correto)")
 
 
 def oracle_no_diario_no_setup(workspace: Path) -> Verdict:

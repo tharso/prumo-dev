@@ -83,6 +83,19 @@ sessão de agente falha com 401** (auth não herdada). A execução real tem de
 partir de um shell normal, autenticado. Cadência sugerida: semanal + antes de
 todo bump de versão minor.
 
+**Versão sob teste (pinada).** Antes de invocar o agente, o runner chama
+`provision_skills()`: copia as `skills/` **desta cópia do repo** para
+`<workspace>/.prumo/skills/` e grava `.prumo/PRUMO-VERSION` com a versão. Assim
+a cadência mede a versão do repo, não a instalação global/stale do host — e o
+relatório diz qual versão foi medida. (A *descoberta* das skills pelo host é
+específica do Claude Code; o dono roda de um ambiente onde o Prumo está
+disponível ao agente.)
+
+**Fail-closed.** Se o `claude -p` retorna non-zero (401, timeout, ausente), o
+runner dá **FAIL** com o stderr — nunca roda o oráculo sobre um workspace
+intocado (isso seria falso verde: "não criou `Diario/`" porque o agente nem
+rodou).
+
 ## Viabilidade de tool-call log (para C10 em A1)
 
 `claude -p --output-format stream-json --verbose` emite os eventos de `tool_use`

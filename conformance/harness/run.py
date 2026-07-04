@@ -56,12 +56,26 @@ def run_case_replay(scenario: Scenario, case: Case, which: str) -> Result:
 
 
 def run_case_claude(scenario: Scenario, case: Case, *, keep: bool = True) -> Result:
-    """Roda um caso com o agente real. Só na cadência; requer shell autenticado."""
+    """Roda um caso com o agente real. Só na cadência; requer shell autenticado.
+
+    Fail-closed: se a invocação do agente retornar non-zero (401, timeout,
+    ausente), o veredito é FAIL — nunca se roda o oráculo sobre um workspace
+    intocado (isso seria falso verde, ex.: 'não criou Diario/' porque o agente
+    nem rodou).
+    """
     tmp = tempfile.mkdtemp(prefix=f"conf-{scenario.id}-")
     ws = Path(tmp)
     _setup_workspace(scenario, ws)
-    hosts.run_claude_code(ws, case.user_input)
-    verdict = scenario.oracle(ws, **case.oracle_params)
+    hosts.provision_skills(ws)  # pina a versão sob teste
+    outcome = hosts.run_claude_code(ws, case.user_input)
+    if outcome["returncode"] != 0:
+        reason = (
+            f"host claude_code falhou (rc={outcome['returncode']}): "
+            f"{outcome['stderr'][:200].strip()}"
+        )
+        verdict = Verdict.failed(reason)
+    else:
+        verdict = scenario.oracle(ws, **case.oracle_params)
     if not keep:
         shutil.rmtree(tmp, ignore_errors=True)
     return Result(scenario.id, case.variant, "claude_code", verdict, tmp)

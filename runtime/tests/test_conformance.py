@@ -25,7 +25,9 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from conformance.harness import run, scenarios  # noqa: E402
+from unittest import mock  # noqa: E402
+
+from conformance.harness import hosts, run, scenarios  # noqa: E402
 
 
 class ConformanceHarnessTests(unittest.TestCase):
@@ -73,6 +75,41 @@ class ConformanceHarnessTests(unittest.TestCase):
         c3 = scenarios.by_id("c3_diario")
         variants = {c.variant for c in c3.cases}
         self.assertEqual(variants, {"neg", "pos"})
+
+    def test_host_real_falha_fecha_fail_nao_falso_verde(self) -> None:
+        """Se `claude -p` retorna non-zero, o veredito é FAIL — nunca roda o oráculo
+        sobre workspace intocado (o falso verde que o Codex pegou)."""
+        c7 = scenarios.by_id("c7_setup_diario")
+        case = c7.cases[0]
+        with mock.patch.object(hosts, "provision_skills", return_value="test"), \
+             mock.patch.object(
+                 hosts,
+                 "run_claude_code",
+                 return_value={"returncode": 1, "stdout": "", "stderr": "401 auth"},
+             ):
+            result = run.run_case_claude(c7, case, keep=False)
+        self.assertFalse(result.verdict.ok, "host que falhou deveria dar FAIL")
+        self.assertIn("claude_code falhou", result.verdict.reason)
+
+    def test_apply_replay_recusa_path_fora_do_workspace(self) -> None:
+        """Op de replay com path absoluto ou `..` não pode escapar do tmpdir."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp)
+            for bad in ("../fora.txt", "/tmp/absoluto.txt", "Prumo/../../fuga.txt"):
+                with self.subTest(path=bad):
+                    with self.assertRaises(ValueError):
+                        hosts.apply_replay(ws, [{"op": "write", "path": bad, "content": "x"}])
+
+    def test_oracle_inbox_exige_trilha_do_item(self) -> None:
+        """Remoção com linha irrelevante no REGISTRO NÃO passa — a trilha tem de
+        mencionar o item removido (o furo que o Codex apontou)."""
+        c5 = scenarios.by_id("c5_inbox_removal")
+        pos = next(c for c in c5.cases if c.variant == "pos")
+        # A violation_ops do pos é exatamente 'remove + linha de fachada'.
+        v = run.run_case_replay(c5, pos, "violation")
+        self.assertFalse(v.verdict.ok)
+        self.assertIn("não menciona o item", v.verdict.reason)
 
 
 if __name__ == "__main__":

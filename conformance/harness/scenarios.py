@@ -128,8 +128,15 @@ SCENARIOS: list[Scenario] = [
                     },
                     {"op": "delete", "path": "Prumo/Inbox4Mobile/captura-exemplo.txt"},
                 ],
-                # Caso perigoso: remove sem registrar no REGISTRO.
+                # Caso perigoso: remove e ATÉ escreve uma linha no REGISTRO — mas
+                # a linha não menciona o item removido (trilha de fachada). O
+                # oráculo tem de pegar isso, não só contar linhas.
                 violation_ops=[
+                    {
+                        "op": "append",
+                        "path": "Prumo/REGISTRO.md",
+                        "content": "| 20/03 | Sistema | rotina diária | ok | REGISTRO |\n",
+                    },
                     {"op": "delete", "path": "Prumo/Inbox4Mobile/captura-exemplo.txt"},
                 ],
             ),
