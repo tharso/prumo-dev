@@ -1,8 +1,41 @@
 # Version Update
 
-> **module_version: 4.22.0**
+> **module_version: 4.23.0**
 >
 > Fonte canônica do fluxo de verificação e aplicação de atualização do Prumo.
+
+## Fonte de verdade da defasagem, por elo (#158)
+
+Staleness não dá erro — dá ausência. Pra o briefing gritar na hora certa sem
+mentir, cada elo tem uma fonte de verdade própria; não misturar:
+
+| Elo | O que mede a "idade" | Quem computa |
+|---|---|---|
+| Versão instalada vs. pública | **distância de versão** (minor) entre o core do workspace e o `VERSION` público | runtime (`prumo briefing --format json` → `version_status`) |
+| Checkout do marketplace (Cowork) | **`lastUpdated`** + HEAD local vs. remoto (divergência) — é aqui que mora "M dias parada" | `/doctor` (`prumo_cowork_doctor.sh`) |
+| Skills no workspace | **presença** das skills esperadas em `.prumo/skills/` (o `fim` existe?) | runtime (`skills_missing` no payload) |
+| Runtime vs. core | `prumo` no PATH vs. `prumo_version` do core | runtime (`core_outdated`) |
+
+**Descasamento entre quaisquer dois = aviso com a ação exata.** "N minor atrás"
+vem da distância de versão; "M dias parada" vem do `lastUpdated` do Cowork — não
+inventar dias a partir da distância de versão nem vice-versa.
+
+## Severidade da defasagem (o preflight barulhento)
+
+O runtime devolve `version_status.severity` no briefing (lendo a versão pública
+do **cache**, sem nova rede — o painel segue leve):
+
+- `ok` — em dia. Sem ruído.
+- `info` — só patch atrás. Rodapé no máximo.
+- `warning` — **1 minor atrás** → aviso forte, uma linha, com `prumo update`.
+- `alert` — **2+ minor, ou salto de major** → aviso forte de topo (foi o caso do
+  usuário preso 2 meses na 4.7.0).
+- `unknown` — não deu pra checar a pública. **Nunca** declarar "em dia" aqui.
+
+O aviso é **não-bloqueante** (o briefing nunca vira refém de updater manco) e
+naturalmente **~1x/dia** (o briefing é diário). Skills ausentes
+(`skills_missing`) viram aviso de `prumo repair` — é a origem exata do
+"Habilidade desconhecida".
 
 ## Objetivo
 

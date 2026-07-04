@@ -176,6 +176,64 @@ def _is_newer(remote: str, local: str) -> bool:
         return False
 
 
+def read_cached_remote_version() -> str | None:
+    """Lê a versão remota do cache SEM buscar na rede.
+
+    O briefing (`prumo briefing --format json`) usa isto para computar a
+    severidade da defasagem sem adicionar latência: o cache é populado pela
+    checagem periódica (banner). Se o cache não existe/expirou, devolve None e
+    o agente cai no Passo 2 do `version-update.md` (WebFetch do VERSION).
+    """
+    cache = _read_cache(_cache_path())
+    if not cache:
+        return None
+    remote = cache.get("remote_version")
+    return remote if isinstance(remote, str) else None
+
+
+def _minor_distance(local: tuple[int, ...], remote: tuple[int, ...]) -> int:
+    """Quantos *minor* o remoto está à frente do local. Major diferente = longe."""
+    lm = local + (0,) * (3 - len(local))
+    rm = remote + (0,) * (3 - len(remote))
+    if rm[0] != lm[0]:
+        return 99  # salto de major — sempre alerta
+    return rm[1] - lm[1]
+
+
+def compute_staleness(local: str, remote: str | None) -> dict[str, Any]:
+    """Severidade da defasagem por **distância de versão** (fonte de verdade deste elo).
+
+    A dimensão "M dias parada" NÃO vem daqui — vem do `lastUpdated` do checkout
+    do marketplace, computado pelo `/doctor` (ver `version-update.md` → fonte de
+    verdade por elo). Aqui é só distância de versão: instalada (core do
+    workspace) vs. pública.
+
+    Severidade: `ok` (em dia) · `info` (só patch atrás) · `warning` (1 minor
+    atrás) · `alert` (2+ minor, ou salto de major) · `unknown` (sem remoto).
+    """
+    if not remote:
+        return {"severity": "unknown", "minor_behind": 0, "local": local, "remote": None,
+                "reason": "versão pública ainda não checada"}
+    try:
+        rv = tuple(int(x) for x in remote.split("."))
+        lv = tuple(int(x) for x in local.split("."))
+    except (ValueError, AttributeError):
+        return {"severity": "unknown", "minor_behind": 0, "local": local, "remote": remote,
+                "reason": "versão ilegível"}
+    if rv <= lv:
+        return {"severity": "ok", "minor_behind": 0, "local": local, "remote": remote,
+                "reason": "em dia com a versão pública"}
+    behind = _minor_distance(lv, rv)
+    if behind >= 2:
+        severity, reason = "alert", f"{behind} versões atrás da pública ({remote})"
+    elif behind == 1:
+        severity, reason = "warning", f"uma versão atrás da pública ({remote})"
+    else:
+        severity, reason = "info", f"um patch atrás da pública ({remote})"
+    return {"severity": severity, "minor_behind": behind, "local": local, "remote": remote,
+            "reason": reason}
+
+
 def _fetch_remote_version() -> str | None:
     try:
         with urllib.request.urlopen(REMOTE_VERSION_URL, timeout=DEFAULT_FETCH_TIMEOUT) as resp:

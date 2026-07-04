@@ -9,7 +9,7 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 | Tópico                | Entradas                                                                                  |
 |-----------------------|-------------------------------------------------------------------------------------------|
 | `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first), 2026-05-04 (#77), 2026-06-21 (#97 mapas), 2026-06-25 (#114 perfil modular), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#139 guarda-corpos), 2026-07-02 (#140 fichário), 2026-07-02 (#141 diário), 2026-07-03 (#147 ideias), 2026-07-03 (#148 conexões) |
-| `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada) |
+| `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-04 (#158 detecção defasagem) |
 | `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first), 2026-05-06 (quality-gate), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#141 diário — emenda à #68) |
 | `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist), 2026-06-24 (#110 não-bundle) |
 | `dispatch-bootstrap`  | 2026-04-21 (#69 despacho), 2026-06-23 (#104 briefing rico), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada) |
@@ -96,6 +96,35 @@ Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões ant
 **Alternativas consideradas:**
 - *Comando `/obsidian` ou entrada no picker* → rejeitado (picker é pros atalhos do dia a dia — #132; o guia é consulta ocasional).
 - *Recomendar lista de plugins* → rejeitado (curadoria de terceiros apodrece; só a Calendar, porque destrava o Diario/).
+
+---
+
+## 2026-07-04 — Detecção proativa de defasagem: staleness deixa de ser silenciosa (#158)
+
+**Tópicos:** skills-distribution, briefing
+
+**Issues relacionadas:** #158 (executa), #161 (épico), #145/#146 (predecessoras — este é o follow-up de detecção proativa), #157 (o cenário de falha silenciosa migra pra suíte de conformidade).
+
+**Relações com decisões anteriores:**
+- **Estende:** #145 (checkout divergente) e #146 (propagação/doctor). Elas consertaram os elos quebrados; esta adiciona a **detecção proativa no fluxo normal** (o briefing) — o usuário descobre a defasagem sem precisar lembrar do `/doctor`.
+- **Mantém:** a leveza do painel (o briefing lê a versão pública do **cache**, sem nova rede; #104 preservou o runtime como prévia leve) e a regra "briefing não vira refém de updater manco" (os avisos são não-bloqueantes).
+- **Mantém:** o contrato do version-update.md (Passo 2 segue igual; a severidade é uma camada nova por cima).
+
+**Contexto:** Defeito C1 da auditoria (#161). Staleness apodrecia em silêncio — o dono ficou ~2 meses na 4.7.0 sem aviso no caminho que ele percorre (o briefing). O `/doctor` já sabia diagnosticar (#145/#146) mas exigia o usuário rodá-lo. Design revisado pelo Codex (2 rodadas) — bloqueante resolvido: a "idade" tinha de ter **fonte de verdade definida por elo**.
+
+**Decisão:**
+1. **Fonte de verdade por elo** (documentada em `version-update.md`): distância de versão (briefing/`version_status`), `lastUpdated` do checkout Cowork (doctor — é aqui que mora "M dias"), presença de skills (`skills_missing`), runtime vs. core (`core_outdated`). Não inventar dias a partir de distância de versão.
+2. **Severidade no runtime** (`version_check.compute_staleness`, função pura): `ok`/`info`/`warning`(1 minor)/`alert`(2+ minor ou major)/`unknown`. Exposta no `prumo briefing --format json` como `version_status` + alerta na `degradation` quando warning/alert. Lê a pública do cache (sem nova rede).
+3. **Coerência de skills** (`check_skills_coherence`): skills esperadas (`fim`/`acervo`/`menu`) ausentes em `.prumo/skills/` → alerta `prumo repair` (a origem do "Habilidade desconhecida"). Não alarma se `.prumo/skills/` nem existe.
+4. **Preflight barulhento** (`briefing-procedure.md` 4.27.0): warning/alert viram aviso forte com a ação exata; não-bloqueante; ~1x/dia (natural do briefing diário).
+5. **Doctor com semáforo** (`doctor/SKILL.md`): 🟢/🟡/🔴 por elo, usando os campos que o script já computa.
+
+Travado por `test_deteccao_defasagem.py` (14 testes). Bump 5.27.0→5.28.0.
+
+**Alternativas consideradas:**
+- *Fazer o briefing buscar a versão pública na hora* → rejeitado: adiciona latência ao painel leve; o cache do `version_check` já tem a pública (populada pelo banner).
+- *"M dias" a partir da idade do cache do briefing* → rejeitado: cache-age é "quando checamos", não "há quanto tempo atrás"; a fonte honesta de dias é o `lastUpdated` do Cowork (doctor).
+- *Alerta a cada interação* → rejeitado: vira ruído; o briefing diário já dá a cadência ~1x/dia.
 
 ---
 

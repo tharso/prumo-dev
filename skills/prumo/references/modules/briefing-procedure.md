@@ -1,6 +1,6 @@
 # Briefing Procedure
 
-> **module_version: 4.26.0**
+> **module_version: 4.27.0**
 >
 > Fonte canônica do procedimento de briefing do Prumo.
 > Se este módulo conflitar com um resumo em `SKILL.md`, este módulo vence.
@@ -48,6 +48,7 @@ Antes do panorama, executar o **preflight completo** de `version-update.md` — 
 1. Se houver versão nova detectável (incl. `VERSION` remoto > `prumo_version` do workspace), avisar a diferença em uma linha e seguir o briefing. Não bloquear.
 2. Se `Prumo/VERSION` local for maior que o `prumo_version` do `.prumo/system/PRUMO-CORE.md` do workspace, avisar que o core do workspace está defasado e seguir.
 3. Se a checagem falhar, registrar em uma linha e seguir. O briefing não vira refém de updater manco.
+4. **Severidade (#158):** ler `version_status.severity` do payload (ou computar a distância de versão). Se `warning`/`alert`, o aviso é **forte** (não rodapé) com a ação exata (`prumo update`) — staleness não pode passar despercebida, foi o que prendeu um usuário 2 meses numa versão fóssil. Se `skills_missing` não vier vazio, avisar `prumo repair` (é a origem do "Habilidade desconhecida"). Regra da fonte de verdade por elo e limiares: `version-update.md`. **Não-bloqueante** sempre.
 
 ## Passo 3: estado operacional
 
