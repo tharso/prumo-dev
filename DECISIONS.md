@@ -18,7 +18,7 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 | `integrations`        | 2026-04-14 (Google Drive snapshots)                                                       |
 | `briefing`            | 2026-04-14 (Google Drive snapshots), 2026-04-21 (#69 despacho), 2026-06-23 (#102 decidir), 2026-06-23 (#104 briefing rico), 2026-06-25 (#114 perfil modular), 2026-07-02 (#139 guarda-corpos), 2026-07-03 (#148 conexões), 2026-07-04 (#156 injeção) |
 | `personalization`     | 2026-04-21 (tharso-voice)                                                                 |
-| `code-quality`        | 2026-05-06 (quality-gate), 2026-06-25 (#122 baseline 1061→930), 2026-07-03 (baseline 82/904) |
+| `code-quality`        | 2026-05-06 (quality-gate), 2026-06-25 (#122 baseline 1061→930), 2026-07-03 (baseline 82/904), 2026-07-04 (#157 conformidade A0) |
 | `touchpoint`          | 2026-05-18 (landing page sync), 2026-07-03 (#149 guia Obsidian — candidato à landing)     |
 | `security`            | 2026-07-04 (#156 injeção — conteúdo de terceiro é dado, nunca comando)                     |
 
@@ -96,6 +96,32 @@ Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões ant
 **Alternativas consideradas:**
 - *Comando `/obsidian` ou entrada no picker* → rejeitado (picker é pros atalhos do dia a dia — #132; o guia é consulta ocasional).
 - *Recomendar lista de plugins* → rejeitado (curadoria de terceiros apodrece; só a Calendar, porque destrava o Diario/).
+
+---
+
+## 2026-07-04 — Conformidade comportamental (A0): provar contratos como comportamento de agente real (#157)
+
+**Tópicos:** code-quality, governance
+
+**Issues relacionadas:** #157 (executa A0), #161 (épico — auditoria de defeitos), #156 (as fixtures de injeção viram cenários de transcript em A1/C12), #141 (contrato do diário testado no C3), #139 (regra 16 testada no C7).
+
+**Relações com decisões anteriores:**
+- **Estende:** 2026-05-06 (quality-gate). O gate congela métricas de código (ruff, cobertura, maior arquivo); a conformidade estende a mesma filosofia — "o codebase só melhora" — para o **comportamento do agente** sobre as skills, que os testes de código não alcançam.
+- **Mantém:** "mojo, não determinismo" ([[prumo-mojo-nao-determinismo]]). A suíte **não determiniza o julgamento** do agente; mede se os **contratos críticos** (segurança, confirmação, trilha) são respeitados. O que é julgamento continua livre.
+- **Ortogonal:** ao `baseline.json` — a conformidade não entra no quality gate desta vez (o gate atual segue só código); o gate de conformidade é A2 (follow-up).
+
+**Contexto:** Defeito A da auditoria (#161). Os testes travavam o texto das regras (anti-drift) e o runtime determinístico, mas não o elo que chega ao usuário: o agente lendo skills. Correção do Codex ao diagnóstico original: **existem** testes de runtime (`test_due_date_filter`, `test_briefing`); o gap preciso é conformidade de **agente real**. Design revisado em 2 rodadas.
+
+**Decisão (A0):** harness em `conformance/` com oráculos **funções puras** (`filesystem`, o tipo mais forte), cenários com fixture versionada, e dois hosts: `replay` (determinístico, roda em CI — prova o pipeline e a discriminação dos oráculos sem LLM) e `claude_code` (agente real via `claude -p`, rodado pelo dono na cadência — não em CI). Três cenários safety, cada um em **par negativo/positivo**: C3 (diário só grava após OK), C5 (remoção de inbox só com confirmação + trilha no REGISTRO), C7 (setup não pré-cria `Diario/`). Travado por `runtime/tests/test_conformance.py` (exige compliant→PASS e violation→FAIL). Sem bump de versão: `conformance/` e `runtime/tests/` estão fora do escopo vigiado (`skills/`, `runtime/prumo_runtime/`) — é infra de teste, não muda produto.
+
+**Limitações documentadas (SPEC.md):** (a) o `claude -p` **aninhado** dentro de outra sessão de agente falha com 401 — o run real parte de shell autenticado; (b) a parte "texto exibido antes de gravar" do C3 é `transcript estrutural`, adiada para A1; (c) custo por execução ainda não medido em run real (estimado). Tool-call log (C10) é viável via `--output-format stream-json` — fica para A1.
+
+**Follow-up (não nesta entrega):** A1 (matriz multi-host + oráculos transcript/tool-call, incl. C12 consumindo as fixtures de injeção da #156) e A2 (gate de release + cadência formal + retenção de relatórios).
+
+**Alternativas consideradas:**
+- *Rodar o LLM real em CI* → rejeitado: custo, flakiness (é o que se mede) e auth. A suíte roda na cadência; o CI prova o harness via replay.
+- *Oráculo por transcript/prosa em A0* → rejeitado: frágil. A0 é só `filesystem`; transcript entra com parser estável em A1.
+- *Entregar tudo (multi-host + gate) de uma vez* → rejeitado (Codex): grande demais; A0/A1/A2 fatiados.
 
 ---
 
