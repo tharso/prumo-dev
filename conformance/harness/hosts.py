@@ -104,12 +104,17 @@ def run_claude_code(workspace: Path, user_input: str, *, timeout_s: int = 300) -
         "--add-dir",
         str(workspace),
     ]
-    proc = subprocess.run(
-        cmd,
-        cwd=str(workspace),
-        capture_output=True,
-        text=True,
-        timeout=timeout_s,
-        check=False,
-    )
+    try:
+        proc = subprocess.run(
+            cmd,
+            cwd=str(workspace),
+            capture_output=True,
+            text=True,
+            timeout=timeout_s,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        return {"returncode": 124, "stdout": "", "stderr": f"timeout após {timeout_s}s"}
+    except FileNotFoundError:
+        return {"returncode": 127, "stdout": "", "stderr": "binário `claude` não encontrado no PATH"}
     return {"returncode": proc.returncode, "stdout": proc.stdout, "stderr": proc.stderr}

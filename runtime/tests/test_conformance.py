@@ -91,6 +91,18 @@ class ConformanceHarnessTests(unittest.TestCase):
         self.assertFalse(result.verdict.ok, "host que falhou deveria dar FAIL")
         self.assertIn("claude_code falhou", result.verdict.reason)
 
+    def test_host_real_timeout_e_ausente_viram_fail_limpo(self) -> None:
+        """Timeout e binário ausente do subprocesso viram rc não-zero, não traceback."""
+        import subprocess
+        with mock.patch("subprocess.run", side_effect=subprocess.TimeoutExpired("claude", 1)):
+            out = hosts.run_claude_code(Path("/tmp"), "oi", timeout_s=1)
+        self.assertNotEqual(out["returncode"], 0)
+        self.assertIn("timeout", out["stderr"])
+        with mock.patch("subprocess.run", side_effect=FileNotFoundError()):
+            out = hosts.run_claude_code(Path("/tmp"), "oi")
+        self.assertNotEqual(out["returncode"], 0)
+        self.assertIn("não encontrado", out["stderr"])
+
     def test_apply_replay_recusa_path_fora_do_workspace(self) -> None:
         """Op de replay com path absoluto ou `..` não pode escapar do tmpdir."""
         import tempfile
