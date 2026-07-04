@@ -224,7 +224,12 @@ def compute_staleness(local: str, remote: str | None) -> dict[str, Any]:
         return {"severity": "ok", "minor_behind": 0, "local": local, "remote": remote,
                 "reason": "em dia com a versão pública"}
     behind = _minor_distance(lv, rv)
-    if behind >= 2:
+    if rv[0] != lv[0]:
+        # Salto de major — `behind` é sentinela (99), não uma contagem real.
+        # Nunca vazar "99 versões atrás" pro usuário (era o caso 4.7.0→5.x).
+        severity = "alert"
+        reason = f"salto de versão major: instalada {local}, pública {remote}"
+    elif behind >= 2:
         severity, reason = "alert", f"{behind} versões atrás da pública ({remote})"
     elif behind == 1:
         severity, reason = "warning", f"uma versão atrás da pública ({remote})"

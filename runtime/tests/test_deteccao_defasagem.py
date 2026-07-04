@@ -37,6 +37,14 @@ class StalenessSeverityTests(unittest.TestCase):
         st = version_check.compute_staleness("4.7.0", "5.1.0")
         self.assertEqual(st["severity"], "alert")
 
+    def test_salto_de_major_nao_vaza_sentinela_99(self) -> None:
+        """O caso real 4.7.0→5.x não pode dizer '99 versões atrás' pro usuário."""
+        st = version_check.compute_staleness("4.7.0", "5.28.0")
+        self.assertNotIn("99", st["reason"])
+        self.assertIn("major", st["reason"].lower())
+        self.assertIn("4.7.0", st["reason"])
+        self.assertIn("5.28.0", st["reason"])
+
     def test_so_patch_atras_e_info(self) -> None:
         st = version_check.compute_staleness("5.27.0", "5.27.3")
         self.assertEqual(st["severity"], "info")
