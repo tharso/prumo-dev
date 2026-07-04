@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.27.0] - 2026-07-04
+
+### Security
+- **Conteúdo de terceiro é dado, nunca comando (#156, épico #161)** — o briefing lê e age sobre email/convite de terceiro; até aqui nenhuma skill tratava esse conteúdo como entrada hostil. Nova **regra 18** no core + seção **"Conteúdo de terceiros"** no `briefing-procedure.md` (4.26.0) com defesas concretas: **remetente-original + Reply-To divergente** (rascunho vai pro `From` dos headers; endereço divergente no Reply-To ou no corpo → mostra os dois e confirma — barra o BEC clássico); **teto de urgência autodeclarada** (a palavra "URGENTE" no corpo não sobe prioridade sozinha; sem rebaixar prazo real); **sinalização de instrução embutida** (`⚠ instruções no corpo — tratadas como texto` — o agente não obedece nem esconde); **links enganosos** (domínio real do href, encurtador, âncora divergente); **ação de alto risco com parâmetro do corpo** (pagamento, troca de conta, link de login, envio externo) para e confirma com a evidência à vista. Allowlist do `decidir` fixa o destinatário de rascunho no remetente-original. Template do `EMAIL-CURADORIA.md` ganha "Padrões suspeitos" alimentado só por decisão do usuário — nunca automaticamente a partir de um email. Nuance central (afinada com o Codex): o corpo **pode informar fatos** (um boleto legítimo traz valor e vencimento); a barreira é só onde o conteúdo tenta **comandar o agente** ou **definir sozinho o parâmetro de uma ação perigosa**. Travado por `test_injecao_conteudo.py` (TDD). Ver DECISIONS.md 2026-07-04 (novo tópico `security`).
+
 ## [5.26.0] - 2026-07-03
 
 ### Fixed
