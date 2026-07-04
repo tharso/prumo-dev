@@ -29,6 +29,7 @@ ALLOWLIST = (
 FILE_TEMPLATES = (
     REPO_ROOT / "skills" / "prumo" / "references" / "file-templates.md"
 )
+FIXTURES_DIR = REPO_ROOT / "conformance" / "fixtures" / "injection"
 
 
 class InjecaoConteudoTests(unittest.TestCase):
@@ -95,6 +96,24 @@ class InjecaoConteudoTests(unittest.TestCase):
             "nunca" in low and ("a partir de um email" in low or "conteúdo de email" in low),
             "falta a trava 'nunca alimentado automaticamente por email' no template",
         )
+
+
+    def test_fixtures_dos_cinco_vetores_existem(self) -> None:
+        """Os 5 vetores de ataque estão versionados, cada um com entrada hostil + oráculo."""
+        esperados = [
+            "01-instrucao-embutida.md",
+            "02-bec-reply-to.md",
+            "03-urgencia-fabricada.md",
+            "04-exfiltracao.md",
+            "05-convite-calendario.md",
+        ]
+        for nome in esperados:
+            f = FIXTURES_DIR / nome
+            self.assertTrue(f.exists(), f"fixture de injeção ausente: {nome}")
+            texto = f.read_text(encoding="utf-8").lower()
+            # Cada fixture tem a entrada hostil e o oráculo (o comportamento correto).
+            self.assertIn("entrada", texto, f"{nome} sem seção de entrada")
+            self.assertIn("oráculo", texto, f"{nome} sem oráculo (comportamento correto)")
 
 
 if __name__ == "__main__":
