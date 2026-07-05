@@ -50,7 +50,9 @@ Para atualizar: `prumo update`. Para reparar workspace: `prumo repair --workspac
 
 ### Discoverability via marketplace (canal opcional)
 
-Usuários que preferem descobrir o Prumo via marketplace do host podem instalar pelo respectivo plugin manager. A funcionalidade é equivalente — atalho de discovery, não dependência.
+Usuários que preferem descobrir o Prumo via marketplace do host podem instalar pelo respectivo plugin manager — pra **usar**, é equivalente, um atalho de discovery.
+
+> **Pra atualizar, o runtime é o caminho.** As skills do workspace (`.prumo/skills/`) refrescam via `prumo update` + `prumo repair` — o marketplace instala e descobre, mas não atualiza a cópia do workspace (ela é sincronizada no setup e não se mexe sozinha). Instalar o runtime é o mesmo one-liner do topo; sem ele, o workspace fica na versão do último setup. Razão e alternativas em [DECISIONS.md](DECISIONS.md) (entrada #108).
 
 **Cowork / Claude Code:**
 
@@ -159,7 +161,7 @@ O workspace do Prumo é Markdown puro — se você usa o [Obsidian](https://obsi
 
 ## Versão
 
-`5.28.0`
+`5.29.0`
 
 ## Licença
 

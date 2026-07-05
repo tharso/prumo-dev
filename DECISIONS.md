@@ -9,9 +9,9 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 | Tópico                | Entradas                                                                                  |
 |-----------------------|-------------------------------------------------------------------------------------------|
 | `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first), 2026-05-04 (#77), 2026-06-21 (#97 mapas), 2026-06-25 (#114 perfil modular), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#139 guarda-corpos), 2026-07-02 (#140 fichário), 2026-07-02 (#141 diário), 2026-07-03 (#147 ideias), 2026-07-03 (#148 conexões) |
-| `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-04 (#158 detecção defasagem), 2026-07-05 (#159 espelho preserva história) |
+| `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-04 (#158 detecção defasagem), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime) |
 | `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first), 2026-05-06 (quality-gate), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#141 diário — emenda à #68) |
-| `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist), 2026-06-24 (#110 não-bundle), 2026-07-05 (#159 espelho preserva história) |
+| `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist), 2026-06-24 (#110 não-bundle), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime) |
 | `dispatch-bootstrap`  | 2026-04-21 (#69 despacho), 2026-06-23 (#104 briefing rico), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-05 (#160 porta/instalação agnóstica) |
 | `multiagent-coord`    | 2026-04-20 (#68 HANDOVER)                                                                 |
 | `documentation`       | 2026-04-14 (CLAUDE.md), 2026-06-21 (#97 mapas), 2026-07-03 (#149 guia Obsidian)           |
@@ -19,7 +19,7 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 | `briefing`            | 2026-04-14 (Google Drive snapshots), 2026-04-21 (#69 despacho), 2026-06-23 (#102 decidir), 2026-06-23 (#104 briefing rico), 2026-06-25 (#114 perfil modular), 2026-07-02 (#139 guarda-corpos), 2026-07-03 (#148 conexões), 2026-07-04 (#156 injeção) |
 | `personalization`     | 2026-04-21 (tharso-voice)                                                                 |
 | `code-quality`        | 2026-05-06 (quality-gate), 2026-06-25 (#122 baseline 1061→930), 2026-07-03 (baseline 82/904), 2026-07-04 (#157 conformidade A0) |
-| `touchpoint`          | 2026-05-18 (landing page sync), 2026-07-03 (#149 guia Obsidian — candidato à landing), 2026-07-05 (#160 instalação agnóstica) |
+| `touchpoint`          | 2026-05-18 (landing page sync), 2026-07-03 (#149 guia Obsidian — candidato à landing), 2026-07-05 (#160 instalação agnóstica), 2026-07-05 (#108 update via runtime) |
 | `security`            | 2026-07-04 (#156 injeção — conteúdo de terceiro é dado, nunca comando)                     |
 
 ## Vocabulário controlado de tópicos
@@ -58,6 +58,28 @@ A partir de 2026-05-04 (#78), toda entrada nova segue o formato:
 Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões anteriores" (introduzido na #78). Quando um conflito retrospectivo for descoberto, anotar a relação na entrada nova que o resolve — não reescrever entradas antigas.
 
 - `code-quality` — métricas de qualidade do codebase, quality gate, baseline.
+
+---
+
+## 2026-07-05 — Update do workspace é operação de runtime; marketplace é discovery, não canal de update (#108)
+
+**Tópicos:** skills-distribution, distribution, touchpoint
+
+**Issues relacionadas:** #108 (executa), #77 (estende), #158 (complementa — detecção), #159 (fonte canônica pra eventual refresh), #106 (ortogonal — aviso de versão).
+
+**Relações com decisões anteriores:**
+- **Estende:** 2026-05-04 (#77). A #77 estabeleceu skills como infra atualizada via runtime, não dado autoral. Esta entrada torna explícito o corolário pro usuário marketplace-only: sem runtime, não há via de primeira classe pra atualizar `.prumo/skills/`. Não é bug de arquitetura — é tradeoff assumido da #77, que só faltava estar documentado com honestidade.
+- **Mantém:** a rejeição da #77 a "skills só no plugin instalado" (amarra a host específico, derruba a cadeia de fallback). Por isso qualquer refresh sem runtime **não** deve copiar do bundle do host — reintroduziria esse acoplamento. A fonte canônica é o espelho público (#159), host-agnóstica.
+- **Complementa:** 2026-07-04 (#158). A #158 DETECTA defasagem (via `prumo briefing`, runtime); esta trata de APLICAR o update. Ortogonal ao #106 (que conserta o aviso).
+
+**Contexto:** Defeito investigado no #108, com teste ao vivo do Tharso (24/06): workspace Cowork sem `prumo` no PATH ficou com `.prumo/skills/` congelado na 5.4.0 (marcador `sync-2026-04-22`), enquanto a cópia do plugin do host estava mais nova — mas não é a que os fluxos leem. Três cópias coexistiam: `.prumo/skills/` (lida pelo briefing), `.remote-plugins/…/skills/` (plugin do host), `.prumo/backup/…`. O mapa do código confirmou a causa: `install_skills()` (`runtime/prumo_runtime/skills_install.py`) — a única ponte skills-frescas → `.prumo/skills/` — roda só em `setup`/`migrate`/`repair`, todos subcomandos do runtime. Os scripts sem-runtime existentes operam em OUTRAS camadas e nenhum toca `.prumo/skills/`: `prumo_cowork_update.sh` (git-pull do checkout do marketplace), `prumo_plugin_install.sh` (store via CLI `claude`), `prumo_antigravity_install.sh` (escreve em `.agent/skills`/`~/.gemini`, topologia direta do Antigravity). O README (linha 53) afirmava que o marketplace é "equivalente — atalho de discovery, não dependência" — verdadeiro pra instalar, **falso pra atualizar**.
+
+**Decisão:** Atualizar a cópia de skills do workspace (`.prumo/skills/`) é operação de **runtime** (`prumo update` + `prumo repair`). O canal marketplace/plugin é **discovery de instalação**, não canal de update do workspace. README e docs deixam isso explícito — a instalação do runtime é um one-liner `curl`, então a "dependência" é de baixo atrito. A detecção/aviso pro usuário sem runtime já existe no skill layer (comparação com o `VERSION` público via WebFetch, #106/#158); esta leva corrigiu a **orientação** — o `version-update.md` (4.24.0) deixou de mandar "reinstalar o plugin" pra destravar skills e passou a casar cada elo com o caminho certo (core: sem runtime; skills: runtime install + `prumo repair`). O refresh **automático** sem runtime (auto-atualizar `.prumo/skills/` sozinho) segue **fora de escopo**; se um dia for construído, deve buscar da fonte canônica pública (espelho #159), nunca do bundle do host, pra não reintroduzir o acoplamento host-específico que a #77 rejeitou.
+
+**Alternativas consideradas:**
+- *Refresh sem runtime copiando do bundle do plugin do host (opções 2/3/4 da issue)* → adiado por ora: reintroduz acoplamento host-específico (tensão direta com a #77) e o ganho é marginal quando instalar o runtime é um one-liner. Se construído, buscar da fonte pública, não do host.
+- *Ler direto a cópia do plugin do host, abandonando `.prumo/skills/`* → rejeitado: quebra a cadeia de fallback (#77) e amarra a host.
+- *Não mexer (deixar o README overclamando "não dependência")* → rejeitado: o teste ao vivo provou que a promessa é falsa pra update; docs que mentem viram bug com delay (o próprio #106 persistiu no teste por causa da cópia congelada).
 
 ---
 

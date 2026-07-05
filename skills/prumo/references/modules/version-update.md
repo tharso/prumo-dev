@@ -1,6 +1,6 @@
 # Version Update
 
-> **module_version: 4.23.0**
+> **module_version: 4.24.0**
 >
 > Fonte canônica do fluxo de verificação e aplicação de atualização do Prumo.
 
@@ -84,7 +84,7 @@ Sem transporte seguro de aplicação:
 
 - informar a limitação;
 - não bloquear o briefing;
-- orientar atualização/reinstalação do plugin ou uso de ambiente com shell/repo local.
+- orientar o caminho certo por elo (ver "Como o usuário atualiza" abaixo). Para skills congeladas, **não** mandar "reinstalar o plugin": o marketplace instala e descobre, mas não refresca `.prumo/skills/` (decisão #108) — quem refresca é o runtime.
 
 ## Passo 4: aviso ao usuário
 
@@ -114,6 +114,26 @@ Se o caso for `workspace core defasado`:
 2. mencionar a diferença entre `.prumo/system/PRUMO-CORE.md` do workspace e `Prumo/VERSION` local;
 3. tratar isso como condição operacional esperável, não como release corrompida;
 4. no briefing, parar antes do panorama e pedir decisão do usuário.
+
+## Como o usuário atualiza, por elo (#108)
+
+Update não é uma coisa só — depende de QUAL cópia está velha. Ao avisar, casar o
+elo defasado com o caminho certo:
+
+- **Core do workspace** (`.prumo/system/PRUMO-CORE.md` atrás da pública) →
+  aplicável **sem runtime**, pelo Passo 5 (fonte local válida): toca só o core,
+  com backup.
+- **Skills do workspace** (`.prumo/skills/` congeladas) → **exige o runtime**.
+  Reinstalar/atualizar o plugin no host **não** resolve: os fluxos leem
+  `.prumo/skills/`, não o bundle do plugin. Caminho sancionado:
+  1. instalar o runtime (one-liner):
+     `bash <(curl -fsSL https://raw.githubusercontent.com/tharso/prumo/main/scripts/prumo_runtime_install.sh)`
+  2. `prumo repair --workspace <path>` — re-sincroniza core + `.prumo/skills/`.
+- **Com `prumo` no PATH** → `prumo update` (atualiza o pacote e já roda o repair
+  desde 5.22).
+
+Ao avisar um usuário sem runtime de que as skills estão defasadas, entregar esse
+caminho — nunca deixá-lo achar que atualizar o plugin basta.
 
 ## Passo 5: aplicação segura
 

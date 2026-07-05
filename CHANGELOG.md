@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.29.0] - 2026-07-05
+
+### Fixed
+- **Usuário sem runtime é orientado a atualizar as skills, não deixado no escuro (#108)** — quem instala via marketplace (sem `prumo` no PATH) ficava com `.prumo/skills/` congelado no setup, e a orientação de update mandava "reinstalar o plugin" — que **não** resolve, porque os fluxos leem `.prumo/skills/`, não o bundle do host. Agora o `version-update.md` (4.24.0) casa **cada elo com o caminho certo**: o core do workspace se atualiza sem runtime (fonte local, toca só o core); **skills congeladas exigem o runtime** — one-liner de instalação + `prumo repair` re-sincroniza `.prumo/skills/`. A detecção (comparação com o `VERSION` público via WebFetch, sem runtime) já existia (#106/#158); esta leva conserta a **orientação**. O README deixa de vender o marketplace como canal de update ("não dependência" era falso pra atualizar). Travado por `test_version_warn_manual.py` (+1 guard #108). Ver DECISIONS.md 2026-07-05 (#108).
+
 ## [5.28.0] - 2026-07-04
 
 ### Added
