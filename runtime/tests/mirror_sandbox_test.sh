@@ -1,0 +1,112 @@
+#!/usr/bin/env bash
+# Sandbox local do conserto do espelho (#159). Simula o "push do mirror" contra
+# um repo git local (o "público"), rodando os cenários que Gemini flash+pro
+# exigiram, e prova: história LINEAR (sem force) + git pull FAST-FORWARD.
+set -euo pipefail
+
+ROOT="$(mktemp -d)"
+REMOTE="$ROOT/public.git"     # o "tharso/prumo" público (bare)
+STAGE="$ROOT/stage"           # o subset staged (o que o workflow monta)
+CLIENT="$ROOT/client"         # um usuário que clonou (simula o Cowork)
+PASS=0; FAIL=0
+ok(){ echo "  ✅ $1"; PASS=$((PASS+1)); }
+bad(){ echo "  ❌ $1"; FAIL=$((FAIL+1)); }
+
+git init -q --bare "$REMOTE"           # público começa VAZIO (testa 1a execução)
+export GIT_AUTHOR_NAME=Bot GIT_AUTHOR_EMAIL=bot@x GIT_COMMITTER_NAME=Bot GIT_COMMITTER_EMAIL=bot@x
+
+# ---- A função que vai pro workflow (lógica pura, testável) ----
+mirror_push() {
+  local remote="$1" stage="$2" sha="$3"
+  local work; work="$(mktemp -d)/m"
+  # 1) update se o público tem história; init se estiver vazio (fallback — achado do Pro)
+  if git clone -q --depth 1 "$remote" "$work" 2>/dev/null && git -C "$work" rev-parse HEAD >/dev/null 2>&1; then
+    :
+  else
+    rm -rf "$work"; mkdir -p "$work"
+    git -C "$work" init -q -b main
+    git -C "$work" remote add origin "$remote"
+  fi
+  # 2) troca o conteúdo preservando .git (find, não rsync — achado flash+pro)
+  find "$work" -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+  cp -a "$stage"/. "$work"/
+  git -C "$work" add -A
+  # 3) commit SÓ se mudou (guard anti-commit-vazio — achado flash)
+  if git -C "$work" rev-parse HEAD >/dev/null 2>&1 && git -C "$work" diff --cached --quiet; then
+    echo "    (sem mudança no subset — nada a espelhar)"
+    rm -rf "$work"; return 0
+  fi
+  git -C "$work" commit -q -m "mirror: sync from prumo-dev@${sha}" -m "Source-Commit: ${sha}"
+  git -C "$work" push -q origin HEAD:main    # sem --force
+  rm -rf "$work"
+}
+mirror_tag() {  # remote, tag, tag_sha — fail-closed se o HEAD público não reflete o commit da tag
+  local remote="$1" tag="$2" tsha="$3"
+  local work; work="$(mktemp -d)/mt"
+  git clone -q "$remote" "$work"
+  # FAIL-CLOSED (review Codex r2+r3): só tagueia se o HEAD público carrega o
+  # trailer EXATO deste commit (grep -xF por linha inteira, sem colisão de SHA).
+  if ! git -C "$work" log -1 --format='%b' | grep -qxF "Source-Commit: $tsha"; then
+    rm -rf "$work"; return 1
+  fi
+  git -C "$work" tag -a "$tag" -m "Release ${tag}"
+  git -C "$work" push -q origin "refs/tags/$tag"   # imutável, sem --force
+  rm -rf "$work"
+}
+head_sha(){ git --git-dir="$REMOTE" rev-parse main; }
+count(){ git --git-dir="$REMOTE" rev-list --count main; }
+
+echo "== Cenário 1: público vazio (primeira execução) =="
+mkdir -p "$STAGE"; printf 'v1\n' > "$STAGE/VERSION"; echo "# Prumo" > "$STAGE/README.md"; mkdir -p "$STAGE/skills/fim"; echo "fim" > "$STAGE/skills/fim/SKILL.md"
+mirror_push "$REMOTE" "$STAGE" aaaaaaa
+[ "$(count)" = "1" ] && ok "1 commit no público" || bad "esperava 1 commit, tem $(count)"
+git clone -q "$REMOTE" "$CLIENT"
+[ -f "$CLIENT/skills/fim/SKILL.md" ] && ok "cliente clonou com as skills" || bad "cliente sem skills"
+C1=$(head_sha)
+
+echo "== Cenário 2: update incremental → cliente faz git pull =="
+printf 'v2\n' > "$STAGE/VERSION"; echo "novo" > "$STAGE/skills/fim/EXTRA.md"
+mirror_push "$REMOTE" "$STAGE" bbbbbbb
+[ "$(count)" = "2" ] && ok "2 commits (linear)" || bad "esperava 2, tem $(count)"
+# o teste decisivo: o pull do cliente é FAST-FORWARD?
+PULL=$(git -C "$CLIENT" pull --ff-only origin main 2>&1) && ok "git pull --ff-only funcionou (sem divergência)" || bad "pull divergiu: $PULL"
+[ "$(cat "$CLIENT/VERSION")" = "v2" ] && ok "cliente recebeu v2" || bad "cliente não atualizou"
+# ancestralidade real: C1 é ancestral do HEAD atual?
+git --git-dir="$REMOTE" merge-base --is-ancestor "$C1" "$(head_sha)" && ok "história preservada (C1 é ancestral)" || bad "história reescrita — C1 não é ancestral"
+
+echo "== Cenário 3: deleção de arquivo sai do subset =="
+rm "$STAGE/skills/fim/EXTRA.md"
+mirror_push "$REMOTE" "$STAGE" ccccccc
+[ "$(count)" = "3" ] && ok "3 commits" || bad "esperava 3, tem $(count)"
+git -C "$CLIENT" pull -q --ff-only origin main
+[ ! -f "$CLIENT/skills/fim/EXTRA.md" ] && ok "arquivo removido no cliente" || bad "arquivo deletado ainda presente"
+
+echo "== Cenário 4: run sem mudança no subset (guard anti-commit-vazio) =="
+mirror_push "$REMOTE" "$STAGE" ddddddd
+[ "$(count)" = "3" ] && ok "nenhum commit vazio criado (segue 3)" || bad "criou commit vazio! tem $(count)"
+
+echo "== Cenário 5: tag no topo (happy) — aponta pro main, não muta =="
+# HEAD público atual veio do push com sha ccccccc (cenário 3; o 4 foi no-op).
+BEFORE=$(count); MAINSHA=$(head_sha)
+mirror_tag "$REMOTE" v5.29.0 ccccccc && ok "tag criada (HEAD reflete o commit da tag)" || bad "tag falhou no caso happy"
+[ "$(count)" = "$BEFORE" ] && ok "tag NÃO criou commit em main" || bad "tag mutou main! era $BEFORE, virou $(count)"
+[ "$(git --git-dir="$REMOTE" rev-parse 'v5.29.0^{commit}')" = "$MAINSHA" ] && ok "tag aponta pro main público atual" || bad "tag aponta pro commit errado"
+git -C "$CLIENT" pull -q --ff-only origin main && ok "cliente ainda faz fast-forward após a tag" || bad "tag quebrou o fast-forward do cliente"
+
+echo "== Cenário 6: tag correndo à frente do mirror de main (fail-closed — review Codex r2) =="
+# Simula push --follow-tags: a tag aponta pra um commit (sha ZZZZZZZ) que o main
+# público ainda NÃO reflete → o mirror de tag deve ABORTAR, não taguear errado.
+if mirror_tag "$REMOTE" v5.30.0 ZZZZZZZ 2>/dev/null; then bad "tag criada apesar do main não refletir o commit!"; else ok "fail-closed: tag abortada (main não reflete o commit)"; fi
+git --git-dir="$REMOTE" rev-parse v5.30.0 >/dev/null 2>&1 && bad "tag v5.30.0 existe (não deveria)" || ok "tag v5.30.0 NÃO criada (correto)"
+
+echo "== Cenário 7: match EXATO resiste a colisão de short SHA (review Codex r3 nit) =="
+# O HEAD público tem o trailer 'Source-Commit: ccccccc'. Um grep -q solto casaria
+# com o prefixo 'ccc' (substring) → tag no commit errado. O grep -xF (linha
+# inteira) rejeita: só o SHA completo idêntico casa.
+if mirror_tag "$REMOTE" v5.31.0 ccc 2>/dev/null; then bad "prefixo casou — match exato falhou (colisão de SHA possível)!"; else ok "prefixo 'ccc' NÃO casa com 'ccccccc' (match exato de linha)"; fi
+git --git-dir="$REMOTE" rev-parse v5.31.0 >/dev/null 2>&1 && bad "tag v5.31.0 existe (não deveria)" || ok "tag v5.31.0 NÃO criada (correto)"
+
+echo ""
+echo "RESULTADO: $PASS ok, $FAIL falhas"
+rm -rf "$ROOT"
+[ "$FAIL" = "0" ]

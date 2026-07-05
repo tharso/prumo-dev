@@ -9,9 +9,9 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 | Tópico                | Entradas                                                                                  |
 |-----------------------|-------------------------------------------------------------------------------------------|
 | `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first), 2026-05-04 (#77), 2026-06-21 (#97 mapas), 2026-06-25 (#114 perfil modular), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#139 guarda-corpos), 2026-07-02 (#140 fichário), 2026-07-02 (#141 diário), 2026-07-03 (#147 ideias), 2026-07-03 (#148 conexões) |
-| `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-04 (#158 detecção defasagem) |
+| `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-04 (#158 detecção defasagem), 2026-07-05 (#159 espelho preserva história) |
 | `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first), 2026-05-06 (quality-gate), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#141 diário — emenda à #68) |
-| `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist), 2026-06-24 (#110 não-bundle) |
+| `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist), 2026-06-24 (#110 não-bundle), 2026-07-05 (#159 espelho preserva história) |
 | `dispatch-bootstrap`  | 2026-04-21 (#69 despacho), 2026-06-23 (#104 briefing rico), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-05 (#160 porta/instalação agnóstica) |
 | `multiagent-coord`    | 2026-04-20 (#68 HANDOVER)                                                                 |
 | `documentation`       | 2026-04-14 (CLAUDE.md), 2026-06-21 (#97 mapas), 2026-07-03 (#149 guia Obsidian)           |
@@ -58,6 +58,35 @@ A partir de 2026-05-04 (#78), toda entrada nova segue o formato:
 Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões anteriores" (introduzido na #78). Quando um conflito retrospectivo for descoberto, anotar a relação na entrada nova que o resolve — não reescrever entradas antigas.
 
 - `code-quality` — métricas de qualidade do codebase, quality gate, baseline.
+
+---
+
+## 2026-07-05 — Espelho preserva história: fim da divergência garantida na distribuição (#159)
+
+**Tópicos:** distribution, skills-distribution
+
+**Issues relacionadas:** #159 (executa), #161 (épico), #145 (resolve a causa-raiz), #158 (complementa — detecção proativa).
+
+**Relações com decisões anteriores:**
+- **Emenda:** 2026-04-22 (split dev/dist) e o modelo de mirror. O espelhamento `prumo-dev` → `tharso/prumo` (público) continua, mas o **método** muda: de "recriar história do zero + `git push --force` a cada run" para "**preservar a história** (clonar público → atualizar conteúdo → commit-se-mudou → push linear sem force)".
+- **Resolve na fonte:** 2026-07-03/04 (#145). A #145 consertou a *recuperação* de checkouts já divergentes (`reset --hard` no órfão); esta decisão elimina a *causa* — não haverá mais divergência nova.
+- **Mantém:** o subset distribuível (staging) e o `.prumo/skills/` como fallback portável (não é redundância — é a promessa "deleta o plugin, os arquivos continuam").
+
+**Contexto:** Defeito C2 da auditoria (#161). Investigação (documentada na #159) achou a causa-raiz da #145: `mirror-to-prumo.yml` fazia `git init` + `git push --force origin main` **a cada push** na main do dev → o `main` público ganhava história órfã (sem ancestral comum) toda vez → qualquer checkout do Cowork (que segue `ref: main`) divergia e travava sem aviso. As tags também levavam `--force` (release deveria ser imutável). O `git init` existia por um motivo legítimo (publicar só o subset limpo, sem vazar história do dev) — preservado sem o efeito colateral.
+
+**Decisão:** Reescrever o passo de push do mirror para preservar história, com 5 guardas (validados por sandbox local + review cruzado Codex/Gemini em 4 rodadas):
+1. **Clonar o público existente** (fallback `init` se vazio) — história linear/append-only; checkouts fazem fast-forward pra sempre.
+2. **Preservar o `.git`** na troca de conteúdo (`find ... ! -name .git` em vez de `rsync --delete`).
+3. **Commit só se o subset mudou** (`git diff --cached --quiet`) — evita commit vazio quebrar o pipeline quando um push toca só fora do subset. O commit carrega o SHA de origem completo num trailer `Source-Commit: <sha>` (âncora da tag, guard 5).
+4. **Sem `--force`** em nada; tags imutáveis (se a tag já existe, o push falha — correto).
+5. **Concorrência por-ref + tag fail-closed.** `group: mirror-to-prumo-${{ github.ref }}` com `cancel-in-progress: false`: main e cada tag em grupos distintos, pra que um push em main nunca cancele uma tag pendente (no GitHub Actions há 1 running + 1 pending por grupo, e um run novo cancela o pending anterior *do mesmo grupo* — doc oficial). Como main e tags podem então rodar em paralelo, a tag é **fail-closed**: só sela se o HEAD público já reflete seu commit, casando o trailer `Source-Commit: <sha completo>` por linha inteira (`grep -xF`, sem colisão de short SHA); senão aborta e pede re-disparo do mirror de main.
+
+Cross-model review em 4 rodadas: Gemini 2.5-flash/pro acharam o guard de commit vazio, o fallback de repo vazio e a concorrência inicial; **Codex conduziu o review de código e pegou o que os demais não viram** — tag não deve mutar main (r1); grupo por-ref exige o fail-closed pra não apontar pra main defasado no push paralelo (r2); um grupo *compartilhado* serial cancelaria a tag pendente ao chegar novo push em main, então a serialização correta é por-ref (r3); e a âncora tinha que ser SHA completo, não short (r3 nit). Sandbox local (`runtime/tests/mirror_sandbox_test.sh`, 17 asserts) prova: repo vazio, update fast-forward, deleção, no-op, tag no topo, tag defasada (fail-closed) e resistência a colisão de short SHA.
+
+**Alternativas consideradas:**
+- *Marketplace apontar pro `prumo-dev` direto* → rejeitado: expõe repo de dev.
+- *Só tags/releases (sem consertar o force)* → insuficiente: enquanto houver force, até tag diverge.
+- *`git subtree` / `fetch`+`reset`* → complexidade desnecessária pra um CI que deve ser legível (parecer do Gemini).
 
 ---
 
