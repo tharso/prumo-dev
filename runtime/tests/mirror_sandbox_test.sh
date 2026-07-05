@@ -36,16 +36,17 @@ mirror_push() {
     echo "    (sem mudança no subset — nada a espelhar)"
     rm -rf "$work"; return 0
   fi
-  git -C "$work" commit -q -m "mirror: sync from prumo-dev@${sha}"
+  git -C "$work" commit -q -m "mirror: sync from prumo-dev@${sha}" -m "Source-Commit: ${sha}"
   git -C "$work" push -q origin HEAD:main    # sem --force
   rm -rf "$work"
 }
-mirror_tag() {  # remote, tag, tag_short_sha — aponta pro main público; fail-closed se HEAD não reflete o commit da tag
+mirror_tag() {  # remote, tag, tag_sha — fail-closed se o HEAD público não reflete o commit da tag
   local remote="$1" tag="$2" tsha="$3"
   local work; work="$(mktemp -d)/mt"
   git clone -q "$remote" "$work"
-  # FAIL-CLOSED (review Codex r2): só tagueia se o main público reflete este commit.
-  if ! git -C "$work" log -1 --format='%s%n%b' | grep -q "$tsha"; then
+  # FAIL-CLOSED (review Codex r2+r3): só tagueia se o HEAD público carrega o
+  # trailer EXATO deste commit (grep -xF por linha inteira, sem colisão de SHA).
+  if ! git -C "$work" log -1 --format='%b' | grep -qxF "Source-Commit: $tsha"; then
     rm -rf "$work"; return 1
   fi
   git -C "$work" tag -a "$tag" -m "Release ${tag}"
@@ -97,6 +98,13 @@ echo "== Cenário 6: tag correndo à frente do mirror de main (fail-closed — r
 # público ainda NÃO reflete → o mirror de tag deve ABORTAR, não taguear errado.
 if mirror_tag "$REMOTE" v5.30.0 ZZZZZZZ 2>/dev/null; then bad "tag criada apesar do main não refletir o commit!"; else ok "fail-closed: tag abortada (main não reflete o commit)"; fi
 git --git-dir="$REMOTE" rev-parse v5.30.0 >/dev/null 2>&1 && bad "tag v5.30.0 existe (não deveria)" || ok "tag v5.30.0 NÃO criada (correto)"
+
+echo "== Cenário 7: match EXATO resiste a colisão de short SHA (review Codex r3 nit) =="
+# O HEAD público tem o trailer 'Source-Commit: ccccccc'. Um grep -q solto casaria
+# com o prefixo 'ccc' (substring) → tag no commit errado. O grep -xF (linha
+# inteira) rejeita: só o SHA completo idêntico casa.
+if mirror_tag "$REMOTE" v5.31.0 ccc 2>/dev/null; then bad "prefixo casou — match exato falhou (colisão de SHA possível)!"; else ok "prefixo 'ccc' NÃO casa com 'ccccccc' (match exato de linha)"; fi
+git --git-dir="$REMOTE" rev-parse v5.31.0 >/dev/null 2>&1 && bad "tag v5.31.0 existe (não deveria)" || ok "tag v5.31.0 NÃO criada (correto)"
 
 echo ""
 echo "RESULTADO: $PASS ok, $FAIL falhas"

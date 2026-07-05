@@ -9,13 +9,16 @@ on:
   workflow_dispatch: {}
 
 concurrency:
-  # Grupo ÚNICO e SERIAL (review Codex r1+r2): main e tags nunca rodam em
-  # paralelo — a tag sempre processa DEPOIS do mirror de main correspondente,
-  # então nunca aponta pra um main público defasado. `false` ENFILEIRA em vez
-  # de cancelar, então uma tag também nunca é morta no meio do caminho.
-  # (Grupo por-ref permitiria main+tag concorrentes → tag apontando pro HEAD
-  #  antigo. `true` cancelaria a tag. Serial é o correto.)
-  group: mirror-to-prumo
+  # Grupo POR-REF (review Codex r1+r3). Cada ref — main e cada tag — tem seu
+  # próprio grupo. No GitHub Actions só existe 1 running + 1 pending por grupo,
+  # e um run recém-enfileirado CANCELA o pending anterior DO MESMO grupo
+  # (queue: single, doc oficial). Num grupo compartilhado, um push em main
+  # mataria uma tag pendente (r3, bloqueante). Com grupos separados, main e
+  # tags nunca disputam esse slot — a tag jamais é cancelada por atividade de
+  # main. Elas podem rodar em paralelo, mas o fail-closed abaixo (r2) garante
+  # que a tag nunca aponta pra um main defasado (aborta e pede re-disparo).
+  # `false` não mata um mirror de main em andamento que a tag possa precisar.
+  group: mirror-to-prumo-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -119,7 +122,10 @@ jobs:
             if [ "$HAVE_HISTORY" = 1 ] && git -C "$WORK" diff --cached --quiet; then
               echo "Sem mudança no subset distribuível — nada a espelhar."
             else
-              git -C "$WORK" commit -q -m "mirror: sync from prumo-dev@${SHORT_SHA}"
+              # Trailer com o SHA COMPLETO: âncora exata pra prova da tag (r3 nit).
+              git -C "$WORK" commit -q \
+                -m "mirror: sync from prumo-dev@${SHORT_SHA}" \
+                -m "Source-Commit: ${GITHUB_SHA}"
               git -C "$WORK" push origin HEAD:main   # fast-forward, sem --force
               echo "main pública atualizada (linear)."
             fi
@@ -133,13 +139,14 @@ jobs:
               echo "erro: público sem main pra taguear — rode o mirror de main antes da tag." >&2
               exit 1
             fi
-            # FAIL-CLOSED (review Codex r2): o main público tem que refletir o commit
-            # DESTA tag. A serialização garante isso no push sequencial (commit → tag);
-            # esta checagem cobre o push simultâneo (git push --follow-tags), onde a
-            # ordem da fila não é garantida. Sem ela, a tag poderia apontar pro HEAD
-            # antigo. O commit do mirror carrega o short SHA de origem na mensagem.
-            if ! git -C "$WORK" log -1 --format='%s%n%b' | grep -q "${GITHUB_SHA::7}"; then
-              echo "erro: main público (@$(git -C "$WORK" rev-parse --short HEAD)) ainda não reflete o commit desta tag (${GITHUB_SHA::7})." >&2
+            # FAIL-CLOSED (review Codex r2+r3): o HEAD do main público tem que
+            # refletir o commit DESTA tag. Cobre o push simultâneo (--follow-tags),
+            # em que main e tag rodam em paralelo (grupos por-ref) e a ordem não é
+            # garantida — sem isto a tag poderia apontar pro HEAD antigo. A âncora é
+            # o trailer `Source-Commit: <sha completo>`, casado por linha inteira
+            # (grep -xF): identidade exata, sem risco de colisão de short SHA (r3 nit).
+            if ! git -C "$WORK" log -1 --format='%b' | grep -qxF "Source-Commit: ${GITHUB_SHA}"; then
+              echo "erro: main público (@$(git -C "$WORK" rev-parse --short HEAD)) ainda não reflete o commit desta tag (${SHORT_SHA})." >&2
               echo "Rode o mirror de main primeiro e re-dispare a tag." >&2
               exit 1
             fi
