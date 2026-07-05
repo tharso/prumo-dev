@@ -1,4 +1,4 @@
-"""Guards de conteúdo do aviso de versão no fluxo manual (sem runtime). Issue #106.
+"""Guards de conteúdo do aviso de versão no fluxo manual (sem runtime). Issues #106, #108.
 
 Não dá para simular um agente obediente num unittest, mas dá para impedir que o
 texto volte a ficar ambíguo — foi a ambiguidade (Passo 2 com cara de "fonte
@@ -45,6 +45,20 @@ class VersionWarnManualGuards(unittest.TestCase):
         self.assertIn("comparação remota", proc)
         skill = _read("skills/briefing/SKILL.md")
         self.assertIn(RAW_VERSION_URL, skill)
+
+    def test_version_update_guides_runtime_for_stale_skills(self):
+        """#108: skills congeladas exigem o runtime. A orientação tem que dar o
+        caminho certo (install + repair) e negar que 'reinstalar o plugin'
+        resolva — o marketplace não refresca `.prumo/skills/`."""
+        text = _read("skills/prumo/references/modules/version-update.md")
+        self.assertIn("#108", text)
+        # Skills defasadas → runtime (install + repair), não plugin.
+        self.assertIn("exige o runtime", text)
+        self.assertIn("prumo_runtime_install.sh", text)
+        self.assertIn("prumo repair", text)
+        # O ponto do #108: o marketplace/plugin NÃO refresca a cópia do workspace.
+        self.assertIn("não refresca", text)
+        self.assertIn(".prumo/skills/", text)
 
 
 if __name__ == "__main__":
