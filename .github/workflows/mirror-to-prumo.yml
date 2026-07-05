@@ -9,12 +9,14 @@ on:
   workflow_dispatch: {}
 
 concurrency:
-  # Grupo POR REF (review Codex): pushes rápidos na main cancelam os mirrors
-  # intermediários (só o último importa), mas uma tag tem grupo próprio e NUNCA
-  # é cancelada por um push de main no meio do caminho — release não pode
-  # ficar sem espelhar.
-  group: mirror-to-prumo-${{ github.ref }}
-  cancel-in-progress: true
+  # Grupo ÚNICO e SERIAL (review Codex r1+r2): main e tags nunca rodam em
+  # paralelo — a tag sempre processa DEPOIS do mirror de main correspondente,
+  # então nunca aponta pra um main público defasado. `false` ENFILEIRA em vez
+  # de cancelar, então uma tag também nunca é morta no meio do caminho.
+  # (Grupo por-ref permitiria main+tag concorrentes → tag apontando pro HEAD
+  #  antigo. `true` cancelaria a tag. Serial é o correto.)
+  group: mirror-to-prumo
+  cancel-in-progress: false
 
 jobs:
   mirror:
@@ -125,12 +127,20 @@ jobs:
 
           if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
             TAG="${GITHUB_REF#refs/tags/}"
-            # A tag aponta pro main público ATUAL — que já reflete a release pelo run
-            # de main que rodou quando o commit da release entrou. NÃO mutamos main
-            # aqui (review Codex): taguear um commit antigo não deve reverter o
-            # conteúdo distribuído. Fail-closed se ainda não há main pra taguear.
+            # A tag aponta pro main público ATUAL. NÃO mutamos main (review Codex r1):
+            # taguear um commit antigo não deve reverter o conteúdo distribuído.
             if [ "$HAVE_HISTORY" != 1 ]; then
               echo "erro: público sem main pra taguear — rode o mirror de main antes da tag." >&2
+              exit 1
+            fi
+            # FAIL-CLOSED (review Codex r2): o main público tem que refletir o commit
+            # DESTA tag. A serialização garante isso no push sequencial (commit → tag);
+            # esta checagem cobre o push simultâneo (git push --follow-tags), onde a
+            # ordem da fila não é garantida. Sem ela, a tag poderia apontar pro HEAD
+            # antigo. O commit do mirror carrega o short SHA de origem na mensagem.
+            if ! git -C "$WORK" log -1 --format='%s%n%b' | grep -q "${GITHUB_SHA::7}"; then
+              echo "erro: main público (@$(git -C "$WORK" rev-parse --short HEAD)) ainda não reflete o commit desta tag (${GITHUB_SHA::7})." >&2
+              echo "Rode o mirror de main primeiro e re-dispare a tag." >&2
               exit 1
             fi
             git -C "$WORK" tag -a "${TAG}" -m "Release ${TAG} (mirrored from prumo-dev)"

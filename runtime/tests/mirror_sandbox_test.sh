@@ -40,10 +40,14 @@ mirror_push() {
   git -C "$work" push -q origin HEAD:main    # sem --force
   rm -rf "$work"
 }
-mirror_tag() {  # tag aponta pro main público atual; NÃO muta main; sem --force (review Codex)
-  local remote="$1" tag="$2"
+mirror_tag() {  # remote, tag, tag_short_sha — aponta pro main público; fail-closed se HEAD não reflete o commit da tag
+  local remote="$1" tag="$2" tsha="$3"
   local work; work="$(mktemp -d)/mt"
   git clone -q "$remote" "$work"
+  # FAIL-CLOSED (review Codex r2): só tagueia se o main público reflete este commit.
+  if ! git -C "$work" log -1 --format='%s%n%b' | grep -q "$tsha"; then
+    rm -rf "$work"; return 1
+  fi
   git -C "$work" tag -a "$tag" -m "Release ${tag}"
   git -C "$work" push -q origin "refs/tags/$tag"   # imutável, sem --force
   rm -rf "$work"
@@ -80,16 +84,19 @@ echo "== Cenário 4: run sem mudança no subset (guard anti-commit-vazio) =="
 mirror_push "$REMOTE" "$STAGE" ddddddd
 [ "$(count)" = "3" ] && ok "nenhum commit vazio criado (segue 3)" || bad "criou commit vazio! tem $(count)"
 
-echo "== Cenário 5: push de tag (imutável, sem force, NÃO muta main — review Codex) =="
+echo "== Cenário 5: tag no topo (happy) — aponta pro main, não muta =="
+# HEAD público atual veio do push com sha ccccccc (cenário 3; o 4 foi no-op).
 BEFORE=$(count); MAINSHA=$(head_sha)
-# Adversarial: mesmo que o stage divirja do main atual (como se a tag fosse de
-# um commit antigo), a tag NÃO pode reverter o conteúdo do main público.
-printf 'CONTEUDO-DIVERGENTE\n' > "$STAGE/VERSION"
-mirror_tag "$REMOTE" v5.29.0
-[ "$(count)" = "$BEFORE" ] && ok "tag NÃO criou commit em main (não reverteu conteúdo)" || bad "tag mutou main! era $BEFORE, virou $(count)"
-git --git-dir="$REMOTE" rev-parse v5.29.0 >/dev/null 2>&1 && ok "tag v5.29.0 criada no público" || bad "tag não criada"
+mirror_tag "$REMOTE" v5.29.0 ccccccc && ok "tag criada (HEAD reflete o commit da tag)" || bad "tag falhou no caso happy"
+[ "$(count)" = "$BEFORE" ] && ok "tag NÃO criou commit em main" || bad "tag mutou main! era $BEFORE, virou $(count)"
 [ "$(git --git-dir="$REMOTE" rev-parse 'v5.29.0^{commit}')" = "$MAINSHA" ] && ok "tag aponta pro main público atual" || bad "tag aponta pro commit errado"
 git -C "$CLIENT" pull -q --ff-only origin main && ok "cliente ainda faz fast-forward após a tag" || bad "tag quebrou o fast-forward do cliente"
+
+echo "== Cenário 6: tag correndo à frente do mirror de main (fail-closed — review Codex r2) =="
+# Simula push --follow-tags: a tag aponta pra um commit (sha ZZZZZZZ) que o main
+# público ainda NÃO reflete → o mirror de tag deve ABORTAR, não taguear errado.
+if mirror_tag "$REMOTE" v5.30.0 ZZZZZZZ 2>/dev/null; then bad "tag criada apesar do main não refletir o commit!"; else ok "fail-closed: tag abortada (main não reflete o commit)"; fi
+git --git-dir="$REMOTE" rev-parse v5.30.0 >/dev/null 2>&1 && bad "tag v5.30.0 existe (não deveria)" || ok "tag v5.30.0 NÃO criada (correto)"
 
 echo ""
 echo "RESULTADO: $PASS ok, $FAIL falhas"
