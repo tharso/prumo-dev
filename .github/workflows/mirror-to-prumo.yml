@@ -10,7 +10,9 @@ on:
 
 concurrency:
   group: mirror-to-prumo
-  cancel-in-progress: false
+  # Espelhamento é deploy: em pushes rápidos em sequência, só o último importa.
+  # Cancelar os intermediários evita race e publicar estado transitório (#159).
+  cancel-in-progress: true
 
 jobs:
   mirror:
@@ -79,22 +81,54 @@ jobs:
           GIT_COMMITTER_EMAIL: "mirror@prumo.me"
         run: |
           set -euo pipefail
-          cd "$STAGE"
-
-          git init -q -b main
-          git add -A
+          REMOTE="https://x-access-token:${MIRROR_TOKEN}@github.com/tharso/prumo.git"
           SHORT_SHA="${GITHUB_SHA::7}"
-          git commit -q -m "mirror: sync from prumo-dev@${SHORT_SHA}"
-          git remote add origin "https://x-access-token:${MIRROR_TOKEN}@github.com/tharso/prumo.git"
-          # Só atualiza main quando triggado por push em branch (não por tag)
-          if [[ "${GITHUB_REF}" == refs/heads/* ]]; then
-            git push --force origin main
+          WORK="$RUNNER_TEMP/mirror-work"
+          rm -rf "$WORK"
+
+          # PRESERVA HISTÓRIA (#159): clona o público existente em vez de recriá-lo
+          # do zero. Assim o main público é linear/append-only e todo checkout do
+          # Cowork faz fast-forward — a causa-raiz da #145 (git init + --force a cada
+          # run gerava história órfã e divergência garantida) morre aqui.
+          # Fallback: se o público estiver vazio/inexistente, faz o init inicial.
+          if git clone -q --depth 1 "$REMOTE" "$WORK" && git -C "$WORK" rev-parse HEAD >/dev/null 2>&1; then
+            echo "Público clonado; atualização incremental."
+          else
+            echo "Público vazio/inexistente; primeira execução (init)."
+            rm -rf "$WORK"; mkdir -p "$WORK"
+            git -C "$WORK" init -q -b main
+            git -C "$WORK" remote add origin "$REMOTE"
           fi
 
-          # Se o trigger foi um tag push (v*), espelhar apenas a tag
+          # Substitui o conteúdo pelo subset staged, PRESERVANDO o .git
+          # (find em vez de rsync --delete, pra não comer os metadados do repo).
+          # rm dos arquivos removidos do subset é coberto por este ciclo.
+          find "$WORK" -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp -a "$STAGE"/. "$WORK"/
+          git -C "$WORK" add -A
+
+          if [[ "${GITHUB_REF}" == refs/heads/* ]]; then
+            # Commita SÓ se o subset mudou. Sem este guard, um push no dev que só
+            # toca fora do subset (tests/, dev-archive/, DECISIONS.md…) geraria um
+            # `git commit` sem mudanças → falha do pipeline.
+            if git -C "$WORK" rev-parse HEAD >/dev/null 2>&1 && git -C "$WORK" diff --cached --quiet; then
+              echo "Sem mudança no subset distribuível — nada a espelhar."
+            else
+              git -C "$WORK" commit -q -m "mirror: sync from prumo-dev@${SHORT_SHA}"
+              git -C "$WORK" push origin HEAD:main   # fast-forward, sem --force
+              echo "main pública atualizada (linear)."
+            fi
+          fi
+
           if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
             TAG="${GITHUB_REF#refs/tags/}"
-            git tag -a "${TAG}" -m "Release ${TAG} (mirrored from prumo-dev)"
-            git push origin "${TAG}" --force
+            # Garante o conteúdo da release em main antes de taguear.
+            if ! git -C "$WORK" rev-parse HEAD >/dev/null 2>&1 || ! git -C "$WORK" diff --cached --quiet; then
+              git -C "$WORK" commit -q -m "release ${TAG} (mirrored from prumo-dev@${SHORT_SHA})"
+              git -C "$WORK" push origin HEAD:main
+            fi
+            git -C "$WORK" tag -a "${TAG}" -m "Release ${TAG} (mirrored from prumo-dev)"
+            # Tag IMUTÁVEL: sem --force. Se a tag já existe, o push falha (correto).
+            git -C "$WORK" push origin "refs/tags/${TAG}"
             echo "Tag ${TAG} espelhada para prumo público."
           fi
