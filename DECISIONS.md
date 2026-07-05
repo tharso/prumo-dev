@@ -12,14 +12,14 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 | `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-04 (#158 detecção defasagem) |
 | `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first), 2026-05-06 (quality-gate), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#141 diário — emenda à #68) |
 | `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist), 2026-06-24 (#110 não-bundle) |
-| `dispatch-bootstrap`  | 2026-04-21 (#69 despacho), 2026-06-23 (#104 briefing rico), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada) |
+| `dispatch-bootstrap`  | 2026-04-21 (#69 despacho), 2026-06-23 (#104 briefing rico), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-05 (#160 porta/instalação agnóstica) |
 | `multiagent-coord`    | 2026-04-20 (#68 HANDOVER)                                                                 |
 | `documentation`       | 2026-04-14 (CLAUDE.md), 2026-06-21 (#97 mapas), 2026-07-03 (#149 guia Obsidian)           |
 | `integrations`        | 2026-04-14 (Google Drive snapshots)                                                       |
 | `briefing`            | 2026-04-14 (Google Drive snapshots), 2026-04-21 (#69 despacho), 2026-06-23 (#102 decidir), 2026-06-23 (#104 briefing rico), 2026-06-25 (#114 perfil modular), 2026-07-02 (#139 guarda-corpos), 2026-07-03 (#148 conexões), 2026-07-04 (#156 injeção) |
 | `personalization`     | 2026-04-21 (tharso-voice)                                                                 |
 | `code-quality`        | 2026-05-06 (quality-gate), 2026-06-25 (#122 baseline 1061→930), 2026-07-03 (baseline 82/904), 2026-07-04 (#157 conformidade A0) |
-| `touchpoint`          | 2026-05-18 (landing page sync), 2026-07-03 (#149 guia Obsidian — candidato à landing)     |
+| `touchpoint`          | 2026-05-18 (landing page sync), 2026-07-03 (#149 guia Obsidian — candidato à landing), 2026-07-05 (#160 instalação agnóstica) |
 | `security`            | 2026-07-04 (#156 injeção — conteúdo de terceiro é dado, nunca comando)                     |
 
 ## Vocabulário controlado de tópicos
@@ -58,6 +58,29 @@ A partir de 2026-05-04 (#78), toda entrada nova segue o formato:
 Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões anteriores" (introduzido na #78). Quando um conflito retrospectivo for descoberto, anotar a relação na entrada nova que o resolve — não reescrever entradas antigas.
 
 - `code-quality` — métricas de qualidade do codebase, quality gate, baseline.
+
+---
+
+## 2026-07-05 — Porta de entrada: a fricção era comunicação, não produto; instruções agnósticas por IA (#160)
+
+**Tópicos:** touchpoint, dispatch-bootstrap
+
+**Issues relacionadas:** #160 (Fase 0 — decide/executa), #161 (épico — auditoria de defeitos).
+
+**Relações com decisões anteriores:**
+- **Estende:** 2026-05-18 (touchpoint — sync landing↔produto). A landing tinha instrução de instalação Cowork-cêntrica e incompleta (sem Codex, Windows quebrado, Antigravity como pronto); realinhada ao produto real.
+- **Mantém:** 2026-04-22 (multi-cliente) e skills-first — a agnosticidade (Claude Code / Cowork / Codex / Antigravity) é reafirmada como argumento de venda, não escondida.
+
+**Contexto:** Defeito D da auditoria (#161): "a porta de entrada filtra o público da promessa" (curl/terminal/uv pro não-técnico; desktop-first). Investigação com evidência (README, manifestos por host, `host_adapters.py`, scripts de instalação) mostrou que o enquadramento inicial do agente estava errado — Cowork-cêntrico, corrigido pelo dono. O Prumo é agnóstico; a barreira real era **falta de instruções por IA**, não a dificuldade de instalar (copiar/colar comando não é barreira séria). O "desktop-first" é decisão de princípio (arquivos locais), não bug — briefing no celular exigiria nuvem.
+
+**Decisão:**
+1. **A fricção de instalação é problema de comunicação, não de produto.** Entregue: página `/instalar` agnóstica (passo a passo por IA), "trocar de IA sem perder nada" como argumento, honestidade sobre o celular ("no celular captura, no computador decide"). Revisada pelo Codex em 3 rodadas (pegou `prumo setup` sumido, Windows quebrado, overclaim de Antigravity).
+2. **Antigravity validado** em 05/07/2026 (briefing real em workspace configurado) — vira host de primeira classe; README atualizado (PR #165).
+3. **Sub-issues A (instalação) e B (mobile) NÃO abertas** — não há produto a reconstruir (regra 16 aplicada a nós mesmos); abrir só sob demanda concreta.
+
+**Alternativas consideradas:**
+- *Liderar a instalação pelo Cowork (cliques), rebaixar o terminal a "avançado"* → rejeitado pelo dono: falso binário; o Prumo é agnóstico.
+- *App nativo / briefing no celular* → rejeitado: exigiria nuvem, quebraria "os arquivos são seus".
 
 ---
 
