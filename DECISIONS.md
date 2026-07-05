@@ -74,13 +74,14 @@ Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões ant
 
 **Contexto:** Defeito C2 da auditoria (#161). Investigação (documentada na #159) achou a causa-raiz da #145: `mirror-to-prumo.yml` fazia `git init` + `git push --force origin main` **a cada push** na main do dev → o `main` público ganhava história órfã (sem ancestral comum) toda vez → qualquer checkout do Cowork (que segue `ref: main`) divergia e travava sem aviso. As tags também levavam `--force` (release deveria ser imutável). O `git init` existia por um motivo legítimo (publicar só o subset limpo, sem vazar história do dev) — preservado sem o efeito colateral.
 
-**Decisão:** Reescrever o passo de push do mirror para preservar história, com 4 guardas (validados por sandbox local + revisão dos dois modelos Gemini):
+**Decisão:** Reescrever o passo de push do mirror para preservar história, com 5 guardas (validados por sandbox local + review cruzado Codex/Gemini em 4 rodadas):
 1. **Clonar o público existente** (fallback `init` se vazio) — história linear/append-only; checkouts fazem fast-forward pra sempre.
 2. **Preservar o `.git`** na troca de conteúdo (`find ... ! -name .git` em vez de `rsync --delete`).
-3. **Commit só se o subset mudou** (`git diff --cached --quiet`) — evita commit vazio quebrar o pipeline quando um push toca só fora do subset.
-4. **Sem `--force`** em nada; tags imutáveis; `concurrency.cancel-in-progress: true` (evita race entre pushes rápidos).
+3. **Commit só se o subset mudou** (`git diff --cached --quiet`) — evita commit vazio quebrar o pipeline quando um push toca só fora do subset. O commit carrega o SHA de origem completo num trailer `Source-Commit: <sha>` (âncora da tag, guard 5).
+4. **Sem `--force`** em nada; tags imutáveis (se a tag já existe, o push falha — correto).
+5. **Concorrência por-ref + tag fail-closed.** `group: mirror-to-prumo-${{ github.ref }}` com `cancel-in-progress: false`: main e cada tag em grupos distintos, pra que um push em main nunca cancele uma tag pendente (no GitHub Actions há 1 running + 1 pending por grupo, e um run novo cancela o pending anterior *do mesmo grupo* — doc oficial). Como main e tags podem então rodar em paralelo, a tag é **fail-closed**: só sela se o HEAD público já reflete seu commit, casando o trailer `Source-Commit: <sha completo>` por linha inteira (`grep -xF`, sem colisão de short SHA); senão aborta e pede re-disparo do mirror de main.
 
-Cross-model review: Gemini 2.5-flash (achou o guard de commit vazio) + 2.5-pro (achou o fallback de repo vazio e a concorrência), Codex no review de código. Sandbox local (`runtime/tests/mirror_sandbox_test.sh`) prova os cenários (repo vazio, update fast-forward, deleção, no-op, tag).
+Cross-model review em 4 rodadas: Gemini 2.5-flash/pro acharam o guard de commit vazio, o fallback de repo vazio e a concorrência inicial; **Codex conduziu o review de código e pegou o que os demais não viram** — tag não deve mutar main (r1); grupo por-ref exige o fail-closed pra não apontar pra main defasado no push paralelo (r2); um grupo *compartilhado* serial cancelaria a tag pendente ao chegar novo push em main, então a serialização correta é por-ref (r3); e a âncora tinha que ser SHA completo, não short (r3 nit). Sandbox local (`runtime/tests/mirror_sandbox_test.sh`, 17 asserts) prova: repo vazio, update fast-forward, deleção, no-op, tag no topo, tag defasada (fail-closed) e resistência a colisão de short SHA.
 
 **Alternativas consideradas:**
 - *Marketplace apontar pro `prumo-dev` direto* → rejeitado: expõe repo de dev.
