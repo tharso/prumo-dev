@@ -40,17 +40,12 @@ mirror_push() {
   git -C "$work" push -q origin HEAD:main    # sem --force
   rm -rf "$work"
 }
-mirror_tag() {  # tag imutável, sem --force (achado flash+pro)
-  local remote="$1" stage="$2" sha="$3" tag="$4"
+mirror_tag() {  # tag aponta pro main público atual; NÃO muta main; sem --force (review Codex)
+  local remote="$1" tag="$2"
   local work; work="$(mktemp -d)/mt"
-  git clone -q --depth 1 "$remote" "$work"
-  find "$work" -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
-  cp -a "$stage"/. "$work"/
-  git -C "$work" add -A
-  git -C "$work" rev-parse HEAD >/dev/null 2>&1 && git -C "$work" diff --cached --quiet || git -C "$work" commit -q -m "release ${tag}"
-  git -C "$work" push -q origin HEAD:main
+  git clone -q "$remote" "$work"
   git -C "$work" tag -a "$tag" -m "Release ${tag}"
-  git -C "$work" push -q origin "$tag"       # sem --force
+  git -C "$work" push -q origin "refs/tags/$tag"   # imutável, sem --force
   rm -rf "$work"
 }
 head_sha(){ git --git-dir="$REMOTE" rev-parse main; }
@@ -85,10 +80,15 @@ echo "== Cenário 4: run sem mudança no subset (guard anti-commit-vazio) =="
 mirror_push "$REMOTE" "$STAGE" ddddddd
 [ "$(count)" = "3" ] && ok "nenhum commit vazio criado (segue 3)" || bad "criou commit vazio! tem $(count)"
 
-echo "== Cenário 5: push de tag (imutável, sem force) =="
-printf 'v3\n' > "$STAGE/VERSION"
-mirror_tag "$REMOTE" "$STAGE" eeeeeee v5.29.0
+echo "== Cenário 5: push de tag (imutável, sem force, NÃO muta main — review Codex) =="
+BEFORE=$(count); MAINSHA=$(head_sha)
+# Adversarial: mesmo que o stage divirja do main atual (como se a tag fosse de
+# um commit antigo), a tag NÃO pode reverter o conteúdo do main público.
+printf 'CONTEUDO-DIVERGENTE\n' > "$STAGE/VERSION"
+mirror_tag "$REMOTE" v5.29.0
+[ "$(count)" = "$BEFORE" ] && ok "tag NÃO criou commit em main (não reverteu conteúdo)" || bad "tag mutou main! era $BEFORE, virou $(count)"
 git --git-dir="$REMOTE" rev-parse v5.29.0 >/dev/null 2>&1 && ok "tag v5.29.0 criada no público" || bad "tag não criada"
+[ "$(git --git-dir="$REMOTE" rev-parse 'v5.29.0^{commit}')" = "$MAINSHA" ] && ok "tag aponta pro main público atual" || bad "tag aponta pro commit errado"
 git -C "$CLIENT" pull -q --ff-only origin main && ok "cliente ainda faz fast-forward após a tag" || bad "tag quebrou o fast-forward do cliente"
 
 echo ""
