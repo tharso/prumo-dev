@@ -4,7 +4,8 @@ user-invocable: false
 description: >
   Higiene assistida do workspace. Detecta problemas que precisam de decisão
   do usuário: itens velhos na pauta, contradições entre arquivos, CLAUDE.md
-  pesado, contexto obsoleto em Agente/, inbox esquecido. Propõe e espera
+  pesado, contexto obsoleto em Agente/, inbox esquecido, referências quebradas
+  e órfãos. Propõe e espera
   confirmação — nunca resolve sozinha. Use com /higiene, "tem algo pra
   limpar?", "revisa meus arquivos", ou quando o briefing detectar sinais.
 ---
@@ -128,9 +129,45 @@ Isso já existia e continua funcionando.
 **Propor:**
 - "O sistema atualizou e você tem um override do briefing. Pode ter ficado incompatível. Quer revisar?"
 
+### 8. Integridade referencial (órfãos e cross-refs quebradas)
+
+O eixo que faltava. A higiene cobre contradição e staleness, mas não
+**integridade referencial** — referência que aponta pra lugar nenhum, e coisa
+mencionada que nunca ganhou página. Mesma natureza dos outros checks: detecta e
+propõe, nunca conserta sozinha.
+
+**Verificar** (só o que dá pra ver lendo o Markdown do workspace):
+- **Tag sem área:** tag ou frente usada na `PAUTA.md` (ex.: `[Trabalho/Startup X]`)
+  que não mapeia pra nenhuma área definida no `PERFIL.md`.
+- **Pessoa órfã:** pessoa em `Agente/PESSOAS.md` sem nenhum item ativo que a
+  referencie (nem na PAUTA, nem no INBOX, nem em item recente do REGISTRO).
+- **Referência quebrada:** menção ou link a um arquivo (`Referencias/contrato.md`,
+  um anexo, outro `.md`) que não existe mais no workspace.
+- **Projeto/área sem página:** item que menciona um projeto ou área sem README
+  ou arquivo correspondente onde ele deveria morar.
+
+**Propor (uma decisão por vez):**
+- Tag sem área: "A tag `X` aparece na pauta mas não existe no PERFIL. Criar a
+  área, renomear a tag, ou foi engano?"
+- Pessoa órfã: "`Fulano` está em PESSOAS mas não puxa nada ativo. Arquivar, ou
+  ainda importa?"
+- Referência quebrada: "A pauta aponta pra `Referencias/contrato.md`, que não
+  existe mais. Corrigir o caminho, ou tirar a menção?"
+- Projeto sem página: "Você cita o projeto `Y` mas não tem página dele. Criar,
+  ou é só contexto solto?"
+
+**Tom:** "Não tô dizendo que tá errado. Só reparei que isso aponta pra lugar
+nenhum — quer arrumar ou deixar?"
+
+**Limite (anti-zelo):** ausência de convenção **não é erro**. Não exigir área pra
+toda tag, README pra todo projeto, nem página pra toda pessoa se o usuário não
+adotou esse estilo. Órfão de verdade é referência que aponta pra nada — não o
+jeito pessoal de organizar. Na dúvida entre "quebrado" e "estilo", é estilo:
+pergunta leve, sem acusar.
+
 ## Fluxo de execução
 
-1. Rodar todos os checks (1-7)
+1. Rodar todos os checks (1-8)
 2. Se nada encontrado: "Casa em ordem. Nada pra revisar."
 3. Se encontrou algo: apresentar lista curta dos achados
 4. Perguntar: "Quer resolver agora ou coloco na pauta pra depois?"
