@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.30.0] - 2026-07-05
+
+### Added
+- **Higiene detecta integridade referencial — órfãos e cross-refs quebradas (#95)** — a `higiene` cobria contradição e staleness, mas o eixo de **integridade referencial** estava descoberto. Novo **check 8**: tag na `PAUTA.md` sem área correspondente no `PERFIL.md`, pessoa em `PESSOAS.md` sem nenhum item ativo que a referencie (órfã), menção a arquivo (`Referencias/…`) que sumiu (link quebrado), e projeto/área citado sem página. Mantém a natureza da higiene — **detecta e propõe, nunca conserta sozinha** — e carrega um limite anti-zelo explícito: ausência de convenção **não é erro** (não exigir área pra toda tag nem página pra toda pessoa se o usuário não adotou esse estilo; na dúvida entre "quebrado" e "estilo", é estilo). Travado por `test_higiene_integridade.py` (TDD, 4 guards). Origem: análise do Prumo sob a lente do "LLM Wiki" (Karpathy).
+
 ## [5.29.0] - 2026-07-05
 
 ### Fixed
