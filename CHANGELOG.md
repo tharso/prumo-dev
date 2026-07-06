@@ -6,6 +6,12 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.31.0] - 2026-07-05
+
+### Fixed
+- **`prumo update` instala do diretório local, não do registry inexistente (#170)** — runtime instalado do cache do plugin do host (origem = diretório local, `uv-tool` `copy`) recebia plano de registry (`uv tool install --force prumo-runtime`), que **falha**: o `prumo-runtime` não é publicado em registry nenhum. Agora o updater resolve o path local da nova versão pela **fonte agnóstica do uv** (`uv-receipt.toml` → `directory`; deriva o irmão da versão nova e valida o `pyproject`) e instala de lá; sem path resolvível, dá **erro honesto** com o caminho de recuperação — nunca um plano que morre no primeiro passo. **Sem hardcode de caminho de host** (mantém #77/#108). Diagnóstico original do Codex rodando o briefing no workspace do dono.
+- **`prumo update --check` reporta a defasagem do core do workspace (#170)** — expõe `workspace_core_version` e `workspace_core_needs_update` quando rodado num workspace, pra o check não esconder um core defasado atrás de um runtime em dia. O core sincroniza via `prumo repair` no pós-update (já existia); o gap era o report. Travado por `test_update_local_source.py` (10 testes TDD). Ver DECISIONS.md 2026-07-05 (#170).
+
 ## [5.30.0] - 2026-07-05
 
 ### Added
