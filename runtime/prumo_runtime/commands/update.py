@@ -155,6 +155,7 @@ def build_update_plan(
     source_kind: str = "unknown",
     launcher: str = "unknown",
     local_source_dir: str | None = None,
+    local_install: bool = False,
 ) -> dict[str, Any]:
     plan: dict[str, Any] = {
         "current_version": current_version,
@@ -205,11 +206,12 @@ def build_update_plan(
         )
         return plan
 
-    # Instalação de DIRETÓRIO LOCAL (copy — cache do plugin do host). NÃO vai
-    # pro registry: prumo-runtime não é publicado (#170). Instala do path local
-    # da nova versão quando ele foi resolvido; senão, erro honesto — nunca um
-    # plano que morre no primeiro passo.
-    if source_kind == "copy":
+    # Instalação de DIRETÓRIO LOCAL (cache do plugin do host). NÃO vai pro
+    # registry: prumo-runtime não é publicado (#170). Vem DEPOIS de editable e
+    # install-script (que têm transporte próprio) — só instalações uv-tool
+    # locais chegam aqui. Instala do path local da nova versão quando resolvido;
+    # senão, erro honesto — nunca um plano que morre no primeiro passo.
+    if local_install:
         if local_source_dir:
             plan["uv_target"] = local_source_dir
             plan["command"] = f"uv tool install --force {shlex.quote(local_source_dir)}"
@@ -312,17 +314,39 @@ def resolve_local_source_dir(
     if not current_dir:
         return None
 
-    base = Path(current_dir)
-    # Caso comum: o último segmento do path é a versão atual → troca por segmento.
-    if base.name == current_version:
-        candidate = base.with_name(remote_version)
-    else:
-        # Fallback conservador: troca a versão como componente de path.
-        swapped = str(base).replace(f"/{current_version}", f"/{remote_version}")
-        candidate = Path(swapped) if swapped != str(base) else None
+    # Troca o ÚLTIMO segmento igual à versão atual (opera em Path.parts —
+    # cross-platform, não string /-POSIX; não troca ocorrências duplicadas).
+    parts = list(Path(current_dir).parts)
+    candidate = None
+    for i in range(len(parts) - 1, -1, -1):
+        if parts[i] == current_version:
+            parts[i] = remote_version
+            candidate = Path(*parts)
+            break
     if candidate and _is_valid_runtime_dir(candidate, remote_version):
         return str(candidate)
     return None
+
+
+def is_local_uv_install(method_info: dict, uv_tool_dir: Path | None = None) -> bool:
+    """A instalação atual veio de um DIRETÓRIO LOCAL (cache do plugin), não de
+    registry? (#170)
+
+    Detecção robusta, não presa a um marker externo: `source_kind == "copy"` é
+    sinal direto; senão, uma instalação `uv-tool` que NÃO é `install-script`
+    nem `editable` só pode ter vindo de diretório local — o `prumo-runtime` não
+    é publicado em registry —, confirmado pelo `directory` no `uv-receipt.toml`.
+    (install-script e editable têm branches próprias e precedência antes desta.)
+    """
+    if method_info.get("source_kind") == "copy":
+        return True
+    if (
+        method_info.get("package_manager") == "uv-tool"
+        and method_info.get("launcher") != "install-script"
+        and method_info.get("source_kind") != "editable"
+    ):
+        return _local_dir_from_uv_receipt(uv_tool_dir) is not None
+    return False
 
 
 def _version_tuple(v: str) -> tuple[int, ...]:
@@ -431,10 +455,12 @@ def _get_post_update_version() -> str | None:
 def run_update(args) -> int:
     method_info = detect_install_method()
     remote_version = fetch_remote_version()
-    # Instalação de diretório local (copy): resolve o path da nova versão da
-    # fonte agnóstica (uv-receipt), pra não cair no registry inexistente (#170).
+    # Instalação de diretório local (cache do plugin): resolve o path da nova
+    # versão da fonte agnóstica (uv-receipt), pra não cair no registry
+    # inexistente (#170). Detecção não presa a marker externo.
+    local_install = is_local_uv_install(method_info)
     local_source_dir = None
-    if method_info["source_kind"] == "copy" and remote_version:
+    if local_install and remote_version:
         local_source_dir = resolve_local_source_dir(
             remote_version,
             current_version=__version__,
@@ -447,6 +473,7 @@ def run_update(args) -> int:
         source_kind=method_info["source_kind"],
         launcher=method_info["launcher"],
         local_source_dir=local_source_dir,
+        local_install=local_install,
     )
 
     payload: dict[str, Any] = {
@@ -584,6 +611,17 @@ def _emit(payload: dict, output_format: str, exit_code: int = 0) -> int:
     else:
         print(f"Versão remota: {payload['remote_version']}")
     print(f"Canal: {payload['channel']}")
+
+    # Core do workspace (#170): não esconder um workspace defasado no texto.
+    if "workspace_core_version" in payload:
+        core_v = payload["workspace_core_version"] or "n/d"
+        if payload.get("workspace_core_needs_update"):
+            print(
+                f"⚠ Core do workspace: {core_v} — atrás da pública. Rode "
+                "`prumo repair --workspace .` após atualizar o runtime."
+            )
+        else:
+            print(f"Core do workspace: {core_v} (em dia)")
 
     im = payload["install_method"]
     print(f"Método: {im['package_manager']} (launcher: {im['launcher']}, fonte: {im['source']})")
