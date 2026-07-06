@@ -9,9 +9,9 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 | Tópico                | Entradas                                                                                  |
 |-----------------------|-------------------------------------------------------------------------------------------|
 | `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first), 2026-05-04 (#77), 2026-06-21 (#97 mapas), 2026-06-25 (#114 perfil modular), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#139 guarda-corpos), 2026-07-02 (#140 fichário), 2026-07-02 (#141 diário), 2026-07-03 (#147 ideias), 2026-07-03 (#148 conexões) |
-| `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-04 (#158 detecção defasagem), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime) |
+| `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-04 (#158 detecção defasagem), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime), 2026-07-05 (#170 transporte de update local) |
 | `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first), 2026-05-06 (quality-gate), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#141 diário — emenda à #68) |
-| `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist), 2026-06-24 (#110 não-bundle), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime) |
+| `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist), 2026-06-24 (#110 não-bundle), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime), 2026-07-05 (#170 transporte de update local) |
 | `dispatch-bootstrap`  | 2026-04-21 (#69 despacho), 2026-06-23 (#104 briefing rico), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-05 (#160 porta/instalação agnóstica) |
 | `multiagent-coord`    | 2026-04-20 (#68 HANDOVER)                                                                 |
 | `documentation`       | 2026-04-14 (CLAUDE.md), 2026-06-21 (#97 mapas), 2026-07-03 (#149 guia Obsidian)           |
@@ -58,6 +58,28 @@ A partir de 2026-05-04 (#78), toda entrada nova segue o formato:
 Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões anteriores" (introduzido na #78). Quando um conflito retrospectivo for descoberto, anotar a relação na entrada nova que o resolve — não reescrever entradas antigas.
 
 - `code-quality` — métricas de qualidade do codebase, quality gate, baseline.
+
+---
+
+## 2026-07-05 — Update resolve instalação local pela fonte do uv; runtime-update ≠ core-update (#170)
+
+**Tópicos:** skills-distribution, distribution
+
+**Issues relacionadas:** #170 (executa), #108 (estende), #77 (mantém), #146 (mantém — post-update repair).
+
+**Relações com decisões anteriores:**
+- **Estende:** 2026-07-05 (#108 — update = operação de runtime). A #108 tratou o update das *skills* do workspace; esta trata do update do *próprio runtime* quando ele foi instalado de diretório local (cache do plugin do host), e da distinção runtime-update ≠ core-update.
+- **Mantém:** 2026-05-04 (#77) e 2026-07-05 (#108) — nada de acoplar em caminho de host. A origem local é lida da fonte do próprio uv (`uv-receipt.toml`), não de um path de host hardcodado.
+
+**Contexto:** Bug #170 (diagnóstico do Codex rodando o briefing no workspace do dono): `prumo update` detecta a versão nova, mas pra instalação `copy` (origem em diretório local do cache do plugin) emitia plano de registry (`uv tool install --force prumo-runtime`) — que falha, porque o `prumo-runtime` não é publicado em registry. O core do workspace ficava defasado como *consequência* (o repair pós-update não roda quando o update do runtime falha).
+
+**Decisão:**
+1. **Transporte por origem, não por chute.** Instalação `copy` resolve o path local da nova versão pela fonte agnóstica do uv (`uv-receipt.toml` → `directory`, derivando o irmão da versão nova e validando o `pyproject`), e instala de lá. Sem path resolvível: erro honesto com recuperação, nunca um plano que morre no primeiro passo. Registry só com evidência real de instalação por registry.
+2. **Runtime-update ≠ core-update, e o `--check` não esconde isso.** O update do runtime é distinto do update do core do workspace; o core sincroniza via `prumo repair` no pós-update (#146). O `--check` passa a reportar `workspace_core_version`/`workspace_core_needs_update` pra defasagem do workspace não ficar invisível atrás de um runtime em dia.
+
+**Alternativas consideradas:**
+- *Hardcodar o caminho do cache do host (`.codex/plugins/cache/...`)* → rejeitado: acopla a host, repete o que #77/#108 rejeitaram. A fonte do uv é agnóstica.
+- *`prumo update` reescrever o core do workspace direto* → desnecessário: o repair pós-update já faz isso com as guardas de escrita do `version-update.md`; a decisão é só reportar e delegar ao repair.
 
 ---
 
