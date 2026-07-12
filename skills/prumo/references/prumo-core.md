@@ -159,7 +159,7 @@ Quando um comando específico for executado, o agente deve ler o módulo corresp
 | Revisão semanal | `.prumo/skills/prumo/references/modules/weekly-review.md` |
 | Update de versão | `.prumo/skills/prumo/references/modules/version-update.md` |
 | Multiagente | `.prumo/skills/prumo/references/modules/multiagent.md` |
-| Sanitização | `.prumo/skills/prumo/references/modules/sanitization.md` |
+| Sanitização | `.prumo/skills/prumo/references/modules/sanitize.md` |
 | Higiene do perfil | `.prumo/skills/prumo/references/modules/claude-hygiene.md` |
 | Runtime do Cowork | `.prumo/skills/prumo/references/modules/cowork-runtime-maintenance.md` |
 | Bridge do runtime no Cowork | `.prumo/skills/prumo/references/modules/cowork-runtime-bridge.md` |
@@ -310,7 +310,7 @@ Ler e seguir:
 
 Ler e seguir:
 
-- `.prumo/skills/prumo/references/modules/sanitization.md`
+- `.prumo/skills/prumo/references/modules/sanitize.md`
 
 ### Higiene do perfil
 

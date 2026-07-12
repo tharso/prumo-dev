@@ -44,6 +44,10 @@ class MenuAntiDriftTests(unittest.TestCase):
         # (#172: /sanitize e /doctor saíram da tabela — viraram módulos; /higiene promovida)
         for expected in ("/menu", "/setup", "/briefing", "/acervo", "/fim", "/higiene"):
             self.assertIn(expected, commands, f"{expected} ausente na tabela do prumo-core")
+        # Trava a REMOÇÃO também: se um destes voltar à tabela, é regressão da
+        # taxonomia #172 (o /menu deriva daqui — voltaria a anunciar comando morto).
+        for removed in ("/sanitize", "/doctor", "/faxina"):
+            self.assertNotIn(removed, commands, f"{removed} não deveria estar na tabela (#172)")
         self.assertGreaterEqual(len(cmds), 6)
         for c in cmds:
             self.assertTrue(c["description"], f"{c['command']} sem descrição na tabela")

@@ -16,12 +16,12 @@ Sistema de organização de vida pessoal com IA. Transforma o Claude (ou qualque
 
 ```
 skills/              ← fonte canônica das skills (portáveis, qualquer agente lê)
-  prumo/             ← skill principal (setup/onboarding, core, references, modules)
+  prumo/             ← skill principal (setup/onboarding, core, references, modules —
+                       faxina, sanitize e doctor viram módulos aqui na #172)
   briefing/          ← morning briefing
-  doctor/            ← diagnóstico
-  faxina/            ← ciclo de vida da informação
-  sanitize/          ← compactação de estado
-  higiene/           ← manutenção do CLAUDE.md do workspace do usuário
+  higiene/           ← revisão assistida do workspace (botão desde a #172)
+  acervo/ fim/ menu/ ← navegação do limbo, encerramento, manual
+  abrir/ decidir/    ← entrada rápida e superfície de despacho (estruturais)
 runtime/             ← runtime Python (CLI local)
   prumo_runtime/     ← código do runtime
   tests/             ← unit tests

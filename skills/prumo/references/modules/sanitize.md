@@ -37,3 +37,4 @@ Sanitize é executado pelo agente seguindo as regras abaixo. Roda sempre em dois
 4. Não altera `PERFIL.md`, `PAUTA.md`, `INBOX.md`, `REGISTRO.md`, `IDEIAS.md`.
 5. Preserva `workspace-schema.json` e `agent-lock.json` — estado ativo do runtime não entra em sanitização.
 6. Ao registrar movimentos em `ARCHIVE-INDEX.json`/`ARCHIVE-INDEX.md`, sempre usar paths relativos ao workspace. Path absoluto (`/Users/...`, `C:\...`) em qualquer arquivo de estado persistido é bug — viola o contrato de portabilidade.
+7. Arquivar frio só com política explícita (os gatilhos acima) — nada de threshold inventado na hora.
