@@ -20,7 +20,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 FIM_SKILL = REPO_ROOT / "skills" / "fim" / "SKILL.md"
-FAXINA_SKILL = REPO_ROOT / "skills" / "faxina" / "SKILL.md"
+FAXINA_SKILL = REPO_ROOT / "skills" / "prumo" / "references" / "modules" / "faxina.md"
 FILE_TEMPLATES = (
     REPO_ROOT / "skills" / "prumo" / "references" / "file-templates.md"
 )

@@ -35,7 +35,7 @@ GOVERNANCE_MODULE = (
     / "modules"
     / "runtime-file-governance.md"
 )
-FAXINA_SKILL = REPO_ROOT / "skills" / "faxina" / "SKILL.md"
+FAXINA_SKILL = REPO_ROOT / "skills" / "prumo" / "references" / "modules" / "faxina.md"
 ACERVO_SKILL = REPO_ROOT / "skills" / "acervo" / "SKILL.md"
 
 OPERATIONAL_FILES = {"INDICE.md", "EMAIL-CURADORIA.md", "WORKFLOWS.md"}

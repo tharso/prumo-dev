@@ -1,7 +1,7 @@
 {
   "name": "prumo",
   "description": "Sistema de organização de vida pessoal com IA. Transforma o Claude em interface única para capturar, processar, lembrar e cobrar — tudo em arquivos locais, sem cloud, sem lock-in.",
-  "version": "5.31.0",
+  "version": "5.32.0",
   "author": {
     "name": "Prumo Maintainers"
   },
@@ -9,16 +9,13 @@
   "repository": "https://github.com/tharso/prumo",
   "license": "MIT",
   "skills": [
-    "./skills/abrir",
-    "./skills/acervo",
-    "./skills/prumo",
+    "./skills/menu",
     "./skills/briefing",
-    "./skills/decidir",
-    "./skills/doctor",
-    "./skills/faxina",
-    "./skills/sanitize",
-    "./skills/higiene",
     "./skills/fim",
-    "./skills/menu"
+    "./skills/acervo",
+    "./skills/higiene",
+    "./skills/abrir",
+    "./skills/decidir",
+    "./skills/prumo"
   ]
 }

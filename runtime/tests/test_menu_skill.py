@@ -41,9 +41,10 @@ class MenuAntiDriftTests(unittest.TestCase):
         cmds = parse_command_table(CORE.read_text(encoding="utf-8"))
         commands = {c["command"] for c in cmds}
         # registro do próprio /menu + features recentes na fonte única
-        for expected in ("/menu", "/setup", "/briefing", "/acervo", "/fim"):
+        # (#172: /sanitize e /doctor saíram da tabela — viraram módulos; /higiene promovida)
+        for expected in ("/menu", "/setup", "/briefing", "/acervo", "/fim", "/higiene"):
             self.assertIn(expected, commands, f"{expected} ausente na tabela do prumo-core")
-        self.assertGreaterEqual(len(cmds), 8)
+        self.assertGreaterEqual(len(cmds), 6)
         for c in cmds:
             self.assertTrue(c["description"], f"{c['command']} sem descrição na tabela")
 

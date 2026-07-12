@@ -7,7 +7,7 @@ description: >
   entre sessões), gera o diário do dia em Prumo/Diario/ (projeção confirmada
   dos fatos gravados — nunca reconstrução de memória), roda a faxina
   automática, mostra um resumo, e — se detectar acúmulo — PROPÕE (não executa)
-  `/higiene` ou `/sanitize`. É o bookend simétrico do briefing: o briefing
+  `/higiene` ou a sanitização técnica. É o bookend simétrico do briefing: o briefing
   abre, o fim fecha. NÃO é briefing (não lê email/calendário, não monta a
   pauta do dia).
 ---
@@ -100,10 +100,11 @@ determinísticos reusando os thresholds da faxina/sanitize:
 
 - `pauta_stalled` (itens parados > 14d) e `inbox_pending` → sugerem **`/higiene`**
 - `backups_old` (> 90d) e `ephemeral_old` (artefatos efêmeros do decidir/acervo
-  — HTMLs e a fonte copiada — > 14d) → sugerem **`/sanitize`**
+  — HTMLs e a fonte copiada — > 14d) → sugerem **a sanitização técnica**
+  (módulo `sanitize.md` do core)
 
-Quando `suggest.higiene` ou `suggest.sanitize` vier `true`, **oferecer** o
-comando ao usuário — uma linha, escolha curta. **Nunca executar** `higiene`/
+Quando `suggest.higiene` ou `suggest.sanitize` vier `true`, **oferecer** a
+ação ao usuário — uma linha, escolha curta. **Nunca executar** `higiene`/
 `sanitize` por conta própria: elas pedem julgamento/aprovação. O `/fim` só
 aponta e delega; não duplica a detecção da higiene nem roda a sanitize.
 
@@ -131,6 +132,6 @@ naturalmente — o diário é leitura do usuário, não estado do sistema.
 ## Referências
 
 - `prumo fim --workspace <ws> --format json` — detector de acúmulo (read-only).
-- Thresholds reusados: `skills/faxina/references/thresholds.md`.
+- Thresholds reusados: `skills/prumo/references/modules/faxina-thresholds.md`.
 - Limpezas que o `/fim` apenas propõe: `skills/higiene/SKILL.md`,
-  `skills/sanitize/SKILL.md`.
+  `skills/prumo/references/modules/sanitize.md`.

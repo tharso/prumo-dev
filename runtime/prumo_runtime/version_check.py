@@ -204,7 +204,7 @@ def compute_staleness(local: str, remote: str | None) -> dict[str, Any]:
     """Severidade da defasagem por **distância de versão** (fonte de verdade deste elo).
 
     A dimensão "M dias parada" NÃO vem daqui — vem do `lastUpdated` do checkout
-    do marketplace, computado pelo `/doctor` (ver `version-update.md` → fonte de
+    do marketplace, computado pelo doctor (módulo `doctor.md`; ver `version-update.md` → fonte de
     verdade por elo). Aqui é só distância de versão: instalada (core do
     workspace) vs. pública.
 

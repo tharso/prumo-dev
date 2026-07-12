@@ -1,6 +1,12 @@
-# Sanitização de sistema
+# Sanitização de sistema (módulo do core)
+
+> Era a skill top-level `sanitize` até a 5.31 — a #172 tirou a manutenção
+> técnica do picker. Roda quando o `/fim` detecta acúmulo e o usuário topa,
+> ou a pedido ("sanitiza o estado técnico", "o .prumo tá pesado").
 
 Objetivo: manter o território técnico do Prumo (`.prumo/`) enxuto sem apagar histórico.
+
+Escopo **exclusivo**: `.prumo/` — nunca tocar em arquivos pessoais do usuário; backup antes de qualquer remoção. Se o pedido for limpeza do workspace (registro, índices, inbox) → faxina (`faxina.md`, neste diretório). Se for revisão assistida de conteúdo pessoal (pauta velha, contradições, PERFIL pesado) → `/higiene`.
 
 ## Procedimento
 

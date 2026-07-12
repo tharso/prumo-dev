@@ -117,7 +117,7 @@ class BuildSkillsDispatchBlockTests(unittest.TestCase):
             # Deve conter todas as skills do repo
             self.assertIn("abrir", block)
             self.assertIn("briefing", block)
-            self.assertIn("doctor", block)
+            self.assertIn("higiene", block)  # #172: doctor/faxina/sanitize viraram módulos
             self.assertIn(".prumo/skills/abrir/SKILL.md", block)
             self.assertIn(".prumo/skills/briefing/SKILL.md", block)
 
@@ -181,12 +181,12 @@ class BuildSkillsDispatchBlockTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             workspace = _make_test_workspace(Path(tmpdir))
             block_before = build_skills_dispatch_block(workspace)
-            self.assertIn("doctor", block_before)
+            self.assertIn("acervo", block_before)
             # Remover skill
             import shutil
-            shutil.rmtree(workspace / ".prumo" / "skills" / "doctor")
+            shutil.rmtree(workspace / ".prumo" / "skills" / "acervo")
             block_after = build_skills_dispatch_block(workspace)
-            self.assertNotIn("doctor", block_after)
+            self.assertNotIn("acervo", block_after)
 
 
 class SetupGeneratesDispatchTests(unittest.TestCase):

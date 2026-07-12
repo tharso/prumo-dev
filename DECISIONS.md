@@ -9,10 +9,10 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 | Tópico                | Entradas                                                                                  |
 |-----------------------|-------------------------------------------------------------------------------------------|
 | `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first), 2026-05-04 (#77), 2026-06-21 (#97 mapas), 2026-06-25 (#114 perfil modular), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#139 guarda-corpos), 2026-07-02 (#140 fichário), 2026-07-02 (#141 diário), 2026-07-03 (#147 ideias), 2026-07-03 (#148 conexões) |
-| `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-04 (#158 detecção defasagem), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime), 2026-07-05 (#170 transporte de update local) |
+| `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-04 (#158 detecção defasagem), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime), 2026-07-05 (#170 transporte de update local), 2026-07-12 (#172 taxonomia do picker) |
 | `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first), 2026-05-06 (quality-gate), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#141 diário — emenda à #68) |
 | `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist), 2026-06-24 (#110 não-bundle), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime), 2026-07-05 (#170 transporte de update local) |
-| `dispatch-bootstrap`  | 2026-04-21 (#69 despacho), 2026-06-23 (#104 briefing rico), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-05 (#160 porta/instalação agnóstica) |
+| `dispatch-bootstrap`  | 2026-04-21 (#69 despacho), 2026-06-23 (#104 briefing rico), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-05 (#160 porta/instalação agnóstica), 2026-07-12 (#172 taxonomia do picker) |
 | `multiagent-coord`    | 2026-04-20 (#68 HANDOVER)                                                                 |
 | `documentation`       | 2026-04-14 (CLAUDE.md), 2026-06-21 (#97 mapas), 2026-07-03 (#149 guia Obsidian)           |
 | `integrations`        | 2026-04-14 (Google Drive snapshots)                                                       |
@@ -58,6 +58,33 @@ A partir de 2026-05-04 (#78), toda entrada nova segue o formato:
 Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões anteriores" (introduzido na #78). Quando um conflito retrospectivo for descoberto, anotar a relação na entrada nova que o resolve — não reescrever entradas antigas.
 
 - `code-quality` — métricas de qualidade do codebase, quality gate, baseline.
+
+---
+
+## 2026-07-12 — Taxonomia do picker: botão vs disparo; faxina/sanitize/doctor viram módulos do core (#172)
+
+**Tópicos:** skills-distribution, dispatch-bootstrap
+
+**Issues relacionadas:** #172 (executa), #132 (estende — declutter do picker), #134/#135 (estende — front-line), #63 (origem do achado, teste ao vivo), #95 (mantém — higiene com integridade referencial vira botão).
+
+**Relações com decisões anteriores:**
+- **Estende (e emenda a superfície de):** 2026-06-28 (#134/#135). O front-line era `briefing/acervo/fim/menu` com o resto escondido via `user-invocable: false`. A investigação da #172 provou (doc oficial) que **o picker do Codex não lê `user-invocable`** — no Codex, carregável ⟺ visível. O esconderijo só funcionava em metade dos hosts. Emenda: o declutter real é **menos skills top-level**, não flag de visibilidade.
+- **Mantém:** 2026-05-04 (#77 — skills em `.prumo/skills/`, cadeia de fallback). Os módulos continuam sob a skill-core (`skills/prumo/references/modules/`), sincronizados pelo mesmo `install_skills`; a cadeia de fallback do AGENT.md passa a apontar os módulos.
+- **Mantém:** 2026-06-23/26 (decidir e fim). `decidir` continua skill carregável (o briefing depende dela); o `/fim` continua rodando faxina e propondo higiene/sanitização.
+
+**Contexto:** Testando o onboarding no Codex (#63), o Tharso viu o picker listar as 11 skills — incluindo `setup` (pra quem já configurou), `faxina`, `sanitize`. Confuso e contra a decisão da #134/#135. Investigação: o frontmatter do Codex só tem `name` e `description`; não existe "oculto mas carregável" (o `allow_implicit_invocation` controla auto-disparo, não o picker). Esconder no Codex exigiria remover; remover só do Codex degradaria os outros hosts. Decisão tomada skill-por-skill com o dono (rodada de crivo, 11 cards, relatório 2026-07-12).
+
+**Decisão (vereditos do dono):**
+1. **Botão (front-line):** `briefing`, `acervo`, `fim`, `menu` + **`higiene` promovida** (`user-invocable: true`) — revisão assistida é ação consciente ("revisa meus arquivos"), o par da faxina automática. Nome `acervo` mantido após defesa (o nome é o lugar que se visita; "limbo" segue como metáfora interna).
+2. **Estruturais (ficam, com descrição mitigada):** `setup` (é a skill-CORE, #134/#135 — descrição avisa "primeira vez / configuração"), `abrir` (alvo do "prumo" cru — "entrada rápida"), `decidir` (superfície que o briefing invoca — descrição didática).
+3. **Deixam de ser skills top-level:** `faxina`, `sanitize` e `doctor` viram **módulos do core** (`modules/faxina.md` + `faxina-thresholds.md`, `modules/sanitize.md` — fundido com as regras de sanitização —, `modules/doctor.md`). Comportamento preservado: a faxina roda automática no briefing (passo 3 do procedure) e no `/fim`; os três atendem por linguagem natural via novas linhas na tabela de intenções do `dispatch.md`. O picker de TODOS os hosts cai de 11 pra **8**.
+4. **Ordem dos manifestos** (pedido do dono): `menu → briefing → fim → acervo → higiene → abrir → decidir → setup`. Vale onde o host respeita o array; o Codex varre a pasta (ordem não controlável hoje — documentado, verificar empiricamente).
+5. **Fiação:** tabela de comandos do core enxuta (o `/menu` deriva dela — fonte única); `templates.py`/`agent-md-template.md` apontam módulos na cadeia de fallback; README ganha a linha "manutenção sem comando próprio". Landing (touchpoint) verificada: fala de faxina/higiene/fim como comportamentos, não comandos — segue verdadeira sem mudança.
+
+**Alternativas consideradas:**
+- *Esconder via config do Codex* → não existe o recurso (doc oficial; investigação registrada na #172).
+- *Remover só do manifesto do Codex* → rejeitado: quebra paridade entre hosts e o `.codex-plugin` aponta a pasta inteira.
+- *Dobrar também `abrir`/`decidir` no core* → adiado: `abrir` é o alvo do dispatch de "prumo" cru e `decidir` é grande demais pra fundir; ambos aceitos como estruturais com descrição mitigada. Pode virar fatia futura se o picker do Codex continuar incômodo.
 
 ---
 

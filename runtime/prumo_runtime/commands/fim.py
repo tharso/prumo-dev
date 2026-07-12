@@ -19,7 +19,7 @@ def _render_text(result: dict) -> str:
         if sug["higiene"]:
             propostas.append("`/higiene` (conteúdo parado)")
         if sug["sanitize"]:
-            propostas.append("`/sanitize` (infra acumulada)")
+            propostas.append("sanitização técnica (infra acumulada)")
         lines.append(f"4. Acúmulo detectado — vale propor: {', '.join(propostas)}.")
     else:
         lines.append("4. Sem acúmulo relevante. Workspace limpo pra próxima sessão.")

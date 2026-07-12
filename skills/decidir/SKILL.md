@@ -2,7 +2,8 @@
 name: decidir
 user-invocable: false
 description: >
-  Superfície de decisão interativa do Prumo: quando há muitos itens para
+  Superfície de decisão interativa do Prumo — normalmente é o briefing que a
+  abre sozinho; você também pode pedir. Quando há muitos itens para
   despachar de uma vez (briefing com 6+ itens acionáveis, triagem de inbox,
   uma pilha de pendências), gera um documento HTML offline onde o usuário
   decide item a item — com ações contextuais por item (responder, arquivar,

@@ -214,7 +214,7 @@ class ExecutionTests(unittest.TestCase):
     def test_migrates_prumo_skills_old_with_yes_flag(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             workspace = _bootstrap_workspace(Path(tmpdir))
-            _populate_skills_dir(workspace / "Prumo" / "skills_OLD", ["briefing", "prumo", "doctor"])
+            _populate_skills_dir(workspace / "Prumo" / "skills_OLD", ["briefing", "prumo", "menu"])
 
             # Generated files que repair_workspace deve recriar.
             (workspace / "Prumo" / "AGENT.md").write_text("# stale\n", encoding="utf-8")
@@ -233,7 +233,7 @@ class ExecutionTests(unittest.TestCase):
             self.assertTrue(target.is_dir())
             self.assertTrue((target / "briefing" / "SKILL.md").exists())
             self.assertTrue((target / "prumo" / "SKILL.md").exists())
-            self.assertTrue((target / "doctor" / "SKILL.md").exists())
+            self.assertTrue((target / "menu" / "SKILL.md").exists())
 
             # Pasta antiga sumiu.
             self.assertFalse((workspace / "Prumo" / "skills_OLD").exists())

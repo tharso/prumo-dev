@@ -69,10 +69,10 @@ Se o runtime não estiver no PATH, ler a skill correspondente no workspace:
 | abrir | `{skills_path}abrir/SKILL.md` |
 | briefing | `{skills_path}briefing/SKILL.md` |
 | setup | `{skills_path}prumo/SKILL.md` |
-| faxina | `{skills_path}faxina/SKILL.md` |
 | higiene | `{skills_path}higiene/SKILL.md` |
-| sanitize | `{skills_path}sanitize/SKILL.md` |
-| doctor | `{skills_path}doctor/SKILL.md` |"""
+| faxina | `{skills_path}prumo/references/modules/faxina.md` |
+| sanitize | `{skills_path}prumo/references/modules/sanitize.md` |
+| doctor | `{skills_path}prumo/references/modules/doctor.md` |"""
 
 
 def render_agent_md(

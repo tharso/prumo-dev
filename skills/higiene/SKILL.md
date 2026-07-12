@@ -1,6 +1,5 @@
 ---
 name: higiene
-user-invocable: false
 description: >
   Higiene assistida do workspace. Detecta problemas que precisam de decisão
   do usuário: itens velhos na pauta, contradições entre arquivos, CLAUDE.md

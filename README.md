@@ -103,12 +103,12 @@ Quer duas instâncias (ex: pessoal vs. trabalho)? É opt-in declarado: rode `/pr
 |---------|-----------|
 | `/setup` | Configura o Prumo — wizard conversacional ou modo rápido (despeje e o sistema organiza) |
 | `/briefing` | Briefing diário |
-| `/sanitize` | Compacta estado e arquiva histórico |
-| `/higiene` | Diagnostica e propõe limpeza do CLAUDE.md |
-| `/doctor` | Diagnóstico técnico do runtime |
 | `/acervo` | Navega e revisita o limbo (ideias soltas, pauta hibernando, referências) |
+| `/higiene` | Revisão assistida do workspace — detecta e propõe; você decide |
 | `/fim` | Encerra a sessão — documenta deltas, roda faxina, propõe limpeza |
 | `/menu` | Manual de instruções — lista os comandos e tira dúvidas sobre o funcionamento |
+
+A manutenção sem comando próprio — **faxina** (automática), **sanitização técnica** e **doctor** (diagnóstico) — roda por linguagem natural: "limpa os arquivos", "sanitiza o estado técnico", "diagnostica o runtime".
 
 Pelo runtime CLI também: `prumo setup`, `prumo start`, `prumo briefing`, `prumo migrate` (workspaces flat → nested), `prumo migrate-skills` (workspaces pré-5.2.0 → estrutura nova; ver seção abaixo) e `prumo repair` (regenera arquivos recriáveis).
 
@@ -161,7 +161,7 @@ O workspace do Prumo é Markdown puro — se você usa o [Obsidian](https://obsi
 
 ## Versão
 
-`5.31.0`
+`5.32.0`
 
 ## Licença
 

@@ -1,6 +1,6 @@
 # Dispatch
 
-> **module_version: 5.31.0**
+> **module_version: 5.32.0**
 >
 > Como o Prumo abre sessão e decide o que fazer. Substitui o bootstrap just-in-case (ler tudo antes de saber a intenção) por despacho baseado no que o usuário quer.
 
@@ -75,6 +75,9 @@ Mapeamento de gatilhos do usuário para intenção e ação. Primeiro filtro do 
 | acervo, limbo, revisitar ideias, garimpar, o que ficou parado, ideias soltas | navegar o acervo | ativar a skill `acervo` (enumera o limbo durável e gera o HTML navegável) |
 | fim, encerrar sessão, terminar por hoje, fechar o dia, acabei | encerrar sessão | ativar a skill `fim` (documenta deltas, roda faxina, propõe higiene/sanitize) |
 | menu, ajuda, help, como funciona, quais comandos, o que você faz, manual | manual de instruções | ativar a skill `menu` (apresenta os comandos do core e abre pra dúvidas) |
+| limpa os arquivos, organizar arquivos, arquivar registro, faxina | faxina do workspace | executar o módulo `faxina.md` (age sozinha; não pede decisão) |
+| sanitizar, sanitize, estado técnico pesado, compactar o .prumo | sanitização técnica | executar o módulo `sanitize.md` (dry-run → aprovação → aplicar com backup) |
+| doctor, diagnóstico do runtime, plugin saudável, catálogo defasado | diagnóstico do runtime | executar o módulo `doctor.md` (roda o script e responde com semáforo) |
 | Obsidian, vault, grafo, backlinks, abrir no Obsidian | usar com Obsidian | ler e servir `references/guia-obsidian.md` (bônus opcional; o Obsidian nunca é requisito) |
 
 ## Fallback de dispatch

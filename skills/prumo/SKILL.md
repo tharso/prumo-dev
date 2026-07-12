@@ -2,7 +2,8 @@
 name: setup
 user-invocable: false
 description: >
-  Setup, onboarding e configuração do Prumo. Use esta skill quando o usuário
+  (Primeira vez / configuração — quem já configurou não precisa disto no dia
+  a dia.) Setup, onboarding e configuração do Prumo. Use esta skill quando o usuário
   expressar intenção de configurar/começar o Prumo ("setup", "configurar
   prumo", "montar meu sistema", "/prumo:setup", "quero começar o prumo",
   "começar rápido"), adicionar novas áreas de vida, reconfigurar tom ou
@@ -335,8 +336,8 @@ Após coletar todas as respostas:
 **Comando `/prumo:briefing`:**
 Após o setup, o usuário pode usar `/prumo:briefing` para acionar o morning briefing completo. Alias legado `/briefing` continua aceito por compatibilidade. O comando dispara a skill `briefing` que lê os arquivos de configuração, verifica atualizações, processa todos os canais de inbox, e apresenta o briefing do dia via Gmail/Calendar MCP direto, com curadoria obrigatória.
 
-**Comando `/prumo:sanitize`:**
-Se o território técnico do sistema ficar pesado (backups velhos em `.prumo/backups/`, cache expirado em `.prumo/cache/`, estado inchado em `.prumo/state/`), `/prumo:sanitize` compacta e alivia o contexto. Escopo é exclusivamente `.prumo/` — arquivos do usuário ficam intactos.
+**Sanitização técnica (sem comando próprio, #172):**
+Se o território técnico do sistema ficar pesado (backups velhos em `.prumo/backups/`, cache expirado em `.prumo/cache/`, estado inchado em `.prumo/state/`), peça "sanitiza o estado técnico" — o módulo `sanitize.md` do core compacta e alivia o contexto. Escopo é exclusivamente `.prumo/` — arquivos do usuário ficam intactos.
 
 **Comando `/higiene`:**
 Se o `Prumo/Agente/PERFIL.md` tiver duplicações, conflitos ou texto no lugar errado, `/higiene` detecta, propõe o que mudar e só mexe com confirmação. Diferente da faxina, que age sozinha — aqui quem decide é você.
@@ -345,7 +346,7 @@ Se o `Prumo/Agente/PERFIL.md` tiver duplicações, conflitos ou texto no lugar e
 Pra revisitar o que ficou parado (ideias soltas, pauta hibernando, referências guardadas), `/acervo` gera um HTML navegável (busca, filtro, ordenação por "mais parado primeiro") onde você garimpa item a item — incluir na pauta, atacar agora ou excluir (arquiva, não apaga). Dispara a skill `acervo`.
 
 **Comando `/fim`:**
-Pra encerrar a sessão sem perder o que foi decidido, `/fim` documenta os deltas duráveis nos canais existentes (IDEIAS/PAUTA/REGISTRO, só o que está visível e confirmado), roda a faxina automática, e — se detectar acúmulo — propõe `/higiene` ou `/sanitize` (nunca executa por conta própria). É o bookend do briefing; não lê email/calendário nem cria artefato de sessão. Dispara a skill `fim`.
+Pra encerrar a sessão sem perder o que foi decidido, `/fim` documenta os deltas duráveis nos canais existentes (IDEIAS/PAUTA/REGISTRO, só o que está visível e confirmado), roda a faxina automática, e — se detectar acúmulo — propõe `/higiene` ou a sanitização técnica (nunca executa por conta própria). É o bookend do briefing; não lê email/calendário nem cria artefato de sessão. Dispara a skill `fim`.
 
 **Comando `/menu`:**
 Pra ver o que o Prumo faz, `/menu` apresenta o manual de instruções — lista os comandos disponíveis (derivados do core, fonte única) com uma explicação curta de cada — e fecha perguntando, de forma proativa, se você tem alguma dúvida sobre o funcionamento, pronto pra responder. Dispara a skill `menu`.
