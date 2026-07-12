@@ -71,5 +71,5 @@ def canonical_refs_from(start: Path) -> dict[str, str]:
         "load_policy": str(modules / "load-policy.md"),
         "weekly_review": str(modules / "weekly-review.md"),
         "multiagent": str(modules / "multiagent.md"),
-        "sanitization": str(modules / "sanitization.md"),
+        "sanitization": str(modules / "sanitize.md"),
     }

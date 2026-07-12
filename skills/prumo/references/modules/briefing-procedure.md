@@ -54,6 +54,9 @@ Antes do panorama, executar o **preflight completo** de `version-update.md` — 
 
 1. Ler `PAUTA.md`.
 2. Ler `INBOX.md`.
+3. Checar faxina pendente (módulo `faxina.md`): se registro/índices/processados
+   passaram dos thresholds, rodar a faxina antes de apresentar — ela age sozinha
+   e o resultado entra no briefing em uma linha.
 
 Ao ler a PAUTA, aplicar o filtro de cobrança: itens com marker `| cobrar: DD/MM` só são elegíveis para o briefing quando a data é hoje, ontem (véspera) ou passada (atrasado). Itens com cobrança para daqui a 2+ dias ficam de fora do briefing — o objetivo é não cobrar antes da hora. Itens sem marker aparecem sempre. Marker ambíguo ou não-parseável: fail-open (mostrar o item).
 

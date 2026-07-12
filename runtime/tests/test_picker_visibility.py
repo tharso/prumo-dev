@@ -13,11 +13,15 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 SKILLS_DIR = REPO_ROOT / "skills"
 
 # Front-line: comandos que o usuário digita no dia a dia (NÃO escondidos).
-FRONT_LINE = {"briefing", "acervo", "fim", "menu"}
-# Escondidos do picker: mecânica do agente (abrir/decidir/faxina), manutenção
-# ocasional (doctor/higiene/sanitize) e o onboarding (prumo==setup, que
-# auto-dispara em workspace novo e não polui quem já configurou — #134/#135).
-HIDDEN = {"abrir", "decidir", "faxina", "doctor", "higiene", "sanitize", "prumo"}
+# higiene promovida a botão na taxonomia #172 (ação consciente: "revisa meus
+# arquivos" — o par da faxina automática, que age sozinha).
+FRONT_LINE = {"briefing", "acervo", "fim", "menu", "higiene"}
+# Escondidos do picker: mecânica do agente (abrir/decidir) e o onboarding
+# (prumo==setup, auto-dispara em workspace novo — #134/#135). faxina, sanitize
+# e doctor deixaram de ser skills top-level na #172 (viraram módulos do core):
+# o picker do Codex não lê user-invocable, então MENOS top-level é o único
+# declutter que vale pra todos os hosts.
+HIDDEN = {"abrir", "decidir", "prumo"}
 
 _HIDDEN_RE = re.compile(r"(?m)^user-invocable:\s*false\s*$")
 _DISABLE_RE = re.compile(r"(?m)^disable-model-invocation:\s*true\s*$")

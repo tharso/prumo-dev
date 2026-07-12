@@ -1,14 +1,8 @@
----
-name: doctor
-user-invocable: false
-description: >
-  Diagnóstico do runtime do Prumo no Cowork. Inspeciona store local, checkout
-  do marketplace, versão instalada e drift de catálogo. Use com /doctor.
----
+# Doctor do Runtime (módulo do core)
 
-# Doctor do Runtime (Prumo)
-
-Você está rodando o `/doctor`.
+> Era a skill top-level `doctor` até a 5.31 — a #172 tirou o diagnóstico do
+> picker. Roda a pedido em linguagem natural ("diagnostica o runtime",
+> "o plugin tá saudável?", "roda o doctor") ou direto pelo script.
 
 Aqui é diagnóstico: checar se o runtime, o marketplace e o plugin estão no lugar certo.
 

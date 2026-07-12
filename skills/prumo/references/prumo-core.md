@@ -1,6 +1,6 @@
 # Prumo Core — Motor do sistema
 
-> **prumo_version: 5.31.0**
+> **prumo_version: 5.32.0**
 >
 > Núcleo estável do Prumo. Define regras, guardrails e localização dos módulos canônicos.
 > Procedimento detalhado não mora aqui.
@@ -66,9 +66,9 @@ Arquivos de estado esperados em `.prumo/state/`:
 | `/menu` | Manual de instruções: lista os comandos e tira dúvidas sobre o funcionamento |
 | `/fim` | Encerrar a sessão (documenta deltas, roda faxina, propõe limpeza) |
 | `/setup` | Onboarding e configuração (wizard ou rápido); também reconfigura |
-| `/higiene` | Higiene assistida do `Prumo/Agente/PERFIL.md` |
-| `/sanitize` | Sanitizar estado operacional |
-| `/doctor` | Diagnóstico do runtime do Prumo no Cowork |
+| `/higiene` | Higiene assistida do workspace: pauta parada, contradições, órfãos e referências quebradas, PERFIL pesado — propõe, você decide |
+
+Manutenção sem comando próprio (#172): a **faxina** (automática — roda no briefing e no `/fim`), a **sanitização técnica** e o **doctor** atendem por linguagem natural — módulos `faxina.md`, `sanitize.md` e `doctor.md` do core.
 
 No Cowork, os comandos canônicos aparecem sem prefixo do plugin.
 Pra **abrir o sistema**, é só dizer "prumo" (ou "oi prumo"), sem barra — o Prumo cumprimenta e oferece o que dá pra fazer (skill `abrir`).
@@ -159,7 +159,7 @@ Quando um comando específico for executado, o agente deve ler o módulo corresp
 | Revisão semanal | `.prumo/skills/prumo/references/modules/weekly-review.md` |
 | Update de versão | `.prumo/skills/prumo/references/modules/version-update.md` |
 | Multiagente | `.prumo/skills/prumo/references/modules/multiagent.md` |
-| Sanitização | `.prumo/skills/prumo/references/modules/sanitization.md` |
+| Sanitização | `.prumo/skills/prumo/references/modules/sanitize.md` |
 | Higiene do perfil | `.prumo/skills/prumo/references/modules/claude-hygiene.md` |
 | Runtime do Cowork | `.prumo/skills/prumo/references/modules/cowork-runtime-maintenance.md` |
 | Bridge do runtime no Cowork | `.prumo/skills/prumo/references/modules/cowork-runtime-bridge.md` |
@@ -310,7 +310,7 @@ Ler e seguir:
 
 Ler e seguir:
 
-- `.prumo/skills/prumo/references/modules/sanitization.md`
+- `.prumo/skills/prumo/references/modules/sanitize.md`
 
 ### Higiene do perfil
 
@@ -342,8 +342,8 @@ Histórico completo de versão vive em `CHANGELOG.md`.
 
 Versão atual deste core:
 
-- `5.31.0`
+- `5.32.0`
 
 ---
 
-*Prumo Core v5.31.0 — https://github.com/tharso/prumo*
+*Prumo Core v5.32.0 — https://github.com/tharso/prumo*

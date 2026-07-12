@@ -6,7 +6,10 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
-## [5.31.0] - 2026-07-05
+## [5.32.0] - 2026-07-12
+
+### Changed
+- **Taxonomia do picker: botão vs disparo (#172)** — o picker do Codex mostra toda skill top-level (não lê `user-invocable`), então o único declutter que vale pra todos os hosts é ter **menos skills top-level**. Decisão skill-por-skill com o dono (rodada de crivo): **faxina**, **sanitize** e **doctor** deixam de ser skills e viram **módulos do core** (`skills/prumo/references/modules/faxina.md`, `sanitize.md`, `doctor.md`) — mesmo comportamento, atendem por linguagem natural via dispatch ("limpa os arquivos", "sanitiza o estado técnico", "diagnostica o runtime"); a faxina segue automática no briefing e no `/fim`. **higiene promovida a botão** (`user-invocable: true`) — ação consciente, o par da faxina. `abrir`/`setup`/`decidir` ficam (estruturais) com descrições mais didáticas: setup avisa "(primeira vez / configuração)", decidir explica que normalmente é o briefing que a abre. Picker: 11 → **8** skills; ordem dos manifestos: menu → briefing → fim → acervo → higiene → abrir → decidir → setup (o Codex varre a pasta e não garante ordem; nos demais hosts o array vale). Tabela de comandos do core enxuta (o `/menu` deriva dela); AGENT.md gerado aponta os módulos na cadeia de fallback. Ver DECISIONS.md 2026-07-12 (#172).
 
 ### Fixed
 - **`prumo update` instala do diretório local, não do registry inexistente (#170)** — runtime instalado do cache do plugin do host (origem = diretório local, `uv-tool` `copy`) recebia plano de registry (`uv tool install --force prumo-runtime`), que **falha**: o `prumo-runtime` não é publicado em registry nenhum. Agora o updater resolve o path local da nova versão pela **fonte agnóstica do uv** (`uv-receipt.toml` → `directory`; deriva o irmão da versão nova e valida o `pyproject`) e instala de lá; sem path resolvível, dá **erro honesto** com o caminho de recuperação — nunca um plano que morre no primeiro passo. **Sem hardcode de caminho de host** (mantém #77/#108). Diagnóstico original do Codex rodando o briefing no workspace do dono.

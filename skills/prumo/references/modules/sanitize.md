@@ -1,6 +1,12 @@
-# Sanitização de sistema
+# Sanitização de sistema (módulo do core)
+
+> Era a skill top-level `sanitize` até a 5.31 — a #172 tirou a manutenção
+> técnica do picker. Roda quando o `/fim` detecta acúmulo e o usuário topa,
+> ou a pedido ("sanitiza o estado técnico", "o .prumo tá pesado").
 
 Objetivo: manter o território técnico do Prumo (`.prumo/`) enxuto sem apagar histórico.
+
+Escopo **exclusivo**: `.prumo/` — nunca tocar em arquivos pessoais do usuário; backup antes de qualquer remoção. Se o pedido for limpeza do workspace (registro, índices, inbox) → faxina (`faxina.md`, neste diretório). Se for revisão assistida de conteúdo pessoal (pauta velha, contradições, PERFIL pesado) → `/higiene`.
 
 ## Procedimento
 
@@ -31,3 +37,4 @@ Sanitize é executado pelo agente seguindo as regras abaixo. Roda sempre em dois
 4. Não altera `PERFIL.md`, `PAUTA.md`, `INBOX.md`, `REGISTRO.md`, `IDEIAS.md`.
 5. Preserva `workspace-schema.json` e `agent-lock.json` — estado ativo do runtime não entra em sanitização.
 6. Ao registrar movimentos em `ARCHIVE-INDEX.json`/`ARCHIVE-INDEX.md`, sempre usar paths relativos ao workspace. Path absoluto (`/Users/...`, `C:\...`) em qualquer arquivo de estado persistido é bug — viola o contrato de portabilidade.
+7. Arquivar frio só com política explícita (os gatilhos acima) — nada de threshold inventado na hora.

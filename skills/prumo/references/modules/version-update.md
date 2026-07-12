@@ -12,7 +12,7 @@ mentir, cada elo tem uma fonte de verdade própria; não misturar:
 | Elo | O que mede a "idade" | Quem computa |
 |---|---|---|
 | Versão instalada vs. pública | **distância de versão** (minor) entre o core do workspace e o `VERSION` público | runtime (`prumo briefing --format json` → `version_status`) |
-| Checkout do marketplace (Cowork) | **`lastUpdated`** + HEAD local vs. remoto (divergência) — é aqui que mora "M dias parada" | `/doctor` (`prumo_cowork_doctor.sh`) |
+| Checkout do marketplace (Cowork) | **`lastUpdated`** + HEAD local vs. remoto (divergência) — é aqui que mora "M dias parada" | o doctor (módulo `doctor.md`, roda `prumo_cowork_doctor.sh`) |
 | Skills no workspace | **presença** das skills esperadas em `.prumo/skills/` (o `fim` existe?) | runtime (`skills_missing` no payload) |
 | Runtime vs. core | `prumo` no PATH vs. `prumo_version` do core | runtime (`core_outdated`) |
 

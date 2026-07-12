@@ -1,8 +1,8 @@
 """Detector de acúmulo do `/fim` (#126) — read-only.
 
 O `/fim` é a porta única de encerramento de sessão. Roda a `faxina` (automática)
-e, quando detecta acúmulo que exige julgamento, **sugere** `/higiene` ou
-`/sanitize` — nunca executa por conta própria (elas pedem aprovação). Este
+e, quando detecta acúmulo que exige julgamento, **sugere** `/higiene` ou a
+sanitização técnica — nunca executa por conta própria (elas pedem aprovação). Este
 módulo computa os sinais de acúmulo de forma determinística, usando os
 thresholds PADRÃO da `faxina`/`sanitize` (overrides em `Prumo/Custom/rules/`
 ainda não são lidos aqui — é só detecção pra sugerir, não execução).
@@ -21,7 +21,7 @@ from prumo_runtime.workspace_paths import workspace_paths
 
 SCHEMA_VERSION = "1.0"
 
-# Thresholds reusados da faxina/sanitize (skills/faxina/references/thresholds.md).
+# Thresholds reusados da faxina/sanitize (skills/prumo/references/modules/faxina-thresholds.md).
 PAUTA_STALLED_DAYS = 14   # item da pauta parado há mais de 14d → higiene
 BACKUP_EXPIRY_DAYS = 90   # backup em .prumo/backups/ → sanitize
 EPHEMERAL_DAYS = 14       # artefato efêmero do decidir/acervo (HTML, fonte) → sanitize

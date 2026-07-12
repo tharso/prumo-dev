@@ -109,7 +109,7 @@ echo "Próximos passos:"
 echo "1. Feche totalmente o Cowork/Claude Desktop."
 echo "2. Abra o app de novo."
 echo "3. Abra uma conversa nova."
-echo "4. Teste /setup, /briefing, /doctor ou /higiene."
+echo "4. Teste /setup, /briefing ou /higiene — ou peça \"diagnostica o runtime\" (doctor)."
 echo
 echo "Se o Cowork continuar preso em catálogo velho com botão apagado, não negocie com a UI:"
 echo "  - scripts/prumo_cowork_doctor.sh"

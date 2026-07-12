@@ -1,15 +1,9 @@
----
-name: faxina
-user-invocable: false
-description: >
-  Faxina automática do workspace. Arquiva registro velho, atualiza índices,
-  limpa inbox processado, move itens concluídos. Use com /faxina, "limpar",
-  "organizar arquivos", "arquivar registro", ou quando o briefing detectar
-  que algum arquivo está ficando pesado. Também roda silenciosamente no
-  início de cada briefing para manter a casa em ordem.
----
+# Faxina (módulo do core)
 
-# Faxina
+> Era a skill top-level `faxina` até a 5.31 — a #172 tirou a mecânica do
+> picker. Nada muda no comportamento: roda no início do briefing e no `/fim`
+> (automática), ou a pedido em linguagem natural ("limpa os arquivos",
+> "organizar arquivos", "arquivar registro").
 
 A faxina cuida da casa sem incomodar. Ela não mexe no que é pessoal —
 só organiza, arquiva e indexa.
@@ -20,7 +14,7 @@ A higiene conversa. A faxina age.
 ## Quando rodar
 
 - **No briefing:** antes de apresentar qualquer coisa, checar se tem faxina pendente
-- **Sob demanda:** `/faxina` ou "limpa os arquivos pra mim"
+- **Sob demanda:** "limpa os arquivos pra mim", "organizar arquivos"
 - **Nunca:** no meio de uma conversa produtiva (a faxina espera)
 
 ## O que a faxina faz

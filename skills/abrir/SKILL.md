@@ -2,7 +2,7 @@
 name: abrir
 user-invocable: false
 description: >
-  Porta de entrada do Prumo para invocação curta. Use APENAS quando o
+  Entrada rápida: abre o sistema quando você só diz "prumo". Use APENAS quando o
   usuário disser "prumo" cru, "ei prumo", "olá prumo", "prumo, vamos lá",
   "/prumo:abrir", ou equivalente curto sem intenção específica. Carrega
   identidade mínima, faz scan leve do contexto e devolve saudação
