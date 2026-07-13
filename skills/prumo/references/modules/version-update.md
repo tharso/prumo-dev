@@ -26,16 +26,16 @@ O runtime devolve `version_status.severity` no briefing (lendo a versão públic
 do **cache**, sem nova rede — o painel segue leve):
 
 - `ok` — em dia. Sem ruído.
-- `info` — só patch atrás. Rodapé no máximo.
-- `warning` — **1 minor atrás** → aviso forte, uma linha, com `prumo update`.
-- `alert` — **2+ minor, ou salto de major** → aviso forte de topo (foi o caso do
-  usuário preso 2 meses na 4.7.0).
+- `info` — só patch atrás. Aviso de uma linha no máximo; sem oferta.
+- `warning` — **1 minor atrás** → **oferta no topo** (Passo 4, #174).
+- `alert` — **2+ minor, ou salto de major** → **oferta no topo** (foi o caso do
+  usuário preso 2 meses na 4.7.0 — aviso que segue não segura ninguém).
 - `unknown` — não deu pra checar a pública. **Nunca** declarar "em dia" aqui.
 
-O aviso é **não-bloqueante** (o briefing nunca vira refém de updater manco) e
-naturalmente **~1x/dia** (o briefing é diário). Skills ausentes
-(`skills_missing`) viram aviso de `prumo repair` — é a origem exata do
-"Habilidade desconhecida".
+A oferta é **não-bloqueante** (o briefing segue na mesma resposta; nunca vira
+refém de updater manco) e naturalmente **~1x/dia** (o briefing é diário).
+Skills ausentes (`skills_missing`) viram aviso de `prumo repair` — é a origem
+exata do "Habilidade desconhecida".
 
 ## Objetivo
 
@@ -118,11 +118,15 @@ Quando o gatilho for o briefing, oferecer alternativas curtas:
 - `b) depois — me lembra no /fim`
 - `c) ver diagnóstico`
 
-Se houver versão nova, mas não houver transporte seguro:
+Se a severidade pede oferta (`warning`/`alert`), mas não há transporte seguro:
 
-1. avisar isso explicitamente;
-2. oferecer `b)` e `c)` do mesmo jeito;
+1. avisar isso explicitamente e orientar o caminho por elo (#108);
+2. oferecer `b)` e `c)` do mesmo jeito (adiar e diagnosticar continuam válidos;
+   só o "atualizar agora" não existe sem transporte);
 3. não sequestrar o briefing por causa do updater.
+
+(Com severidade `info`, o gatilho graduado vale igual com ou sem transporte:
+aviso de uma linha, sem escolha.)
 
 Se o caso for `workspace core defasado`:
 

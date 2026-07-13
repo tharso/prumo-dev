@@ -119,6 +119,9 @@ class SkillContractGuards(unittest.TestCase):
         # mandava oferecer a cada patch (nag) e contradizia o warning/alert.
         self.assertIn("gatilho graduado", text)
         self.assertIn("aviso de uma linha", text)
+        # r5: a tabela de severidades também aponta a OFERTA (não "aviso") em
+        # warning/alert — era o resquício que contradizia o Passo 4.
+        self.assertIn("`warning` — **1 minor atrás** → **oferta no topo**".lower(), text)
 
     def test_fim_cobra_update_na_saida(self) -> None:
         text = self._flat(FIM_SKILL)
