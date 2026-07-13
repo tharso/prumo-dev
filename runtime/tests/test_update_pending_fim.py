@@ -106,9 +106,11 @@ class SkillContractGuards(unittest.TestCase):
         # r6: o gate certo é TRANSPORTE, não runtime (sem runtime ainda pode
         # haver fonte local pro core — Passo 5 do canônico).
         self.assertIn("sem transporte seguro", text)
-        # r8: o item 1 (qualquer versão nova) também obedece o gatilho
-        # graduado — o "avisa e segue" genérico era a porta de fuga do info.
-        self.assertIn("gatilho graduado", text)
+        # r8/r9: itens 1 E 2 do Passo 2 obedecem o gatilho graduado — o
+        # "avisa e segue" genérico era a porta de fuga (item 2 = core do
+        # workspace defasado, o caso exato do report do dono).
+        self.assertIn("gatilho graduado: `info` → avisar a diferença em uma linha", text)
+        self.assertIn("(core do workspace defasado), aplicar o mesmo gatilho graduado", text)
 
     def test_version_update_e_o_canonico_do_protocolo(self) -> None:
         # r2 do Codex: o protocolo duplicado divergiu uma vez; agora o

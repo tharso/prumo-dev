@@ -63,7 +63,7 @@ Esta comparação **não é opcional** no briefing. **Busque agora** o `VERSION`
 
 - Fonte: `https://raw.githubusercontent.com/tharso/prumo/main/VERSION`
 - **Sem runtime no PATH:** use **WebFetch** dessa URL raw (ou `curl` quando houver shell). **Isso é permitido e esperado** — sem runtime/shell, WebFetch do `VERSION` é o caminho sancionado. Não confunda esta busca com "drift local": comparar só o core do workspace contra si mesmo **não** é o Passo 2.
-- Se `VERSION` remoto > `prumo_version` do workspace, há **versão nova** → seguir para o Passo 4 (aviso).
+- Se `VERSION` remoto > `prumo_version` do workspace, há **versão nova** → seguir para o Passo 4 (gatilho graduado: oferta ou aviso conforme a severidade).
 
 **Caso sem nenhum jeito de buscar** (sem runtime, sem shell e sem WebFetch): **avisar explicitamente** que não deu para checar — `"Não consegui checar a versão pública agora; sigo o briefing sem garantia de versão atual."` **Nunca** declarar "sem drift" ou "versão em dia" sem ter feito a comparação remota: silenciar aqui é como dizer que o tanque está cheio sem olhar o ponteiro.
 
