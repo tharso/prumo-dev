@@ -45,7 +45,7 @@ O cartão do runtime (`prumo start` / `prumo briefing`) é a **prévia** — um 
 
 Antes do panorama, executar o **preflight completo** de `version-update.md` — **incluindo a comparação remota** (Passo 2 do módulo: buscar o `VERSION` público via WebFetch/`curl` quando não há runtime). Não parar no drift local: "comparar só o core do workspace contra si mesmo" não é a checagem de versão.
 
-1. Se houver versão nova detectável (incl. `VERSION` remoto > `prumo_version` do workspace), avisar a diferença em uma linha e seguir o briefing. Não bloquear.
+1. Se houver versão nova detectável (incl. `VERSION` remoto > `prumo_version` do workspace), seguir o **gatilho graduado** do canônico: severidade `info` → avisar a diferença em uma linha e seguir o briefing; `warning`/`alert` → item 4 (oferta no topo). Não bloquear em nenhum caso.
 2. Se `Prumo/VERSION` local for maior que o `prumo_version` do `.prumo/system/PRUMO-CORE.md` do workspace, avisar que o core do workspace está defasado e seguir.
 3. Se a checagem falhar, registrar em uma linha e seguir. O briefing não vira refém de updater manco.
 4. **Severidade → OFERTA no topo (#158, #174):** ler `version_status.severity` do payload (ou computar a distância de versão). Se `warning`/`alert`, a **oferta de atualizar abre a resposta — e o briefing segue logo abaixo, na MESMA resposta**. Não esperar a escolha: é isso que mantém o **não-bloqueante**; a pergunta fica respondível a qualquer momento.

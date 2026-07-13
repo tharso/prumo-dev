@@ -106,6 +106,9 @@ class SkillContractGuards(unittest.TestCase):
         # r6: o gate certo é TRANSPORTE, não runtime (sem runtime ainda pode
         # haver fonte local pro core — Passo 5 do canônico).
         self.assertIn("sem transporte seguro", text)
+        # r8: o item 1 (qualquer versão nova) também obedece o gatilho
+        # graduado — o "avisa e segue" genérico era a porta de fuga do info.
+        self.assertIn("gatilho graduado", text)
 
     def test_version_update_e_o_canonico_do_protocolo(self) -> None:
         # r2 do Codex: o protocolo duplicado divergiu uma vez; agora o
@@ -153,6 +156,10 @@ class SkillContractGuards(unittest.TestCase):
         # seguro o /fim não promete rodar; orienta por elo (#108).
         self.assertIn("sem transporte seguro", text)
         self.assertIn("não prometer o que não dá pra rodar", text)
+        # r8: o gate de transporte vale nas TRÊS saídas que perguntam —
+        # inclusive sob compactação e na composição com o acúmulo.
+        self.assertIn("mesmo gate de transporte", text)
+        self.assertIn("ou, sem transporte, como a orientação por elo", text)
 
     def test_fim_textual_nao_faz_rede_nem_escreve_cache(self) -> None:
         # O banner de versão (check_and_notify) faz fetch + escrita de cache;

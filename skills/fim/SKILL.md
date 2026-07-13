@@ -148,10 +148,12 @@ recomendação em linguagem de gente**, nunca um menu de comandos (#175):
    - o usuário **recusou explicitamente** nesta sessão → silêncio; cobrar de
      novo é nag, não cuidado;
    - **sob compactação** (não dá pra garantir o que foi dito antes): oferecer
-     UMA vez, com ressalva curta ("se eu já te perguntei hoje, ignora").
+     UMA vez, com ressalva curta ("se eu já te perguntei hoje, ignora") — com
+     o **mesmo gate de transporte** acima (sem transporte, orientação por elo).
    **Composição com o acúmulo:** são momentos distintos — nunca duas perguntas
    na mesma frase. Primeiro a recomendação de acúmulo (item 1); o update entra
-   depois que ela foi respondida ou dispensada, como a última pergunta.
+   depois que ela foi respondida ou dispensada, como a última pergunta (ou,
+   sem transporte, como a orientação por elo).
 4. **Adiar deixa rastro:** se o usuário escolher "amanhã no briefing", gravar o
    item na `PAUTA.md` (Quente): `Revisar N itens parados da pauta (adiado do
    /fim de DD/MM)` — o briefing seguinte lê a pauta e cobra naturalmente. A
