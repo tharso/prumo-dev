@@ -98,17 +98,19 @@ sozinha, como já corre no início do briefing.
 Rodar `prumo fim --workspace <ws> --format json` (read-only). Ele computa sinais
 determinísticos reusando os thresholds da faxina/sanitize:
 
-- `pauta_stalled` (itens parados > 14d) e `inbox_pending` → sugerem **`/higiene`**
+- `pauta_stalled` (itens parados > 14d) e `inbox_pending` → acúmulo de
+  **conteúdo** (o *como*, depois do sim, é a revisão assistida — `/higiene`)
 - `backups_old` (> 90d) e `ephemeral_old` (artefatos efêmeros do decidir/acervo
-  — HTMLs e a fonte copiada — > 14d) → sugerem **a sanitização técnica**
-  (módulo `sanitize.md` do core)
+  — HTMLs e a fonte copiada — > 14d) → acúmulo **técnico** (o *como* é o
+  módulo `sanitize.md` do core)
 - `suggest.update` (o core do workspace — ou o runtime, na falta dele — atrás
-  da versão pública em cache, #174) → sugere **atualizar antes de fechar**
+  da versão pública em cache, #174) → **update pendente**
 
-Quando `suggest.higiene` ou `suggest.sanitize` vier `true`, **oferecer** a
-ação ao usuário — uma linha, escolha curta. **Nunca executar** `higiene`/
-`sanitize` por conta própria: elas pedem julgamento/aprovação. O `/fim` só
-aponta e delega; não duplica a detecção da higiene nem roda a sanitize.
+Os sinais são **insumo**, não fala: a apresentação segue o contrato do
+"Como apresentar" abaixo — **uma** recomendação em linguagem comum, comando
+nunca como opção. **Nunca executar** limpeza que pede julgamento por conta
+própria. O `/fim` só aponta e delega; não duplica a detecção da higiene nem
+roda a sanitização.
 
 Se o runtime não estiver disponível, o agente faz a checagem lendo os arquivos
 direto (mesmos thresholds) — a skill é portável.

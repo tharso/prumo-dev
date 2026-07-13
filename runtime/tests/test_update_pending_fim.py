@@ -156,6 +156,10 @@ class SkillContractGuards(unittest.TestCase):
         self.assertIn("nunca duas perguntas", text)
         self.assertIn("quer que eu atualize", text)
         self.assertNotIn("rodo o `prumo update`", text)
+        # r13: o Passo 5 não pode mandar o oposto do "Como apresentar" —
+        # sinais são insumo, nunca "sugerem /comando" nem "oferecer a ação".
+        self.assertNotIn("sugerem **`/higiene`**", text)
+        self.assertIn("os sinais são **insumo**, não fala", text)
         # r7: suggest.update mede DEFASAGEM, não transporte — sem transporte
         # seguro o /fim não promete rodar; orienta por elo (#108).
         self.assertIn("sem transporte seguro", text)
