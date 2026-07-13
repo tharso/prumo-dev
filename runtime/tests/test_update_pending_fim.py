@@ -103,6 +103,9 @@ class SkillContractGuards(unittest.TestCase):
         # r3: a oferta-modelo expõe as TRÊS opções do canônico (um agente que
         # copia o exemplo não pode esconder o `c`).
         self.assertIn("ver diagnóstico", text)
+        # r6: o gate certo é TRANSPORTE, não runtime (sem runtime ainda pode
+        # haver fonte local pro core — Passo 5 do canônico).
+        self.assertIn("sem transporte seguro", text)
 
     def test_version_update_e_o_canonico_do_protocolo(self) -> None:
         # r2 do Codex: o protocolo duplicado divergiu uma vez; agora o
@@ -119,9 +122,13 @@ class SkillContractGuards(unittest.TestCase):
         # mandava oferecer a cada patch (nag) e contradizia o warning/alert.
         self.assertIn("gatilho graduado", text)
         self.assertIn("aviso de uma linha", text)
-        # r5: a tabela de severidades também aponta a OFERTA (não "aviso") em
-        # warning/alert — era o resquício que contradizia o Passo 4.
-        self.assertIn("`warning` — **1 minor atrás** → **oferta no topo**".lower(), text)
+        # r5/r6: a tabela de severidades também aponta a OFERTA (não "aviso")
+        # em warning E alert — eram os resquícios que contradiziam o Passo 4.
+        self.assertIn("`warning` — **1 minor atrás** → **oferta no topo** (passo 4", text)
+        self.assertIn("`alert` — **2+ minor, ou salto de major** → **oferta no topo** (passo 4", text)
+        # r6: c sem decisão posterior converge pro adiamento (o /fim cobra) —
+        # sem isso, canônico e /fim se contradiziam sobre o rótulo do c.
+        self.assertIn("sem decisão** depois do diagnóstico, vale como adiamento", text)
 
     def test_fim_cobra_update_na_saida(self) -> None:
         text = self._flat(FIM_SKILL)

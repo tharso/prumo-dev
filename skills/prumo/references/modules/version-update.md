@@ -28,8 +28,9 @@ do **cache**, sem nova rede — o painel segue leve):
 - `ok` — em dia. Sem ruído.
 - `info` — só patch atrás. Aviso de uma linha no máximo; sem oferta.
 - `warning` — **1 minor atrás** → **oferta no topo** (Passo 4, #174).
-- `alert` — **2+ minor, ou salto de major** → **oferta no topo** (foi o caso do
-  usuário preso 2 meses na 4.7.0 — aviso que segue não segura ninguém).
+- `alert` — **2+ minor, ou salto de major** → **oferta no topo** (Passo 4, #174;
+  foi o caso do usuário preso 2 meses na 4.7.0 — aviso que segue não segura
+  ninguém).
 - `unknown` — não deu pra checar a pública. **Nunca** declarar "em dia" aqui.
 
 A oferta é **não-bloqueante** (o briefing segue na mesma resposta; nunca vira
@@ -109,8 +110,9 @@ Se a severidade pede oferta e há transporte seguro:
    - **recusa explícita** ("não quero atualizar", "para de oferecer") →
      silêncio até o fim da sessão, inclusive no `/fim`;
    - `c) ver diagnóstico` → mostrar o diagnóstico (módulo `doctor.md`) **sem
-     suspender o fluxo**; não é adiamento nem recusa — a oferta continua
-     valendo e pode ser respondida depois.
+     suspender o fluxo**; não é adiamento nem recusa **na hora** — a oferta
+     continua valendo. Se a sessão caminhar pro fim **sem decisão** depois do
+     diagnóstico, vale como adiamento: o `/fim` cobra uma vez.
 
 Quando o gatilho for o briefing, oferecer alternativas curtas:
 
@@ -133,7 +135,8 @@ Se o caso for `workspace core defasado`:
 1. dizer isso com nome e sobrenome;
 2. mencionar a diferença entre `.prumo/system/PRUMO-CORE.md` do workspace e `Prumo/VERSION` local;
 3. tratar isso como condição operacional esperável, não como release corrompida;
-4. no briefing, oferecer no topo e seguir com o panorama na mesma resposta (mesma postura do Passo 4).
+4. no briefing, seguir o **gatilho graduado** do Passo 4: `warning`/`alert` →
+   oferta no topo com o panorama na mesma resposta; `info` → aviso de uma linha.
 
 ## Como o usuário atualiza, por elo (#108)
 
