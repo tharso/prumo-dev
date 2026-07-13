@@ -136,6 +136,11 @@ class SkillContractGuards(unittest.TestCase):
         # r6: c sem decisão posterior converge pro adiamento (o /fim cobra) —
         # sem isso, canônico e /fim se contradiziam sobre o rótulo do c.
         self.assertIn("sem decisão** depois do diagnóstico, vale como adiamento", text)
+        # r14: paridade core ↔ módulo na exceção do repair — o módulo lista os
+        # artefatos gerenciados (AGENT.md + wrappers) e escopa o abort à
+        # aplicação MANUAL (proibir Prumo/ em bloco contradizia o repair real).
+        self.assertIn("mesma exceção da regra 11 do core", text)
+        self.assertIn("na aplicação manual**, qualquer tentativa de tocar", text)
 
     def test_fim_cobra_update_na_saida(self) -> None:
         text = self._flat(FIM_SKILL)

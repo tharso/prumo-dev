@@ -182,8 +182,14 @@ runtime), os únicos destinos permitidos são:
 2. `.prumo/backups/<scope>/<timestamp>/...` (qualquer subdiretório de scope dentro de `backups/`)
 
 **Via runtime** (`prumo update` / `prumo repair`), quem escreve é o runtime, e
-os destinos sancionados dele incluem também `.prumo/skills/` e os adapters de
-host (contrato do repair, #146) — com a mesma proibição absoluta: **nunca**
-tocar arquivos pessoais do usuário (`Prumo/…`).
+os destinos sancionados dele incluem também `.prumo/skills/`, os adapters de
+host e os artefatos que o próprio runtime gera — `Prumo/AGENT.md` e os wrappers
+`CLAUDE.md`/`AGENT.md`/`AGENTS.md`, regenerados com backup (contrato do repair,
+#146; mesma exceção da regra 11 do core). O que é **pessoal** do usuário
+(PAUTA, REGISTRO, INBOX, IDEIAS, `Agente/`, `Referencias/`, diário) é
+intocável nos dois caminhos.
 
-Qualquer tentativa de tocar `Prumo/Agente/PERFIL.md`, `PAUTA.md`, `INBOX.md`, `REGISTRO.md`, `IDEIAS.md`, `AGENT.md` ou arquivos de áreas do usuário deve abortar o update.
+**Na aplicação manual**, qualquer tentativa de tocar `Prumo/Agente/PERFIL.md`,
+`PAUTA.md`, `INBOX.md`, `REGISTRO.md`, `IDEIAS.md`, `AGENT.md` ou arquivos de
+áreas do usuário deve abortar o update — sem runtime, nem os artefatos
+gerenciados são do agente.
