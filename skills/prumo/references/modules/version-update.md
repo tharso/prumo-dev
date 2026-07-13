@@ -97,9 +97,15 @@ Se houver versão nova e transporte seguro:
 2. mostrar a diferença `v[local] -> v[remota]`;
 3. dizer que a atualização toca apenas o motor;
 4. se não houver changelog local seguro, falar apenas "nova versão do motor";
-5. semântica das respostas: `atualizar agora` executa quando a resposta vier;
-   `depois` é adiamento (o `/fim` cobra — `suggest.update`); recusa explícita
-   silencia até o fim da sessão.
+5. semântica das respostas (**canônica** — briefing e `/fim` apontam pra cá):
+   - `a) atualizar agora` → executa quando a resposta vier;
+   - `b) depois` (ou silêncio) → **adiamento**: não repetir a oferta antes do
+     `/fim`; no `/fim`, cobrar **uma vez** (`suggest.update`);
+   - **recusa explícita** ("não quero atualizar", "para de oferecer") →
+     silêncio até o fim da sessão, inclusive no `/fim`;
+   - `c) ver diagnóstico` → mostrar o diagnóstico (módulo `doctor.md`) **sem
+     suspender o fluxo**; não é adiamento nem recusa — a oferta continua
+     valendo e pode ser respondida depois.
 
 Quando o gatilho for o briefing, oferecer alternativas curtas:
 

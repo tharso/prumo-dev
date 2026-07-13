@@ -135,14 +135,19 @@ recomendação em linguagem de gente**, nunca um menu de comandos (#175):
 2. **Comando nunca é opção.** Comando é o *como* — aparece depois do sim,
    quando precisar. A opção nomeia o que acontece, na língua do usuário.
 3. **Update pendente cobra na saída (#174):** se `suggest.update` vier `true`,
-   a resposta depende do que houve na sessão:
+   a resposta depende do que houve na sessão (semântica canônica: Passo 4 do
+   `version-update.md`):
    - o usuário **adiou** no briefing ("depois") ou ninguém ofereceu → cobrar
-     agora, como última oferta: "antes de fechar: saiu a X — rodo o
-     `prumo update`? (~30s)";
+     **uma vez**, como a **última pergunta** da sessão: "antes de fechar: saiu
+     a X — quer que eu atualize? (~30s)". O comando é o *como* — roda depois
+     do sim, nunca aparece na pergunta;
    - o usuário **recusou explicitamente** nesta sessão → silêncio; cobrar de
      novo é nag, não cuidado;
    - **sob compactação** (não dá pra garantir o que foi dito antes): oferecer
      UMA vez, com ressalva curta ("se eu já te perguntei hoje, ignora").
+   **Composição com o acúmulo:** são momentos distintos — nunca duas perguntas
+   na mesma frase. Primeiro a recomendação de acúmulo (item 1); o update entra
+   depois que ela foi respondida ou dispensada, como a última pergunta.
 4. **Adiar deixa rastro:** se o usuário escolher "amanhã no briefing", gravar o
    item na `PAUTA.md` (Quente): `Revisar N itens parados da pauta (adiado do
    /fim de DD/MM)` — o briefing seguinte lê a pauta e cobra naturalmente. A

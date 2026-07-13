@@ -52,7 +52,7 @@ Antes do panorama, executar o **preflight completo** de `version-update.md` — 
    > Saiu a 5.34 (você está na 5.31) — quer que eu atualize? a) **atualizar agora** — rodo `prumo update` + `prumo repair` assim que você responder; b) **depois** — sigo e te lembro no `/fim`.
    >
    > [briefing segue aqui, na mesma resposta]
-   Semântica das respostas (sem ambiguidade): **`a`** executa o update quando a resposta vier (o briefing desta sessão já rodou na versão atual — o update vale da próxima leitura em diante); **`b` ou silêncio** é **adiamento** — o `/fim` cobra (`suggest.update`); **recusa explícita** ("não quero atualizar", "para de oferecer") silencia até o fim da sessão, **inclusive no `/fim`**. Nunca re-oferecer espontaneamente depois de `b`/recusa na mesma sessão. **Sem runtime**, a oferta vira a orientação do `version-update.md` (caminho #108) — nunca um comando que não existe. Se `skills_missing` não vier vazio, avisar `prumo repair` (é a origem do "Habilidade desconhecida"). Fonte de verdade por elo e limiares: `version-update.md` (o Passo 4 de lá segue esta mesma postura).
+   A semântica completa das respostas (`a`/`b`/recusa/`c`) é a do **Passo 4 do `version-update.md`** — canônica lá, sem cópia aqui (duplicar o protocolo foi o que fez os dois módulos divergirem no r1 da #174). Resumo operacional do anti-nag: depois de `b`, não repetir a oferta antes do `/fim`; no `/fim`, cobrar uma vez (`suggest.update`); depois de recusa explícita, silêncio até o fim da sessão, inclusive no `/fim`. **Sem runtime**, a oferta vira a orientação do `version-update.md` (caminho #108) — nunca um comando que não existe. Se `skills_missing` não vier vazio, avisar `prumo repair` (é a origem do "Habilidade desconhecida").
 
 ## Passo 3: estado operacional
 

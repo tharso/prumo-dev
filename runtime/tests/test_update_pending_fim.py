@@ -19,6 +19,7 @@ from prumo_runtime.fim import accumulation_signals
 REPO_ROOT = Path(__file__).resolve().parents[2]
 BRIEFING_PROC = REPO_ROOT / "skills" / "prumo" / "references" / "modules" / "briefing-procedure.md"
 FIM_SKILL = REPO_ROOT / "skills" / "fim" / "SKILL.md"
+VERSION_UPDATE = REPO_ROOT / "skills" / "prumo" / "references" / "modules" / "version-update.md"
 
 
 def _ws(root: Path, core_version: str | None) -> Path:
@@ -92,12 +93,25 @@ class SkillContractGuards(unittest.TestCase):
         self.assertIn("atualizar agora", text)
         self.assertIn("na mesma resposta", text)
         self.assertIn("não-bloqueante", text)
-        # Semântica sem ambiguidade (review Codex): adiar ≠ recusar.
+        # Coerência do anti-nag (review Codex r2): "não re-oferecer na sessão"
+        # não pode engolir a cobrança do /fim — que acontece NA sessão. O
+        # contrato certo distingue os dois momentos:
+        self.assertIn("não repetir a oferta antes do `/fim`", text)
+        self.assertIn("no `/fim`, cobrar uma vez", text)
+        self.assertIn("recusa explícita", text)
+        self.assertIn("suggest.update", text)
+
+    def test_version_update_e_o_canonico_do_protocolo(self) -> None:
+        # r2 do Codex: o protocolo duplicado divergiu uma vez; agora o
+        # version-update.md é o canônico e carrega a semântica completa.
+        text = self._flat(VERSION_UPDATE)
+        self.assertIn("canônica", text)
         self.assertIn("adiamento", text)
         self.assertIn("recusa explícita", text)
-        # Anti-nag e quem cobra depois (nome real do campo do payload).
-        self.assertIn("nunca re-oferecer", text)
-        self.assertIn("suggest.update", text)
+        # O `c) ver diagnóstico` tem contrato: não suspende nem conta como
+        # adiamento/recusa (era a terceira opção sem semântica).
+        self.assertIn("sem suspender o fluxo", text)
+        self.assertIn("não é adiamento nem recusa", text)
 
     def test_fim_cobra_update_na_saida(self) -> None:
         text = self._flat(FIM_SKILL)
@@ -106,6 +120,12 @@ class SkillContractGuards(unittest.TestCase):
         self.assertIn("adiou", text)
         self.assertIn("recusou explicitamente", text)
         self.assertIn("sob compactação", text)
+        # Composição com o acúmulo (r2): momentos distintos, update por último,
+        # e a pergunta não carrega nome de comando.
+        self.assertIn("última pergunta", text)
+        self.assertIn("nunca duas perguntas", text)
+        self.assertIn("quer que eu atualize", text)
+        self.assertNotIn("rodo o `prumo update`", text)
 
     def test_fim_textual_nao_faz_rede_nem_escreve_cache(self) -> None:
         # O banner de versão (check_and_notify) faz fetch + escrita de cache;

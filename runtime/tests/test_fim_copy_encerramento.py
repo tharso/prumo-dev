@@ -90,6 +90,21 @@ class FimCopyContract(unittest.TestCase):
         self.assertIn("oferecer antes de fechar", text)
         self.assertNotIn("prumo update", text)
 
+    def test_runtime_triplo_mantem_uma_recomendacao_e_update_separado(self) -> None:
+        # r2 do Codex: higiene+sanitize+update não pode virar duas decisões
+        # numa. O render mantém UMA linha de recomendação (conteúdo + cláusula
+        # técnica) e o update como linha própria — a skill o apresenta como a
+        # última pergunta, momento distinto.
+        from prumo_runtime.commands.fim import _render_text
+
+        text = _render_text(self._result(higiene=True, sanitize=True, update=True))
+        rec_lines = [ln for ln in text.split("\n") if "Recomendação:" in ln]
+        self.assertEqual(len(rec_lines), 1)
+        self.assertIn("poeira técnica", rec_lines[0])
+        update_lines = [ln for ln in text.split("\n") if "Update pendente" in ln]
+        self.assertEqual(len(update_lines), 1)
+        self.assertNotIn("Recomendação", update_lines[0])
+
 
 if __name__ == "__main__":
     unittest.main()
