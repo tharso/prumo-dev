@@ -139,9 +139,12 @@ recomendação em linguagem de gente**, nunca um menu de comandos (#175):
    `version-update.md`):
    - o usuário **adiou** no briefing ("depois", silêncio, ou pediu o
      diagnóstico (`c`) e **não decidiu** depois) ou ninguém ofereceu → cobrar
-     **uma vez**, como a **última pergunta** da sessão:
-     "antes de fechar: saiu a X — quer que eu atualize? (~30s)". O comando é o
-     *como* — roda depois do sim, nunca aparece na pergunta;
+     **uma vez**, como a **última pergunta** da sessão. **Com transporte
+     seguro**: "antes de fechar: saiu a X — quer que eu atualize? (~30s)" (o
+     comando é o *como* — roda depois do sim, nunca aparece na pergunta).
+     **Sem transporte seguro**: não prometer o que não dá pra rodar — a
+     cobrança vira a orientação por elo (#108, `version-update.md`), em uma
+     linha;
    - o usuário **recusou explicitamente** nesta sessão → silêncio; cobrar de
      novo é nag, não cuidado;
    - **sob compactação** (não dá pra garantir o que foi dito antes): oferecer

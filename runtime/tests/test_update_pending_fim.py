@@ -149,6 +149,10 @@ class SkillContractGuards(unittest.TestCase):
         self.assertIn("nunca duas perguntas", text)
         self.assertIn("quer que eu atualize", text)
         self.assertNotIn("rodo o `prumo update`", text)
+        # r7: suggest.update mede DEFASAGEM, não transporte — sem transporte
+        # seguro o /fim não promete rodar; orienta por elo (#108).
+        self.assertIn("sem transporte seguro", text)
+        self.assertIn("não prometer o que não dá pra rodar", text)
 
     def test_fim_textual_nao_faz_rede_nem_escreve_cache(self) -> None:
         # O banner de versão (check_and_notify) faz fetch + escrita de cache;
