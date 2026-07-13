@@ -150,7 +150,7 @@ class SkillContractGuards(unittest.TestCase):
         modulo = self._flat(VERSION_UPDATE)
         for frase in (
             "`prumo/agent.md` (regenerado com backup)",
-            "(mescla in-place, preservando blocos custom — sem backup próprio)",
+            "os wrappers `claude.md`/`agent.md`/`agents.md` (mescla in-place, preservando blocos custom — sem backup próprio)",
         ):
             self.assertIn(frase, core, f"core sem a frase de paridade: {frase}")
             self.assertIn(frase, modulo, f"módulo sem a frase de paridade: {frase}")
