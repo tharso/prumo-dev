@@ -109,8 +109,10 @@ class SkillContractGuards(unittest.TestCase):
         # r8/r9: itens 1 E 2 do Passo 2 obedecem o gatilho graduado — o
         # "avisa e segue" genérico era a porta de fuga (item 2 = core do
         # workspace defasado, o caso exato do report do dono).
-        self.assertIn("gatilho graduado: `info` → avisar a diferença em uma linha", text)
-        self.assertIn("(core do workspace defasado), aplicar o mesmo gatilho graduado", text)
+        self.assertIn("severidade `info` → avisar a diferença em uma linha", text)
+        self.assertIn(
+            "(core do workspace defasado), aplicar o mesmo gatilho graduado: `info` → avisar em uma linha", text
+        )
 
     def test_version_update_e_o_canonico_do_protocolo(self) -> None:
         # r2 do Codex: o protocolo duplicado divergiu uma vez; agora o
