@@ -137,8 +137,9 @@ recomendação em linguagem de gente**, nunca um menu de comandos (#175):
 3. **Update pendente cobra na saída (#174):** se `suggest.update` vier `true`,
    a resposta depende do que houve na sessão (semântica canônica: Passo 4 do
    `version-update.md`):
-   - o usuário **adiou** no briefing ("depois" **ou silêncio**) ou ninguém
-     ofereceu → cobrar **uma vez**, como a **última pergunta** da sessão:
+   - o usuário **adiou** no briefing ("depois", silêncio, ou pediu o
+     diagnóstico (`c`) e **não decidiu** depois) ou ninguém ofereceu → cobrar
+     **uma vez**, como a **última pergunta** da sessão:
      "antes de fechar: saiu a X — quer que eu atualize? (~30s)". O comando é o
      *como* — roda depois do sim, nunca aparece na pergunta;
    - o usuário **recusou explicitamente** nesta sessão → silêncio; cobrar de

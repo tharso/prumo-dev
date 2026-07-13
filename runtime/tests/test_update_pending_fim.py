@@ -115,6 +115,10 @@ class SkillContractGuards(unittest.TestCase):
         # adiamento/recusa (era a terceira opção sem semântica).
         self.assertIn("sem suspender o fluxo", text)
         self.assertIn("não é adiamento nem recusa", text)
+        # r4: gatilho GRADUADO alinhado ao briefing — sem ele, o canônico
+        # mandava oferecer a cada patch (nag) e contradizia o warning/alert.
+        self.assertIn("gatilho graduado", text)
+        self.assertIn("aviso de uma linha", text)
 
     def test_fim_cobra_update_na_saida(self) -> None:
         text = self._flat(FIM_SKILL)
@@ -122,7 +126,10 @@ class SkillContractGuards(unittest.TestCase):
         # As três situações: adiou → cobra; recusou → silêncio; compactação → fallback.
         # r3: silêncio no briefing TAMBÉM é adiamento (a enumeração não pode
         # ser lida como exaustiva sem ele — o /fim deixaria de cobrar).
-        self.assertIn("ou silêncio", text)
+        self.assertIn("silêncio", text)
+        # r4: pedir o diagnóstico (c) e não decidir também é adiamento — sem
+        # isso, o c vira rota de fuga que o /fim nunca cobra.
+        self.assertIn("não decidiu", text)
         self.assertIn("adiou", text)
         self.assertIn("recusou explicitamente", text)
         self.assertIn("sob compactação", text)

@@ -88,7 +88,12 @@ Sem transporte seguro de aplicação:
 
 ## Passo 4: oferta ao usuário (#174)
 
-Se houver versão nova e transporte seguro:
+**Gatilho graduado** (mesma régua do briefing, #158): severidade `warning`/`alert`
+(1+ minor atrás ou salto de major) → a **oferta** abaixo; `info` (diferença
+menor que isso) → **aviso de uma linha**, sem escolha e sem cobrança no `/fim`
+— oferta a cada patch seria nag, não cuidado.
+
+Se a severidade pede oferta e há transporte seguro:
 
 1. **oferecer a atualização no topo da resposta, sem parar o fluxo** — quando o
    gatilho é o briefing, o panorama segue logo abaixo, na mesma resposta
