@@ -142,6 +142,19 @@ class SkillContractGuards(unittest.TestCase):
         self.assertIn("mesma exceção da regra 11 do core", text)
         self.assertIn("na aplicação manual**, qualquer tentativa de tocar", text)
 
+    def test_paridade_core_modulo_na_excecao_do_repair(self) -> None:
+        # r15: paridade de VERDADE — as duas fontes descrevem o MESMO repair
+        # (AGENT.md com backup; wrappers por mescla in-place SEM backup — é o
+        # comportamento real de repair_workspace, visível no output do repair).
+        core = self._flat(REPO_ROOT / "skills" / "prumo" / "references" / "prumo-core.md")
+        modulo = self._flat(VERSION_UPDATE)
+        for frase in (
+            "`prumo/agent.md` (regenerado com backup)",
+            "(mescla in-place, preservando blocos custom — sem backup próprio)",
+        ):
+            self.assertIn(frase, core, f"core sem a frase de paridade: {frase}")
+            self.assertIn(frase, modulo, f"módulo sem a frase de paridade: {frase}")
+
     def test_fim_cobra_update_na_saida(self) -> None:
         text = self._flat(FIM_SKILL)
         self.assertIn("suggest.update", text)

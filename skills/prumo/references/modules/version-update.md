@@ -183,9 +183,9 @@ runtime), os únicos destinos permitidos são:
 
 **Via runtime** (`prumo update` / `prumo repair`), quem escreve é o runtime, e
 os destinos sancionados dele incluem também `.prumo/skills/`, os adapters de
-host e os artefatos que o próprio runtime gera — `Prumo/AGENT.md` e os wrappers
-`CLAUDE.md`/`AGENT.md`/`AGENTS.md`, regenerados com backup (contrato do repair,
-#146; mesma exceção da regra 11 do core). O que é **pessoal** do usuário
+host e os artefatos que o próprio runtime gera — `Prumo/AGENT.md` (regenerado com backup) e
+os wrappers `CLAUDE.md`/`AGENT.md`/`AGENTS.md` (mescla in-place, preservando blocos custom — sem backup próprio)
+(contrato do repair, #146; mesma exceção da regra 11 do core). O que é **pessoal** do usuário
 (PAUTA, REGISTRO, INBOX, IDEIAS, `Agente/`, `Referencias/`, diário) é
 intocável nos dois caminhos.
 
