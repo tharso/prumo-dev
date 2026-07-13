@@ -16,7 +16,9 @@ import re
 from datetime import date
 from pathlib import Path
 
-from prumo_runtime.workspace import read_text
+from prumo_runtime import __version__
+from prumo_runtime.version_check import compute_staleness, read_cached_remote_version
+from prumo_runtime.workspace import parse_core_version, read_text
 from prumo_runtime.workspace_paths import workspace_paths
 
 SCHEMA_VERSION = "1.0"
@@ -146,6 +148,15 @@ def accumulation_signals(workspace: Path, *, today: date | None = None) -> dict:
     suggest_higiene = pauta_stalled > 0 or inbox_pending > 0
     suggest_sanitize = backups_old > 0 or ephemeral_old > 0
 
+    # Update pendente (#174): o /fim é a última chance da sessão de cobrar um
+    # update que o briefing ofereceu e ficou pra depois. Mesma fonte do briefing
+    # (#158): versão instalada (core do workspace, ou o runtime na falta) vs. a
+    # pública em CACHE — zero rede nova, segue read-only.
+    installed_version = parse_core_version(workspace) or __version__
+    remote_version = read_cached_remote_version()
+    staleness = compute_staleness(installed_version, remote_version)
+    suggest_update = staleness.get("severity") in {"warning", "alert"}
+
     return {
         "schema_version": SCHEMA_VERSION,
         "workspace_path": str(workspace),
@@ -155,9 +166,12 @@ def accumulation_signals(workspace: Path, *, today: date | None = None) -> dict:
             "registro_rows": registro_rows,
             "backups_old": backups_old,
             "ephemeral_old": ephemeral_old,
+            "installed_version": installed_version,
+            "remote_version": remote_version or "",
         },
         "suggest": {
             "higiene": suggest_higiene,
             "sanitize": suggest_sanitize,
+            "update": suggest_update,
         },
     }

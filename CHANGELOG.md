@@ -6,6 +6,12 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.33.0] - 2026-07-13
+
+### Changed
+- **Update pendente vira OFERTA no topo do briefing; o `/fim` cobra na saída (#174)** — report do dono: o briefing detectou versão nova e "deixou pra depois"; o `/fim` ignorou. O contratado era isso mesmo ("avisar em uma linha e seguir") — e estava aquém. Agora, com severidade `warning`/`alert`, a **oferta abre a resposta e o briefing segue logo abaixo, na mesma resposta** (não-bloqueante de verdade — a escolha fica respondível a qualquer momento). Semântica sem ambiguidade: **"agora"** executa o update quando a resposta vier; **"depois"/silêncio é adiamento** — o `/fim` cobra (sinal **`suggest.update`**: instalada vs. pública em **cache**, zero rede nova; `fim` entrou na supressão do banner de versão pro `prumo fim` textual seguir read-only); **recusa explícita silencia a sessão inteira**, inclusive o `/fim` (sob compactação, oferece uma vez com ressalva). O `version-update.md` (Passo 4) foi harmonizado — o "parar e esperar decisão" antigo contradizia o não-bloqueante. Sem runtime → orientação #108, nunca comando que não existe. Travado por `test_update_pending_fim.py` (9 testes TDD). Ver DECISIONS.md 2026-07-13 (#174).
+- **Encerramento do `/fim` com UMA recomendação em linguagem de gente (#175)** — report do dono: o `/fim` fechou com "a) /higiene b) /sanitize c) nada" (menu de jargão; `/sanitize` nem existe mais desde a #172). Contrato de copy novo no `fim/SKILL.md`: **prioridade conteúdo > técnica** (item parado é decisão emperrada; backup velho é poeira), o sinal secundário vira **cláusula** ("aproveito e limpo junto"), **comando nunca é opção** (é o *como*, depois do sim), e "amanhã no briefing" **deixa rastro** na `PAUTA.md` pro briefing seguinte cobrar. Exemplo bom e o anti-padrão exato do report documentados na skill. O texto do `prumo fim` segue o mesmo contrato: **uma** linha de recomendação (conteúdo lidera, técnica vira cláusula), zero nome de comando ou skill. Travado por `test_fim_copy_encerramento.py` (8 guards TDD).
+
 ## [5.32.0] - 2026-07-12
 
 ### Changed

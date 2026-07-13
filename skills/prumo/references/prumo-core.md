@@ -1,6 +1,6 @@
 # Prumo Core — Motor do sistema
 
-> **prumo_version: 5.32.0**
+> **prumo_version: 5.33.0**
 >
 > Núcleo estável do Prumo. Define regras, guardrails e localização dos módulos canônicos.
 > Procedimento detalhado não mora aqui.
@@ -219,7 +219,7 @@ Sem lock ativo, escrita simultânea em estado compartilhado vira corrida. Dois a
 
 ### 11. Atualização segura só toca o motor
 
-Update pode mexer em `.prumo/system/PRUMO-CORE.md` e backup. O resto é área do usuário. Mão fora.
+Update aplicado À MÃO pelo agente (sem runtime) pode mexer só em `.prumo/system/PRUMO-CORE.md` e backup. Via runtime (`prumo update`/`repair`), os destinos gerenciados incluem também `.prumo/skills/`, adapters de host e os artefatos que o próprio runtime gera — `Prumo/AGENT.md` (regenerado com backup) e os wrappers `CLAUDE.md`/`AGENT.md`/`AGENTS.md` (mescla in-place, preservando blocos custom — sem backup próprio) (repair, #146). O que é PESSOAL do usuário (PAUTA, REGISTRO, INBOX, IDEIAS, `Agente/`, `Referencias/`, diário) é intocável nos dois caminhos. Mão fora.
 
 ### 12. Briefing entrega panorama único
 
@@ -237,7 +237,7 @@ Panorama numerado de 1 a N (agenda, emails curados, pendências), proposta do di
 
 `ASSERT: Na primeira resposta do briefing, é proibido abrir arquivo bruto de Prumo/Inbox4Mobile/*.`
 
-`ASSERT: No update, a allowlist de escrita é apenas .prumo/system/PRUMO-CORE.md e .prumo/backups/<scope>/<timestamp>/...`
+`ASSERT: No update aplicado à mão (sem runtime), a allowlist de escrita é apenas .prumo/system/PRUMO-CORE.md e .prumo/backups/<scope>/<timestamp>/... — via runtime, os destinos são os gerenciados do repair (#146: .prumo/skills/, adapters, Prumo/AGENT.md com backup e wrappers via mescla in-place). Arquivos PESSOAIS do usuário são proibidos nos dois caminhos.`
 
 `ASSERT: Antes do panorama do briefing, o sistema deve tentar preflight de versão e avisar quando detectar versão nova.`
 
@@ -342,8 +342,8 @@ Histórico completo de versão vive em `CHANGELOG.md`.
 
 Versão atual deste core:
 
-- `5.32.0`
+- `5.33.0`
 
 ---
 
-*Prumo Core v5.32.0 — https://github.com/tharso/prumo*
+*Prumo Core v5.33.0 — https://github.com/tharso/prumo*

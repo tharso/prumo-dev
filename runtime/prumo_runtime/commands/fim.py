@@ -11,18 +11,27 @@ def _render_text(result: dict) -> str:
     lines = [
         f"1. Encerramento do workspace `{result['workspace_path']}`.",
         f"2. Pauta parada (>14d): {s['pauta_stalled']} · inbox pendente: {s['inbox_pending']} · registro: {s['registro_rows']} linhas.",
-        f"3. Infra: backups velhos (>90d): {s['backups_old']} · artefatos efêmeros velhos (>14d): {s['ephemeral_old']}.",
+        f"3. Poeira técnica: backups velhos (>90d): {s['backups_old']} · arquivos efêmeros (>14d): {s['ephemeral_old']}.",
     ]
     sug = result["suggest"]
-    if sug["higiene"] or sug["sanitize"]:
-        propostas = []
-        if sug["higiene"]:
-            propostas.append("`/higiene` (conteúdo parado)")
+    # UMA recomendação em linguagem de gente (#175): conteúdo > técnica; o
+    # secundário vira cláusula, nunca segunda proposta. Comando nenhum aqui —
+    # o comando é o COMO e mora na skill, depois do sim.
+    if sug["higiene"]:
+        rec = f"revisar o conteúdo parado ({s['pauta_stalled']} na pauta, {s['inbox_pending']} no inbox)"
         if sug["sanitize"]:
-            propostas.append("sanitização técnica (infra acumulada)")
-        lines.append(f"4. Acúmulo detectado — vale propor: {', '.join(propostas)}.")
+            rec += f" — e limpar a poeira técnica junto ({s['backups_old']} backups, {s['ephemeral_old']} efêmeros)"
+        lines.append(f"4. Recomendação: {rec}.")
+    elif sug["sanitize"]:
+        lines.append(
+            f"4. Recomendação: limpar a poeira técnica ({s['backups_old']} backups, {s['ephemeral_old']} efêmeros)."
+        )
     else:
         lines.append("4. Sem acúmulo relevante. Workspace limpo pra próxima sessão.")
+    if sug.get("update"):
+        lines.append(
+            f"5. Update pendente: {s['installed_version']} → {s['remote_version']} — oferecer antes de fechar."
+        )
     return "\n".join(lines)
 
 

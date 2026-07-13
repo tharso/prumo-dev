@@ -7,7 +7,7 @@ description: >
   entre sessões), gera o diário do dia em Prumo/Diario/ (projeção confirmada
   dos fatos gravados — nunca reconstrução de memória), roda a faxina
   automática, mostra um resumo, e — se detectar acúmulo — PROPÕE (não executa)
-  `/higiene` ou a sanitização técnica. É o bookend simétrico do briefing: o briefing
+  UMA recomendação de limpeza em linguagem comum. É o bookend simétrico do briefing: o briefing
   abre, o fim fecha. NÃO é briefing (não lê email/calendário, não monta a
   pauta do dia).
 ---
@@ -53,7 +53,7 @@ reconstrução.
 2. DIÁRIO     → projeção dos fatos do dia → confirmação do texto completo → Prumo/Diario/AAAA-MM-DD.md
 3. FAXINA     → roda a rotina automática (já é no-confirm)
 4. RESUMO     → o que registrou + o diário + o que a faxina arrumou
-5. DETECTAR   → `prumo fim --workspace <ws> --format json` aponta acúmulo; PROPOR higiene/sanitize
+5. DETECTAR   → `prumo fim --workspace <ws> --format json` aponta acúmulo; PROPOR a recomendação (conteúdo > técnica)
 ```
 
 ### Passo 2 — Diário do dia
@@ -98,15 +98,19 @@ sozinha, como já corre no início do briefing.
 Rodar `prumo fim --workspace <ws> --format json` (read-only). Ele computa sinais
 determinísticos reusando os thresholds da faxina/sanitize:
 
-- `pauta_stalled` (itens parados > 14d) e `inbox_pending` → sugerem **`/higiene`**
+- `pauta_stalled` (itens parados > 14d) e `inbox_pending` → acúmulo de
+  **conteúdo** (o *como*, depois do sim, é a revisão assistida — `/higiene`)
 - `backups_old` (> 90d) e `ephemeral_old` (artefatos efêmeros do decidir/acervo
-  — HTMLs e a fonte copiada — > 14d) → sugerem **a sanitização técnica**
-  (módulo `sanitize.md` do core)
+  — HTMLs e a fonte copiada — > 14d) → acúmulo **técnico** (o *como* é o
+  módulo `sanitize.md` do core)
+- `suggest.update` (o core do workspace — ou o runtime, na falta dele — atrás
+  da versão pública em cache, #174) → **update pendente**
 
-Quando `suggest.higiene` ou `suggest.sanitize` vier `true`, **oferecer** a
-ação ao usuário — uma linha, escolha curta. **Nunca executar** `higiene`/
-`sanitize` por conta própria: elas pedem julgamento/aprovação. O `/fim` só
-aponta e delega; não duplica a detecção da higiene nem roda a sanitize.
+Os sinais são **insumo**, não fala: a apresentação segue o contrato do
+"Como apresentar" abaixo — **uma** recomendação em linguagem comum, comando
+nunca como opção. **Nunca executar** limpeza que pede julgamento por conta
+própria. O `/fim` só aponta e delega; não duplica a detecção da higiene nem
+roda a sanitização.
 
 Se o runtime não estiver disponível, o agente faz a checagem lendo os arquivos
 direto (mesmos thresholds) — a skill é portável.
@@ -123,11 +127,52 @@ O `/fim` é encerramento, não mini-briefing. Ele **NÃO**:
 ## Como apresentar
 
 Encerrar com: o que foi **registrado** (e onde), o **diário** do dia (link
-clicável), o que a **faxina** arrumou, e — se houver acúmulo — a **sugestão**
-de higiene/sanitize como escolha curta. Se a sessão foi compactada, dizer o que
-**não** dá pra garantir. Fechar deixando a próxima sessão limpa: o `/briefing`
-seguinte já lê `IDEIAS`/`PAUTA`/`REGISTRO`, então o agente começa up-to-date
-naturalmente — o diário é leitura do usuário, não estado do sistema.
+clicável), o que a **faxina** arrumou — e, se houver acúmulo, **UMA
+recomendação em linguagem de gente**, nunca um menu de comandos (#175):
+
+1. **Prioridade: conteúdo > técnica.** Item parado é decisão emperrada; backup
+   velho é poeira. O sinal dominante vira A recomendação; o secundário vira uma
+   **cláusula** ("aproveito e limpo a poeira técnica junto"), nunca uma segunda
+   pergunta.
+2. **Comando nunca é opção.** Comando é o *como* — aparece depois do sim,
+   quando precisar. A opção nomeia o que acontece, na língua do usuário.
+3. **Update pendente cobra na saída (#174):** se `suggest.update` vier `true`,
+   a resposta depende do que houve na sessão (semântica canônica: Passo 4 do
+   `version-update.md`):
+   - o usuário **adiou** no briefing ("depois", silêncio, ou pediu o
+     diagnóstico (`c`) e **não decidiu** depois) ou ninguém ofereceu → cobrar
+     **uma vez**, como a **última pergunta** da sessão. **Com transporte
+     seguro**: "antes de fechar: saiu a X — quer que eu atualize? (~30s)" (o
+     comando é o *como* — roda depois do sim, nunca aparece na pergunta).
+     **Sem transporte seguro**: não prometer o que não dá pra rodar — a
+     cobrança vira a orientação por elo (#108, `version-update.md`), em uma
+     linha;
+   - o usuário **recusou explicitamente** nesta sessão → silêncio; cobrar de
+     novo é nag, não cuidado;
+   - **sob compactação** (não dá pra garantir o que foi dito antes): oferecer
+     UMA vez, com ressalva curta ("se eu já te perguntei hoje, ignora") — com
+     o **mesmo gate de transporte** acima (sem transporte, orientação por elo).
+   **Composição com o acúmulo:** são momentos distintos — nunca duas perguntas
+   na mesma frase. Primeiro a recomendação de acúmulo (item 1); o update entra
+   depois que ela foi respondida ou dispensada, como a última pergunta (ou,
+   sem transporte, como a orientação por elo).
+4. **Adiar deixa rastro:** se o usuário escolher "amanhã no briefing", gravar o
+   item na `PAUTA.md` (Quente): `Revisar N itens parados da pauta (adiado do
+   /fim de DD/MM)` — o briefing seguinte lê a pauta e cobra naturalmente. A
+   escolha do usuário é a confirmação de escrita.
+
+Exemplo bom:
+> "4 itens estão parados na pauta há mais de 2 semanas — quer revisar comigo
+> agora (uns 5 min), ou deixo pro briefing de amanhã? Se topar, aproveito e
+> limpo a poeira técnica (6 backups velhos) junto."
+
+Exemplo ruim (proibido — foi exatamente o report que gerou o #175):
+> "a) /higiene b) /sanitize c) nada por ora"
+
+Se a sessão foi compactada, dizer o que **não** dá pra garantir. Fechar
+deixando a próxima sessão limpa: o `/briefing` seguinte já lê
+`IDEIAS`/`PAUTA`/`REGISTRO`, então o agente começa up-to-date naturalmente — o
+diário é leitura do usuário, não estado do sistema.
 
 ## Referências
 

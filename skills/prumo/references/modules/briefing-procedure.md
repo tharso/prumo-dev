@@ -45,10 +45,15 @@ O cartão do runtime (`prumo start` / `prumo briefing`) é a **prévia** — um 
 
 Antes do panorama, executar o **preflight completo** de `version-update.md` — **incluindo a comparação remota** (Passo 2 do módulo: buscar o `VERSION` público via WebFetch/`curl` quando não há runtime). Não parar no drift local: "comparar só o core do workspace contra si mesmo" não é a checagem de versão.
 
-1. Se houver versão nova detectável (incl. `VERSION` remoto > `prumo_version` do workspace), avisar a diferença em uma linha e seguir o briefing. Não bloquear.
-2. Se `Prumo/VERSION` local for maior que o `prumo_version` do `.prumo/system/PRUMO-CORE.md` do workspace, avisar que o core do workspace está defasado e seguir.
+1. Se houver versão nova detectável (incl. `VERSION` remoto > `prumo_version` do workspace), seguir o **gatilho graduado** do canônico: severidade `info` → avisar a diferença em uma linha e seguir o briefing; `warning`/`alert` → item 4 (oferta no topo). Não bloquear em nenhum caso.
+2. Se `Prumo/VERSION` local for maior que o `prumo_version` do `.prumo/system/PRUMO-CORE.md` do workspace (core do workspace defasado), aplicar o mesmo gatilho graduado: `info` → avisar em uma linha e seguir; `warning`/`alert` → item 4 (oferta no topo; o canônico cobre este caso em "workspace core defasado").
 3. Se a checagem falhar, registrar em uma linha e seguir. O briefing não vira refém de updater manco.
-4. **Severidade (#158):** ler `version_status.severity` do payload (ou computar a distância de versão). Se `warning`/`alert`, o aviso é **forte** (não rodapé) com a ação exata (`prumo update`) — staleness não pode passar despercebida, foi o que prendeu um usuário 2 meses numa versão fóssil. Se `skills_missing` não vier vazio, avisar `prumo repair` (é a origem do "Habilidade desconhecida"). Regra da fonte de verdade por elo e limiares: `version-update.md`. **Não-bloqueante** sempre.
+4. **Severidade → OFERTA no topo (#158, #174):** ler `version_status.severity` do payload (ou computar a distância de versão). Se `warning`/`alert`, a **oferta de atualizar abre a resposta — e o briefing segue logo abaixo, na MESMA resposta**. Não esperar a escolha: é isso que mantém o **não-bloqueante**; a pergunta fica respondível a qualquer momento.
+   > *(exemplo COM transporte seguro — sem transporte, o `a` sai e vale o caso "sem transporte" do canônico: orientação por elo + `b`/`c`)*
+   > Saiu a 5.34 (você está na 5.31) — quer que eu atualize? a) **atualizar agora** — atualizo pelo caminho seguro disponível (runtime ou fonte local, ver canônico) assim que você responder; b) **depois** — sigo e te lembro no `/fim`; c) **ver diagnóstico** primeiro.
+   >
+   > [briefing segue aqui, na mesma resposta]
+   A semântica completa das respostas (`a`/`b`/recusa/`c`) é a do **Passo 4 do `version-update.md`** — canônica lá, sem cópia aqui (duplicar o protocolo foi o que fez os dois módulos divergirem no r1 da #174). Resumo operacional do anti-nag: depois de `b`, não repetir a oferta antes do `/fim`; no `/fim`, cobrar uma vez (`suggest.update`); depois de recusa explícita, silêncio até o fim da sessão, inclusive no `/fim`. **Sem transporte seguro** pro elo defasado (sem runtime ainda pode haver fonte local pro core — ver Passos 3 e 5 do canônico), seguir o caso "sem transporte" do Passo 4: mostrar a orientação por elo (#108) em linha própria e oferecer **só** `b`/`c` (o `a` sai da oferta) — nunca um comando que não existe. Se `skills_missing` não vier vazio, avisar `prumo repair` (é a origem do "Habilidade desconhecida").
 
 ## Passo 3: estado operacional
 

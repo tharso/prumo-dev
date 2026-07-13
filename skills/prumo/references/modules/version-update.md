@@ -26,16 +26,17 @@ O runtime devolve `version_status.severity` no briefing (lendo a versão públic
 do **cache**, sem nova rede — o painel segue leve):
 
 - `ok` — em dia. Sem ruído.
-- `info` — só patch atrás. Rodapé no máximo.
-- `warning` — **1 minor atrás** → aviso forte, uma linha, com `prumo update`.
-- `alert` — **2+ minor, ou salto de major** → aviso forte de topo (foi o caso do
-  usuário preso 2 meses na 4.7.0).
+- `info` — só patch atrás. Aviso de uma linha no máximo; sem oferta.
+- `warning` — **1 minor atrás** → **oferta no topo** (Passo 4, #174).
+- `alert` — **2+ minor, ou salto de major** → **oferta no topo** (Passo 4, #174;
+  foi o caso do usuário preso 2 meses na 4.7.0 — aviso que segue não segura
+  ninguém).
 - `unknown` — não deu pra checar a pública. **Nunca** declarar "em dia" aqui.
 
-O aviso é **não-bloqueante** (o briefing nunca vira refém de updater manco) e
-naturalmente **~1x/dia** (o briefing é diário). Skills ausentes
-(`skills_missing`) viram aviso de `prumo repair` — é a origem exata do
-"Habilidade desconhecida".
+A oferta é **não-bloqueante** (o briefing segue na mesma resposta; nunca vira
+refém de updater manco) e naturalmente **~1x/dia** (o briefing é diário).
+Skills ausentes (`skills_missing`) viram aviso de `prumo repair` — é a origem
+exata do "Habilidade desconhecida".
 
 ## Objetivo
 
@@ -62,7 +63,7 @@ Esta comparação **não é opcional** no briefing. **Busque agora** o `VERSION`
 
 - Fonte: `https://raw.githubusercontent.com/tharso/prumo/main/VERSION`
 - **Sem runtime no PATH:** use **WebFetch** dessa URL raw (ou `curl` quando houver shell). **Isso é permitido e esperado** — sem runtime/shell, WebFetch do `VERSION` é o caminho sancionado. Não confunda esta busca com "drift local": comparar só o core do workspace contra si mesmo **não** é o Passo 2.
-- Se `VERSION` remoto > `prumo_version` do workspace, há **versão nova** → seguir para o Passo 4 (aviso).
+- Se `VERSION` remoto > `prumo_version` do workspace, há **versão nova** → seguir para o Passo 4 (gatilho graduado: oferta ou aviso conforme a severidade).
 
 **Caso sem nenhum jeito de buscar** (sem runtime, sem shell e sem WebFetch): **avisar explicitamente** que não deu para checar — `"Não consegui checar a versão pública agora; sigo o briefing sem garantia de versão atual."` **Nunca** declarar "sem drift" ou "versão em dia" sem ter feito a comparação remota: silenciar aqui é como dizer que o tanque está cheio sem olhar o ponteiro.
 
@@ -86,34 +87,56 @@ Sem transporte seguro de aplicação:
 - não bloquear o briefing;
 - orientar o caminho certo por elo (ver "Como o usuário atualiza" abaixo). Para skills congeladas, **não** mandar "reinstalar o plugin": o marketplace instala e descobre, mas não refresca `.prumo/skills/` (decisão #108) — quem refresca é o runtime.
 
-## Passo 4: aviso ao usuário
+## Passo 4: oferta ao usuário (#174)
 
-Se houver versão nova e transporte seguro:
+**Gatilho graduado** (mesma régua do briefing, #158): severidade `warning`/`alert`
+(1+ minor atrás ou salto de major) → a **oferta** abaixo; `info` (diferença
+menor que isso) → **aviso de uma linha**, sem escolha e sem cobrança no `/fim`
+— oferta a cada patch seria nag, não cuidado.
 
-1. parar antes do briefing;
-2. avisar a diferença `v[local] -> v[remota]`;
+Se a severidade pede oferta e há transporte seguro:
+
+1. **oferecer a atualização no topo da resposta, sem parar o fluxo** — quando o
+   gatilho é o briefing, o panorama segue logo abaixo, na mesma resposta
+   (postura da #174: oferta explícita e não-bloqueante; aviso-e-segue era
+   ignorável, parar-e-esperar era sequestro);
+2. mostrar a diferença `v[local] -> v[remota]`;
 3. dizer que a atualização toca apenas o motor;
 4. se não houver changelog local seguro, falar apenas "nova versão do motor";
-5. esperar decisão do usuário.
+5. semântica das respostas (**canônica** — briefing e `/fim` apontam pra cá):
+   - `a) atualizar agora` → executa quando a resposta vier;
+   - `b) depois` (ou silêncio) → **adiamento**: não repetir a oferta antes do
+     `/fim`; no `/fim`, cobrar **uma vez** (`suggest.update`);
+   - **recusa explícita** ("não quero atualizar", "para de oferecer") →
+     silêncio até o fim da sessão, inclusive no `/fim`;
+   - `c) ver diagnóstico` → mostrar o diagnóstico (módulo `doctor.md`) **sem
+     suspender o fluxo**; não é adiamento nem recusa **na hora** — a oferta
+     continua valendo. Se a sessão caminhar pro fim **sem decisão** depois do
+     diagnóstico, vale como adiamento: o `/fim` cobra uma vez.
 
 Quando o gatilho for o briefing, oferecer alternativas curtas:
 
 - `a) atualizar agora`
-- `b) seguir mesmo assim`
+- `b) depois — me lembra no /fim`
 - `c) ver diagnóstico`
 
-Se houver versão nova, mas não houver transporte seguro:
+Se a severidade pede oferta (`warning`/`alert`), mas não há transporte seguro:
 
-1. avisar isso explicitamente;
-2. oferecer `b)` e `c)` do mesmo jeito;
+1. avisar isso explicitamente e orientar o caminho por elo (#108);
+2. oferecer `b)` e `c)` do mesmo jeito (adiar e diagnosticar continuam válidos;
+   só o "atualizar agora" não existe sem transporte);
 3. não sequestrar o briefing por causa do updater.
+
+(Com severidade `info`, o gatilho graduado vale igual com ou sem transporte:
+aviso de uma linha, sem escolha.)
 
 Se o caso for `workspace core defasado`:
 
 1. dizer isso com nome e sobrenome;
 2. mencionar a diferença entre `.prumo/system/PRUMO-CORE.md` do workspace e `Prumo/VERSION` local;
 3. tratar isso como condição operacional esperável, não como release corrompida;
-4. no briefing, parar antes do panorama e pedir decisão do usuário.
+4. no briefing, seguir o **gatilho graduado** do Passo 4: `warning`/`alert` →
+   oferta no topo com o panorama na mesma resposta; `info` → aviso de uma linha.
 
 ## Como o usuário atualiza, por elo (#108)
 
@@ -150,11 +173,23 @@ caminho — nunca deixá-lo achar que atualizar o plugin basta.
 2. reler o core;
 3. validar a versão final.
 
-## Allowlist de escrita
+## Allowlist de escrita (aplicação MANUAL, sem runtime)
 
-Durante atualização, os únicos destinos permitidos são:
+Quando é o **agente** aplicando o update à mão (Passo 5 — fonte local, sem
+runtime), os únicos destinos permitidos são:
 
 1. `.prumo/system/PRUMO-CORE.md`
 2. `.prumo/backups/<scope>/<timestamp>/...` (qualquer subdiretório de scope dentro de `backups/`)
 
-Qualquer tentativa de tocar `Prumo/Agente/PERFIL.md`, `PAUTA.md`, `INBOX.md`, `REGISTRO.md`, `IDEIAS.md`, `AGENT.md` ou arquivos de áreas do usuário deve abortar o update.
+**Via runtime** (`prumo update` / `prumo repair`), quem escreve é o runtime, e
+os destinos sancionados dele incluem também `.prumo/skills/`, os adapters de
+host e os artefatos que o próprio runtime gera — `Prumo/AGENT.md` (regenerado com backup) e
+os wrappers `CLAUDE.md`/`AGENT.md`/`AGENTS.md` (mescla in-place, preservando blocos custom — sem backup próprio)
+(contrato do repair, #146; mesma exceção da regra 11 do core). O que é **pessoal** do usuário
+(PAUTA, REGISTRO, INBOX, IDEIAS, `Agente/`, `Referencias/`, diário) é
+intocável nos dois caminhos.
+
+**Na aplicação manual**, qualquer tentativa de tocar `Prumo/Agente/PERFIL.md`,
+`PAUTA.md`, `INBOX.md`, `REGISTRO.md`, `IDEIAS.md`, `AGENT.md` ou arquivos de
+áreas do usuário deve abortar o update — sem runtime, nem os artefatos
+gerenciados são do agente.
