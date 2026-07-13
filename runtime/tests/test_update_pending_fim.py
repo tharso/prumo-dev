@@ -100,6 +100,9 @@ class SkillContractGuards(unittest.TestCase):
         self.assertIn("no `/fim`, cobrar uma vez", text)
         self.assertIn("recusa explícita", text)
         self.assertIn("suggest.update", text)
+        # r3: a oferta-modelo expõe as TRÊS opções do canônico (um agente que
+        # copia o exemplo não pode esconder o `c`).
+        self.assertIn("ver diagnóstico", text)
 
     def test_version_update_e_o_canonico_do_protocolo(self) -> None:
         # r2 do Codex: o protocolo duplicado divergiu uma vez; agora o
@@ -117,6 +120,9 @@ class SkillContractGuards(unittest.TestCase):
         text = self._flat(FIM_SKILL)
         self.assertIn("suggest.update", text)
         # As três situações: adiou → cobra; recusou → silêncio; compactação → fallback.
+        # r3: silêncio no briefing TAMBÉM é adiamento (a enumeração não pode
+        # ser lida como exaustiva sem ele — o /fim deixaria de cobrar).
+        self.assertIn("ou silêncio", text)
         self.assertIn("adiou", text)
         self.assertIn("recusou explicitamente", text)
         self.assertIn("sob compactação", text)
