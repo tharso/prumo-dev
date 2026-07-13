@@ -49,6 +49,7 @@ Antes do panorama, executar o **preflight completo** de `version-update.md` — 
 2. Se `Prumo/VERSION` local for maior que o `prumo_version` do `.prumo/system/PRUMO-CORE.md` do workspace (core do workspace defasado), aplicar o mesmo gatilho graduado: `info` → avisar em uma linha e seguir; `warning`/`alert` → item 4 (oferta no topo; o canônico cobre este caso em "workspace core defasado").
 3. Se a checagem falhar, registrar em uma linha e seguir. O briefing não vira refém de updater manco.
 4. **Severidade → OFERTA no topo (#158, #174):** ler `version_status.severity` do payload (ou computar a distância de versão). Se `warning`/`alert`, a **oferta de atualizar abre a resposta — e o briefing segue logo abaixo, na MESMA resposta**. Não esperar a escolha: é isso que mantém o **não-bloqueante**; a pergunta fica respondível a qualquer momento.
+   > *(exemplo COM transporte seguro — sem transporte, o `a` sai e vale o caso "sem transporte" do canônico: orientação por elo + `b`/`c`)*
    > Saiu a 5.34 (você está na 5.31) — quer que eu atualize? a) **atualizar agora** — atualizo pelo caminho seguro disponível (runtime ou fonte local, ver canônico) assim que você responder; b) **depois** — sigo e te lembro no `/fim`; c) **ver diagnóstico** primeiro.
    >
    > [briefing segue aqui, na mesma resposta]

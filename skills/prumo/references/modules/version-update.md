@@ -173,11 +173,17 @@ caminho — nunca deixá-lo achar que atualizar o plugin basta.
 2. reler o core;
 3. validar a versão final.
 
-## Allowlist de escrita
+## Allowlist de escrita (aplicação MANUAL, sem runtime)
 
-Durante atualização, os únicos destinos permitidos são:
+Quando é o **agente** aplicando o update à mão (Passo 5 — fonte local, sem
+runtime), os únicos destinos permitidos são:
 
 1. `.prumo/system/PRUMO-CORE.md`
 2. `.prumo/backups/<scope>/<timestamp>/...` (qualquer subdiretório de scope dentro de `backups/`)
+
+**Via runtime** (`prumo update` / `prumo repair`), quem escreve é o runtime, e
+os destinos sancionados dele incluem também `.prumo/skills/` e os adapters de
+host (contrato do repair, #146) — com a mesma proibição absoluta: **nunca**
+tocar arquivos pessoais do usuário (`Prumo/…`).
 
 Qualquer tentativa de tocar `Prumo/Agente/PERFIL.md`, `PAUTA.md`, `INBOX.md`, `REGISTRO.md`, `IDEIAS.md`, `AGENT.md` ou arquivos de áreas do usuário deve abortar o update.
