@@ -82,23 +82,38 @@ class UpdatePendingSignal(unittest.TestCase):
 
 
 class SkillContractGuards(unittest.TestCase):
-    def test_briefing_abre_com_oferta_nao_aviso(self) -> None:
-        text = BRIEFING_PROC.read_text(encoding="utf-8").lower()
-        # A oferta explícita com escolha curta, no lugar do aviso-e-segue.
-        self.assertIn("oferta", text)
+    def _flat(self, path: Path) -> str:
+        return " ".join(path.read_text(encoding="utf-8").lower().split())
+
+    def test_briefing_abre_com_oferta_executavel(self) -> None:
+        text = self._flat(BRIEFING_PROC)
+        # A oferta explícita, com ORDEM executável: abre a resposta e o
+        # briefing segue na MESMA resposta (não espera → não-bloqueante real).
         self.assertIn("atualizar agora", text)
-        # Anti-nag: recusa segue o briefing e não re-pergunta na sessão.
-        self.assertIn("não re-pergunta", text)
-        # O /fim é quem cobra depois.
-        self.assertIn("update_pending", text)
-        # Não-bloqueante preservado.
+        self.assertIn("na mesma resposta", text)
         self.assertIn("não-bloqueante", text)
+        # Semântica sem ambiguidade (review Codex): adiar ≠ recusar.
+        self.assertIn("adiamento", text)
+        self.assertIn("recusa explícita", text)
+        # Anti-nag e quem cobra depois (nome real do campo do payload).
+        self.assertIn("nunca re-oferecer", text)
+        self.assertIn("suggest.update", text)
 
     def test_fim_cobra_update_na_saida(self) -> None:
-        text = FIM_SKILL.read_text(encoding="utf-8").lower()
-        self.assertIn("update_pending", text)
-        # Cobra na saída, respeitando recusa anterior na mesma sessão.
-        self.assertIn("recusou", text)
+        text = self._flat(FIM_SKILL)
+        self.assertIn("suggest.update", text)
+        # As três situações: adiou → cobra; recusou → silêncio; compactação → fallback.
+        self.assertIn("adiou", text)
+        self.assertIn("recusou explicitamente", text)
+        self.assertIn("sob compactação", text)
+
+    def test_fim_textual_nao_faz_rede_nem_escreve_cache(self) -> None:
+        # O banner de versão (check_and_notify) faz fetch + escrita de cache;
+        # o `prumo fim` TEXTUAL passaria por ele sem esta supressão (review
+        # Codex) — quebrando a promessa read-only/sem-rede do /fim.
+        from prumo_runtime.version_check import SUPPRESS_COMMANDS
+
+        self.assertIn("fim", SUPPRESS_COMMANDS)
 
 
 if __name__ == "__main__":

@@ -24,7 +24,9 @@ DEFAULT_TTL_HOURS = 24
 FAILURE_TTL_HOURS = 1
 BANNER_COOLDOWN_HOURS = 24
 
-SUPPRESS_COMMANDS = {"update", "upgrade", "version"}
+# "fim" entra aqui (#174): o /fim promete read-only e sem rede — o banner
+# de versão faria fetch+escrita de cache no `prumo fim` textual.
+SUPPRESS_COMMANDS = {"update", "upgrade", "version", "fim"}
 
 
 def check_and_notify(command: str | None, format_arg: str | None) -> None:

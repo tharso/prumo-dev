@@ -86,20 +86,25 @@ Sem transporte seguro de aplicação:
 - não bloquear o briefing;
 - orientar o caminho certo por elo (ver "Como o usuário atualiza" abaixo). Para skills congeladas, **não** mandar "reinstalar o plugin": o marketplace instala e descobre, mas não refresca `.prumo/skills/` (decisão #108) — quem refresca é o runtime.
 
-## Passo 4: aviso ao usuário
+## Passo 4: oferta ao usuário (#174)
 
 Se houver versão nova e transporte seguro:
 
-1. parar antes do briefing;
-2. avisar a diferença `v[local] -> v[remota]`;
+1. **oferecer a atualização no topo da resposta, sem parar o fluxo** — quando o
+   gatilho é o briefing, o panorama segue logo abaixo, na mesma resposta
+   (postura da #174: oferta explícita e não-bloqueante; aviso-e-segue era
+   ignorável, parar-e-esperar era sequestro);
+2. mostrar a diferença `v[local] -> v[remota]`;
 3. dizer que a atualização toca apenas o motor;
 4. se não houver changelog local seguro, falar apenas "nova versão do motor";
-5. esperar decisão do usuário.
+5. semântica das respostas: `atualizar agora` executa quando a resposta vier;
+   `depois` é adiamento (o `/fim` cobra — `suggest.update`); recusa explícita
+   silencia até o fim da sessão.
 
 Quando o gatilho for o briefing, oferecer alternativas curtas:
 
 - `a) atualizar agora`
-- `b) seguir mesmo assim`
+- `b) depois — me lembra no /fim`
 - `c) ver diagnóstico`
 
 Se houver versão nova, mas não houver transporte seguro:
@@ -113,7 +118,7 @@ Se o caso for `workspace core defasado`:
 1. dizer isso com nome e sobrenome;
 2. mencionar a diferença entre `.prumo/system/PRUMO-CORE.md` do workspace e `Prumo/VERSION` local;
 3. tratar isso como condição operacional esperável, não como release corrompida;
-4. no briefing, parar antes do panorama e pedir decisão do usuário.
+4. no briefing, oferecer no topo e seguir com o panorama na mesma resposta (mesma postura do Passo 4).
 
 ## Como o usuário atualiza, por elo (#108)
 

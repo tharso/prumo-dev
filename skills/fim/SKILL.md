@@ -102,8 +102,8 @@ determinísticos reusando os thresholds da faxina/sanitize:
 - `backups_old` (> 90d) e `ephemeral_old` (artefatos efêmeros do decidir/acervo
   — HTMLs e a fonte copiada — > 14d) → sugerem **a sanitização técnica**
   (módulo `sanitize.md` do core)
-- `suggest.update` (`update_pending`: core/runtime atrás da versão pública em
-  cache, #174) → sugere **atualizar antes de fechar**
+- `suggest.update` (o core do workspace — ou o runtime, na falta dele — atrás
+  da versão pública em cache, #174) → sugere **atualizar antes de fechar**
 
 Quando `suggest.higiene` ou `suggest.sanitize` vier `true`, **oferecer** a
 ação ao usuário — uma linha, escolha curta. **Nunca executar** `higiene`/
@@ -134,11 +134,15 @@ recomendação em linguagem de gente**, nunca um menu de comandos (#175):
    pergunta.
 2. **Comando nunca é opção.** Comando é o *como* — aparece depois do sim,
    quando precisar. A opção nomeia o que acontece, na língua do usuário.
-3. **Update pendente cobra na saída (#174):** se `suggest.update` vier `true` e
-   o usuário **não recusou** o update nesta sessão (o briefing pode ter
-   oferecido), a última oferta do `/fim` é essa: "antes de fechar: saiu a X —
-   rodo o `prumo update`? (~30s)". Se recusou hoje, silêncio — cobrar de novo é
-   nag, não cuidado.
+3. **Update pendente cobra na saída (#174):** se `suggest.update` vier `true`,
+   a resposta depende do que houve na sessão:
+   - o usuário **adiou** no briefing ("depois") ou ninguém ofereceu → cobrar
+     agora, como última oferta: "antes de fechar: saiu a X — rodo o
+     `prumo update`? (~30s)";
+   - o usuário **recusou explicitamente** nesta sessão → silêncio; cobrar de
+     novo é nag, não cuidado;
+   - **sob compactação** (não dá pra garantir o que foi dito antes): oferecer
+     UMA vez, com ressalva curta ("se eu já te perguntei hoje, ignora").
 4. **Adiar deixa rastro:** se o usuário escolher "amanhã no briefing", gravar o
    item na `PAUTA.md` (Quente): `Revisar N itens parados da pauta (adiado do
    /fim de DD/MM)` — o briefing seguinte lê a pauta e cobra naturalmente. A

@@ -45,24 +45,50 @@ class FimCopyContract(unittest.TestCase):
         self.assertIn("rastro", text)
         self.assertIn("pauta", text)
 
-    def test_runtime_nao_imprime_comando_como_proposta(self) -> None:
-        from prumo_runtime.commands.fim import _render_text
-
-        result = {
+    def _result(self, **suggest) -> dict:
+        return {
             "workspace_path": "/x",
             "signals": {
                 "pauta_stalled": 4, "inbox_pending": 0, "registro_rows": 78,
                 "backups_old": 6, "ephemeral_old": 5,
-                "installed_version": "5.33.0", "remote_version": "5.33.0",
+                "installed_version": "5.33.0", "remote_version": "5.34.0",
             },
-            "suggest": {"higiene": True, "sanitize": True, "update": False},
+            "suggest": {"higiene": False, "sanitize": False, "update": False, **suggest},
         }
-        text = _render_text(result)
-        self.assertNotIn("`/higiene`", text)
-        self.assertNotIn("`/sanitize`", text)
-        # Em linguagem de gente, com o comando fora do papel de opção.
-        self.assertIn("conteúdo parado", text)
-        self.assertIn("infra acumulada", text)
+
+    def test_runtime_uma_recomendacao_sem_jargao_nem_comando(self) -> None:
+        from prumo_runtime.commands.fim import _render_text
+
+        text = _render_text(self._result(higiene=True, sanitize=True))
+        # Nenhum nome de comando ou de skill como proposta (review Codex: o
+        # guard anterior só barrava a forma com crases e deixava "(higiene)"
+        # passar). O nome não aparece de jeito NENHUM na recomendação.
+        self.assertNotIn("higiene", text.lower())
+        self.assertNotIn("sanitize", text.lower())
+        self.assertNotIn("sanitização", text.lower())
+        self.assertNotIn("prumo update", text)
+        # UMA recomendação: conteúdo lidera e a técnica vira cláusula na MESMA linha.
+        rec_lines = [ln for ln in text.split("\n") if "Recomendação:" in ln]
+        self.assertEqual(len(rec_lines), 1)
+        self.assertIn("conteúdo parado", rec_lines[0])
+        self.assertIn("poeira técnica", rec_lines[0])
+
+    def test_runtime_so_tecnica_vira_recomendacao_unica(self) -> None:
+        from prumo_runtime.commands.fim import _render_text
+
+        text = _render_text(self._result(sanitize=True))
+        rec_lines = [ln for ln in text.split("\n") if "Recomendação:" in ln]
+        self.assertEqual(len(rec_lines), 1)
+        self.assertIn("poeira técnica", rec_lines[0])
+
+    def test_runtime_update_pendente_sem_comando(self) -> None:
+        from prumo_runtime.commands.fim import _render_text
+
+        text = _render_text(self._result(update=True))
+        self.assertIn("5.33.0", text)
+        self.assertIn("5.34.0", text)
+        self.assertIn("oferecer antes de fechar", text)
+        self.assertNotIn("prumo update", text)
 
 
 if __name__ == "__main__":
