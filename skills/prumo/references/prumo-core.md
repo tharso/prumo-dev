@@ -219,7 +219,7 @@ Sem lock ativo, escrita simultânea em estado compartilhado vira corrida. Dois a
 
 ### 11. Atualização segura só toca o motor
 
-Update pode mexer em `.prumo/system/PRUMO-CORE.md` e backup. O resto é área do usuário. Mão fora.
+Update aplicado À MÃO pelo agente (sem runtime) pode mexer só em `.prumo/system/PRUMO-CORE.md` e backup. Via runtime (`prumo update`/`repair`), os destinos gerenciados incluem também `.prumo/skills/` e adapters de host (#146). Nos dois caminhos, `Prumo/` é área do usuário. Mão fora.
 
 ### 12. Briefing entrega panorama único
 
@@ -237,7 +237,7 @@ Panorama numerado de 1 a N (agenda, emails curados, pendências), proposta do di
 
 `ASSERT: Na primeira resposta do briefing, é proibido abrir arquivo bruto de Prumo/Inbox4Mobile/*.`
 
-`ASSERT: No update, a allowlist de escrita é apenas .prumo/system/PRUMO-CORE.md e .prumo/backups/<scope>/<timestamp>/...`
+`ASSERT: No update aplicado à mão (sem runtime), a allowlist de escrita é apenas .prumo/system/PRUMO-CORE.md e .prumo/backups/<scope>/<timestamp>/... — via runtime, os destinos gerenciados são os do repair (#146); Prumo/ é proibido nos dois.`
 
 `ASSERT: Antes do panorama do briefing, o sistema deve tentar preflight de versão e avisar quando detectar versão nova.`
 

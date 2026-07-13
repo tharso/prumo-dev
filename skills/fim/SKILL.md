@@ -7,7 +7,7 @@ description: >
   entre sessões), gera o diário do dia em Prumo/Diario/ (projeção confirmada
   dos fatos gravados — nunca reconstrução de memória), roda a faxina
   automática, mostra um resumo, e — se detectar acúmulo — PROPÕE (não executa)
-  `/higiene` ou a sanitização técnica. É o bookend simétrico do briefing: o briefing
+  UMA recomendação de limpeza em linguagem comum. É o bookend simétrico do briefing: o briefing
   abre, o fim fecha. NÃO é briefing (não lê email/calendário, não monta a
   pauta do dia).
 ---
@@ -53,7 +53,7 @@ reconstrução.
 2. DIÁRIO     → projeção dos fatos do dia → confirmação do texto completo → Prumo/Diario/AAAA-MM-DD.md
 3. FAXINA     → roda a rotina automática (já é no-confirm)
 4. RESUMO     → o que registrou + o diário + o que a faxina arrumou
-5. DETECTAR   → `prumo fim --workspace <ws> --format json` aponta acúmulo; PROPOR higiene/sanitize
+5. DETECTAR   → `prumo fim --workspace <ws> --format json` aponta acúmulo; PROPOR a recomendação (conteúdo > técnica)
 ```
 
 ### Passo 2 — Diário do dia
