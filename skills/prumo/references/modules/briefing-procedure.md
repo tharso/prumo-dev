@@ -48,7 +48,9 @@ Antes do panorama, executar o **preflight completo** de `version-update.md` — 
 1. Se houver versão nova detectável (incl. `VERSION` remoto > `prumo_version` do workspace), avisar a diferença em uma linha e seguir o briefing. Não bloquear.
 2. Se `Prumo/VERSION` local for maior que o `prumo_version` do `.prumo/system/PRUMO-CORE.md` do workspace, avisar que o core do workspace está defasado e seguir.
 3. Se a checagem falhar, registrar em uma linha e seguir. O briefing não vira refém de updater manco.
-4. **Severidade (#158):** ler `version_status.severity` do payload (ou computar a distância de versão). Se `warning`/`alert`, o aviso é **forte** (não rodapé) com a ação exata (`prumo update`) — staleness não pode passar despercebida, foi o que prendeu um usuário 2 meses numa versão fóssil. Se `skills_missing` não vier vazio, avisar `prumo repair` (é a origem do "Habilidade desconhecida"). Regra da fonte de verdade por elo e limiares: `version-update.md`. **Não-bloqueante** sempre.
+4. **Severidade → OFERTA no topo (#158, #174):** ler `version_status.severity` do payload (ou computar a distância de versão). Se `warning`/`alert`, a resposta **abre com a oferta de atualizar** — escolha curta, ANTES do panorama, não aviso que passa batido:
+   > Saiu a 5.34 (você está na 5.31). a) **atualizar agora** — rodo `prumo update` e sigo o briefing em ~30s; b) **seguir o briefing** — eu cobro no `/fim`.
+   Regras da oferta: **não-bloqueante** sempre (`b` ou silêncio segue o briefing imediatamente); recusa **não re-pergunta** na mesma sessão — quem cobra depois é o `/fim` (sinal `update_pending`); **sem runtime**, a oferta vira a orientação do `version-update.md` (caminho #108) — nunca um comando que não existe. Se `skills_missing` não vier vazio, avisar `prumo repair` (é a origem do "Habilidade desconhecida"). Regra da fonte de verdade por elo e limiares: `version-update.md`.
 
 ## Passo 3: estado operacional
 

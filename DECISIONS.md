@@ -16,7 +16,7 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 | `multiagent-coord`    | 2026-04-20 (#68 HANDOVER)                                                                 |
 | `documentation`       | 2026-04-14 (CLAUDE.md), 2026-06-21 (#97 mapas), 2026-07-03 (#149 guia Obsidian)           |
 | `integrations`        | 2026-04-14 (Google Drive snapshots)                                                       |
-| `briefing`            | 2026-04-14 (Google Drive snapshots), 2026-04-21 (#69 despacho), 2026-06-23 (#102 decidir), 2026-06-23 (#104 briefing rico), 2026-06-25 (#114 perfil modular), 2026-07-02 (#139 guarda-corpos), 2026-07-03 (#148 conexões), 2026-07-04 (#156 injeção) |
+| `briefing`            | 2026-04-14 (Google Drive snapshots), 2026-04-21 (#69 despacho), 2026-06-23 (#102 decidir), 2026-06-23 (#104 briefing rico), 2026-06-25 (#114 perfil modular), 2026-07-02 (#139 guarda-corpos), 2026-07-03 (#148 conexões), 2026-07-04 (#156 injeção), 2026-07-13 (#174/#175 update-oferta + copy do fim) |
 | `personalization`     | 2026-04-21 (tharso-voice)                                                                 |
 | `code-quality`        | 2026-05-06 (quality-gate), 2026-06-25 (#122 baseline 1061→930), 2026-07-03 (baseline 82/904), 2026-07-04 (#157 conformidade A0) |
 | `touchpoint`          | 2026-05-18 (landing page sync), 2026-07-03 (#149 guia Obsidian — candidato à landing), 2026-07-05 (#160 instalação agnóstica), 2026-07-05 (#108 update via runtime) |
@@ -58,6 +58,31 @@ A partir de 2026-05-04 (#78), toda entrada nova segue o formato:
 Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões anteriores" (introduzido na #78). Quando um conflito retrospectivo for descoberto, anotar a relação na entrada nova que o resolve — não reescrever entradas antigas.
 
 - `code-quality` — métricas de qualidade do codebase, quality gate, baseline.
+
+---
+
+## 2026-07-13 — Update pendente: de aviso a oferta; o /fim cobra na saída (#174, com o contrato de copy do #175)
+
+**Tópicos:** briefing
+
+**Issues relacionadas:** #174 (executa), #175 (executa — contrato de copy do encerramento), #158 (estende), #108 (mantém — degradação sem runtime), #172 (mantém — sanitização sem comando).
+
+**Relações com decisões anteriores:**
+- **Estende (emenda a postura de):** 2026-07-04 (#158). A #158 fez a staleness deixar de ser silenciosa — mas parou no **aviso forte** ("avisar em uma linha e seguir", Passo 2 do briefing-procedure). Uso real do dono provou que aviso-e-segue vira "deixou pra depois". A postura muda: **aviso → oferta** (escolha explícita de uma tecla, no topo do briefing). A detecção, os limiares e a fonte de verdade por elo da #158 ficam intactos.
+- **Mantém:** o não-bloqueante (recusa/silêncio segue o briefing na hora) e a degradação sem runtime da #108 (a oferta vira orientação, nunca comando inexistente).
+- **Mantém:** 2026-06-26 (#126 — /fim read-only). O sinal novo (`update_pending`) lê o cache de versão (#158), zero rede nova, zero escrita.
+
+**Contexto:** Report do dono (Codex, 13/07): o briefing detectou versão nova e "resolveu deixar pra depois"; o `/fim` ignorou (o detector não olhava versão); e o encerramento ofereceu "a) /higiene b) /sanitize c) nada" — menu de jargão com comando que nem existe mais (#172). Agravante da sessão: runtime 5.29 (bug #170) com skills 5.32 — mas os gaps de produto eram reais e independentes do skew.
+
+**Decisão:**
+1. **Briefing abre com a oferta** quando `version_status.severity` ∈ {warning, alert}: "atualizar agora / seguir — eu cobro no `/fim`". Recusa não re-pergunta na mesma sessão (anti-nag: cobrar de novo é nag, não cuidado).
+2. **O `/fim` ganha o sinal `update_pending`** (instalada vs. pública em cache, mesma fonte do briefing) e propõe o update como último gesto — a menos que o usuário tenha recusado na sessão. O anti-nag entre briefing e fim é julgamento do agente sobre a própria conversa, não estado persistido — alinhado ao mojo (julgamento > determinismo) e ao read-only do /fim.
+3. **Contrato de copy do encerramento (#175):** UMA recomendação em linguagem de gente, prioridade conteúdo > técnica, sinal secundário vira cláusula, **comando nunca é opção** (é o *como*, depois do sim), e "amanhã no briefing" grava rastro na `PAUTA.md` (a escolha do usuário é a confirmação de escrita). Exemplo bom e o anti-padrão exato do report ficam na skill.
+
+**Alternativas consideradas:**
+- *Update automático sem perguntar* → rejeitado: mexe no runtime do usuário sem consentimento; a oferta de uma tecla dá o mesmo atrito-quase-zero com controle.
+- *Persistir a recusa em `.prumo/state/` pro anti-nag* → rejeitado: estado novo pra um problema que o contexto da conversa resolve; o /fim é read-only por contrato (#126).
+- *Manter aviso forte e só reforçar a copy* → rejeitado: foi exatamente o que a #158 tentou; o uso real provou que aviso sem escolha vira ruído ignorável.
 
 ---
 

@@ -15,14 +15,21 @@ def _render_text(result: dict) -> str:
     ]
     sug = result["suggest"]
     if sug["higiene"] or sug["sanitize"]:
+        # Em linguagem de gente (#175): o comando é o COMO (a skill decide a
+        # copy final); aqui nomeamos só o quê.
         propostas = []
         if sug["higiene"]:
-            propostas.append("`/higiene` (conteúdo parado)")
+            propostas.append("revisar conteúdo parado (higiene)")
         if sug["sanitize"]:
-            propostas.append("sanitização técnica (infra acumulada)")
+            propostas.append("limpar infra acumulada (sanitização técnica)")
         lines.append(f"4. Acúmulo detectado — vale propor: {', '.join(propostas)}.")
     else:
         lines.append("4. Sem acúmulo relevante. Workspace limpo pra próxima sessão.")
+    if sug.get("update"):
+        lines.append(
+            f"5. Update pendente: {s['installed_version']} → {s['remote_version']} — "
+            "vale oferecer antes de fechar (prumo update)."
+        )
     return "\n".join(lines)
 
 

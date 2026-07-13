@@ -102,6 +102,8 @@ determinísticos reusando os thresholds da faxina/sanitize:
 - `backups_old` (> 90d) e `ephemeral_old` (artefatos efêmeros do decidir/acervo
   — HTMLs e a fonte copiada — > 14d) → sugerem **a sanitização técnica**
   (módulo `sanitize.md` do core)
+- `suggest.update` (`update_pending`: core/runtime atrás da versão pública em
+  cache, #174) → sugere **atualizar antes de fechar**
 
 Quando `suggest.higiene` ou `suggest.sanitize` vier `true`, **oferecer** a
 ação ao usuário — uma linha, escolha curta. **Nunca executar** `higiene`/
@@ -123,11 +125,37 @@ O `/fim` é encerramento, não mini-briefing. Ele **NÃO**:
 ## Como apresentar
 
 Encerrar com: o que foi **registrado** (e onde), o **diário** do dia (link
-clicável), o que a **faxina** arrumou, e — se houver acúmulo — a **sugestão**
-de higiene/sanitize como escolha curta. Se a sessão foi compactada, dizer o que
-**não** dá pra garantir. Fechar deixando a próxima sessão limpa: o `/briefing`
-seguinte já lê `IDEIAS`/`PAUTA`/`REGISTRO`, então o agente começa up-to-date
-naturalmente — o diário é leitura do usuário, não estado do sistema.
+clicável), o que a **faxina** arrumou — e, se houver acúmulo, **UMA
+recomendação em linguagem de gente**, nunca um menu de comandos (#175):
+
+1. **Prioridade: conteúdo > técnica.** Item parado é decisão emperrada; backup
+   velho é poeira. O sinal dominante vira A recomendação; o secundário vira uma
+   **cláusula** ("aproveito e limpo a poeira técnica junto"), nunca uma segunda
+   pergunta.
+2. **Comando nunca é opção.** Comando é o *como* — aparece depois do sim,
+   quando precisar. A opção nomeia o que acontece, na língua do usuário.
+3. **Update pendente cobra na saída (#174):** se `suggest.update` vier `true` e
+   o usuário **não recusou** o update nesta sessão (o briefing pode ter
+   oferecido), a última oferta do `/fim` é essa: "antes de fechar: saiu a X —
+   rodo o `prumo update`? (~30s)". Se recusou hoje, silêncio — cobrar de novo é
+   nag, não cuidado.
+4. **Adiar deixa rastro:** se o usuário escolher "amanhã no briefing", gravar o
+   item na `PAUTA.md` (Quente): `Revisar N itens parados da pauta (adiado do
+   /fim de DD/MM)` — o briefing seguinte lê a pauta e cobra naturalmente. A
+   escolha do usuário é a confirmação de escrita.
+
+Exemplo bom:
+> "4 itens estão parados na pauta há mais de 2 semanas — quer revisar comigo
+> agora (uns 5 min), ou deixo pro briefing de amanhã? Se topar, aproveito e
+> limpo a poeira técnica (6 backups velhos) junto."
+
+Exemplo ruim (proibido — foi exatamente o report que gerou o #175):
+> "a) /higiene b) /sanitize c) nada por ora"
+
+Se a sessão foi compactada, dizer o que **não** dá pra garantir. Fechar
+deixando a próxima sessão limpa: o `/briefing` seguinte já lê
+`IDEIAS`/`PAUTA`/`REGISTRO`, então o agente começa up-to-date naturalmente — o
+diário é leitura do usuário, não estado do sistema.
 
 ## Referências
 

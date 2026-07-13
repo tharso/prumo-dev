@@ -6,6 +6,12 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.33.0] - 2026-07-13
+
+### Changed
+- **Update pendente vira OFERTA no topo do briefing; o `/fim` cobra na saída (#174)** — report do dono: o briefing detectou versão nova e "deixou pra depois"; o `/fim` ignorou. O contratado era isso mesmo ("avisar em uma linha e seguir") — e estava aquém. Agora, com severidade `warning`/`alert`, a resposta do briefing **abre com a oferta** (escolha curta: "atualizar agora" / "seguir — eu cobro no `/fim`"); recusa segue o briefing na hora e **não re-pergunta** na sessão (anti-nag). O detector do `/fim` ganha o sinal **`update_pending`** (mesma fonte do briefing: versão instalada vs. pública em **cache**, zero rede nova, read-only preservado) e propõe o update como último gesto — a menos que o usuário já tenha recusado hoje. Sem runtime → orientação do `version-update.md` (#108), nunca comando que não existe. Travado por `test_update_pending_fim.py` (6 testes TDD). Ver DECISIONS.md 2026-07-13 (#174).
+- **Encerramento do `/fim` com UMA recomendação em linguagem de gente (#175)** — report do dono: o `/fim` fechou com "a) /higiene b) /sanitize c) nada" (menu de jargão; `/sanitize` nem existe mais desde a #172). Contrato de copy novo no `fim/SKILL.md`: **prioridade conteúdo > técnica** (item parado é decisão emperrada; backup velho é poeira), o sinal secundário vira **cláusula** ("aproveito e limpo junto"), **comando nunca é opção** (é o *como*, depois do sim), e "amanhã no briefing" **deixa rastro** na `PAUTA.md` pro briefing seguinte cobrar. Exemplo bom e o anti-padrão exato do report documentados na skill. O texto do `prumo fim` também fala em linguagem simples ("revisar conteúdo parado", "limpar infra acumulada"). Travado por `test_fim_copy_encerramento.py` (5 guards TDD).
+
 ## [5.32.0] - 2026-07-12
 
 ### Changed
