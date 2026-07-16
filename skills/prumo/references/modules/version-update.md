@@ -78,9 +78,15 @@ Transportes válidos:
 
 1. fonte local bruta no workspace:
    - `Prumo/VERSION`
-   - `skills/prumo/references/prumo-core.md`
-   - `.prumo/skills/prumo/references/prumo-core.md`
+   - `skills/prumo/references/prumo-core.md` (repo clonado ou bundle do plugin — lá o core é completo)
 2. updater via runtime: `prumo` CLI quando disponível (instalação pip, caminho preferido).
+
+**Nunca é fonte:** `.prumo/skills/prumo/references/prumo-core.md`. Desde a
+5.45.0 essa cópia vendored é um **stub-ponteiro** (marcador
+`<!-- prumo-core-stub: v1 -->`, sem `prumo_version`) — o core canônico do
+workspace mora só em `.prumo/system/PRUMO-CORE.md`. Consequência boa: não
+existe mais "cópia que fica pra trás" depois do update manual; skills
+continuam exigindo runtime pra atualizar (#108).
 
 Sem transporte seguro de aplicação:
 
@@ -163,10 +169,13 @@ caminho — nunca deixá-lo achar que atualizar o plugin basta.
 
 ### Se houver fonte local válida
 
-1. criar backup em `.prumo/backups/version-update/<YYYYMMDDTHHMMSS>/PRUMO-CORE.md`;
-2. substituir somente `.prumo/system/PRUMO-CORE.md`;
-3. reler o core atualizado;
-4. confirmar que a nova `prumo_version` é a esperada.
+1. **validar a fonte antes de copiar**: ela precisa conter o header
+   `prumo_version:` e a seção `## Comandos disponíveis`. Stub-ponteiro
+   (`<!-- prumo-core-stub: v1 -->`) é reprovado aqui — nunca é fonte;
+2. criar backup em `.prumo/backups/version-update/<YYYYMMDDTHHMMSS>/PRUMO-CORE.md`;
+3. substituir somente `.prumo/system/PRUMO-CORE.md`;
+4. reler o core atualizado;
+5. confirmar que a nova `prumo_version` é a esperada.
 
 ### Se houver runtime instalado
 

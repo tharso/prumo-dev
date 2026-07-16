@@ -54,4 +54,23 @@ def install_skills(workspace: Path, *, layout_mode: str = "nested") -> list[str]
                 continue
             if entry.name not in current:
                 shutil.rmtree(entry)
+
+    _stub_vendored_core(target)
     return installed
+
+
+def _stub_vendored_core(target: Path) -> None:
+    """Troca o core vendored por um stub-ponteiro (#179, critério 1 do #177).
+
+    Só no vendoring do WORKSPACE: o core canônico da instância é
+    `.prumo/system/PRUMO-CORE.md`; a cópia completa aqui era a segunda casa
+    (o update manual sem runtime não a alcança — drift latente). Source,
+    plugin instalado no host e `_bundled/` do wheel seguem com o core
+    completo (rodam sem workspace). Como o install é rmtree+copytree, todo
+    `repair` re-stuba — a conversão de instância legada é de graça.
+    """
+    from prumo_runtime.templates import render_core_stub
+
+    vendored_core = target / "prumo" / "references" / "prumo-core.md"
+    if vendored_core.exists():
+        vendored_core.write_text(render_core_stub(), encoding="utf-8")

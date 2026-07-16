@@ -1,6 +1,6 @@
 # Prumo Core — Motor do sistema
 
-> **prumo_version: 5.44.0**
+> **prumo_version: 5.45.0**
 >
 > Núcleo estável do Prumo. Define regras, guardrails e localização dos módulos canônicos.
 > Procedimento detalhado não mora aqui.
@@ -44,7 +44,7 @@
 │   ├── Referencias/
 │   └── Inbox4Mobile/
 └── .prumo/
-    ├── skills/            ← cópia das skills do repo (fallback quando o CLI não existe)
+    ├── skills/            ← cópia das skills do repo (fallback quando o CLI não existe; o core aqui é stub → system/)
     ├── state/
     ├── system/
     │   └── PRUMO-CORE.md  ← este arquivo
@@ -350,8 +350,8 @@ Histórico completo de versão vive em `CHANGELOG.md`.
 
 Versão atual deste core:
 
-- `5.44.0`
+- `5.45.0`
 
 ---
 
-*Prumo Core v5.44.0 — https://github.com/tharso/prumo*
+*Prumo Core v5.45.0 — https://github.com/tharso/prumo*
