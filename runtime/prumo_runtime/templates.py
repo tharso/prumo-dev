@@ -8,53 +8,93 @@ from zoneinfo import ZoneInfo
 from prumo_runtime import __version__
 from prumo_runtime.command_table import parse_command_table, parse_intent_modules
 from prumo_runtime.constants import DEFAULT_AGENT_NAME, repo_root_from
+from prumo_runtime.wrapper_rules import render_rules
 
 
 def now_display(timezone_name: str) -> str:
     return datetime.now(ZoneInfo(timezone_name)).strftime("%d/%m/%Y")
 
 
-def _render_workspace_runtime_rules() -> str:
-    return """1. Tudo que é do usuário continua legível sem o Prumo.
-2. `CLAUDE.md` e `AGENTS.md` são wrappers de compatibilidade, não a fonte de verdade.
-3. Se um arquivo modular faltar, usar `prumo repair` antes de inventar realidade.
-4. Se o usuário chamar "Prumo" cru, "ei prumo" ou equivalente curto, consulte a tabela de skills disponíveis e leia o SKILL.md da skill `abrir`. Quando shell e runtime estiverem disponíveis, rodar `prumo` no diretório do workspace é atalho equivalente.
-5. Se `prumo` não estiver no PATH do host, tente o caminho absoluto de instalação do runtime neste sistema antes de concluir que ele sumiu.
-6. Se o pedido for briefing explícito, conduza a curadoria rica (skill `briefing` / `briefing-procedure.md`): email/agenda + panorama numerado único → `decidir`. O cartão do runtime é a prévia, não o briefing — não encerre nele.
-7. Para o painel local estruturado (semente/backcompat), `prumo briefing --workspace . --format json`.
-8. Se o host conseguir renderizar ações próprias, preferir `prumo start --format json` em vez de reinventar onboarding na unha.
-9. Ao consumir JSON estruturado, o host deve ler `adapter_contract_version`, `workspace_resolution` e `adapter_hints` antes de bancar o esperto.
-10. Em `start` e `briefing` estruturados, o host deve olhar primeiro para `state_flags`, `degradation`, `next_move` e `selection_contract`. A prosa vem depois.
-11. Se `degradation.status` vier `error` ou `partial`, preserve o que ainda presta, mostre o tropeço em uma linha curta e, se houver `action_id` útil, priorize essa recuperação antes de inventar novo ritual.
-12. Não leia arquivo para simular `prumo`, `briefing` ou `start`. Primeiro execute o comando.
-13. Não escreva arquivos em `_state/` fingindo ser o runtime.
-14. Não fabrique JSON de `prumo start --format json` ou `prumo briefing --workspace . --format json`. Ou retorna a saída real, ou assume que falhou.
-15. Não rode comando extra só porque ficou curioso. Execute o que foi pedido ou o que o runtime sugeriu.
-16. Se um comando falhar por uso ou argumento inválido, não repita a mesma linha cegamente.
-17. Se houver falha parcial, preservar o que ainda presta e avisar em uma linha curta, sem despejar jargão técnico.
-18. Se `next_move.id == kickoff`, prefira uma segue curta em vez de menu de confirmação.
-19. Na invocação curta, não anuncie que vai rodar comando, ler JSON ou abrir arquivo. Execute primeiro e fale depois.
-20. Quando houver escolha, prefira uma pergunta por vez e opções curtas. Produto não é formulário com perfume."""
+# Blurb e instrução primária por superfície de wrapper da raiz. As REGRAS
+# vêm todas de wrapper_rules.render_rules (fonte única, #179) — aqui só o
+# que legitimamente varia por host.
+_WRAPPER_FLAVOR: dict[str, dict] = {
+    "claude": {
+        "blurb": (
+            "> Compatibilidade para Claude/Cowork.\n"
+            "> Este arquivo não é a fonte canônica. Leia `{canonical_target}` primeiro."
+        ),
+        "primary": (
+            "1. Leia `{canonical_target}`.",
+            "2. Use `{core_path}` para regras do sistema.",
+            "3. Contexto pessoal e estável mora em `{context_root}`.",
+        ),
+    },
+    "agent": {
+        "blurb": (
+            "> Entrada curta para hosts que procuram `AGENT.md` na raiz.\n"
+            "> A fonte canônica do workspace está em `{canonical_target}`."
+        ),
+        "primary": (
+            "1. Leia `{canonical_target}`.",
+            "2. Não trate a raiz do workspace como almoxarifado do sistema.",
+            "3. O estado técnico do sistema mora em `{state_path}`, não na sala.",
+        ),
+    },
+    "agents": {
+        "blurb": (
+            "> Compatibilidade para ambientes que procuram `AGENTS.md`.\n"
+            "> Se você está aqui, ótimo. Mas o volante mesmo está em `{canonical_target}`."
+        ),
+        "primary": (
+            "1. Leia `{canonical_target}`.",
+            "2. Leia `{core_path}`.",
+            "3. Contexto vivo do usuário mora em `{context_root}`.",
+        ),
+    },
+}
 
 
-def _render_wrapper_runtime_rules(*, state_path: str = "_state/") -> str:
-    return f"""1. Se o usuário disser "Prumo" cru, "ei prumo" ou equivalente curto, consulte a tabela de skills disponíveis e leia o SKILL.md da skill `abrir`. Quando shell e runtime estiverem disponíveis, rodar `prumo` é atalho equivalente.
-2. Se `prumo` não estiver no PATH do host, tente o caminho absoluto de instalação do runtime neste sistema antes de concluir que ele sumiu.
-3. Se o pedido for briefing explícito, conduza a curadoria rica (skill `briefing` / `briefing-procedure.md`); o cartão do runtime é a prévia, não o briefing — não encerre nele.
-4. Para o painel local estruturado (semente/backcompat), `prumo briefing --workspace . --format json`.
-5. Se o host souber trabalhar com JSON, prefira `prumo start --format json`.
-6. Se usar JSON, leia `adapter_hints` e respeite `kind`, `shell_command` e `host_prompt`.
-7. Antes de olhar `message`, leia `state_flags`, `degradation`, `next_move` e `selection_contract`.
-8. Se `degradation.status` vier `error` ou `partial`, preserve o que ainda funciona e priorize a ação de recuperação quando ela existir.
-9. Não reinvente `setup`, `migrate`, `repair` ou `auth`. Deixe o runtime tomar a primeira decisão.
-10. Não leia arquivo para simular briefing ou start. Primeiro execute o comando real.
-11. Não escreva `{state_path}` fingindo ser o runtime.
-12. Não rode comando extra sem necessidade.
-13. Se um comando falhar por uso ou argumento inválido, não repita a mesma linha como disco riscado.
-14. Em falha parcial, preserve o que ainda serve e explique o tropeço em uma linha curta, sem vazar stack trace.
-15. Se `next_move.id == kickoff`, não abra cardápio de aeroporto. Faça uma segue curta e convide ao despejo inicial.
-16. Na invocação curta, não narre o backstage ("vou rodar", "vou ler", "vou seguir o JSON"). Execute primeiro e fale depois.
-17. Quando houver escolha real, faça uma pergunta por vez e ofereça opções curtas em vez de cardápio burocrático."""
+def render_root_wrapper(
+    surface: str,
+    user_name: str,
+    agent_name: str,
+    *,
+    canonical_target: str = "AGENT.md",
+    context_root: str = "Agente/",
+    core_path: str = "PRUMO-CORE.md",
+    state_path: str = "_state/",
+    skills_dispatch: str = "",
+    profile: str = "full",
+) -> str:
+    """Builder único dos 3 wrappers da raiz (#179): só blurb e instrução
+    primária variam por superfície; a Porta curta é byte-igual entre eles."""
+    flavor = _WRAPPER_FLAVOR[surface]
+    fields = {
+        "canonical_target": canonical_target,
+        "context_root": context_root,
+        "core_path": core_path,
+        "state_path": state_path,
+    }
+    blurb = flavor["blurb"].format(**fields)
+    primary = "\n".join(line.format(**fields) for line in flavor["primary"])
+    dispatch_section = f"\n{skills_dispatch}\n" if skills_dispatch else ""
+    return f"""# Prumo Adapter — {user_name}
+
+{blurb}
+
+## Porta curta
+
+{render_rules("wrapper", state_path=state_path, profile=profile)}
+{dispatch_section}
+{_render_reading_perimeter(map_reference=f"do mapa do workspace em `{canonical_target}`")}
+
+## Instrução primária
+
+{primary}
+
+Agente: **{agent_name}**
+"""
 
 
 def _render_reading_perimeter(*, map_reference: str) -> str:
@@ -234,7 +274,7 @@ Fora disso, abertura não abre mais nada. A saudação vem proativa, com 2-4 op�
 
 ## Regras rápidas
 
-{_render_workspace_runtime_rules()}
+{render_rules("workspace", state_path=state_path)}
 """
 
 
@@ -246,29 +286,14 @@ def render_agent_root_wrapper(
     system_root: str = "_state/",
     skills_dispatch: str = "",
 ) -> str:
-    dispatch_section = ""
-    if skills_dispatch:
-        dispatch_section = f"\n{skills_dispatch}\n"
-
-    return f"""# Prumo Adapter — {user_name}
-
-> Entrada curta para hosts que procuram `AGENT.md` na raiz.
-> A fonte canônica do workspace está em `{canonical_target}`.
-
-## Porta curta
-
-{_render_wrapper_runtime_rules(state_path=system_root)}
-{dispatch_section}
-{_render_reading_perimeter(map_reference=f"do mapa do workspace em `{canonical_target}`")}
-
-## Instrução primária
-
-1. Leia `{canonical_target}`.
-2. Não trate a raiz do workspace como almoxarifado do sistema.
-3. O estado técnico do sistema mora em `{system_root}`, não na sala.
-
-Agente: **{agent_name}**
-"""
+    return render_root_wrapper(
+        "agent",
+        user_name,
+        agent_name,
+        canonical_target=canonical_target,
+        state_path=system_root,
+        skills_dispatch=skills_dispatch,
+    )
 
 
 def render_claude_wrapper(
@@ -281,29 +306,16 @@ def render_claude_wrapper(
     state_path: str = "_state/",
     skills_dispatch: str = "",
 ) -> str:
-    dispatch_section = ""
-    if skills_dispatch:
-        dispatch_section = f"\n{skills_dispatch}\n"
-
-    return f"""# Prumo Adapter — {user_name}
-
-> Compatibilidade para Claude/Cowork.
-> Este arquivo não é a fonte canônica. Leia `{canonical_target}` primeiro.
-
-## Porta curta
-
-{_render_wrapper_runtime_rules(state_path=state_path)}
-{dispatch_section}
-{_render_reading_perimeter(map_reference=f"do mapa do workspace em `{canonical_target}`")}
-
-## Instrução primária
-
-1. Leia `{canonical_target}`.
-2. Use `{core_path}` para regras do sistema.
-3. Contexto pessoal e estável mora em `{context_root}`.
-
-Agente: **{agent_name}**
-"""
+    return render_root_wrapper(
+        "claude",
+        user_name,
+        agent_name,
+        canonical_target=canonical_target,
+        context_root=context_root,
+        core_path=core_path,
+        state_path=state_path,
+        skills_dispatch=skills_dispatch,
+    )
 
 
 def render_agents_wrapper(
@@ -316,29 +328,16 @@ def render_agents_wrapper(
     state_path: str = "_state/",
     skills_dispatch: str = "",
 ) -> str:
-    dispatch_section = ""
-    if skills_dispatch:
-        dispatch_section = f"\n{skills_dispatch}\n"
-
-    return f"""# Prumo Adapter — {user_name}
-
-> Compatibilidade para ambientes que procuram `AGENTS.md`.
-> Se você está aqui, ótimo. Mas o volante mesmo está em `{canonical_target}`.
-
-## Porta curta
-
-{_render_wrapper_runtime_rules(state_path=state_path)}
-{dispatch_section}
-{_render_reading_perimeter(map_reference=f"do mapa do workspace em `{canonical_target}`")}
-
-## Instrução primária
-
-1. Leia `{canonical_target}`.
-2. Leia `{core_path}`.
-3. Contexto vivo do usuário mora em `{context_root}`.
-
-Agente: **{agent_name}**
-"""
+    return render_root_wrapper(
+        "agents",
+        user_name,
+        agent_name,
+        canonical_target=canonical_target,
+        context_root=context_root,
+        core_path=core_path,
+        state_path=state_path,
+        skills_dispatch=skills_dispatch,
+    )
 
 
 def render_agente_index_tombstone() -> str:

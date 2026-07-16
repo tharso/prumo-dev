@@ -16,7 +16,9 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 class TemplateAdapterTests(unittest.TestCase):
     def test_agents_wrapper_includes_short_invocation_contract(self) -> None:
         rendered = templates.render_agents_wrapper("Batata", "Prumo")
-        self.assertIn('Se o usuário disser "Prumo"', rendered)
+        # Wording unificado na #179 (fonte única): "chamar" venceu o par
+        # disser/chamar — um texto por regra, ver wrapper_rules.RULES.
+        self.assertIn('Se o usuário chamar "Prumo"', rendered)
         self.assertIn("skill `abrir`", rendered)
         self.assertIn("atalho equivalente", rendered)
         self.assertIn("prumo briefing --workspace .", rendered)
@@ -28,7 +30,7 @@ class TemplateAdapterTests(unittest.TestCase):
         self.assertIn("selection_contract", rendered)
         self.assertIn("Não leia arquivo para simular", rendered)
         self.assertIn("Não escreva `_state/`", rendered)
-        self.assertIn("Não rode comando extra sem necessidade", rendered)
+        self.assertIn("Não rode comando extra só porque ficou curioso", rendered)
         self.assertIn("next_move.id == kickoff", rendered)
         self.assertIn("Execute primeiro e fale depois", rendered)
 
@@ -64,7 +66,7 @@ class TemplateAdapterTests(unittest.TestCase):
         self.assertIn("degradation", rendered)
         self.assertIn("selection_contract", rendered)
         self.assertIn("Não leia arquivo para simular", rendered)
-        self.assertIn("Não escreva arquivos em `_state/`", rendered)
+        self.assertIn("Não escreva `_state/`", rendered)
         self.assertIn("Não rode comando extra só porque ficou curioso", rendered)
         self.assertIn("Execute primeiro e fale depois", rendered)
 

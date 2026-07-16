@@ -1,6 +1,6 @@
 # Prumo Core — Motor do sistema
 
-> **prumo_version: 5.42.0**
+> **prumo_version: 5.43.0**
 >
 > Núcleo estável do Prumo. Define regras, guardrails e localização dos módulos canônicos.
 > Procedimento detalhado não mora aqui.
@@ -350,8 +350,8 @@ Histórico completo de versão vive em `CHANGELOG.md`.
 
 Versão atual deste core:
 
-- `5.42.0`
+- `5.43.0`
 
 ---
 
-*Prumo Core v5.42.0 — https://github.com/tharso/prumo*
+*Prumo Core v5.43.0 — https://github.com/tharso/prumo*

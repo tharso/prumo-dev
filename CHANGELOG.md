@@ -6,6 +6,15 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.43.0] - 2026-07-25
+
+### Changed
+- **Regras de porta com fonte única (#179, épico #177)** — os DOIS rule-sets paralelos de `templates.py` (17 regras nos wrappers da raiz + 20 no `Prumo/AGENT.md`, ~13 pares dizendo o mesmo em wording diferente) viram UMA lista em `runtime/prumo_runtime/wrapper_rules.py` (`WrapperRule{id, text, surfaces, profiles}`; numeração gerada). Cada regra tem um texto só; a superfície decide quais entram (wrapper: 17, workspace: 20 — nenhuma regra removida). Escolhas de wording por par (ex.: "só porque ficou curioso" venceu "sem necessidade"; "disco riscado" venceu "cegamente") destacadas no PR pra decisão do dono.
+- **Builder único dos 3 wrappers da raiz** — `render_root_wrapper(surface=claude|agent|agents)`: só blurb e instrução primária variam por host; a "Porta curta" é **byte-igual** entre os três (era o critério 2 do épico). Os renders antigos viram delegadores (assinaturas preservadas, zero mudança em `workspace.py`).
+- **Fix de tabela: `_state/` parametrizado** — a regra "não escreva state fingindo ser o runtime" do `Prumo/AGENT.md` hardcodava `_state/` (path do layout flat legado); agora usa o `state_path` real do workspace (nested → `.prumo/state/`).
+- **Perfil `minimal` nasce como gancho** (5 regras essenciais ⊆ full) pro enxugamento dos wrappers da raiz na M3 — ainda NÃO usado em produção neste PR.
+- Guards novos em `test_wrapper_parity.py` (9 testes): Porta curta byte-igual entre os 3; blocos derivam da fonte; ids/textos únicos (regra com duas casas quebra CI); contagens 17/20 congeladas; minimal ⊆ full.
+
 ## [5.42.0] - 2026-07-25
 
 ### Changed
