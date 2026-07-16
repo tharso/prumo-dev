@@ -6,6 +6,7 @@ from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+from prumo_runtime.backup import copy_to_backup
 from prumo_runtime.commands.setup import prompt_choice
 from prumo_runtime.workspace import repair_workspace
 from prumo_runtime.workspace_paths import workspace_paths
@@ -135,8 +136,8 @@ def _execute_migration(workspace: Path, source: Path) -> dict:
     backup_dir = workspace / ".prumo" / "backups" / "relocate-skills" / timestamp
     backup_dir.mkdir(parents=True, exist_ok=True)
 
-    # Backup do source antes de mover.
-    shutil.copytree(source, backup_dir / source.name)
+    # Backup do source antes de mover — com o ignore anti-aninhamento (#178).
+    copy_to_backup(source, backup_dir / source.name)
 
     # Move skills pra .prumo/skills/.
     target.parent.mkdir(parents=True, exist_ok=True)

@@ -6,6 +6,18 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.37.0] - 2026-07-24
+
+### Fixed
+- **Backup nunca mais aninha backup (#178, épico #177)** — a auditoria de 15/07 achou 6 escopos de backup aninhados numa instância (alguns com `.prumo/` inteiro dentro de `.prumo/backups/`). Causa raiz no código: `copy_to_backup` fazia `shutil.copytree` **sem `ignore`**, então qualquer árvore de origem que carregasse `.prumo/` ou `archive/backups/` (ex.: `_state/` legado no `migrate`, source do `migrate-skills`) reproduzia backup dentro de backup. As funções de backup saíram de `workspace.py` pro módulo novo `runtime/prumo_runtime/backup.py` com `backup_ignore` **sempre ativo** (exclui `.prumo` em qualquer nível e `backup`/`backups` sob `.prumo`, `system` e `archive` — cirúrgico: `backups/` em pasta comum do usuário continua sendo copiado). Nada se perde: o move leva a árvore inteira pro destino; só a cópia redundante deixa de nascer. Travado por `test_backup_nesting.py` (9 testes TDD, vermelhos no código antigo).
+
+### Added
+- **`prune_expired_backups` (runtime/prumo_runtime/backup.py)** — poda de backups mais velhos que 90 dias (mesmo limiar do `/fim`), cobrindo a raiz canônica `.prumo/backups/<scope>/<timestamp>/` e os legados `.prumo/backup/` e `.prumo/system/backup/`. Poda **só quando chamada** — o executor `prumo sanitize` (M2 do #177) é quem chama; `repair` não poda e o `/fim` segue read-only (#126). Symlink que escapa do workspace: remove o link, nunca segue até o alvo.
+
+### Changed
+- `workspace.py` encolheu de 904 pra ~860 linhas (estava exatamente no teto do quality gate) — `backup_path_for`, `copy_to_backup` e `move_with_backup` agora vivem em `backup.py` e são re-exportadas.
+- Decisão arquitetural do épico #177 registrada no `DECISIONS.md` (2026-07-16) com índice temático atualizado.
+
 ## [5.36.0] - 2026-07-24
 
 ### Changed

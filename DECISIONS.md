@@ -8,15 +8,15 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 
 | Tópico                | Entradas                                                                                  |
 |-----------------------|-------------------------------------------------------------------------------------------|
-| `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first), 2026-05-04 (#77), 2026-06-21 (#97 mapas), 2026-06-25 (#114 perfil modular), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#139 guarda-corpos), 2026-07-02 (#140 fichário), 2026-07-02 (#141 diário), 2026-07-03 (#147 ideias), 2026-07-03 (#148 conexões), 2026-07-24 (#194 perímetro de leitura) |
-| `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-04 (#158 detecção defasagem), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime), 2026-07-05 (#170 transporte de update local), 2026-07-12 (#172 taxonomia do picker), 2026-07-19 (#191 decidir mostra o item), 2026-07-24 (#195 dieta fase 1 — produtor do cache de versão) |
+| `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first), 2026-05-04 (#77), 2026-06-21 (#97 mapas), 2026-06-25 (#114 perfil modular), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#139 guarda-corpos), 2026-07-02 (#140 fichário), 2026-07-02 (#141 diário), 2026-07-03 (#147 ideias), 2026-07-03 (#148 conexões), 2026-07-24 (#194 perímetro de leitura), 2026-07-16 (#177 dívidas estruturais) |
+| `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-04 (#158 detecção defasagem), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime), 2026-07-05 (#170 transporte de update local), 2026-07-12 (#172 taxonomia do picker), 2026-07-19 (#191 decidir mostra o item), 2026-07-24 (#195 dieta fase 1 — produtor do cache de versão), 2026-07-16 (#177 dívidas estruturais) |
 | `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first), 2026-05-06 (quality-gate), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#141 diário — emenda à #68) |
-| `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist), 2026-06-24 (#110 não-bundle), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime), 2026-07-05 (#170 transporte de update local) |
+| `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist), 2026-06-24 (#110 não-bundle), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime), 2026-07-05 (#170 transporte de update local), 2026-07-16 (#177 dívidas estruturais) |
 | `dispatch-bootstrap`  | 2026-04-21 (#69 despacho), 2026-06-23 (#104 briefing rico), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-05 (#160 porta/instalação agnóstica), 2026-07-12 (#172 taxonomia do picker), 2026-07-24 (#194 perímetro de leitura) |
 | `multiagent-coord`    | 2026-04-20 (#68 HANDOVER), 2026-07-24 (#194 perímetro de leitura — delegação)             |
 | `documentation`       | 2026-04-14 (CLAUDE.md), 2026-06-21 (#97 mapas), 2026-07-03 (#149 guia Obsidian)           |
 | `integrations`        | 2026-04-14 (Google Drive snapshots)                                                       |
-| `briefing`            | 2026-04-14 (Google Drive snapshots), 2026-04-21 (#69 despacho), 2026-06-23 (#102 decidir), 2026-06-23 (#104 briefing rico), 2026-06-25 (#114 perfil modular), 2026-07-02 (#139 guarda-corpos), 2026-07-03 (#148 conexões), 2026-07-04 (#156 injeção), 2026-07-13 (#174/#175 update-oferta + copy do fim), 2026-07-24 (#195 dieta fase 1) |
+| `briefing`            | 2026-04-14 (Google Drive snapshots), 2026-04-21 (#69 despacho), 2026-06-23 (#102 decidir), 2026-06-23 (#104 briefing rico), 2026-06-25 (#114 perfil modular), 2026-07-02 (#139 guarda-corpos), 2026-07-03 (#148 conexões), 2026-07-04 (#156 injeção), 2026-07-13 (#174/#175 update-oferta + copy do fim), 2026-07-24 (#195 dieta fase 1), 2026-07-16 (#177 dívidas estruturais) |
 | `personalization`     | 2026-04-21 (tharso-voice)                                                                 |
 | `code-quality`        | 2026-05-06 (quality-gate), 2026-06-25 (#122 baseline 1061→930), 2026-07-03 (baseline 82/904), 2026-07-04 (#157 conformidade A0) |
 | `touchpoint`          | 2026-05-18 (landing page sync), 2026-07-03 (#149 guia Obsidian — candidato à landing), 2026-07-05 (#160 instalação agnóstica), 2026-07-05 (#108 update via runtime) |
@@ -124,6 +124,44 @@ Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões ant
 - *Manter "Ver/Marcar visto" e explicar no HOWTO* → rejeitada: label que precisa de manual é label errado; o effect se chama `mark_seen`, o botão diz o que faz.
 
 Guards: `test_decidir_skill.py::DecidirTriagemNoEscuroGuards` + `DecidirConteudoEscapadoGuards` (13 testes TDD; a segunda classe nasceu nos rounds do Codex — matriz do `safeUrl`, pipeline `fromB64`+`escapeHtml`, transporte hostil por construção, checklist ancorado por seção).
+
+---
+
+## 2026-07-16 — Dívidas estruturais do harness: fonte única, drift visível, sanitize executável e briefing fásico (#177)
+
+**Tópicos:** skills-distribution, workspace-layout, briefing, distribution
+
+**Issues relacionadas:** #177 (épico, executa em 4 milestones: #178 fundações, #179 fonte única e executores, #180 rota do briefing, #181 fechamento).
+
+**Relações com decisões anteriores:**
+- **Mantém:** 2026-07-12 (#172). Faxina/sanitize/doctor seguem módulos sem comando de usuário; o executor `prumo sanitize` e a extensão do doctor são motor de runtime por trás da mesma superfície (precedente de altitude: #104/#125; o próprio `sanitize.md:13` antecipava o subcomando). A tabela de comandos do core segue a fonte única; a cadeia de fallback do AGENT.md passa a **derivar** dela em render-time.
+- **Mantém:** 2026-06-28 (#134/#135). `skills/prumo/` intocada; o staging do briefing usa marcadores no core (`# Parte 2`, `## Guardrails`), sem fatiar o arquivo.
+- **Mantém:** 2026-07-05 (#108) e **estende:** 2026-07-05 (#170). Update segue operação de runtime; o doctor passa a cruzar plugin-instalado ↔ workspace-core (o elo que faltava entre os dois subsistemas de versão) e a enumerar caches obsoletos com comando de remoção pronto. Decisão do dono: caches do host são **reporte do doctor**, não remoção do sanitize — o escopo do sanitize segue 100% `.prumo/` (mantém #125/#126; `/fim` segue read-only, propõe e não executa).
+- **Mantém:** 2026-05-04 (#77). Skills vendored continuam em `.prumo/skills/` pra cadeia de fallback; só a cópia do **core** vendored vira stub-ponteiro pro `.prumo/system/PRUMO-CORE.md` (o canônico da instância — allowlist manual, `parse_core_version`, `/menu`). Plugin instalado, wheel `_bundled/` e source seguem com core completo (rodam sem workspace).
+- **Mantém:** 2026-06-23 (#104). Briefing segue curadoria rica do agente; o staging muda QUANDO cada material carrega, não o que o briefing faz.
+- **Mantém:** 2026-07-04 (#156) e 2026-07-13 (#174/#175). A regra 18 permanece na Parte 1 (sempre carregada); as defesas por superfície carregam junto com a abertura dos canais, antes do primeiro corpo de email; o preflight de update continua rodando no topo — deferred-load ≠ deferred-run: o que adia é o corpo do `version-update.md`, carregado só com severity warning/alert.
+- **Estende:** 2026-07-04 (#158). O doctor ganha staleness pra marketplace `source: url` (o caso real desta instalação, que o check git-only pulava).
+- **Alinhada a:** 2026-04-20 (#68). Snapshots HANDOVER são formato aposentado; o sanitize ganha regra explícita pra removê-los (com backup e rastro).
+- **Mantém:** 2026-06-25 (#114). O tom vem do `PERFIL.md`: as falas roteirizadas da `higiene` viram intenção + 1 exemplo rotulado "não é script" (decisão do dono).
+
+**Contexto:** Auditoria de 15/07 numa instância instalada (workspace DailyLife, core 5.32.0, plugin 5.1.0) achou harness crud: core duplicado byte-idêntico na instância, porta curta triplicada nos wrappers da raiz (e reescrita em rule-set paralelo no `Prumo/AGENT.md`), tabela de comandos em 4 projeções divergentes, regras do core reescritas nas skills, rota do briefing carregando 8.332 palavras antes do primeiro dado do usuário, sanitize cego pro lixo real (3,3 MB: HANDOVERs pré-#68, backups aninhados, efêmeros) e doctor cego pro drift de catálogo. A reprodução no source confirmou os 8 achados e localizou as causas: a dupla do core nasce de dois caminhos de instalação independentes; `copy_to_backup` fazia copytree sem `ignore`; o front-load do briefing está escrito no `briefing/SKILL.md`, contrariando a política fásica que o próprio core declara. Plano completo (3 agentes de exploração + 3 de design) aprovado pelo dono em 16/07, com as 3 tensões abertas decididas por ele.
+
+**Decisão (resumo; o plano completo vive no épico #177):**
+1. Core canônico da instância = `.prumo/system/PRUMO-CORE.md`; cópia vendored vira stub-ponteiro escrito por `install_skills`; `repair` converte instâncias legadas.
+2. Regras de wrapper unificadas em fonte única (`wrapper_rules.py`) com builder por superfície; wrappers da raiz em porta **mínima** (~5-6 regras + ponteiro), conjunto completo só no `Prumo/AGENT.md`; templates manuais de referência passam a ser gerados e guardados por teste de drift.
+3. Cadeia de fallback derivada da tabela do core (`command_table.py`); nota #172 vira subseção estruturada `Intenção | Módulo`.
+4. `prumo sanitize` (dry-run default, apply com backup único plano — nunca copytree no apply) cobrindo HANDOVERs, efêmeros, backups aninhados/expirados e dedupe de assets em `state/`; `backup_ignore` sempre ativo nas cópias + `prune_expired_backups` chamada só pelo sanitize.
+5. Doctor estendido no próprio script bash (roda sem runtime): drift plugin↔workspace, staleness pra `source: url`, enumeração de caches, hash das árvores de skills.
+6. Briefing fásico F0-F4 por marcador; espinha + `briefing-canais.md` + `briefing-montagem.md`; um dono por regra (numeração → `interaction-format.md`; EMAIL-CURADORIA → `file-templates.md`; despacho visual → `decidir`); teto `briefing_f0_words` no quality gate; meta ≥40% de redução com recibos antes/depois em sandbox.
+7. `PACKAGING.md` na raiz declara o mapeamento artefato → superfície → forma → sincronizador, com teste anti-apodrecimento.
+
+**Alternativas consideradas:**
+- *Symlink no core vendored* → rejeitado: Windows/CI, clobber do copytree do `install_skills`, symlink dentro de symlink nos host adapters.
+- *Inverter o canônico pro vendored* → rejeitado: reescreveria a allowlist manual da regra 11/ASSERT (blast radius maior).
+- *Portar o doctor pra Python* → rejeitado: segundo motor pra divergir; o cenário-núcleo do doctor é runtime quebrado/ausente.
+- *Fatiar o core em dois arquivos* → rejeitado: 18+ refs hardcoded (#134); staging por marcador dá o mesmo ganho sem migração de paths.
+- *Sanitize removendo caches do host (`--host-caches`)* → rejeitado pelo dono: emendaria a #125; reporte no doctor com comando pronto cobre com risco zero. Design fica documentado pra reavaliação futura com dados reais.
+- *Auto-poda de backups no repair* → rejeitado: poda só sob comando explícito (mojo: julgamento e aprovação, nunca limpeza silenciosa).
 
 ---
 

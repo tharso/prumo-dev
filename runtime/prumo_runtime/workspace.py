@@ -8,8 +8,6 @@ from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-_logger = logging.getLogger(__name__)
-
 from prumo_runtime.constants import (
     DEFAULT_AGENT_NAME,
     DEFAULT_BRIEFING_TIME,
@@ -22,9 +20,12 @@ from prumo_runtime.constants import (
     repo_root_from,
 )
 from prumo_runtime.capabilities import runtime_capabilities
+from prumo_runtime.backup import backup_path_for, copy_to_backup, move_with_backup
 from prumo_runtime import templates
 from prumo_runtime.workspace_paths import workspace_paths
 from prumo_runtime.identity import infer_user_name
+
+_logger = logging.getLogger(__name__)
 
 
 def now_iso(timezone_name: str) -> str:
@@ -508,11 +509,6 @@ def looks_like_wrapper(text: str) -> bool:
     return "Leia `AGENT.md` primeiro." in text or "Compatibilidade para Claude/Cowork." in text
 
 
-def backup_path_for(workspace: Path, relative: str, stamp: str) -> Path:
-    safe_name = relative.replace("/", "__")
-    return workspace / ".prumo" / "backups" / "runtime-migrate" / stamp / safe_name
-
-
 def build_config_from_existing(workspace: Path) -> WorkspaceConfig:
     ensure_workspace_exists(workspace)
     user_name = infer_user_name(workspace)
@@ -528,34 +524,6 @@ def build_config_from_existing(workspace: Path) -> WorkspaceConfig:
         briefing_time=infer_briefing_time(workspace),
         layout_mode=infer_layout_mode(workspace),
     )
-
-
-def copy_to_backup(source: Path, backup_target: Path) -> None:
-    backup_target.parent.mkdir(parents=True, exist_ok=True)
-    if source.is_dir():
-        shutil.copytree(source, backup_target)
-        return
-    shutil.copy2(source, backup_target)
-
-
-def move_with_backup(
-    source: Path,
-    destination: Path,
-    *,
-    workspace: Path,
-    stamp: str,
-    backed_up: list[str],
-    moved: list[str],
-) -> None:
-    if not source.exists():
-        return
-    relative = str(source.relative_to(workspace))
-    backup_target = backup_path_for(workspace, relative, stamp)
-    copy_to_backup(source, backup_target)
-    backed_up.append(relative)
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    shutil.move(str(source), str(destination))
-    moved.append(f"{relative} -> {destination.relative_to(workspace)}")
 
 
 def remove_if_empty(path: Path) -> None:
