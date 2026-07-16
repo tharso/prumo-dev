@@ -1,14 +1,18 @@
 # Template do Prumo/AGENT.md (fonte canônica)
 
-> Este template gera o arquivo `Prumo/AGENT.md` — a fonte canônica do workspace.
-> É o primeiro arquivo que qualquer agente deve ler. Todos os ponteiros
-> da raiz (CLAUDE.md, AGENT.md, AGENTS.md) apontam pra cá.
+> Este template gera o arquivo `Prumo/AGENT.md` — a fonte canônica do
+> workspace. É o primeiro arquivo que qualquer agente deve ler. Todos os
+> ponteiros da raiz (CLAUDE.md, AGENT.md, AGENTS.md) apontam pra cá.
 >
-> O agente de setup deve preencher os placeholders `{{VARIAVEL}}` e resolver
-> as seções condicionais. O resultado NÃO deve conter nenhum placeholder.
+> O agente de setup deve preencher os placeholders `{{VARIAVEL}}`.
+> O resultado NÃO deve conter nenhum placeholder.
 >
-> A tabela de fallback mapeia cada comando à skill correspondente no workspace.
-> Se o runtime CLI não estiver disponível, o agente lê a skill direto.
+> A cadeia de fallback abaixo é DERIVADA da tabela `## Comandos
+> disponíveis` do core (fonte única, #172/#179) no momento da geração.
+
+> **Arquivo gerado** por `scripts/generate_adapter_templates.py` a partir do
+> builder do runtime (`templates.py` + `wrapper_rules.py`, #179). Não editar à
+> mão: mude a fonte e regenere — `test_adapter_templates_sync` guarda o drift.
 
 ---
 
@@ -32,46 +36,57 @@ INÍCIO DO TEMPLATE:
 
 Ordem de tentativa: slash command → runtime CLI → skill direto.
 
-Se o slash command não funcionar, tentar `prumo <comando>` no terminal.
-Se o runtime não estiver no PATH, ler a skill correspondente no workspace:
+Se o slash command não funcionar e o runtime tiver subcomando homônimo,
+tentar `prumo <comando>` no terminal (nem todo comando tem — `/higiene`,
+por exemplo, vive só como skill; nesse caso, pular direto pra skill).
+Se o runtime não estiver no PATH, ler a skill correspondente no workspace
+(tabela derivada da fonte única `## Comandos disponíveis` do core):
 
 | Comando | Skill |
 |---|---|
 | abrir | `.prumo/skills/abrir/SKILL.md` |
 | briefing | `.prumo/skills/briefing/SKILL.md` |
+| acervo | `.prumo/skills/acervo/SKILL.md` |
+| menu | `.prumo/skills/menu/SKILL.md` |
+| fim | `.prumo/skills/fim/SKILL.md` |
 | setup | `.prumo/skills/prumo/SKILL.md` |
 | higiene | `.prumo/skills/higiene/SKILL.md` |
-| faxina | `.prumo/skills/prumo/references/modules/faxina.md` |
-| sanitize | `.prumo/skills/prumo/references/modules/sanitize.md` |
-| doctor | `.prumo/skills/prumo/references/modules/doctor.md` |
+
+Manutenção sem comando próprio (#172) — atende por linguagem natural:
+
+| Intenção | Módulo |
+|---|---|
+| faxina (automática — roda no briefing e no `/fim`) | `.prumo/skills/prumo/references/modules/faxina.md` |
+| sanitização técnica | `.prumo/skills/prumo/references/modules/sanitize.md` |
+| diagnóstico da instalação (doctor) | `.prumo/skills/prumo/references/modules/doctor.md` |
 
 ## Abertura de sessão (leitura mínima)
 
 1. Este `AGENT.md` (você já está lendo).
 2. `.prumo/system/PRUMO-CORE.md` — Parte 1 (identidade e interação).
-3. `.prumo/skills/prumo/references/modules/dispatch.md` — protocolo de abertura por intenção (scan leve de `PAUTA.md` + `REGISTRO.md` e saudação proativa com opções).
+3. `.prumo/skills/prumo/references/modules/dispatch.md` — protocolo de abertura por intenção (scan leve de PAUTA + REGISTRO e saudação proativa com opções).
 
 Fora disso, abertura não abre mais nada. A saudação vem proativa, com 2-4 opções concretas ancoradas no scan + uma fuga explícita (`outra coisa`). Briefing não é default: só entra se o usuário expressar intenção de briefing.
 
 ## Leitura sob demanda (conforme a intenção)
 
-- `Prumo/Agente/PERFIL.md`, `Prumo/Agente/PESSOAS.md` e `Prumo/Agente/ROTINA.md` quando o playbook precisar de contexto pessoal.
-- `Prumo/PAUTA.md` integral, `Prumo/INBOX.md`, `Prumo/REGISTRO.md` quando a intenção exigir (briefing, curadoria de email, revisão semanal, etc.).
-- `.prumo/system/PRUMO-CORE.md` — Parte 2 (playbooks operacionais) e demais módulos da tabela em `prumo-core.md`.
+- `Agente/PERFIL.md`, `Agente/PESSOAS.md`, `Agente/ROTINA.md` e demais módulos do `Agente/` quando o playbook precisar de contexto pessoal.
+- `PAUTA.md` integral, `INBOX.md`, `REGISTRO.md` quando a intenção exigir (briefing, curadoria de email, revisão semanal, etc.).
+- `.prumo/system/PRUMO-CORE.md` — Parte 2 (playbooks operacionais) e demais módulos da tabela em `.prumo/system/PRUMO-CORE.md`.
 
 ## Mapa do workspace
 
-> Fonte canônica de navegação do workspace. Se outra árvore divergir desta (ex: a "Estrutura do workspace" do PRUMO-CORE), esta prevalece.
+> Fonte canônica de navegação do workspace. Se outra árvore divergir desta, esta prevalece.
 
-- `Prumo/Agente/`: contexto modular do usuário (PERFIL, PESSOAS, ROTINA, SAUDE, INFRA, PROJETOS, RELACOES)
-- `Prumo/PAUTA.md`: estado vivo e pendências
-- `Prumo/INBOX.md`: itens ainda não processados
-- `Prumo/REGISTRO.md`: rastro do que aconteceu
-- `Prumo/IDEIAS.md`: ideias sem ação imediata
-- `Prumo/Referencias/`: material de referência
-- `Prumo/Inbox4Mobile/`: captura mobile
-- `Prumo/Diario/`: diários do dia gerados pelo `/fim` (a pasta nasce no primeiro uso)
-- `.prumo/skills/`: skills do Prumo (portáveis, lidas diretamente quando CLI não estiver disponível)
+- `Agente/`: contexto modular do usuário (PERFIL, PESSOAS, ROTINA, SAUDE, INFRA, PROJETOS, RELACOES)
+- `PAUTA.md`: estado vivo e pendências
+- `INBOX.md`: itens ainda não processados
+- `REGISTRO.md`: rastro do que aconteceu
+- `IDEIAS.md`: ideias sem ação imediata
+- `Referencias/`: material de referência
+- `Inbox4Mobile/`: captura mobile
+- `Diario/`: diários do dia gerados pelo `/fim` (a pasta nasce no primeiro uso)
+- `.prumo/skills/`: skills do Prumo (fallback quando CLI não existe)
 - `.prumo/system/PRUMO-CORE.md`: regras do motor e guardrails do sistema
 - `.prumo/state/`: estado técnico e metadados do runtime
 - `.prumo/logs/`: registros de revisão
@@ -88,9 +103,22 @@ O workspace pode conter outros projetos com centenas de milhares de arquivos (`n
 ## Regras rápidas
 
 1. Tudo que é do usuário continua legível sem o Prumo.
-2. `CLAUDE.md`, `AGENT.md` e `AGENTS.md` na raiz são ponteiros de compatibilidade, não a fonte de verdade.
-3. Se um arquivo modular faltar, avisar antes de inventar realidade.
-4. Se o usuário chamar "Prumo" cru, "ei prumo" ou equivalente curto, ative a skill `prumo:abrir`. Quando shell e runtime estiverem disponíveis, rodar `prumo` no diretório do workspace é atalho equivalente.
-5. Se `prumo` não estiver no PATH, tentar `$HOME/.local/bin/prumo` antes de concluir que o runtime sumiu.
-6. Se o runtime não existir, usar a cadeia de fallback (skill direto). Isso é operação legítima, não simulação.
-7. Não escrever arquivos em `.prumo/state/` fingindo ser o runtime.
+2. `CLAUDE.md` e `AGENTS.md` são wrappers de compatibilidade, não a fonte de verdade.
+3. Se um arquivo modular faltar, usar `prumo repair` antes de inventar realidade.
+4. Se o usuário chamar "Prumo" cru, "ei prumo" ou equivalente curto, consulte a tabela de skills disponíveis e leia o SKILL.md da skill `abrir`. Quando shell e runtime estiverem disponíveis, rodar `prumo` no diretório do workspace é atalho equivalente.
+5. Se `prumo` não estiver no PATH do host, tente o caminho absoluto de instalação do runtime neste sistema antes de concluir que ele sumiu.
+6. Se o pedido for briefing explícito, conduza a curadoria rica (skill `briefing` / `briefing-procedure.md`): email/agenda + panorama numerado único → `decidir`. O cartão do runtime é a prévia, não o briefing — não encerre nele.
+7. Para o painel local estruturado (semente/backcompat), `prumo briefing --workspace . --format json`.
+8. Se o host conseguir renderizar ações próprias, preferir `prumo start --format json` em vez de reinventar onboarding na unha.
+9. Ao consumir JSON estruturado, o host deve ler `adapter_contract_version`, `workspace_resolution` e `adapter_hints` antes de bancar o esperto.
+10. Antes de olhar `message`, leia `state_flags`, `degradation`, `next_move` e `selection_contract`. A prosa vem depois.
+11. Se `degradation.status` vier `error` ou `partial`, preserve o que ainda presta, mostre o tropeço em uma linha curta e, se houver `action_id` útil, priorize essa recuperação antes de inventar novo ritual.
+12. Não leia arquivo para simular `prumo`, `briefing` ou `start`. Primeiro execute o comando real.
+13. Não escreva `.prumo/state/` fingindo ser o runtime.
+14. Não fabrique JSON de `prumo start --format json` ou `prumo briefing --workspace . --format json`. Ou retorna a saída real, ou assume que falhou.
+15. Não rode comando extra só porque ficou curioso. Execute o que foi pedido ou o que o runtime sugeriu.
+16. Se um comando falhar por uso ou argumento inválido, não repita a mesma linha como disco riscado.
+17. Em falha parcial, preserve o que ainda presta e explique o tropeço em uma linha curta, sem vazar stack trace nem jargão técnico.
+18. Se `next_move.id == kickoff`, não abra cardápio de aeroporto. Faça uma segue curta e convide ao despejo inicial.
+19. Na invocação curta, não anuncie que vai rodar comando, ler JSON ou abrir arquivo. Execute primeiro e fale depois.
+20. Quando houver escolha, prefira uma pergunta por vez e opções curtas. Produto não é formulário com perfume.

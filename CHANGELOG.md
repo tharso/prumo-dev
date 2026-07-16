@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.44.0] - 2026-07-25
+
+### Changed
+- **Templates do caminho manual agora são GERADOS do builder (#179, épico #177)** — `claude-md-template.md`, `agents-md-template.md` e `agent-md-template.md` eram a 4ª família de projeções das regras de porta, escritos à mão e dessincronizados (Porta curta de 3 linhas vs 17 regras do runtime; fallback chain com `faxina`/`sanitize`/`doctor` como comandos, aposentados na #172, e sem `fim`/`acervo`/`menu`). Novo `scripts/generate_adapter_templates.py` os regrava a partir de `render_root_wrapper`/`render_agent_md` (com placeholders `{{VARIAVEL}}`); artefatos seguem commitados (skills-first) e `test_adapter_templates_sync.py` quebra o CI se alguém editar à mão ou mudar o builder sem regenerar. Bônus de compat: o wrapper manual passa a ter a assinatura `# Prumo Adapter —`, que o `merge_wrapper_content` do repair reconhece — instalação manual vira atualizável pelo runtime.
+
 ## [5.43.0] - 2026-07-25
 
 ### Changed
