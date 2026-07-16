@@ -6,6 +6,13 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.42.0] - 2026-07-25
+
+### Changed
+- **Cadeia de fallback do `AGENT.md` derivada da fonte única (#179, épico #177)** — a tabela `| Comando | Skill |` do `Prumo/AGENT.md` era a projeção mais dessincronizada da lista de comandos: listava `faxina`/`sanitize`/`doctor` rotulados como "Comando" (aposentados pela #172) e omitia `fim`/`acervo`/`menu`. Agora `_render_fallback_chain` **deriva em render-time** da tabela `## Comandos disponíveis` do core (a mesma que o `/menu` parseia — `parse_command_table`), e a manutenção sem comando aparece em tabela própria `| Intenção | Módulo |`. Comando que entra/sai do core atualiza o AGENT.md sozinho.
+- **Nota da #172 no core vira subseção estruturada** — `### Manutenção sem comando próprio (#172)` com a tabela `Intenção | Módulo` (faxina/sanitização/doctor), parseável por `parse_intent_modules`. A tabela canônica de comandos segue intocada (o parser do `/menu` para no heading, comportamento já testado).
+- Guards novos em `test_command_surfaces.py` (9 testes): fallback ⊇ comandos do core; paths da cadeia existem na árvore `skills/`; nomes aposentados nunca voltam como comando; `plugin.json`/`.claude-plugin` cobrem exatamente os diretórios de `skills/` (mudança em manifesto exige aprovação do dono); `.codex-plugin` aponta a pasta inteira.
+
 ## [5.41.0] - 2026-07-25
 
 ### Fixed

@@ -12,6 +12,7 @@ from __future__ import annotations
 import re
 
 _SECTION = "Comandos disponíveis"
+_INTENT_SECTION = "Manutenção sem comando próprio"
 _BACKTICK = re.compile(r"`([^`]+)`")
 
 
@@ -57,3 +58,47 @@ def parse_command_table(core_text: str) -> list[dict]:
         m = _BACKTICK.search(cmd_cell)
         commands.append({"command": m.group(1).strip() if m else cmd_cell, "description": desc})
     return commands
+
+
+def parse_intent_modules(core_text: str) -> list[dict]:
+    """Extrai [{intent, module}] da tabela sob "### Manutenção sem comando
+    próprio" (#172) — faxina/sanitize/doctor, que atendem por linguagem
+    natural via módulo, nunca como comando.
+
+    Mesma disciplina do `parse_command_table`: só a tabela contígua após o
+    heading; sub-heading encerra a seção.
+    """
+    lines = core_text.splitlines()
+    start = None
+    for i, line in enumerate(lines):
+        s = line.strip()
+        if s.startswith("### ") and _INTENT_SECTION in s:
+            start = i + 1
+            break
+    if start is None:
+        return []
+
+    intents: list[dict] = []
+    started = False
+    for line in lines[start:]:
+        s = line.strip()
+        if s.startswith("#"):
+            break
+        if not s.startswith("|"):
+            if started:
+                break
+            continue
+        started = True
+        cells = [c.strip() for c in s.strip("|").split("|")]
+        if len(cells) < 2:
+            continue
+        intent_cell, module_cell = cells[0], cells[1]
+        if not intent_cell or set(intent_cell) <= set("-: "):
+            continue
+        if intent_cell.lower() == "intenção":
+            continue
+        m = _BACKTICK.search(module_cell)
+        intents.append(
+            {"intent": intent_cell, "module": m.group(1).strip() if m else module_cell}
+        )
+    return intents
