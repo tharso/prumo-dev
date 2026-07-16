@@ -6,6 +6,12 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.46.0] - 2026-07-25
+
+### Added
+- **`prumo sanitize` — executor determinístico da sanitização técnica (#179, épico #177, critério 5)** — o módulo `sanitize.md` sempre foi a superfície do agente (#172) e antecipava o subcomando; agora existe o motor (`runtime/prumo_runtime/sanitize.py` + `commands/sanitize.py`). **Dry-run é o default** (read-only, `--format json` com contrato `prumo_sanitize_report.v1` — o relatório salvo É o plano); **`--apply` executa exatamente o plano aprovado**: exige `--plan plano.json` + `--yes`, re-detecta fresco e compara item a item por fingerprint (regra, path, ação, tamanho, mtime, sha256) — item novo, alterado ou sumido desde a aprovação fica `blocked`, nunca entra de carona; `--rules` filtra o plano (aprovação seletiva), nunca o expande, e `--rules` vazio é erro (exit 2), não "tudo". Sete regras, cada path em NO MÁXIMO uma: `handover_legacy` (formato aposentado #68 → move), `decidir_ephemeral` (>14d → move), `nested_backups` (backup dentro de backup → remove), `expired_backups` (>90d → remove), `legacy_backup_consolidation` (`.prumo/backup/` → `backups/legacy/`), `workspace_cache` (>30d → remove), `asset_dedupe` (fonte com SHA-256 idêntico à vendored e sem HTML vivo referenciando → remove). Backup único do apply em `.prumo/backups/sanitize/<stamp>/` com path achatado `__`; **colisão de nome achatado bloqueia em vez de sobrescrever** (o mapa origem→destino autoritativo é o journal + ARCHIVE-INDEX). Segurança: escopo `.prumo/`+`_state/` validado por item; **symlink nunca é candidato nem atravessado — nem no próprio item, nem em ancestral** (enumerar/ler/hashear/mover/apagar exigem cadeia limpa); `workspace-schema.json`/`agent-lock.json`/logs preservados; `Prumo/` inalcançável; **ARCHIVE-INDEX validado ANTES da primeira mutação** (corrompido → aborta com zero mutação, nunca vira histórico vazio) e escrito atomicamente; **journal write-ahead** (`SANITIZE-JOURNAL.json` no stamp) gravado antes das operações; paths relativos obrigatórios (motor levanta erro em absoluto); `sanitize` em `SUPPRESS_COMMANDS` (nem o banner de update escreve cache num dry-run). Caches de plugin do HOST ficam com o doctor (decisão do dono — #125 intacta). 50 testes TDD em `test_sanitize.py`.
+- `sanitize.md` reescrito como wrapper do comando (dry-run → aprovação → apply) com **fallback manual preservado em paridade** (mesmas regras, mesma disciplina — lição da #174).
+
 ## [5.45.0] - 2026-07-25
 
 ### Changed

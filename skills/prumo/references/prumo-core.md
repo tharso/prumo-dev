@@ -1,6 +1,6 @@
 # Prumo Core — Motor do sistema
 
-> **prumo_version: 5.45.0**
+> **prumo_version: 5.46.0**
 >
 > Núcleo estável do Prumo. Define regras, guardrails e localização dos módulos canônicos.
 > Procedimento detalhado não mora aqui.
@@ -70,7 +70,7 @@ Arquivos de estado esperados em `.prumo/state/`:
 
 ### Manutenção sem comando próprio (#172)
 
-Atendem por **linguagem natural** (tabela de intenções do `dispatch.md`), sem comando ou skill própria:
+Atendem por **linguagem natural** (tabela de intenções do `dispatch.md`), sem slash command ou skill própria — a sanitização tem executor no runtime (`prumo sanitize`, guiado pelo módulo); faxina e doctor seguem 100% módulo:
 
 | Intenção | Módulo |
 |---|---|
@@ -350,8 +350,8 @@ Histórico completo de versão vive em `CHANGELOG.md`.
 
 Versão atual deste core:
 
-- `5.45.0`
+- `5.46.0`
 
 ---
 
-*Prumo Core v5.45.0 — https://github.com/tharso/prumo*
+*Prumo Core v5.46.0 — https://github.com/tharso/prumo*
