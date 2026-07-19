@@ -111,8 +111,47 @@ Por que funciona: ações **por conteúdo** (vídeo → extrair/resumir, não "v
 
 Por que falha: é um **vídeo** e o menu não tem extrair/resumir/abrir; o link veio **inerte** (texto, não `<a>`); e "virar referência" é o buraco negro de sempre. O usuário decide no escuro e o item morre numa pasta.
 
+## Card de despacho — nota do inbox (conteúdo no card)
+
+```js
+{
+  id: '15', sec: 'inbox', type: 'despacho',
+  badges: [{label:'nota', tone:'slate'}],
+  title: 'Nota (18/07, 03h47): skill "scroll-world"',
+  contexto: 'Captura da madrugada. Texto integral: <span class="q">"skill scroll-world — mapa infinito que scrolla revelando um mundo; ver se vira mecânica de onboarding"</span>',
+  actions: [
+    { key:'make_task',  label:'Virar tarefa', tone:'blue',  effect:'make_task' },
+    { key:'make_pauta', label:'Virar pauta',  tone:'blue',  effect:'make_pauta' },
+    { key:'make_idea',  label:'Virar ideia',  tone:'slate', effect:'make_idea' },
+    { key:'discard',    label:'Descartar',    tone:'red',   effect:'discard', requires:'motivo' },
+  ]
+}
+```
+
+Por que funciona: nota curta → o **texto integral** está no card (mostrar é barato: o gerador já leu a nota pra classificá-la). O usuário decide o destino olhando pro item, não pra uma descrição do item. Se a nota fosse longa: excerpt inicial + `link` com path relativo pro arquivo. Sem `Delegar` — nota pessoal de madrugada não tem delegado plausível.
+
+## Card RUIM — descreve o item em vez de mostrá-lo (caso real, 19/07)
+
+```js
+{
+  id: '15', type: 'despacho',
+  badges: [{label:'nota', tone:'slate'}],
+  title: 'Captura nova: Skill "scroll-world"',
+  contexto: 'Nota curta capturada em 18/07 às 03h47. Sem link ou tese explícita no preview; precisa de destino consciente, não de uma gaveta com boa autoestima.',
+  actions: [
+    { key:'make_task',  label:'Virar tarefa', tone:'blue',  effect:'make_task' },
+    { key:'make_pauta', label:'Virar pauta',  tone:'blue',  effect:'make_pauta' },
+    { key:'make_idea',  label:'Virar ideia',  tone:'slate', effect:'make_idea' },
+    { key:'discard',    label:'Descartar',    tone:'red',   effect:'discard', requires:'motivo' },
+  ]
+}
+```
+
+Por que falha: fala **sobre** a nota sem mostrar a nota — "sem tese explícita no preview" entrega que o gerador despachou do preview da listagem sem abrir o item. É **triagem no escuro**: o usuário não tem como escolher entre tarefa/pauta/ideia pra um item invisível, e a resposta inevitável vira "preciso ver o que é" no comentário — a rodada perde o propósito. A prosa até é charmosa; card não é crônica, é decisão.
+
 ## Padrões que elevam o despacho
 
+- **Mostre o item ou leve a ele.** Nota curta: texto integral no card. Imagem/vídeo/post/nota longa: metadados + link de visualização — e nada de análise pesada na geração (transcrever/OCR/resumir são pós-despacho). Card que só descreve ("tem uma nota aqui") é triagem no escuro.
 - **Agrupe o barato, separe o caro.** Cinco emails informativos com a mesma cara podem virar cards curtos; uma cobrança que vira atrito merece card próprio com contexto.
 - **Evidência no contexto.** Remetente, trecho literal (`.q`), referência (`.ref`), prazo. Despacho sem evidência vira chute.
 - **Só ofereça ações que cabem.** `Delegar` sem destinatário, `Confirmar` num evento sem RSVP — botão de neblina. Tire da lista do card.

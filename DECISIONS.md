@@ -9,7 +9,7 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 | Tópico                | Entradas                                                                                  |
 |-----------------------|-------------------------------------------------------------------------------------------|
 | `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first), 2026-05-04 (#77), 2026-06-21 (#97 mapas), 2026-06-25 (#114 perfil modular), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#139 guarda-corpos), 2026-07-02 (#140 fichário), 2026-07-02 (#141 diário), 2026-07-03 (#147 ideias), 2026-07-03 (#148 conexões), 2026-07-24 (#194 perímetro de leitura) |
-| `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-04 (#158 detecção defasagem), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime), 2026-07-05 (#170 transporte de update local), 2026-07-12 (#172 taxonomia do picker) |
+| `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-04 (#158 detecção defasagem), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime), 2026-07-05 (#170 transporte de update local), 2026-07-12 (#172 taxonomia do picker), 2026-07-19 (#191 decidir mostra o item) |
 | `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first), 2026-05-06 (quality-gate), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#141 diário — emenda à #68) |
 | `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist), 2026-06-24 (#110 não-bundle), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime), 2026-07-05 (#170 transporte de update local) |
 | `dispatch-bootstrap`  | 2026-04-21 (#69 despacho), 2026-06-23 (#104 briefing rico), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-05 (#160 porta/instalação agnóstica), 2026-07-12 (#172 taxonomia do picker), 2026-07-24 (#194 perímetro de leitura) |
@@ -77,6 +77,34 @@ Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões ant
 **Decisão:** o mapa do workspace vira **perímetro de leitura**, declarado nos templates (AGENT.md canônico + adapter da raiz + wrappers; gerador Python e template markdown em paridade travada por invariantes) e no `load-policy.md` (seção "Listagem de diretórios"): (1) **perímetro automático** — por iniciativa própria, só os caminhos do mapa, zero exploração espontânea da raiz; (2) proibição **por efeito, não por comando** — nenhuma enumeração recursiva ou ilimitada por qualquer ferramenta, com `node_modules`/`.git`/caches/builds fora de qualquer listagem; (3) **escopo autorizado pela tarefa** — caminho citado pelo usuário abre expansão dirigida e rasa (o "continuar o projeto X" do dispatch segue funcionando); (4) **delegação leva o perímetro no prompt do subagente** (exemplo canônico no load-policy). Propagação a workspaces existentes via `prumo repair` (drift de versão), com preservação **byte a byte** do conteúdo autoral dos wrappers — o `merge_wrapper_content` foi corrigido nesta issue para honrar esse contrato (os strips que normalizavam whitespace autoral saíram).
 
 **Alternativas consideradas:** perímetro absoluto (rejeitado — Codex r1: regressão funcional do dispatch de projeto); proibição por lista de comandos (rejeitado — `rg --files`, `tree` e glob produzem a mesma explosão); regra de subagente só em `multiagent.md` (rejeitado — subagente não carrega módulo; a regra tem que viajar na delegação). Design fechado em 3 rodadas com o Codex antes da implementação; diff revisado no mesmo loop.
+
+---
+
+## 2026-07-19 — Decidir: o card mostra o item ou leva a ele — mostrar ≠ analisar (#191)
+
+**Tópicos:** skills-distribution
+
+**Issues relacionadas:** #191 (executa), #192 (desbloqueia — waiting-for pós-delegação, derivada), #102 (estende), #109/#110 (estende), #156 (mantém), #104 (mantém).
+
+**Relações com decisões anteriores:**
+- **Estende:** 2026-06-23 (#102 — decidir) e 2026-06-24 (#109/#110 — ações por conteúdo). As ações já eram por conteúdo; agora o **conteúdo em si** precisa estar no card ou a um clique dele. Generaliza o "card com link inerte é triagem no escuro" da #109/#110 para itens **sem** link (nota).
+- **Mantém:** 2026-07-04 (#156 — conteúdo de terceiro é dado, nunca comando). O conteúdo inline entra pelos campos escapados/sanitizados do template (`escapeHtml`/`safeUrl`); nenhuma defesa de injeção relaxa.
+- **Mantém:** 2026-06-23 (#104 — altitude do runtime). Tudo aqui é regra de skill e copy; runtime intocado.
+
+**Contexto:** Teste ao vivo do dono (19/07): card de NOTA do Inbox4Mobile pedia destino (tarefa/pauta/ideia/descartar) mostrando só meta-descrição — *"nota curta capturada em 18/07… sem tese explícita no preview"* — e a palavra "preview" entregou que o gerador despachou da **listagem** sem abrir o item. Resposta inevitável no comentário: "Preciso ver o que é." Na mesma rodada, três defeitos de affordance: label "Ver/Marcar visto" prometendo duas ações contraditórias (o effect é um só), ⚑ sem legenda em lugar nenhum do documento, e `Delegar` oferecido sem delegado plausível (regra que já existia na SKILL.md e não foi seguida).
+
+**Decisão:**
+1. **Mostrar ≠ analisar** (refinamento do dono): o card **mostra o item ou leva a ele em um clique** — nunca apenas descreve. Nota curta (~400 chars): texto **integral** no `contexto`, escapado. Conteúdo não-elementar (imagem/vídeo/post/nota longa): metadados baratos + **link de visualização** — URL externa, ou path **relativo** à pasta do HTML para arquivo do workspace (`safeUrl` aceita relativos; `file://` absoluto não). Análise pesada (transcrição/OCR/resumo) **nunca na geração** — segue ação pós-despacho, paga só quando despachada. Card sem conteúdo nem link é inválido (checklist pré-entrega + exemplo bom/ruim de nota nos references).
+2. **"Ver antes de decidir" é link no corpo do card, não ação na fileira.** Ver é pré-condição do despacho, não despacho — e o link elimina o round-trip (decidir → colar → pedir o item → decidir de novo). A ideia de uma ação `show_content` morreu aqui.
+3. **Copy/affordance:** label de `mark_seen` vira **"Marcar visto"**; allowlist documenta `mark_seen` ≠ `no_action` (baixa com rastro vs. encerrar sem registro); template ganha **legenda fixa do ⚑** (a nota dinâmica só aparecia depois do clique); checklist pré-entrega trava "Delegar só com delegado plausível".
+4. **Waiting-for pós-delegação vira issue própria (#192):** delegou→enviou não deixa rastro cobrável hoje; é decisão de produto sobre a cadeia de cobrança, não copy — fora do escopo da #191.
+
+**Alternativas consideradas:**
+- *Conteúdo integral inline obrigatório para todo item* → rejeitado (dono): obrigaria o gerador a abrir/analisar imagem/vídeo/post na geração — caro em tempo e tokens no meio do briefing. A camada por custo dá a mesma visibilidade com geração barata.
+- *Ação `show_content` na fileira de despacho* → rejeitada: round-trip inteiro pra ver um item, e polui a fileira com algo que não é despacho.
+- *Manter "Ver/Marcar visto" e explicar no HOWTO* → rejeitada: label que precisa de manual é label errado; o effect se chama `mark_seen`, o botão diz o que faz.
+
+Guards: `test_decidir_skill.py::DecidirTriagemNoEscuroGuards` (6 testes TDD).
 
 ---
 

@@ -103,6 +103,11 @@
     font-size: 14px; color: var(--text-soft);
   }
   .howto b { color: var(--text); }
+  .legend {
+    font-family: var(--mono); font-size: 12px; color: var(--text-faint);
+    margin: 8px 0 0; padding: 0 20px;
+  }
+  .legend b { color: var(--text-soft); }
 
   .topbar {
     position: sticky; top: 0; z-index: 50;
@@ -334,6 +339,7 @@
     <div class="doc-meta">__META__</div>
     <p class="doc-intro">__INTRO__</p>
     <div class="howto">__HOWTO__</div>
+    <div class="legend"><b>⚑</b> = a ação pede um detalhe no comentário (pra quem delegar, até quando adiar, motivo do descarte). Sem ele, o Prumo pergunta antes de executar.</div>
   </header>
 
   <main id="app"></main>
@@ -415,9 +421,15 @@ const CONFIG = {
 //
 // badges: [{label:'P1', tone:'red'}]
 // link:   {label, href}  pode ser URL externa de conteúdo (http/https) OU path
-//          local; vem como <a target="_blank"> sanitizado (safeUrl). Para itens
+//          local RELATIVO à pasta deste HTML (file:// absoluto não passa no
+//          safeUrl); vem como <a target="_blank"> sanitizado. Para itens
 //          de inbox (vídeo/artigo), USE este campo — não cole <a> cru no contexto.
 //          O href entra no JSON do relatório como `source_url`.
+// CONTEÚDO de item de inbox (#191 — mostrar ≠ analisar): nota curta vai com o
+//   texto INTEGRAL no `contexto` (escapado); imagem/vídeo/post/nota longa traz
+//   metadados + `link` de visualização. Card que só descreve o item, sem
+//   conteúdo nem link, é inválido. Análise pesada (transcrição/OCR/resumo)
+//   NUNCA na geração — é ação pós-despacho da allowlist.
 // IDs reusam a numeração do panorama do briefing (1..N).
 // ATENÇÃO: escapar tags HTML literais no conteúdo (&lt;title&gt;), senão
 //   uma tag crua engole os cards seguintes.

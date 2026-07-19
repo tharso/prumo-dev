@@ -96,5 +96,41 @@ class DecidirContentAwareGuards(unittest.TestCase):
         self.assertIn("extrair/transcrever", text)
 
 
+class DecidirTriagemNoEscuroGuards(unittest.TestCase):
+    """#191: o card mostra o item ou leva a ele em um clique; labels sem ambiguidade; ⚑ com legenda."""
+
+    def test_allowlist_label_marcar_visto_sem_ver(self):
+        text = (SKILL_DIR / "references" / "acoes-allowlist.md").read_text(encoding="utf-8")
+        # O effect é um só (dar baixa); "Ver/" prometia a ação oposta.
+        self.assertNotIn("Ver/Marcar visto", text)
+        self.assertIn("| Marcar visto |", text)
+
+    def test_allowlist_distingue_mark_seen_de_no_action(self):
+        text = (SKILL_DIR / "references" / "acoes-allowlist.md").read_text(encoding="utf-8")
+        self.assertIn("`mark_seen` ≠ `no_action`", text)
+
+    def test_allowlist_regra_mostrar_nao_analisar(self):
+        text = (SKILL_DIR / "references" / "acoes-allowlist.md").read_text(encoding="utf-8")
+        # Nota curta: texto integral inline. Não-elementar: link de visualização.
+        # Análise pesada (transcrição/OCR/resumo) nunca na geração — só pós-despacho.
+        self.assertIn("Mostrar ≠ analisar", text)
+        self.assertIn("pós-despacho", text)
+
+    def test_template_tem_legenda_fixa_do_requires(self):
+        html = (SKILL_DIR / "assets" / "template.html").read_text(encoding="utf-8")
+        # A nota dinâmica só aparece DEPOIS do clique; a legenda estática explica antes.
+        self.assertIn("pede um detalhe no comentário", html)
+
+    def test_skill_checklist_cobre_inbox_sem_escuro_e_delegar(self):
+        skill = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("sem conteúdo nem link", skill)
+        self.assertIn("delegado plausível", skill)
+
+    def test_exemplos_tem_card_de_nota_bom_e_ruim(self):
+        text = (SKILL_DIR / "references" / "exemplos-de-cards.md").read_text(encoding="utf-8")
+        self.assertIn("Texto integral", text)
+        self.assertIn("triagem no escuro", text)
+
+
 if __name__ == "__main__":
     unittest.main()

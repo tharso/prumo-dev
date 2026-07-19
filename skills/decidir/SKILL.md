@@ -52,7 +52,8 @@ Use `assets/template.html`. A mecânica (estado em localStorage, ações por-car
 
 2. **Escolha tipo e ações por item:**
    - **`despacho`** — a maioria dos itens. Traz `actions: [{key, label, tone, effect, requires?}]`. As ações vêm da **allowlist por tipo** em `references/acoes-allowlist.md` — **selecione de lá, nunca invente verbos**. `effect` é o token canônico (snake_case) da allowlist, não prosa. Só ofereça ações que cabem naquele item: `Delegar` traz `requires: 'destinatário'` (o usuário informa no comentário) — não ofereça se não houver a quem delegar; `Confirmar/Recusar` só em convite com RSVP, não em evento do dia comum.
-     - **Itens de inbox: classifique o CONTEÚDO** (vídeo / artigo-link / imagem / nota) e use o **menu por conteúdo** da allowlist — não o genérico. Um vídeo recebe `Extrair/transcrever` e `Resumir`, não "virar referência". E traga o **link do item** no campo estruturado `link: {label, href}` (o template o renderiza ativo e sanitizado). Thumbnail/embed fica para fatia futura.
+     - **Itens de inbox: classifique o CONTEÚDO** (vídeo / artigo-link / imagem / nota) e use o **menu por conteúdo** da allowlist — não o genérico. Um vídeo recebe `Extrair/transcrever` e `Resumir`, não "virar referência".
+     - **Itens de inbox: mostre o item ou leve a ele — mostrar ≠ analisar.** Nota curta vai com o texto **integral** no `contexto` (ler é trivial; você já leu pra classificar). Conteúdo não-elementar (imagem/vídeo/post/nota longa) traz metadados + o **link do item** no campo estruturado `link: {label, href}` (o template o renderiza ativo e sanitizado; arquivo local do workspace entra como path **relativo** à pasta do HTML). Card que só descreve o item, **sem conteúdo nem link**, é inválido — o usuário não despacha o que não vê. E **não** abrir/transcrever/OCR na geração: análise pesada é ação pós-despacho da allowlist, paga só se despachada. Thumbnail/embed fica para fatia futura.
    - **`escolha`** — decisões entre alternativas (foco do dia, qual caminho). Opções A/B/C com **texto final** e uma `rec: true`.
 
 3. **Preencha CONFIG e os placeholders:**
@@ -66,6 +67,8 @@ Use `assets/template.html`. A mecânica (estado em localStorage, ações por-car
 
 5. **Verifique antes de entregar** (a entrega é um artefato — entregue testado):
    - **Contagem:** nº de `<article class="card">` renderizados == nº de entradas em `POINTS`. Se renderizou menos, quase sempre há uma tag HTML literal não-escapada no conteúdo (ex.: `<title>` cru) engolindo os cards seguintes — escape como `&lt;title&gt;`.
+   - **Inbox sem escuro:** todo card de item de inbox tem conteúdo inline (nota curta) **ou** `link` ativo de visualização. Card que só descreve o item, sem conteúdo nem link, não sai.
+   - **Ações que cabem:** `Delegar` só com **delegado plausível** no contexto do item; `Confirmar/Recusar` só com RSVP. Fileira idêntica à tabela da allowlist é sinal de que faltou filtrar.
    - Se houver browser/preview, clique uma ação, gere o relatório, confira que o bloco JSON `prumo_decidir_report.v1` tem os itens certos. Senão, no mínimo valide a contagem e `node --check` num extrato do script.
    - Avise o usuário que o estado salva por origem: começar a responder via `file://` e terminar lá (`localhost` cria storage separado).
 
