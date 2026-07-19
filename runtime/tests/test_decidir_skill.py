@@ -5,6 +5,7 @@ offline (nenhuma URL de rede), o registro da skill nos manifestos que listam
 skills individualmente, e a presença dos arquivos canônicos.
 """
 
+import base64
 import json
 import re
 import unittest
@@ -115,7 +116,7 @@ class DecidirTriagemNoEscuroGuards(unittest.TestCase):
         # Não-elementar: link de visualização. Análise pesada só pós-despacho.
         self.assertIn("Mostrar ≠ analisar", text)
         self.assertIn("pós-despacho", text)
-        self.assertIn("`conteudo`", text)
+        self.assertIn("`conteudo_b64`", text)
 
     def test_template_tem_legenda_fixa_do_requires(self):
         html = (SKILL_DIR / "assets" / "template.html").read_text(encoding="utf-8")
@@ -145,7 +146,7 @@ class DecidirTriagemNoEscuroGuards(unittest.TestCase):
         text = (SKILL_DIR / "references" / "exemplos-de-cards.md").read_text(encoding="utf-8")
         self.assertIn("Texto integral", text)
         self.assertIn("triagem no escuro", text)
-        self.assertIn("conteudo:", text)  # o card BOM usa o campo escapado, não o contexto
+        self.assertIn("conteudo_b64:", text)  # o card BOM usa o transporte base64, não o contexto
 
 
 class DecidirConteudoEscapadoGuards(unittest.TestCase):
@@ -178,14 +179,32 @@ class DecidirConteudoEscapadoGuards(unittest.TestCase):
                     "javascript:alert(1)", "data:text/html,x", "  /abs-apos-trim"):
             self.assertEqual(self._mirror_safeurl(bad), "#", f"deveria rejeitar: {bad}")
 
-    def test_render_escapa_o_campo_conteudo(self):
+    def test_render_decodifica_e_escapa_o_conteudo(self):
         html = (SKILL_DIR / "assets" / "template.html").read_text(encoding="utf-8")
-        # O texto cru do item passa SEMPRE por escapeHtml no render.
-        self.assertIn("escapeHtml(p.conteudo)", html)
+        # Pipeline completo: base64 → fromB64 (TextDecoder UTF-8) → escapeHtml.
+        self.assertIn("fromB64(p.conteudo_b64)", html)
+        self.assertIn("new TextDecoder()", html)
+        # O caminho antigo (texto cru interpolado) não pode voltar.
+        self.assertNotIn("escapeHtml(p.conteudo)", html)
+        self.assertNotIn("${p.conteudo_b64}", html)
+
+    def test_transporte_base64_e_inerte_por_construcao(self):
+        # Round 2 do Codex: apóstrofo/newline/backslash/</script> quebravam o
+        # literal JS ANTES do escapeHtml. Base64 fecha por construção: o
+        # alfabeto não contém nenhum caractere capaz de quebrar string ou tag.
+        hostil = "O'Brien disse \"oi\" </script> '; alert(1) // barra\\invertida\nsegunda linha — travessão"
+        b64 = base64.b64encode(hostil.encode("utf-8")).decode("ascii")
+        self.assertRegex(b64, r"^[A-Za-z0-9+/=]+$")
+        for perigoso in ("'", '"', "\\", "<", ">", "\n", "`", "$"):
+            self.assertNotIn(perigoso, b64)
+        # Round-trip fiel (UTF-8, travessão incluso) — o que o fromB64 do
+        # template reproduz com atob + TextDecoder.
+        self.assertEqual(base64.b64decode(b64).decode("utf-8"), hostil)
 
     def test_doc_do_template_instrui_escapar_fechamento_de_script(self):
         html = (SKILL_DIR / "assets" / "template.html").read_text(encoding="utf-8")
-        # `</script>` dentro de string JS de POINTS encerraria o script do documento.
+        # `</script>` dentro de string JS de POINTS encerraria o script do
+        # documento (vale pros campos de markup do gerador; conteudo_b64 é imune).
         self.assertIn(r"vira `<\/`", html)
 
 

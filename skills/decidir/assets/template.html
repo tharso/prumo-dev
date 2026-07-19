@@ -394,6 +394,7 @@ const CONFIG = {
     requiresNote: 'Esta ação precisa de um detalhe no comentário.',
     requiresNotePrefix: 'Falta no comentário: ',
     commentPlaceholder: 'Comentário (entra no relatório como instrução)',
+    contentUnreadable: 'conteúdo ilegível (base64 inválido) — abra o item pelo link',
     saved: 'salvo ✓',
     generate: 'Copiar respostas',
     generateAndCopy: 'Gerar e copiar respostas',
@@ -414,12 +415,18 @@ const CONFIG = {
 // SECTION: { id, num, title, sub }
 // POINT (dois tipos):
 //   despacho: { id, sec, type:'despacho', badges?, link?, title, contexto,
-//               conteudo?, evidencia?, sugestao?,
+//               conteudo_b64?, evidencia?, sugestao?,
 //               actions: [{ key, label, tone, effect, requires? }] }
-//      conteudo: TEXTO CRU do item (nota integral, excerpt) — o template escapa
-//             no render (escapeHtml), então NÃO ponha HTML aqui, só texto.
-//             `contexto`/`evidencia` continuam markup leve DO GERADOR; conteúdo
-//             de usuário dentro deles precisa vir já escapado (&lt;tag&gt;).
+//      conteudo_b64: texto do item (nota integral, excerpt) codificado em
+//             BASE64 (UTF-8). Codificação MECÂNICA, sem exceção — `python3 -c`
+//             ou `base64` no shell; nunca "à mão". O alfabeto base64 não contém
+//             aspas, `\`, `<` nem quebras de linha: o texto do usuário NÃO TEM
+//             COMO quebrar ou injetar este script, por construção. O template
+//             decodifica (fromB64) e escapa (escapeHtml) no render; base64
+//             inválido vira aviso visível, nunca execução.
+//             `contexto`/`evidencia` continuam markup leve DO GERADOR: texto de
+//             TERCEIRO em massa nunca vai neles (vai no conteudo_b64); citação
+//             curta entra escapada (&lt;tag&gt;; apóstrofo em string JS: \').
 //      tones: green|amber|red|blue|purple|slate (use 'red' p/ ação de risco)
 //      requires: texto curto do que o comentário precisa trazer (ex: 'destinatário')
 //      effect: token canônico (enum snake_case) do que o Prumo executa — use
@@ -436,16 +443,16 @@ const CONFIG = {
 //          de inbox (vídeo/artigo), USE este campo — não cole <a> cru no contexto.
 //          O href entra no JSON do relatório como `source_url`.
 // CONTEÚDO de item de inbox (#191 — mostrar ≠ analisar): nota curta (até ~400
-//   caracteres) vai INTEGRAL no campo `conteudo`; acima disso, os primeiros
-//   ~400 (corte em fronteira de palavra) em `conteudo` + `link` pro arquivo.
-//   Imagem/vídeo/post traz metadados + `link` de visualização. Card que só
-//   descreve o item, sem conteúdo nem link, é inválido. Análise pesada
+//   caracteres) vai INTEGRAL em `conteudo_b64`; acima disso, os primeiros
+//   ~400 (corte em fronteira de palavra) em `conteudo_b64` + `link` pro
+//   arquivo. Imagem/vídeo/post traz metadados + `link` de visualização. Card
+//   que só descreve o item, sem conteúdo nem link, é inválido. Análise pesada
 //   (transcrição/OCR/resumo) NUNCA na geração — é ação pós-despacho.
 // IDs reusam a numeração do panorama do briefing (1..N).
-// ATENÇÃO: escapar tags HTML literais em `contexto`/`evidencia`
-//   (&lt;title&gt;), senão uma tag crua engole os cards seguintes. E dentro
-//   das strings JS de POINTS, todo `</` vira `<\/` (senão `</script>` no
-//   texto encerra o script do documento).
+// ATENÇÃO (só vale pros campos de markup do gerador, `contexto`/`evidencia`/
+//   `title` — o conteudo_b64 é imune por construção): escapar tags HTML
+//   literais (&lt;title&gt;), senão uma tag crua engole os cards seguintes;
+//   dentro das strings JS, `</` vira `<\/` e apóstrofo vira \'.
 // ════════════════════════════════════════════════════════════
 const SECTIONS = [
 /*__SECTIONS__*/
@@ -485,6 +492,13 @@ function escapeHtml(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, c => (
     { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
   ));
+}
+function fromB64(s) {
+  // Transporte do texto do usuário: base64 (UTF-8). Inválido → null, nunca throw.
+  try {
+    const bytes = atob(String(s == null ? '' : s).replace(/\s+/g, ''));
+    return new TextDecoder().decode(Uint8Array.from(bytes, c => c.charCodeAt(0)));
+  } catch (e) { return null; }
 }
 
 function initLabels() {
@@ -549,8 +563,13 @@ function cardHTML(p) {
   const tipo = p.type === 'escolha' ? `<span class="badge t-purple">${L.chooseOne}</span>` : '';
 
   let body = '';
-  // p.conteudo é TEXTO CRU do item do usuário — o template escapa aqui, sempre.
-  if (p.conteudo) body += `<div class="content">${escapeHtml(p.conteudo)}</div>`;
+  // p.conteudo_b64 = texto do item do usuário em base64 (transporte inerte: o
+  // alfabeto não tem aspas, `\`, `<` nem newline — não quebra este script por
+  // construção). Decodifica e ESCAPA aqui, sempre.
+  if (p.conteudo_b64) {
+    const raw = fromB64(p.conteudo_b64);
+    body += `<div class="content">${raw == null ? `<i>${L.contentUnreadable}</i>` : escapeHtml(raw)}</div>`;
+  }
   if (p.evidencia) body += `<span class="lbl">${L.evidence}</span><div class="evid">${p.evidencia}</div>`;
   if (p.proposta)  body += `<span class="lbl">${L.proposal}</span><div class="evid">${p.proposta}</div>`;
   if (p.type !== 'escolha' && p.sugestao) body += `<span class="lbl">${L.suggestion}</span><div class="sugg">${p.sugestao}</div>`;
