@@ -111,25 +111,82 @@ class DecidirTriagemNoEscuroGuards(unittest.TestCase):
 
     def test_allowlist_regra_mostrar_nao_analisar(self):
         text = (SKILL_DIR / "references" / "acoes-allowlist.md").read_text(encoding="utf-8")
-        # Nota curta: texto integral inline. Não-elementar: link de visualização.
-        # Análise pesada (transcrição/OCR/resumo) nunca na geração — só pós-despacho.
+        # Nota curta: texto integral no campo `conteudo` (o template escapa).
+        # Não-elementar: link de visualização. Análise pesada só pós-despacho.
         self.assertIn("Mostrar ≠ analisar", text)
         self.assertIn("pós-despacho", text)
+        self.assertIn("`conteudo`", text)
 
     def test_template_tem_legenda_fixa_do_requires(self):
         html = (SKILL_DIR / "assets" / "template.html").read_text(encoding="utf-8")
         # A nota dinâmica só aparece DEPOIS do clique; a legenda estática explica antes.
         self.assertIn("pede um detalhe no comentário", html)
 
-    def test_skill_checklist_cobre_inbox_sem_escuro_e_delegar(self):
+    def test_skill_checklist_pre_entrega_ancorado(self):
+        # Ancorado NA SEÇÃO do checklist (round 1 do Codex: substring solta
+        # passava mesmo com o checklist removido, porque a regra geral repete a frase).
         skill = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
-        self.assertIn("sem conteúdo nem link", skill)
-        self.assertIn("delegado plausível", skill)
+        m = re.search(r"Verifique antes de entregar.*?## Como apresentar", skill, re.S)
+        self.assertIsNotNone(m, "seção 'Verifique antes de entregar' sumiu do SKILL.md")
+        checklist = m.group(0)
+        self.assertIn("sem conteúdo nem link", checklist)
+        self.assertIn("delegado plausível", checklist)
+        # A regra vale pra todo card baseado em fonte — email incluso (não só inbox).
+        self.assertIn("remetente", checklist)
+
+    def test_limiar_de_nota_padronizado_nos_dois_arquivos(self):
+        skill = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
+        allow = (SKILL_DIR / "references" / "acoes-allowlist.md").read_text(encoding="utf-8")
+        for text, name in ((skill, "SKILL.md"), (allow, "acoes-allowlist.md")):
+            self.assertIn("~400", text, f"limiar da nota curta ausente em {name}")
+            self.assertIn("fronteira de palavra", text, f"regra de corte ausente em {name}")
 
     def test_exemplos_tem_card_de_nota_bom_e_ruim(self):
         text = (SKILL_DIR / "references" / "exemplos-de-cards.md").read_text(encoding="utf-8")
         self.assertIn("Texto integral", text)
         self.assertIn("triagem no escuro", text)
+        self.assertIn("conteudo:", text)  # o card BOM usa o campo escapado, não o contexto
+
+
+class DecidirConteudoEscapadoGuards(unittest.TestCase):
+    """#191 round 1 (Codex): conteúdo de usuário entra escapado; safeUrl sem absoluto."""
+
+    # Espelho 1:1 da política do safeUrl no template. Se mudar lá, mude aqui —
+    # o teste de presença abaixo quebra junto e aponta a dessincronia.
+    _JS_LOCAL_PREDICATE = r"/^#/.test(u) || /^\.\.?\//.test(u) || /^[\w][\w./?=&%+~-]*$/.test(u)"
+
+    @staticmethod
+    def _mirror_safeurl(url):
+        u = url.strip()
+        if re.match(r"^(https?:|mailto:)", u, re.I):
+            return u
+        if re.match(r"^#", u) or re.match(r"^\.\.?/", u) or re.match(r"^[\w][\w./?=&%+~-]*$", u):
+            return u
+        return "#"
+
+    def test_template_carrega_a_politica_espelhada(self):
+        html = (SKILL_DIR / "assets" / "template.html").read_text(encoding="utf-8")
+        self.assertIn(self._JS_LOCAL_PREDICATE, html, "predicado do safeUrl divergiu do espelho do teste")
+
+    def test_safeurl_aceita_externo_e_relativo(self):
+        for ok in ("https://ex.com/a", "HTTP://EX.COM/x", "mailto:a@b.c", "#card-3",
+                   "./inbox/nota.md", "../inbox/img.jpg", "inbox/nota.md", "nota.md"):
+            self.assertEqual(self._mirror_safeurl(ok), ok, f"deveria aceitar: {ok}")
+
+    def test_safeurl_rejeita_absoluto_e_esquemas(self):
+        for bad in ("/etc/passwd", "//server/share", "file:///Users/x/nota.md",
+                    "javascript:alert(1)", "data:text/html,x", "  /abs-apos-trim"):
+            self.assertEqual(self._mirror_safeurl(bad), "#", f"deveria rejeitar: {bad}")
+
+    def test_render_escapa_o_campo_conteudo(self):
+        html = (SKILL_DIR / "assets" / "template.html").read_text(encoding="utf-8")
+        # O texto cru do item passa SEMPRE por escapeHtml no render.
+        self.assertIn("escapeHtml(p.conteudo)", html)
+
+    def test_doc_do_template_instrui_escapar_fechamento_de_script(self):
+        html = (SKILL_DIR / "assets" / "template.html").read_text(encoding="utf-8")
+        # `</script>` dentro de string JS de POINTS encerraria o script do documento.
+        self.assertIn(r"vira `<\/`", html)
 
 
 if __name__ == "__main__":

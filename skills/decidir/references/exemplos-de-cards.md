@@ -118,7 +118,8 @@ Por que falha: é um **vídeo** e o menu não tem extrair/resumir/abrir; o link 
   id: '15', sec: 'inbox', type: 'despacho',
   badges: [{label:'nota', tone:'slate'}],
   title: 'Nota (18/07, 03h47): skill "scroll-world"',
-  contexto: 'Captura da madrugada. Texto integral: <span class="q">"skill scroll-world — mapa infinito que scrolla revelando um mundo; ver se vira mecânica de onboarding"</span>',
+  contexto: 'Captura da madrugada, sem link. Texto integral abaixo.',
+  conteudo: 'skill scroll-world — mapa infinito que scrolla revelando um mundo; ver se vira mecânica de onboarding',
   actions: [
     { key:'make_task',  label:'Virar tarefa', tone:'blue',  effect:'make_task' },
     { key:'make_pauta', label:'Virar pauta',  tone:'blue',  effect:'make_pauta' },
@@ -128,7 +129,7 @@ Por que falha: é um **vídeo** e o menu não tem extrair/resumir/abrir; o link 
 }
 ```
 
-Por que funciona: nota curta → o **texto integral** está no card (mostrar é barato: o gerador já leu a nota pra classificá-la). O usuário decide o destino olhando pro item, não pra uma descrição do item. Se a nota fosse longa: excerpt inicial + `link` com path relativo pro arquivo. Sem `Delegar` — nota pessoal de madrugada não tem delegado plausível.
+Por que funciona: nota curta (≤ ~400 chars) → o **texto integral** está no campo `conteudo` (texto cru; **o template escapa no render**, então HTML/aspas na nota não quebram nada — nunca colar texto de usuário no `contexto`, que é markup do gerador). O usuário decide o destino olhando pro item, não pra uma descrição do item. Se a nota passasse de ~400: primeiros ~400 em fronteira de palavra no `conteudo` + `link` relativo pro arquivo. Sem `Delegar` — nota pessoal de madrugada não tem delegado plausível.
 
 ## Card RUIM — descreve o item em vez de mostrá-lo (caso real, 19/07)
 
@@ -151,7 +152,7 @@ Por que falha: fala **sobre** a nota sem mostrar a nota — "sem tese explícita
 
 ## Padrões que elevam o despacho
 
-- **Mostre o item ou leve a ele.** Nota curta: texto integral no card. Imagem/vídeo/post/nota longa: metadados + link de visualização — e nada de análise pesada na geração (transcrever/OCR/resumir são pós-despacho). Card que só descreve ("tem uma nota aqui") é triagem no escuro.
+- **Mostre o item ou leve a ele — todo card baseado em fonte.** Nota ≤ ~400 chars: texto integral no campo `conteudo` (o template escapa). Nota longa: primeiros ~400 + link. Imagem/vídeo/post: metadados + link de visualização. Email: remetente + trecho citável. E nada de análise pesada na geração (transcrever/OCR/resumir são pós-despacho). Card que só descreve ("tem uma nota aqui") é triagem no escuro.
 - **Agrupe o barato, separe o caro.** Cinco emails informativos com a mesma cara podem virar cards curtos; uma cobrança que vira atrito merece card próprio com contexto.
 - **Evidência no contexto.** Remetente, trecho literal (`.q`), referência (`.ref`), prazo. Despacho sem evidência vira chute.
 - **Só ofereça ações que cabem.** `Delegar` sem destinatário, `Confirmar` num evento sem RSVP — botão de neblina. Tire da lista do card.

@@ -183,6 +183,11 @@
   }
   .evid p { margin: 0 0 8px; } .evid p:last-child { margin: 0; }
   .evid ul { margin: 4px 0; padding-left: 18px; } .evid li { margin-bottom: 5px; }
+  .content {
+    background: var(--bg-2); border-left: 3px solid var(--line);
+    border-radius: 0 10px 10px 0; padding: 14px 18px; margin: 6px 0 4px;
+    font-size: 14px; color: var(--text); white-space: pre-wrap; overflow-wrap: anywhere;
+  }
   .q { font-style: italic; font-size: 15px; color: var(--text); }
   .ref { font-family: var(--mono); font-size: 11px; color: var(--accent); }
   mark { background: rgba(240, 140, 132, 0.2); color: var(--red); padding: 0 3px; border-radius: 3px; font-weight: 500; }
@@ -409,8 +414,12 @@ const CONFIG = {
 // SECTION: { id, num, title, sub }
 // POINT (dois tipos):
 //   despacho: { id, sec, type:'despacho', badges?, link?, title, contexto,
-//               evidencia?, sugestao?,
+//               conteudo?, evidencia?, sugestao?,
 //               actions: [{ key, label, tone, effect, requires? }] }
+//      conteudo: TEXTO CRU do item (nota integral, excerpt) — o template escapa
+//             no render (escapeHtml), então NÃO ponha HTML aqui, só texto.
+//             `contexto`/`evidencia` continuam markup leve DO GERADOR; conteúdo
+//             de usuário dentro deles precisa vir já escapado (&lt;tag&gt;).
 //      tones: green|amber|red|blue|purple|slate (use 'red' p/ ação de risco)
 //      requires: texto curto do que o comentário precisa trazer (ex: 'destinatário')
 //      effect: token canônico (enum snake_case) do que o Prumo executa — use
@@ -421,18 +430,22 @@ const CONFIG = {
 //
 // badges: [{label:'P1', tone:'red'}]
 // link:   {label, href}  pode ser URL externa de conteúdo (http/https) OU path
-//          local RELATIVO à pasta deste HTML (file:// absoluto não passa no
-//          safeUrl); vem como <a target="_blank"> sanitizado. Para itens
+//          local RELATIVO à pasta deste HTML (./x, ../x ou nome simples).
+//          Absoluto NÃO passa no safeUrl: nem `file://`, nem `/abs`, nem
+//          `//server`. Vem como <a target="_blank"> sanitizado. Para itens
 //          de inbox (vídeo/artigo), USE este campo — não cole <a> cru no contexto.
 //          O href entra no JSON do relatório como `source_url`.
-// CONTEÚDO de item de inbox (#191 — mostrar ≠ analisar): nota curta vai com o
-//   texto INTEGRAL no `contexto` (escapado); imagem/vídeo/post/nota longa traz
-//   metadados + `link` de visualização. Card que só descreve o item, sem
-//   conteúdo nem link, é inválido. Análise pesada (transcrição/OCR/resumo)
-//   NUNCA na geração — é ação pós-despacho da allowlist.
+// CONTEÚDO de item de inbox (#191 — mostrar ≠ analisar): nota curta (até ~400
+//   caracteres) vai INTEGRAL no campo `conteudo`; acima disso, os primeiros
+//   ~400 (corte em fronteira de palavra) em `conteudo` + `link` pro arquivo.
+//   Imagem/vídeo/post traz metadados + `link` de visualização. Card que só
+//   descreve o item, sem conteúdo nem link, é inválido. Análise pesada
+//   (transcrição/OCR/resumo) NUNCA na geração — é ação pós-despacho.
 // IDs reusam a numeração do panorama do briefing (1..N).
-// ATENÇÃO: escapar tags HTML literais no conteúdo (&lt;title&gt;), senão
-//   uma tag crua engole os cards seguintes.
+// ATENÇÃO: escapar tags HTML literais em `contexto`/`evidencia`
+//   (&lt;title&gt;), senão uma tag crua engole os cards seguintes. E dentro
+//   das strings JS de POINTS, todo `</` vira `<\/` (senão `</script>` no
+//   texto encerra o script do documento).
 // ════════════════════════════════════════════════════════════
 const SECTIONS = [
 /*__SECTIONS__*/
@@ -461,9 +474,11 @@ function actionByKey(p, key) { return actionsOf(p).find(a => a.key === key) || n
 function safeUrl(url) {
   const u = String(url == null ? '' : url).trim();
   if (/^(https?:|mailto:)/i.test(u)) return u;
-  // Relativos/locais: começa com #, / ou . (inclui ./foo e ../foo), ou é um
-  // caminho simples sem esquema. `javascript:`/`data:` caem fora (têm `:`).
-  if (/^[#/.]/.test(u) || /^[\w][\w./?=&%+~-]*$/.test(u)) return u;
+  // Locais: âncora (#), relativo explícito (./foo, ../foo) ou caminho simples
+  // sem esquema. ABSOLUTO NÃO PASSA: `/abs` viraria file:///abs e `//server`
+  // é protocol-relative (rede) — rejeitados como `javascript:`/`data:`/`file:`
+  // (têm `:`, não casam em nenhum padrão).
+  if (/^#/.test(u) || /^\.\.?\//.test(u) || /^[\w][\w./?=&%+~-]*$/.test(u)) return u;
   return '#';
 }
 function escapeHtml(s) {
@@ -534,6 +549,8 @@ function cardHTML(p) {
   const tipo = p.type === 'escolha' ? `<span class="badge t-purple">${L.chooseOne}</span>` : '';
 
   let body = '';
+  // p.conteudo é TEXTO CRU do item do usuário — o template escapa aqui, sempre.
+  if (p.conteudo) body += `<div class="content">${escapeHtml(p.conteudo)}</div>`;
   if (p.evidencia) body += `<span class="lbl">${L.evidence}</span><div class="evid">${p.evidencia}</div>`;
   if (p.proposta)  body += `<span class="lbl">${L.proposal}</span><div class="evid">${p.proposta}</div>`;
   if (p.type !== 'escolha' && p.sugestao) body += `<span class="lbl">${L.suggestion}</span><div class="sugg">${p.sugestao}</div>`;

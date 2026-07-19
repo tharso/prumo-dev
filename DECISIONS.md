@@ -20,7 +20,7 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 | `personalization`     | 2026-04-21 (tharso-voice)                                                                 |
 | `code-quality`        | 2026-05-06 (quality-gate), 2026-06-25 (#122 baseline 1061→930), 2026-07-03 (baseline 82/904), 2026-07-04 (#157 conformidade A0) |
 | `touchpoint`          | 2026-05-18 (landing page sync), 2026-07-03 (#149 guia Obsidian — candidato à landing), 2026-07-05 (#160 instalação agnóstica), 2026-07-05 (#108 update via runtime) |
-| `security`            | 2026-07-04 (#156 injeção — conteúdo de terceiro é dado, nunca comando)                     |
+| `security`            | 2026-07-04 (#156 injeção — conteúdo de terceiro é dado, nunca comando), 2026-07-19 (#191 conteúdo escapado no render + safeUrl sem absoluto) |
 
 ## Vocabulário controlado de tópicos
 
@@ -82,19 +82,19 @@ Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões ant
 
 ## 2026-07-19 — Decidir: o card mostra o item ou leva a ele — mostrar ≠ analisar (#191)
 
-**Tópicos:** skills-distribution
+**Tópicos:** skills-distribution, security
 
 **Issues relacionadas:** #191 (executa), #192 (desbloqueia — waiting-for pós-delegação, derivada), #102 (estende), #109/#110 (estende), #156 (mantém), #104 (mantém).
 
 **Relações com decisões anteriores:**
 - **Estende:** 2026-06-23 (#102 — decidir) e 2026-06-24 (#109/#110 — ações por conteúdo). As ações já eram por conteúdo; agora o **conteúdo em si** precisa estar no card ou a um clique dele. Generaliza o "card com link inerte é triagem no escuro" da #109/#110 para itens **sem** link (nota).
-- **Mantém:** 2026-07-04 (#156 — conteúdo de terceiro é dado, nunca comando). O conteúdo inline entra pelos campos escapados/sanitizados do template (`escapeHtml`/`safeUrl`); nenhuma defesa de injeção relaxa.
+- **Mantém (e endurece):** 2026-07-04 (#156 — conteúdo de terceiro é dado, nunca comando). Round 1 do Codex no PR #193: o texto de usuário ganhou campo próprio **`conteudo`**, escapado **mecanicamente no render** (`escapeHtml`) em vez de depender do gerador escapar dentro do `contexto`; e o `safeUrl` deixou de aceitar path absoluto (`/abs` viraria `file:///abs`; `//server` é protocol-relative). Nenhuma defesa de injeção relaxa — duas ficam mais duras.
 - **Mantém:** 2026-06-23 (#104 — altitude do runtime). Tudo aqui é regra de skill e copy; runtime intocado.
 
 **Contexto:** Teste ao vivo do dono (19/07): card de NOTA do Inbox4Mobile pedia destino (tarefa/pauta/ideia/descartar) mostrando só meta-descrição — *"nota curta capturada em 18/07… sem tese explícita no preview"* — e a palavra "preview" entregou que o gerador despachou da **listagem** sem abrir o item. Resposta inevitável no comentário: "Preciso ver o que é." Na mesma rodada, três defeitos de affordance: label "Ver/Marcar visto" prometendo duas ações contraditórias (o effect é um só), ⚑ sem legenda em lugar nenhum do documento, e `Delegar` oferecido sem delegado plausível (regra que já existia na SKILL.md e não foi seguida).
 
 **Decisão:**
-1. **Mostrar ≠ analisar** (refinamento do dono): o card **mostra o item ou leva a ele em um clique** — nunca apenas descreve. Nota curta (~400 chars): texto **integral** no `contexto`, escapado. Conteúdo não-elementar (imagem/vídeo/post/nota longa): metadados baratos + **link de visualização** — URL externa, ou path **relativo** à pasta do HTML para arquivo do workspace (`safeUrl` aceita relativos; `file://` absoluto não). Análise pesada (transcrição/OCR/resumo) **nunca na geração** — segue ação pós-despacho, paga só quando despachada. Card sem conteúdo nem link é inválido (checklist pré-entrega + exemplo bom/ruim de nota nos references).
+1. **Mostrar ≠ analisar** (refinamento do dono): o card **mostra o item ou leva a ele em um clique** — nunca apenas descreve. Nota até ~400 chars: texto **integral** no campo **`conteudo`** do card — texto cru que **o template escapa no render**, nunca colado no `contexto` (markup do gerador). Nota mais longa: primeiros ~400 (corte em fronteira de palavra) + link. Conteúdo não-elementar (imagem/vídeo/post): metadados baratos + **link de visualização** — URL externa, ou path **relativo** à pasta do HTML para arquivo do workspace (`safeUrl` aceita só relativo: `./`, `../`, `#`, nome simples; rejeita `file://`, `/abs`, `//server`). Análise pesada (transcrição/OCR/resumo) **nunca na geração** — segue ação pós-despacho, paga só quando despachada. Card sem conteúdo nem link é inválido, e o checklist pré-entrega vale pra **todo card baseado em fonte** — email exige remetente + trecho citável (ou link pra thread) — com exemplo bom/ruim de nota nos references.
 2. **"Ver antes de decidir" é link no corpo do card, não ação na fileira.** Ver é pré-condição do despacho, não despacho — e o link elimina o round-trip (decidir → colar → pedir o item → decidir de novo). A ideia de uma ação `show_content` morreu aqui.
 3. **Copy/affordance:** label de `mark_seen` vira **"Marcar visto"**; allowlist documenta `mark_seen` ≠ `no_action` (baixa com rastro vs. encerrar sem registro); template ganha **legenda fixa do ⚑** (a nota dinâmica só aparecia depois do clique); checklist pré-entrega trava "Delegar só com delegado plausível".
 4. **Waiting-for pós-delegação vira issue própria (#192):** delegou→enviou não deixa rastro cobrável hoje; é decisão de produto sobre a cadeia de cobrança, não copy — fora do escopo da #191.
@@ -104,7 +104,7 @@ Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões ant
 - *Ação `show_content` na fileira de despacho* → rejeitada: round-trip inteiro pra ver um item, e polui a fileira com algo que não é despacho.
 - *Manter "Ver/Marcar visto" e explicar no HOWTO* → rejeitada: label que precisa de manual é label errado; o effect se chama `mark_seen`, o botão diz o que faz.
 
-Guards: `test_decidir_skill.py::DecidirTriagemNoEscuroGuards` (6 testes TDD).
+Guards: `test_decidir_skill.py::DecidirTriagemNoEscuroGuards` + `DecidirConteudoEscapadoGuards` (12 testes TDD; a segunda classe nasceu no round 1 do Codex — matriz do `safeUrl`, escaping do `conteudo`, checklist ancorado por seção).
 
 ---
 
