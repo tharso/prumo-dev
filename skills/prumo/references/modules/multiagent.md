@@ -1,9 +1,11 @@
 # Multiagent
 
-> **module_version: 4.19.0**
+> **module_version: 4.20.0**
 >
 > Fonte canônica da convivência entre agentes no Prumo.
 > Escopo: coordenação de escrita simultânea em estado compartilhado via lock.
+>
+> **Delegação a subagente:** subagente não herda este módulo nem o `AGENT.md` — o perímetro de leitura viaja no prompt da delegação (caminhos permitidos explícitos, sem enumeração fora deles). Regra e exemplo canônico em `load-policy.md` → "Listagem de diretórios".
 
 ## Princípios
 

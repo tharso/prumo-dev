@@ -293,5 +293,100 @@ class RepairSkillsRestorationTests(unittest.TestCase):
             )
 
 
+class PerimeterPropagationTests(unittest.TestCase):
+    """#194: workspace existente recebe o perímetro de leitura via repair.
+
+    Codex r1 (achado 2): o repair só regenera canônicos com drift de versão —
+    então a propagação real exige simular workspace de release anterior (sem a
+    seção) + drift, e provar regra presente, autoral intacto e idempotência.
+    """
+
+    PERIMETER_INVARIANTS = (
+        "## Perímetro de leitura",
+        "Perímetro automático",
+        "enumeração recursiva",
+        "node_modules",
+        "Escopo autorizado pela tarefa",
+        "caminhos permitidos",
+    )
+
+    def _strip_perimeter(self, text: str) -> str:
+        stripped = re.sub(
+            r"## Perímetro de leitura.*?(?=## )",
+            "",
+            text,
+            flags=re.DOTALL,
+        )
+        assert "Perímetro de leitura" not in stripped
+        return stripped
+
+    def test_repair_with_drift_propagates_perimeter_to_canonical_and_wrappers(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = _make_test_workspace(Path(tmpdir))
+            agent_md = workspace / "Prumo" / "AGENT.md"
+            claude_wrapper = workspace / "CLAUDE.md"
+
+            # Simula workspace gerado por release anterior: sem a seção de
+            # perímetro no canônico, wrapper com bloco gerenciado antigo
+            # (delimitado) + conteúdo autoral fora dele, e core defasado.
+            agent_md.write_text(
+                self._strip_perimeter(agent_md.read_text(encoding="utf-8")),
+                encoding="utf-8",
+            )
+            authorial_tail = "<!-- nota autoral: o Prumo não pode tocar nesta linha -->"
+            claude_wrapper.write_text(
+                "# Meu CLAUDE.md customizado\n"
+                "\n"
+                "<!-- prumo:begin -->\n"
+                "Bloco antigo do Prumo, de release sem perímetro de leitura.\n"
+                "<!-- prumo:end -->\n"
+                "\n"
+                f"{authorial_tail}\n",
+                encoding="utf-8",
+            )
+            _force_core_version(workspace, "5.0.0")
+
+            result = repair_workspace(workspace)
+
+            self.assertIn("version_drift", result)
+            regenerated_agent = agent_md.read_text(encoding="utf-8")
+            merged_wrapper = claude_wrapper.read_text(encoding="utf-8")
+            for invariant in self.PERIMETER_INVARIANTS:
+                with self.subTest(target="Prumo/AGENT.md", invariant=invariant):
+                    self.assertIn(invariant, regenerated_agent)
+                with self.subTest(target="CLAUDE.md", invariant=invariant):
+                    self.assertIn(invariant, merged_wrapper)
+            # Conteúdo autoral fora dos delimitadores preservado byte a byte;
+            # bloco gerenciado antigo substituído.
+            self.assertIn("# Meu CLAUDE.md customizado", merged_wrapper)
+            self.assertIn(authorial_tail, merged_wrapper)
+            self.assertNotIn("Bloco antigo do Prumo", merged_wrapper)
+
+    def test_second_repair_after_perimeter_propagation_is_idempotent(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = _make_test_workspace(Path(tmpdir))
+            agent_md = workspace / "Prumo" / "AGENT.md"
+            agent_md.write_text(
+                self._strip_perimeter(agent_md.read_text(encoding="utf-8")),
+                encoding="utf-8",
+            )
+            _force_core_version(workspace, "5.0.0")
+
+            repair_workspace(workspace)
+            snapshot = {
+                path: (workspace / path).read_text(encoding="utf-8")
+                for path in ("Prumo/AGENT.md", "CLAUDE.md", "AGENTS.md", "AGENT.md")
+            }
+
+            second = repair_workspace(workspace)
+
+            self.assertNotIn("version_drift", second)
+            self.assertEqual(second["recreated"], [])
+            self.assertEqual(second.get("merged", []), [])
+            for path, before in snapshot.items():
+                with self.subTest(path=path):
+                    self.assertEqual((workspace / path).read_text(encoding="utf-8"), before)
+
+
 if __name__ == "__main__":
     unittest.main()

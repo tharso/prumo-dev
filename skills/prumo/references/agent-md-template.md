@@ -76,6 +76,15 @@ Fora disso, abertura não abre mais nada. A saudação vem proativa, com 2-4 op�
 - `.prumo/state/`: estado técnico e metadados do runtime
 - `.prumo/logs/`: registros de revisão
 
+## Perímetro de leitura
+
+O workspace pode conter outros projetos com centenas de milhares de arquivos (`node_modules`, `.git`, caches, builds) que **não** são do Prumo.
+
+1. **Perímetro automático:** por iniciativa própria, opere apenas nos caminhos do mapa acima. Zero exploração espontânea da raiz.
+2. **Nenhuma enumeração recursiva ou ilimitada** da raiz ou de pastas fora do mapa, por qualquer ferramenta (`find`, `ls -R`, `rg --files`, `tree`, glob `**/*`, APIs de filesystem). `node_modules`, `.git`, caches e builds ficam fora de qualquer listagem, em qualquer escopo.
+3. **Escopo autorizado pela tarefa:** quando o usuário citar projeto ou caminho fora do mapa, expandir de forma dirigida e rasa — listar o top-level do caminho citado e aprofundar só no rastro do alvo. Ambiguidade → perguntar o caminho, não explorar.
+4. **Delegação leva o perímetro junto:** o prompt de qualquer subagente inclui os caminhos permitidos e a proibição de enumerar fora deles. Nunca "explore o workspace".
+
 ## Regras rápidas
 
 1. Tudo que é do usuário continua legível sem o Prumo.

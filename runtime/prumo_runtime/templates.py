@@ -56,6 +56,26 @@ def _render_wrapper_runtime_rules(*, state_path: str = "_state/") -> str:
 17. Quando houver escolha real, faça uma pergunta por vez e ofereça opções curtas em vez de cardápio burocrático."""
 
 
+def _render_reading_perimeter(*, map_reference: str) -> str:
+    """Seção "Perímetro de leitura" (#194).
+
+    O workspace do usuário convive com repos de código (node_modules, .git)
+    que somam centenas de milhares de arquivos — enumeração recursiva da raiz
+    explode o contexto do agente. Dois escopos: perímetro automático (mapa) e
+    escopo autorizado pela tarefa (expansão dirigida e rasa). A prosa daqui
+    precisa manter paridade de invariantes com
+    `skills/prumo/references/agent-md-template.md` (test_templates.py).
+    """
+    return f"""## Perímetro de leitura
+
+O workspace pode conter outros projetos com centenas de milhares de arquivos (`node_modules`, `.git`, caches, builds) que **não** são do Prumo.
+
+1. **Perímetro automático:** por iniciativa própria, opere apenas nos caminhos {map_reference}. Zero exploração espontânea da raiz.
+2. **Nenhuma enumeração recursiva ou ilimitada** da raiz ou de pastas fora do mapa, por qualquer ferramenta (`find`, `ls -R`, `rg --files`, `tree`, glob `**/*`, APIs de filesystem). `node_modules`, `.git`, caches e builds ficam fora de qualquer listagem, em qualquer escopo.
+3. **Escopo autorizado pela tarefa:** quando o usuário citar projeto ou caminho fora do mapa, expandir de forma dirigida e rasa — listar o top-level do caminho citado e aprofundar só no rastro do alvo. Ambiguidade → perguntar o caminho, não explorar.
+4. **Delegação leva o perímetro junto:** o prompt de qualquer subagente inclui os caminhos permitidos e a proibição de enumerar fora deles. Nunca "explore o workspace"."""
+
+
 def _render_fallback_chain(skills_path: str) -> str:
     return f"""## Cadeia de resolução de comandos
 
@@ -166,6 +186,8 @@ Fora disso, abertura não abre mais nada. A saudação vem proativa, com 2-4 op�
 
 {workspace_map}
 
+{_render_reading_perimeter(map_reference="do mapa acima")}
+
 ## Regras rápidas
 
 {_render_workspace_runtime_rules()}
@@ -193,6 +215,8 @@ def render_agent_root_wrapper(
 
 {_render_wrapper_runtime_rules(state_path=system_root)}
 {dispatch_section}
+{_render_reading_perimeter(map_reference=f"do mapa do workspace em `{canonical_target}`")}
+
 ## Instrução primária
 
 1. Leia `{canonical_target}`.
@@ -226,6 +250,8 @@ def render_claude_wrapper(
 
 {_render_wrapper_runtime_rules(state_path=state_path)}
 {dispatch_section}
+{_render_reading_perimeter(map_reference=f"do mapa do workspace em `{canonical_target}`")}
+
 ## Instrução primária
 
 1. Leia `{canonical_target}`.
@@ -259,6 +285,8 @@ def render_agents_wrapper(
 
 {_render_wrapper_runtime_rules(state_path=state_path)}
 {dispatch_section}
+{_render_reading_perimeter(map_reference=f"do mapa do workspace em `{canonical_target}`")}
+
 ## Instrução primária
 
 1. Leia `{canonical_target}`.
