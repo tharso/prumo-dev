@@ -70,7 +70,8 @@ class ManifestParserTest(unittest.TestCase):
     )
 
     def test_manifest_parses_rows(self) -> None:
-        rows = audit.parse_manifest(self.SKILL)
+        rows, invalid = audit.parse_manifest(self.SKILL)
+        self.assertEqual(invalid, [])
         self.assertEqual(len(rows), 4)
         self.assertEqual(rows[0]["file"], "Prumo/AGENT.md")
         self.assertEqual(rows[1]["section"], "até: # Parte 2 — Playbooks operacionais")
@@ -78,6 +79,18 @@ class ManifestParserTest(unittest.TestCase):
 
     def test_no_manifest_returns_none(self) -> None:
         self.assertIsNone(audit.parse_manifest("# Briefing\n\nsem mapa\n"))
+
+    def test_partially_malformed_line_is_reported_not_swallowed(self) -> None:
+        # Codex série r2: linha inválida engolida = subcontagem silenciosa
+        # com o resto válido.
+        skill = self.SKILL.replace(
+            "| F1 | sempre | `.prumo/system/PRUMO-CORE.md` | `## Guardrails` | instrução |",
+            "| F1 | sempre | faltando células |",
+        )
+        rows, invalid = audit.parse_manifest(skill)
+        self.assertEqual(len(rows), 3)
+        self.assertEqual(len(invalid), 1)
+        self.assertIn("faltando células", invalid[0])
 
 
 class SandboxMeasurementTest(unittest.TestCase):

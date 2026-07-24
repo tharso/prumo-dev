@@ -23,9 +23,9 @@ Uso:
                                            [--ceiling N]
 
 Sem `--workspace`, monta um sandbox efêmero via runtime (install_skills +
-create_missing_files) num tempdir — nunca toca workspace real. Sem PERFIL.md
-no sandbox (o runtime não o materializa, #114), o item é contado como 0 e
-declarado; recibos oficiais de antes/depois semeiam PERFIL sintético (M4).
+create_missing_files) num tempdir — nunca toca workspace real. O setup
+materializa um `PERFIL.md` template enxuto (contado como está e declarado);
+recibos oficiais de antes/depois semeiam PERFIL sintético ~1.256w (M4).
 
 `--ceiling N` sai com código 1 se o cesto passar de N palavras (a M3 liga
 isso no quality gate via métrica `briefing_f0_words`).
@@ -130,12 +130,15 @@ def resolve_words(workspace: Path, file_rel: str, section: str) -> tuple[int, bo
     return count_words(sliced), True, "", False
 
 
-def parse_manifest(skill_text: str) -> list[dict] | None:
+def parse_manifest(skill_text: str) -> tuple[list[dict], list[str]] | None:
     """Parseia a tabela sob `## Mapa de carregamento por fase`.
 
     Colunas: `Fase | Gatilho | Arquivo | Seção | Tipo`. Mesma disciplina do
     `parse_command_table`: só a tabela contígua após o heading. `None` quando
-    o heading não existe (modo legacy).
+    o heading não existe (modo legacy). Devolve `(rows, invalid_lines)` —
+    linha de tabela que não parseia é ERRO do chamador, nunca descarte
+    silencioso (fail-closed, Codex série r2): uma linha engolida subcontaria
+    a rota com o restante válido.
     """
     lines = skill_text.splitlines()
     start = None
@@ -146,6 +149,7 @@ def parse_manifest(skill_text: str) -> list[dict] | None:
     if start is None:
         return None
     rows: list[dict] = []
+    invalid: list[str] = []
     started = False
     backtick = re.compile(r"`([^`]+)`")
     for line in lines[start:]:
@@ -158,9 +162,13 @@ def parse_manifest(skill_text: str) -> list[dict] | None:
             continue
         started = True
         cells = [c.strip() for c in s.strip("|").split("|")]
-        if len(cells) < 5:
+        structural = cells and (
+            set(cells[0]) <= set("-: ") and cells[0] != "" or cells[0].lower() == "fase"
+        )
+        if structural:
             continue
-        if not cells[0] or set(cells[0]) <= set("-: ") or cells[0].lower() == "fase":
+        if len(cells) < 5 or not cells[0]:
+            invalid.append(s)
             continue
         file_cell = cells[2]
         m = backtick.search(file_cell)
@@ -173,7 +181,7 @@ def parse_manifest(skill_text: str) -> list[dict] | None:
                 "type": cells[4],
             }
         )
-    return rows
+    return rows, invalid
 
 
 # Rota mandatória ATUAL (pré-M3) — a Pré-carga canônica da #195 (lista única
@@ -215,11 +223,14 @@ def measure(workspace: Path) -> dict:
     errors: list[str] = []
     if manifest is not None:
         mode = "manifest"
-        if not manifest:
+        rows, invalid_lines = manifest
+        if not rows:
             # Heading presente com tabela vazia/malformada NÃO é "rota zerada":
             # é manifesto quebrado (fail-closed, Codex série r1).
             errors.append("manifesto declarado mas vazio/malformado — termômetro quebrado")
-        for row in manifest:
+        for bad in invalid_lines:
+            errors.append(f"linha de manifesto inválida: {bad}")
+        for row in rows:
             if row["phase"] not in _BASKET_PHASES or row["trigger"].lower() != _ALWAYS:
                 continue
             words, exists, note, error = resolve_words(workspace, row["file"], row["section"])
@@ -228,6 +239,10 @@ def measure(workspace: Path) -> dict:
             )
             if error:
                 errors.append(f"{row['file']}: {note}")
+            elif not exists:
+                # No modo manifest o arquivo declarado TEM que existir — o
+                # manifesto descreve a instalação real (Codex série r2).
+                errors.append(f"{row['file']}: arquivo declarado no manifesto está ausente")
     else:
         mode = "legacy"
         for phase, file_rel, section, note in LEGACY_ROUTE:
