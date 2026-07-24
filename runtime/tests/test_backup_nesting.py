@@ -226,6 +226,63 @@ class PruneExpiredBackupsTest(unittest.TestCase):
         self.assertFalse(link.exists())
         self.assertTrue((target_dir / "PAUTA.md").exists(), "poda seguiu o symlink e apagou dado do usuário")
 
+    def test_prune_refuses_symlinked_root_without_traversing(self) -> None:
+        # Codex (série #178): root symlinkado seria atravessado por is_dir()
+        # + glob — a poda apagaria conteúdo EXTERNO ao backup.
+        outside = self.ws / "Prumo"
+        outside.mkdir()
+        victim = outside / "antigo.md"
+        victim.write_text("dado do usuário\n", encoding="utf-8")
+        self._make_old(victim, days=400)
+        (self.ws / ".prumo").mkdir(parents=True, exist_ok=True)
+        (self.ws / ".prumo" / "backup").symlink_to(outside)
+
+        removed = prune_expired_backups(self.ws, today=self.today, expiry_days=90)
+
+        self.assertEqual(removed, [])
+        self.assertTrue(victim.exists(), "poda atravessou root symlinkado")
+
+    def test_prune_does_not_traverse_symlinked_scope(self) -> None:
+        outside = self.ws / "Referencias"
+        outside.mkdir()
+        victim = outside / "material.md"
+        victim.write_text("referência\n", encoding="utf-8")
+        self._make_old(victim, days=400)
+        backups_root = self.ws / ".prumo" / "backups"
+        backups_root.mkdir(parents=True)
+        (backups_root / "scope-link").symlink_to(outside)
+
+        removed = prune_expired_backups(self.ws, today=self.today, expiry_days=90)
+
+        self.assertEqual(removed, [])
+        self.assertTrue(victim.exists(), "poda atravessou scope symlinkado")
+        self.assertTrue((backups_root / "scope-link").is_symlink(), "link de scope não devia ser removido nem seguido")
+
+
+class BackupIgnoreContextTests(unittest.TestCase):
+    """Codex (série #178): a exclusão de `backup(s)` é por CONTEXTO técnico,
+    não por basename do pai — `Referencias/archive/backups/` é autoral."""
+
+    def test_user_archive_backups_is_copied(self) -> None:
+        ignored = backup_ignore("/ws/Referencias/archive", ["backups", "nota.md"])
+        self.assertEqual(ignored, set())
+
+    def test_technical_contexts_still_ignored(self) -> None:
+        cases = {
+            "/ws/.prumo": {"backups", "backup"},
+            "/ws/.prumo/system": {"backup"},
+            "/ws/.prumo/state/archive": {"backups"},
+            "/ws/_state/archive": {"backups"},
+        }
+        for dirpath, expected in cases.items():
+            with self.subTest(dirpath=dirpath):
+                ignored = backup_ignore(dirpath, ["backups", "backup", "outro.md"])
+                self.assertEqual(ignored, {"backups", "backup"})
+                self.assertTrue(expected <= ignored)
+
+    def test_dot_prumo_always_ignored_anywhere(self) -> None:
+        self.assertEqual(backup_ignore("/ws/qualquer/lugar", [".prumo", "a.md"]), {".prumo"})
+
 
 if __name__ == "__main__":
     unittest.main()

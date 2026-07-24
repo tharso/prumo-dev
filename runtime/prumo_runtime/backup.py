@@ -22,20 +22,24 @@ from pathlib import Path
 BACKUP_EXPIRY_DAYS = 90
 
 _BACKUP_DIR_NAMES = {"backup", "backups"}
-# Pais que caracterizam diretório de backup: `.prumo/backups|backup`,
-# `.prumo/system/backup` (legado pré-#81) e `*/archive/backups` (snapshots
-# de estado, flat legado `_state/` incluso).
-_BACKUP_PARENT_NAMES = {".prumo", "system", "archive"}
-
-
 def backup_ignore(dirpath: str, names: list[str]) -> set[str]:
     """Callable de `ignore` pro copytree: backup nunca copia `.prumo` nem
-    diretórios de backup aninhados. Cirúrgico: `backups` dentro de pasta
-    comum do usuário (ex.: `Referencias/backups/`) continua sendo copiado.
+    diretórios de backup aninhados. Cirúrgico de verdade (Codex, série #178):
+    a exclusão de `backup(s)` só vale nos contextos TÉCNICOS documentados —
+    `.prumo/`, `.prumo/system/` (legado pré-#81) e `<state>/archive/`
+    (snapshots, flat `_state/` incluso). `backups` em pasta comum do usuário
+    (ex.: `Referencias/backups/` ou `Referencias/archive/backups/`) continua
+    sendo copiado — basename sozinho não caracteriza contexto técnico.
     """
-    parent = Path(dirpath).name
+    p = Path(dirpath)
+    parent, grand = p.name, p.parent.name
+    technical_context = (
+        parent == ".prumo"
+        or (parent == "system" and grand == ".prumo")
+        or (parent == "archive" and grand in {"state", "_state"})
+    )
     ignored = {name for name in names if name == ".prumo"}
-    if parent in _BACKUP_PARENT_NAMES:
+    if technical_context:
         ignored.update(name for name in names if name in _BACKUP_DIR_NAMES)
     return ignored
 
@@ -84,9 +88,16 @@ def iter_backup_roots(workspace: Path) -> list[Path]:
 
 def _prunable_entries(root: Path) -> list[Path]:
     # Na raiz canônica a unidade de poda é o carimbo (`<scope>/<timestamp>`);
-    # nos legados, sem estrutura garantida, é o filho direto.
+    # nos legados, sem estrutura garantida, é o filho direto. Scope symlinkado
+    # não é atravessado: `glob("*/*")` seguiria o link e a poda apagaria
+    # conteúdo fora do backup (Codex, série #178).
     if root.name == "backups":
-        return sorted(root.glob("*/*"))
+        entries: list[Path] = []
+        for scope in sorted(root.glob("*")):
+            if scope.is_symlink() or not scope.is_dir():
+                continue
+            entries.extend(sorted(scope.glob("*")))
+        return entries
     return sorted(root.glob("*"))
 
 
@@ -103,7 +114,9 @@ def prune_expired_backups(
     """
     removed: list[str] = []
     for root in iter_backup_roots(workspace):
-        if not root.is_dir():
+        # Root symlinkado não é raiz de backup: recusar sem atravessar —
+        # deletar através do link apagaria conteúdo externo ao backup.
+        if root.is_symlink() or not root.is_dir():
             continue
         for entry in _prunable_entries(root):
             stat = entry.lstat() if entry.is_symlink() else entry.stat()
@@ -119,6 +132,8 @@ def prune_expired_backups(
             removed.append(str(entry.relative_to(workspace)))
         if root.name == "backups":
             for scope in root.glob("*"):
+                if scope.is_symlink():
+                    continue
                 if scope.is_dir() and not any(scope.iterdir()):
                     scope.rmdir()
     return sorted(removed)
