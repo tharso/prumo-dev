@@ -132,6 +132,23 @@ class VersionSyncTests(unittest.TestCase):
                     f"{label} declara '{actual}', runtime declara '{__version__}'",
                 )
 
+    def test_core_footer_versions_match_header(self) -> None:
+        """O rodapé do prumo-core.md tem DUAS menções de versão fora do header.
+
+        "Versão atual deste core" e a assinatura "*Prumo Core vX.Y.Z*" não são
+        lidas por VERSION_SOURCES (que só olha o header) — e ficaram zumbis em
+        5.33.0 no bump da 5.34.0 (#194, Codex diff r1 achado 3). Este guard
+        tranca as duas ao runtime.
+        """
+        path = REPO_ROOT / "skills" / "prumo" / "references" / "prumo-core.md"
+        text = path.read_text(encoding="utf-8")
+        footer_list = re.search(r"Versão atual deste core:\s*\n\s*\n- `([0-9.]+)`", text)
+        self.assertIsNotNone(footer_list, "lista 'Versão atual deste core' não encontrada")
+        self.assertEqual(footer_list.group(1), __version__)
+        signature = re.search(r"\*Prumo Core v([0-9.]+) —", text)
+        self.assertIsNotNone(signature, "assinatura '*Prumo Core vX.Y.Z —' não encontrada")
+        self.assertEqual(signature.group(1), __version__)
+
     def test_codex_marketplace_does_not_carry_version_by_design(self) -> None:
         """Documenta a exceção: `.codex-plugin/marketplace.json` não tem `version`.
 

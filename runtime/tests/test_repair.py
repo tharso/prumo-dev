@@ -293,5 +293,120 @@ class RepairSkillsRestorationTests(unittest.TestCase):
             )
 
 
+try:
+    from perimeter_invariants import PERIMETER_INVARIANTS
+except ImportError:  # execução como runtime.tests.test_repair
+    from runtime.tests.perimeter_invariants import PERIMETER_INVARIANTS
+
+
+class PerimeterPropagationTests(unittest.TestCase):
+    """#194: workspace existente recebe o perímetro de leitura via repair.
+
+    Codex r1 (achado 2) e diff r1 (achado 2): o repair só regenera canônicos
+    com drift de versão, e a propagação precisa ser provada nos TRÊS wrappers
+    de raiz envelhecidos, com os segmentos autorais fora do bloco gerenciado
+    preservados byte a byte (sentinelas exatas antes e depois do bloco).
+    """
+
+    ROOT_WRAPPERS = ("AGENT.md", "CLAUDE.md", "AGENTS.md")
+
+    def _strip_perimeter(self, text: str) -> str:
+        stripped = re.sub(
+            r"## Perímetro de leitura.*?(?=## )",
+            "",
+            text,
+            flags=re.DOTALL,
+        )
+        assert "Perímetro de leitura" not in stripped
+        return stripped
+
+    @staticmethod
+    def _authorial_head(name: str) -> str:
+        return f"# Cabeçalho autoral de {name}\n\n  linha com indentação  \n\n"
+
+    @staticmethod
+    def _authorial_tail(name: str) -> str:
+        return f"\n\n<!-- nota autoral de {name}: o Prumo não pode tocar -->\n\n\n"
+
+    def _age_wrappers(self, workspace: Path) -> None:
+        """Reescreve os três wrappers como se viessem de release antiga."""
+        for name in self.ROOT_WRAPPERS:
+            (workspace / name).write_text(
+                self._authorial_head(name)
+                + "<!-- prumo:begin -->\n"
+                + "Bloco antigo do Prumo, de release sem perímetro de leitura.\n"
+                + "<!-- prumo:end -->"
+                + self._authorial_tail(name),
+                encoding="utf-8",
+            )
+
+    def test_repair_with_drift_propagates_perimeter_to_canonical_and_wrappers(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = _make_test_workspace(Path(tmpdir))
+            agent_md = workspace / "Prumo" / "AGENT.md"
+
+            # Simula workspace gerado por release anterior: canônico sem a
+            # seção de perímetro, três wrappers antigos com conteúdo autoral
+            # fora do bloco gerenciado, core defasado.
+            agent_md.write_text(
+                self._strip_perimeter(agent_md.read_text(encoding="utf-8")),
+                encoding="utf-8",
+            )
+            self._age_wrappers(workspace)
+            _force_core_version(workspace, "5.0.0")
+
+            result = repair_workspace(workspace)
+
+            self.assertIn("version_drift", result)
+            regenerated_agent = agent_md.read_text(encoding="utf-8")
+            for invariant in PERIMETER_INVARIANTS:
+                with self.subTest(target="Prumo/AGENT.md", invariant=invariant):
+                    self.assertIn(invariant, regenerated_agent)
+
+            for name in self.ROOT_WRAPPERS:
+                merged = (workspace / name).read_text(encoding="utf-8")
+                for invariant in PERIMETER_INVARIANTS:
+                    with self.subTest(target=name, invariant=invariant):
+                        self.assertIn(invariant, merged)
+                with self.subTest(target=name, check="autoral byte a byte"):
+                    # Segmentos fora do bloco gerenciado LITERALMENTE iguais
+                    # aos originais (whitespace incluso): extrai pelos
+                    # delimitadores e compara igualdade — startswith/endswith
+                    # aceitariam bytes extras encostados no bloco.
+                    self.assertEqual(merged.count("<!-- prumo:begin -->"), 1)
+                    self.assertEqual(merged.count("<!-- prumo:end -->"), 1)
+                    before, remainder = merged.split("<!-- prumo:begin -->", 1)
+                    _, after = remainder.split("<!-- prumo:end -->", 1)
+                    self.assertEqual(before, self._authorial_head(name))
+                    self.assertEqual(after, self._authorial_tail(name))
+                self.assertNotIn("Bloco antigo do Prumo", merged)
+
+    def test_second_repair_after_perimeter_propagation_is_idempotent(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = _make_test_workspace(Path(tmpdir))
+            agent_md = workspace / "Prumo" / "AGENT.md"
+            agent_md.write_text(
+                self._strip_perimeter(agent_md.read_text(encoding="utf-8")),
+                encoding="utf-8",
+            )
+            self._age_wrappers(workspace)
+            _force_core_version(workspace, "5.0.0")
+
+            repair_workspace(workspace)
+            snapshot = {
+                path: (workspace / path).read_text(encoding="utf-8")
+                for path in ("Prumo/AGENT.md", "CLAUDE.md", "AGENTS.md", "AGENT.md")
+            }
+
+            second = repair_workspace(workspace)
+
+            self.assertNotIn("version_drift", second)
+            self.assertEqual(second["recreated"], [])
+            self.assertEqual(second.get("merged", []), [])
+            for path, before in snapshot.items():
+                with self.subTest(path=path):
+                    self.assertEqual((workspace / path).read_text(encoding="utf-8"), before)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.34.0] - 2026-07-24
+
+### Added
+- **Perímetro de leitura: fim da listagem recursiva do workspace (#194)** — diagnóstico no workspace real: ~493 mil arquivos, 73% dentro de 30 `node_modules`; o Prumo é 0,1% disso — e agentes (Cowork à frente) faziam listagem recursiva da raiz "pra se localizar", estourando o limite da ferramenta e poluindo o contexto antes do briefing começar (subagente real chegou a gerar output de 29,3 MB). Agora o `AGENT.md` canônico, o adapter da raiz e os wrappers declaram a seção **"Perímetro de leitura"**: por iniciativa própria o agente opera só no mapa do workspace; **nenhuma enumeração recursiva ou ilimitada, por qualquer ferramenta** (`find`, `ls -R`, `rg --files`, `tree`, glob `**/*`, APIs de filesystem), com `node_modules`/`.git`/caches/builds fora de qualquer listagem; caminho citado pelo usuário abre **escopo autorizado pela tarefa** (expansão dirigida e rasa — "continuar o projeto X" segue funcionando); e **delegação leva o perímetro no prompt do subagente**, que não herda módulo nenhum. Política completa em `load-policy.md` → "Listagem de diretórios" (com exemplo canônico de delegação); reforços em `dispatch.md` (abertura + intenção de projeto) e `multiagent.md`. Workspace existente recebe a regra via `prumo repair` no próximo update — travado por teste de integração (drift → regra propagada preservando conteúdo autoral byte a byte + segundo repair idempotente) e por invariantes de paridade template markdown ↔ gerador Python em `test_templates.py`. Design revisado em 3 rodadas com o Codex antes da implementação (aprovado; plano completo nas issues #194–#197).
+
 ## [5.33.0] - 2026-07-13
 
 ### Changed

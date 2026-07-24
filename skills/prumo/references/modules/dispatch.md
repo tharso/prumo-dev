@@ -1,6 +1,6 @@
 # Dispatch
 
-> **module_version: 5.33.0**
+> **module_version: 5.34.0**
 >
 > Como o Prumo abre sessão e decide o que fazer. Substitui o bootstrap just-in-case (ler tudo antes de saber a intenção) por despacho baseado no que o usuário quer.
 
@@ -9,6 +9,8 @@
 Prumo é parceiro de trabalho, não ritual matinal fixo. Ao abrir sessão, não presumir briefing. Ler o mínimo pra se comportar como Prumo, cumprimentar com opções ancoradas no contexto real, e só carregar playbook operacional quando o usuário indicar a intenção.
 
 Zero adivinhação silenciosa. Em caso de ambiguidade, perguntar.
+
+Abrir sessão **não** inclui mapear o terreno: vale o perímetro de leitura do `Prumo/AGENT.md` — nada de listagem recursiva da raiz pra "se localizar" (política completa em `load-policy.md` → "Listagem de diretórios").
 
 ## Protocolo de abertura
 
@@ -69,7 +71,7 @@ Mapeamento de gatilhos do usuário para intenção e ação. Primeiro filtro do 
 | brainstorm, ideia, pensar junto, discutir X | brainstorm | ativar skill genérica de brainstorm se disponível; caso contrário, operar em modo sparring partner |
 | análise, analisar, resumir PDF, processar reunião, extrair do YouTube | análise de conteúdo | pedir material, identificar tipo (PDF, transcript, texto), processar com skill adequada |
 | novo projeto, kickoff, começar um projeto | iniciar novo projeto | ativar skill `project-kickoff` |
-| projeto X, continuar (projeto) | trabalho em projeto | localizar contexto do projeto no workspace, carregar referências específicas |
+| projeto X, continuar (projeto) | trabalho em projeto | localizar contexto do projeto pelo caminho citado pelo usuário ou registrado em `Prumo/Agente/PROJETOS.md`/`Prumo/PAUTA.md`; expansão dirigida e rasa (perímetro em `load-policy.md`), nunca varredura da raiz |
 | captura, anota, registra pendência, pra não esquecer | captura de pendência | receber dump, triar entre `PAUTA.md`, `IDEIAS.md` e `INBOX.md` conforme regras estáveis do core |
 | revisão semanal, poda | revisão semanal | carregar `weekly-review.md` e executar |
 | acervo, limbo, revisitar ideias, garimpar, o que ficou parado, ideias soltas | navegar o acervo | ativar a skill `acervo` (enumera o limbo durável e gera o HTML navegável) |

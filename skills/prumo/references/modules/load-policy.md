@@ -1,6 +1,6 @@
 # Load Policy
 
-> **module_version: 5.33.0**
+> **module_version: 5.34.0**
 >
 > Política canônica de leitura incremental do Prumo.
 
@@ -38,6 +38,19 @@ Abrir bruto imediatamente se qualquer condição for verdadeira:
 2. vencimento em até 72h;
 3. item `P1`;
 4. ambiguidade que impeça ação segura.
+
+## Listagem de diretórios (perímetro de leitura, #194)
+
+O workspace do usuário costuma conviver com repos de código (`node_modules`, `.git`, caches, builds) que somam centenas de milhares de arquivos. Uma listagem recursiva da raiz estoura o limite de resultado da ferramenta, queima minutos e polui o contexto antes do trabalho começar. Política:
+
+1. **Perímetro automático:** por iniciativa própria, listar apenas as pastas do mapa do `Prumo/AGENT.md`. `Inbox4Mobile/` é listagem plana da própria pasta.
+2. **Proibição por efeito, não por comando:** nenhuma enumeração recursiva ou ilimitada da raiz ou de pastas fora do mapa, por **qualquer** ferramenta (`find`, `ls -R`, `rg --files`, `tree`, glob `**/*`, APIs de filesystem). `node_modules`, `.git`, caches e builds ficam fora de qualquer listagem, em qualquer escopo.
+3. **Escopo autorizado pela tarefa:** quando o usuário citar projeto ou caminho fora do mapa ("continuar o projeto X"), a expansão é dirigida e rasa — top-level do caminho citado, aprofundando só no rastro do alvo. Ambiguidade → perguntar o caminho, não explorar.
+4. **Delegação leva o perímetro junto.** Subagente não herda módulo nenhum: o perímetro viaja **no prompt da delegação**, com os caminhos permitidos explícitos. Exemplo canônico:
+
+   > Leia `Prumo/PAUTA.md` e `Prumo/REGISTRO.md` (apenas esses caminhos) e resuma os itens da seção Quente. Não liste nem explore nenhum outro diretório; se um caminho citado não existir, reporte em vez de procurar.
+
+   Nunca delegar com "explore o workspace", "liste tudo" ou variações.
 
 ## Teto associativo
 
