@@ -80,6 +80,16 @@ class ManifestParserTest(unittest.TestCase):
     def test_no_manifest_returns_none(self) -> None:
         self.assertIsNone(audit.parse_manifest("# Briefing\n\nsem mapa\n"))
 
+    def test_five_cells_with_empty_required_field_is_invalid(self) -> None:
+        # Codex série r3: cinco células com campo obrigatório vazio passava.
+        skill = self.SKILL.replace(
+            "| F1 | sempre | `.prumo/system/PRUMO-CORE.md` | `## Guardrails` | instrução |",
+            "| F1 |  | `.prumo/system/PRUMO-CORE.md` | `## Guardrails` | instrução |",
+        )
+        rows, invalid = audit.parse_manifest(skill)
+        self.assertEqual(len(rows), 3)
+        self.assertEqual(len(invalid), 1)
+
     def test_partially_malformed_line_is_reported_not_swallowed(self) -> None:
         # Codex série r2: linha inválida engolida = subcontagem silenciosa
         # com o resto válido.
@@ -207,6 +217,17 @@ class FailClosedTest(unittest.TestCase):
             (ws / "Prumo" / "AGENT.md").write_text("# AGENT\n\numas palavras\n", encoding="utf-8")
             report = audit.measure(ws)
         self.assertTrue(any("ausente" in e for e in report["errors"]))
+
+    def test_legacy_missing_mandatory_files_are_errors(self) -> None:
+        # Codex série r3: instalação quebrada (rota mandatória ausente) não
+        # pode medir "zero" e passar — é erro nos DOIS modos.
+        with tempfile.TemporaryDirectory() as tmp:
+            report = audit.measure(Path(tmp))
+        self.assertEqual(report["mode"], "legacy")
+        self.assertTrue(
+            any("rota mandatória ausente" in e for e in report["errors"]),
+            f"faltou erro de rota ausente: {report['errors'][:3]}",
+        )
 
     def test_main_returns_2_on_errors_even_with_generous_ceiling(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

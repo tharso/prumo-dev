@@ -14,9 +14,10 @@ Dois modos, decididos pelo `briefing/SKILL.md` do workspace:
   Seção | Tipo`). O cesto "antes do 1º dado" são as linhas F0/F1 com gatilho
   `sempre`. `Seção` aceita três formas: `(integral)`, um heading exato
   (`## Guardrails`) ou `até: <heading>` (do início do arquivo até o marcador).
-- **legacy** (rota atual, pré-M3): a cadeia mandatória escrita hoje no
-  "Carregamento obrigatório" do SKILL, hardcoded aqui na mesma composição da
-  auditoria de 15/07.
+- **legacy** (rota atual, pré-M3): a Pré-carga canônica pós-#195 no pior
+  caso realista (Cowork + shell + Inbox4Mobile). A referência de 8.332
+  palavras é HISTÓRICA — medida na composição de 15/07, pré-#195 — e fica
+  fixa como baliza do critério 6.
 
 Uso:
     python scripts/briefing_route_audit.py [--workspace PATH] [--json]
@@ -104,12 +105,13 @@ def extract_until_marker(text: str, heading: str) -> str | None:
 def resolve_words(workspace: Path, file_rel: str, section: str) -> tuple[int, bool, str, bool]:
     """Devolve (palavras, arquivo_existe, nota, erro).
 
-    Fail-closed (round 1 do Codex na série): seção declarada que não existe
-    num arquivo presente é ERRO de manifesto/rota — contar zero em silêncio
-    deixaria o `--ceiling` aprovar "redução" com o termômetro quebrado.
-    Arquivo ausente segue declarado sem erro (caso documentado do sandbox
-    sem PERFIL, #114). Marcador `até:` ausente conta integral — superconta,
-    nunca subconta: seguro pro teto.
+    Fail-closed (rounds 1–3 do Codex na série): seção declarada que não
+    existe num arquivo presente é ERRO — contar zero em silêncio deixaria o
+    `--ceiling` aprovar "redução" com o termômetro quebrado. Arquivo ausente
+    é reportado aqui sem flag de erro; quem decide é o `measure` — e nos
+    DOIS modos ele trata ausência como erro (manifesto descreve a instalação
+    real; rota mandatória ausente é instalação quebrada). Marcador `até:`
+    ausente conta integral — superconta, nunca subconta: seguro pro teto.
     """
     path = workspace / file_rel
     if not path.exists():
@@ -167,7 +169,7 @@ def parse_manifest(skill_text: str) -> tuple[list[dict], list[str]] | None:
         )
         if structural:
             continue
-        if len(cells) < 5 or not cells[0]:
+        if len(cells) < 5 or not all(cells[:5]):
             invalid.append(s)
             continue
         file_cell = cells[2]
@@ -251,6 +253,10 @@ def measure(workspace: Path) -> dict:
             items.append(RouteItem(phase, file_rel, section, words, exists, final_note))
             if error:
                 errors.append(f"{file_rel}: {extra}")
+            elif not exists:
+                # Rota mandatória com arquivo ausente é instalação quebrada —
+                # zero silencioso aprovaria "redução" falsa (Codex série r3).
+                errors.append(f"{file_rel}: arquivo da rota mandatória ausente")
 
     total = sum(item.words for item in items)
     if total == 0 and not errors:
