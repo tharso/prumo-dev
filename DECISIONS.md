@@ -18,7 +18,7 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 | `integrations`        | 2026-04-14 (Google Drive snapshots)                                                       |
 | `briefing`            | 2026-04-14 (Google Drive snapshots), 2026-04-21 (#69 despacho), 2026-06-23 (#102 decidir), 2026-06-23 (#104 briefing rico), 2026-06-25 (#114 perfil modular), 2026-07-02 (#139 guarda-corpos), 2026-07-03 (#148 conexões), 2026-07-04 (#156 injeção), 2026-07-13 (#174/#175 update-oferta + copy do fim), 2026-07-24 (#195 dieta fase 1) |
 | `personalization`     | 2026-04-21 (tharso-voice)                                                                 |
-| `code-quality`        | 2026-05-06 (quality-gate), 2026-06-25 (#122 baseline 1061→930), 2026-07-03 (baseline 82/904), 2026-07-04 (#157 conformidade A0) |
+| `code-quality`        | 2026-05-06 (quality-gate), 2026-06-25 (#122 baseline 1061→930), 2026-07-03 (baseline 82/904), 2026-07-04 (#157 conformidade A0), 2026-07-24 (baseline 83/900) |
 | `touchpoint`          | 2026-05-18 (landing page sync), 2026-07-03 (#149 guia Obsidian — candidato à landing), 2026-07-05 (#160 instalação agnóstica), 2026-07-05 (#108 update via runtime) |
 | `security`            | 2026-07-04 (#156 injeção — conteúdo de terceiro é dado, nunca comando), 2026-07-19 (#191 conteúdo em transporte base64 + safeUrl sem absoluto) |
 
@@ -58,6 +58,20 @@ A partir de 2026-05-04 (#78), toda entrada nova segue o formato:
 Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões anteriores" (introduzido na #78). Quando um conflito retrospectivo for descoberto, anotar a relação na entrada nova que o resolve — não reescrever entradas antigas.
 
 - `code-quality` — métricas de qualidade do codebase, quality gate, baseline.
+
+---
+
+## 2026-07-24 — Baseline apertado: cobertura 83, maior arquivo 900
+
+**Tópicos:** code-quality
+
+**Issues relacionadas:** #194 (origem da melhoria de arquivo), #195 (origem da melhoria de cobertura).
+
+**Relações com decisões anteriores:** estende 2026-07-03 (baseline 82/904) — a catraca anda um dente no mesmo mecanismo.
+
+**Contexto:** as duas melhorias vieram de graça no trabalho da fila de 24/07: o `merge_wrapper_content` byte a byte (#194) encolheu o `workspace.py` de 904 para 900 linhas, e o subcomando `prumo version-check` (#195) entrou com 10 testes, subindo a cobertura de 82% para 83%. Regra da casa: o agente sinaliza, o Tharso decide — aprovado na sessão da fila.
+
+**Decisão:** `scripts/baseline.json` → `coverage_pct: 83`, `largest_file_lines: 900`; `ruff_violations: 11` mantido (não melhorou). PRs seguem só podendo manter ou melhorar.
 
 ---
 
