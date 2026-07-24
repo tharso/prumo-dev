@@ -1,6 +1,6 @@
 # Load Policy
 
-> **module_version: 5.38.0**
+> **module_version: 5.39.0**
 >
 > Política canônica de leitura incremental do Prumo.
 

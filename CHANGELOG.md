@@ -6,6 +6,12 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.39.0] - 2026-07-24
+
+### Added
+- **`scripts/briefing_route_audit.py` (#178, épico #177)** — mede quantas palavras a rota do briefing carrega ANTES do primeiro dado do usuário. Dois modos: `legacy` (a rota mandatória atual — Pré-carga canônica pós-#195 no pior caso Cowork+shell+inbox; a composição de 15/07 vive só na referência histórica) e `manifest` (lê a tabela `## Mapa de carregamento por fase` que o `briefing/SKILL.md` ganha na M3; parser e formas de `Seção` — `(integral)`, heading exato, `até: <marcador>` — já prontos e testados). Sem `--workspace`, monta sandbox efêmero via runtime; `--ceiling N` retorna 1 no estouro (a M3 liga isso no quality gate). Medição registrada da rota atual em sandbox fresco: **12266 palavras** (rota ampliada no round 1 do Codex pra Pré-carga canônica da #195 no pior caso Cowork+shell+inbox; a referência histórica de 15/07 segue 8.332 — pré-#195 e com PERFIL real ~1.256w vs o stub do template).
+- **Guards estruturais do core** — `test_core_markers.py` (os marcadores `# Parte 1`/`# Parte 2`/`## Guardrails` existem e mantêm a ordem; o staging por marcador da M3 depende deles) e `test_core_asserts.py` (registro congelado dos 12 `ASSERT:` por texto exato — guardrail que some, muda ou entra sem atualizar o registro quebra o CI; "mover pra fase, não deletar" vira contrato verificável).
+
 ## [5.38.0] - 2026-07-24
 
 ### Changed

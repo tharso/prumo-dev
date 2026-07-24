@@ -46,6 +46,7 @@ dev-archive/
 docs/stories/
 scripts/*
 !scripts/
+!scripts/briefing_route_audit.py
 !scripts/prumo_plugin_install.sh
 !scripts/prumo_runtime_install.sh
 !scripts/prumo_runtime_update.sh
