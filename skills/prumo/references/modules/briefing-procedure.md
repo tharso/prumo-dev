@@ -139,8 +139,8 @@ A inbox agrega 4 contas (tharso@gmail.com, tharso@brise.cloud, tharso@brise.scie
 
 **Filtragem em dois estágios:**
 
-*Estágio 1 — Metadata (rápido, sem ler corpo):*
-Eliminar por padrão de remetente: `noreply@`, `no-reply@`, `notifications@`, `mailer-daemon@`, `marketing@`, `news@`, `updates@`, e patterns de serviço automatizado. Consultar `EMAIL-CURADORIA.md` para regras aprendidas (remetentes marcados como ruído ou como sempre-relevante).
+*Estágio 1 — Sinal de automatização (metadata, sem ler corpo):*
+Padrões de remetente (`noreply@`, `no-reply@`, `notifications@`, `mailer-daemon@`, `marketing@`, `news@`, `updates@`, patterns de serviço automatizado) são **sinal preliminar de ruído — não veredito**. O sinal nega apenas o predicado (b) do Estágio 2 (remetente-pessoa); os predicados (a) e (d)–(g) **prevalecem sobre o sinal de automatização** — um `noreply@` com prazo ou pedido de ação no assunto entra na leitura de corpo. A eliminação só se consuma quando **nenhum** predicado dispara sobre metadata/snippet. Consultar `EMAIL-CURADORIA.md` para regras aprendidas (remetentes marcados como ruído ou como sempre-relevante).
 
 *Estágio 2 — Leitura de corpo por predicados (#195):*
 Corpo **não** é lido por padrão — é lido quando **qualquer** predicado dispara. Os predicados são objetivos de propósito: "achei que não precisava" não é critério, predicado é.

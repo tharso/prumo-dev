@@ -22,20 +22,25 @@ VERSION_UPDATE = REPO_ROOT / "skills" / "prumo" / "references" / "modules" / "ve
 
 # União exata das duas listas pré-#195 (SKILL.md ∪ procedure) + PESSOAS.md
 # (entrou no acordo r2 do Codex para alimentar o predicado de remetente).
-CANONICAL_PRELOAD_UNION = (
-    "Prumo/Agente/PERFIL.md",
-    "Prumo/Agente/ROTINA.md",
-    "Prumo/Agente/PESSOAS.md",
-    ".prumo/system/PRUMO-CORE.md",
-    "skills/prumo/references/modules/load-policy.md",
-    "skills/prumo/references/modules/version-update.md",
-    "skills/prumo/references/modules/interaction-format.md",
-    "skills/prumo/references/modules/runtime-paths.md",
-    "skills/prumo/references/modules/cowork-runtime-bridge.md",
-    "skills/prumo/references/modules/inbox-processing.md",
+# Comparada como CONJUNTO EXATO contra os paths `.md` da seção — item a mais
+# ou a menos quebra o guard (Codex, diff r1 achado 5).
+CANONICAL_PRELOAD_UNION = frozenset(
+    {
+        "Prumo/Agente/PERFIL.md",
+        "Prumo/Agente/ROTINA.md",
+        "Prumo/Agente/PESSOAS.md",
+        ".prumo/system/PRUMO-CORE.md",
+        "briefing-procedure.md",
+        "skills/prumo/references/modules/load-policy.md",
+        "skills/prumo/references/modules/version-update.md",
+        "skills/prumo/references/modules/interaction-format.md",
+        "skills/prumo/references/modules/runtime-paths.md",
+        "skills/prumo/references/modules/cowork-runtime-bridge.md",
+        "skills/prumo/references/modules/inbox-processing.md",
+    }
 )
 
-# Nomes de módulo que NÃO podem reaparecer como enumeração no SKILL.md.
+# Nomes de arquivo que NÃO podem reaparecer como enumeração no SKILL.md.
 FORBIDDEN_IN_SKILL_LOAD_SECTION = (
     "load-policy.md",
     "version-update.md",
@@ -44,7 +49,33 @@ FORBIDDEN_IN_SKILL_LOAD_SECTION = (
     "cowork-runtime-bridge.md",
     "inbox-processing.md",
     "PERFIL.md",
+    "ROTINA.md",
     "PESSOAS.md",
+    "PRUMO-CORE.md",
+)
+
+# Frases-invariantes: uma por predicado de leitura de corpo (a)-(g), mais a
+# precedência sobre o sinal de automatização do Estágio 1.
+BODY_READ_PREDICATE_INVARIANTS = (
+    "canal prioritário",
+    "remetente é **pessoa**",
+    "thread tem participação do usuário",
+    "prazo, pergunta direta ou pedido de ação",
+    "snippet é inconclusivo",
+    "sempre-relevante",
+    "heurística de aprofundamento",
+    "prevalecem sobre o sinal de automatização",
+    "rodam em todo corpo lido",
+)
+
+# Invariantes do DAG do Passo 4 — inclusive a dependência que o paralelismo
+# NÃO pode atropelar (classificação exige contexto local).
+DAG_INVARIANTS = (
+    "Ordem de execução (DAG",
+    "começam juntos",
+    "Classificação só depois do contexto local",
+    "Escritas serializadas",
+    "não cancela os demais",
 )
 
 
@@ -68,30 +99,36 @@ class PreloadSingleEnumerationTests(unittest.TestCase):
                     "a lista canônica mora só no briefing-procedure.md (#195)",
                 )
 
-    def test_procedure_preload_contains_exact_union(self) -> None:
+    def test_procedure_preload_is_the_exact_union(self) -> None:
         section = _section(
             PROCEDURE.read_text(encoding="utf-8"), "Pré-carga obrigatória"
         )
-        for item in CANONICAL_PRELOAD_UNION:
-            with self.subTest(item=item):
-                self.assertIn(item, section, f"lista canônica perdeu {item}")
+        # Só as linhas numeradas são a lista; a prosa em volta pode citar
+        # outros arquivos (ex.: "o SKILL.md aponta pra cá") sem quebrar.
+        numbered = "\n".join(
+            line for line in section.splitlines() if re.match(r"^\d+\.", line)
+        )
+        listed = frozenset(re.findall(r"`([^`\s]+\.md)`", numbered))
+        self.assertEqual(
+            listed,
+            CANONICAL_PRELOAD_UNION,
+            "lista canônica divergiu da união acordada: "
+            f"faltando={sorted(CANONICAL_PRELOAD_UNION - listed)}, "
+            f"sobrando={sorted(listed - CANONICAL_PRELOAD_UNION)}",
+        )
 
     def test_procedure_declares_parallel_dag(self) -> None:
         text = PROCEDURE.read_text(encoding="utf-8")
-        self.assertIn("Ordem de execução (DAG", text)
-        self.assertIn("começam juntos", text)
-        self.assertIn("Escritas serializadas", text)
-        self.assertIn("não cancela os demais", text)
+        for invariant in DAG_INVARIANTS:
+            with self.subTest(invariant=invariant):
+                self.assertIn(invariant, text)
 
     def test_body_read_predicates_present_with_defenses(self) -> None:
         text = PROCEDURE.read_text(encoding="utf-8")
         self.assertIn("Leitura de corpo por predicados", text)
-        self.assertIn("snippet é inconclusivo", text)
-        self.assertIn("sempre-relevante", text)
-        self.assertIn("heurística de aprofundamento", text)
-        # As defesas de conteúdo de terceiro não podem ser enfraquecidas
-        # pela leitura seletiva: rodam em todo corpo lido.
-        self.assertIn("rodam em todo corpo lido", text)
+        for invariant in BODY_READ_PREDICATE_INVARIANTS:
+            with self.subTest(invariant=invariant):
+                self.assertIn(invariant, text)
 
     def test_version_cache_producer_cited_in_both_modules(self) -> None:
         procedure = PROCEDURE.read_text(encoding="utf-8")

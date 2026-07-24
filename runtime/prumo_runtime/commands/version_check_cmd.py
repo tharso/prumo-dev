@@ -10,10 +10,26 @@ from __future__ import annotations
 import argparse
 import json
 
+from prumo_runtime import __version__
 from prumo_runtime.version_check import ensure_fresh_status
 
 
 def run_version_check(args: argparse.Namespace) -> int:
-    status = ensure_fresh_status(allow_network=bool(getattr(args, "ensure_fresh", False)))
+    try:
+        status = ensure_fresh_status(
+            allow_network=bool(getattr(args, "ensure_fresh", False))
+        )
+    except Exception as exc:  # preflight nunca derruba o briefing
+        status = {
+            "local_version": __version__,
+            "remote_version": None,
+            "checked_at": None,
+            "fresh": False,
+            "failed": True,
+            "cache_write_failed": False,
+            "source": "error",
+            "update_available": False,
+            "error": str(exc),
+        }
     print(json.dumps(status, ensure_ascii=False, indent=2))
     return 0

@@ -31,28 +31,19 @@ SUPPRESS_COMMANDS = {"update", "upgrade", "version", "fim", "version-check"}
 
 
 def check_and_notify(command: str | None, format_arg: str | None) -> None:
-    """Entry point: verifica versão e emite banner se necessário."""
+    """Entry point: emite banner a partir do CACHE — nunca busca rede (#195).
+
+    O produtor único do cache é `prumo version-check --ensure-fresh`
+    (preflight do briefing). O banner apenas notifica o que o cache já sabe;
+    sem cache populado, silêncio. Margem aceita e registrada no DECISIONS.md:
+    quem nunca roda o preflight não vê banner.
+    """
     try:
         if _should_suppress(command=command, format_arg=format_arg):
             return
 
         cache_file = _cache_path()
         cache = _read_cache(cache_file)
-
-        ttl = _get_ttl_hours()
-
-        if _should_fetch(cache, ttl_hours=ttl):
-            remote = _fetch_remote_version()
-            now = datetime.datetime.now(datetime.timezone.utc).isoformat()
-            new_cache: dict[str, Any] = {
-                "checked_at": now,
-                "remote_version": remote,
-                "last_notified_at": cache.get("last_notified_at") if cache else None,
-            }
-            if remote is None:
-                new_cache["failed"] = True
-            _write_cache(new_cache, cache_file)
-            cache = new_cache
 
         if cache is None:
             return
@@ -78,32 +69,43 @@ def _cache_path() -> Path:
 
 def _read_cache(path: Path) -> dict[str, Any] | None:
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
+        data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError, ValueError):
         return None
+    # JSON válido que não é objeto (lista, string, número) é cache
+    # estruturalmente inválido — tratar como ausente (#195, Codex achado 4).
+    if not isinstance(data, dict):
+        return None
+    return data
 
 
-def _write_cache(data: dict[str, Any], path: Path) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp_fd, tmp_path = tempfile.mkstemp(
-        dir=str(path.parent), suffix=".tmp", prefix="vc_"
-    )
+def _write_cache(data: dict[str, Any], path: Path) -> bool:
+    """Grava o cache atomicamente. Devolve False em falha (nunca levanta)."""
+    tmp_fd = None
+    tmp_path = None
     closed = False
     try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp_fd, tmp_path = tempfile.mkstemp(
+            dir=str(path.parent), suffix=".tmp", prefix="vc_"
+        )
         os.write(tmp_fd, json.dumps(data, ensure_ascii=False).encode("utf-8"))
         os.close(tmp_fd)
         closed = True
         Path(tmp_path).replace(path)
+        return True
     except Exception:
-        if not closed:
+        if tmp_fd is not None and not closed:
             try:
                 os.close(tmp_fd)
             except OSError:
                 pass
-        try:
-            os.unlink(tmp_path)
-        except OSError:
-            pass
+        if tmp_path is not None:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+        return False
 
 
 def _should_suppress(command: str | None, format_arg: str | None) -> bool:
@@ -190,6 +192,7 @@ def ensure_fresh_status(*, allow_network: bool) -> dict[str, Any]:
     cache = _read_cache(cache_file)
     ttl = _get_ttl_hours()
     source = "cache" if cache is not None else "no_cache"
+    cache_write_failed = False
 
     if allow_network and _should_fetch(cache, ttl_hours=ttl):
         remote = _fetch_remote_version()
@@ -201,16 +204,28 @@ def ensure_fresh_status(*, allow_network: bool) -> dict[str, Any]:
         }
         if remote is None:
             new_cache["failed"] = True
-        _write_cache(new_cache, cache_file)
+        cache_write_failed = not _write_cache(new_cache, cache_file)
         cache = new_cache
         source = "fetched" if remote is not None else "fetch_failed"
+    elif cache is not None and cache.get("failed"):
+        # Falha recente persistida: dentro do cooldown (FAILURE_TTL_HOURS)
+        # não re-tenta; o consumidor deve avisar em uma linha, não fingir
+        # cache saudável (#195, Codex achado 3).
+        source = "failure_cooldown"
 
     remote_version = (cache or {}).get("remote_version")
+    failed = bool((cache or {}).get("failed"))
     return {
         "local_version": __version__,
         "remote_version": remote_version,
         "checked_at": (cache or {}).get("checked_at"),
-        "fresh": cache is not None and not _should_fetch(cache, ttl_hours=ttl),
+        "fresh": (
+            cache is not None
+            and not failed
+            and not _should_fetch(cache, ttl_hours=ttl)
+        ),
+        "failed": failed,
+        "cache_write_failed": cache_write_failed,
         "source": source,
         "update_available": bool(
             remote_version and _is_newer(remote_version, __version__)

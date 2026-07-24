@@ -68,6 +68,7 @@ class VersionCheckCommandTests(unittest.TestCase):
         self.assertEqual(rc, 0)
         self.assertEqual(payload["source"], "cache")
         self.assertTrue(payload["fresh"])
+        self.assertFalse(payload["failed"])
         self.assertFalse(payload["update_available"])
 
     def test_ensure_fresh_records_failure_and_does_not_block(self) -> None:
@@ -79,10 +80,73 @@ class VersionCheckCommandTests(unittest.TestCase):
         self.assertEqual(payload["source"], "fetch_failed")
         self.assertIsNone(payload["remote_version"])
         self.assertFalse(payload["update_available"])
+        # Falha nunca passa por cache saudável (Codex achado 3).
+        self.assertTrue(payload["failed"])
+        self.assertFalse(payload["fresh"])
         # Falha registrada com TTL curto: o cache existe e está marcado.
         cache = version_check._read_cache(version_check._cache_path())
         self.assertIsNotNone(cache)
         self.assertTrue(cache.get("failed"))
+
+    def test_failure_cooldown_within_hour_does_not_retry(self) -> None:
+        with mock.patch.object(
+            version_check, "_fetch_remote_version", return_value=None
+        ):
+            self._run(["version-check", "--ensure-fresh"])
+        boom = mock.patch.object(
+            version_check,
+            "_fetch_remote_version",
+            side_effect=AssertionError("re-tentou dentro do cooldown de falha"),
+        )
+        with boom:
+            rc, payload = self._run(["version-check", "--ensure-fresh"])
+        self.assertEqual(rc, 0)
+        self.assertEqual(payload["source"], "failure_cooldown")
+        self.assertTrue(payload["failed"])
+        self.assertFalse(payload["fresh"])
+
+    def test_retry_after_failure_ttl_expires(self) -> None:
+        import datetime
+
+        stale = (
+            datetime.datetime.now(datetime.timezone.utc)
+            - datetime.timedelta(hours=2)
+        ).isoformat()
+        cache_path = version_check._cache_path()
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        cache_path.write_text(
+            json.dumps(
+                {"checked_at": stale, "remote_version": None, "failed": True}
+            ),
+            encoding="utf-8",
+        )
+        with mock.patch.object(
+            version_check, "_fetch_remote_version", return_value="9.9.9"
+        ) as fetch:
+            rc, payload = self._run(["version-check", "--ensure-fresh"])
+        self.assertEqual(rc, 0)
+        fetch.assert_called_once()
+        self.assertEqual(payload["source"], "fetched")
+        self.assertFalse(payload["failed"])
+        self.assertTrue(payload["fresh"])
+
+    def test_non_dict_cache_treated_as_missing(self) -> None:
+        cache_path = version_check._cache_path()
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        cache_path.write_text("[1, 2, 3]", encoding="utf-8")
+        rc, payload = self._run(["version-check"])
+        self.assertEqual(rc, 0)
+        self.assertEqual(payload["source"], "no_cache")
+        self.assertFalse(payload["fresh"])
+
+    def test_cache_write_failure_is_reported(self) -> None:
+        with mock.patch.object(
+            version_check, "_fetch_remote_version", return_value="9.9.9"
+        ), mock.patch.object(version_check, "_write_cache", return_value=False):
+            rc, payload = self._run(["version-check", "--ensure-fresh"])
+        self.assertEqual(rc, 0)
+        self.assertEqual(payload["source"], "fetched")
+        self.assertTrue(payload["cache_write_failed"])
 
     def test_without_ensure_fresh_never_fetches(self) -> None:
         boom = mock.patch.object(

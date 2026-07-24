@@ -68,7 +68,7 @@ Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões ant
 **Issues relacionadas:** #195 (executa), #194 (irmã — perímetro de leitura), #197/#196 (próximas fases do mesmo plano).
 
 **Relações com decisões anteriores:**
-- **Estende:** 2026-07-04 (#158). A #158 tirou a rede do painel leve (o payload lê a versão pública do cache); mas ninguém refrescava o cache no fluxo do briefing — a skill fazia WebFetch todo dia e o cache podia ficar stale pra sempre. A rede agora mora num **comando explícito de preflight** (`prumo version-check --ensure-fresh`, máx. 1x/24h); o painel segue zero-rede, intocado.
+- **Estende:** 2026-07-04 (#158). A #158 tirou a rede do painel leve (o payload lê a versão pública do cache); mas ninguém refrescava o cache no fluxo do briefing — a skill fazia WebFetch todo dia e o cache podia ficar stale pra sempre. A rede agora mora num **produtor ÚNICO**: o comando explícito de preflight (`prumo version-check --ensure-fresh`, máx. 1x/24h). O **banner da #87 vira cache-only** (não busca nem grava rede — só notifica o que o cache já sabe). Margem aceita: quem nunca roda o preflight não vê banner; o fluxo canônico diário é o briefing, que roda o preflight. O painel segue zero-rede, intocado.
 - **Mantém:** 2026-07-04 (#156). As defesas de conteúdo de terceiro rodam em **todo corpo lido** — a leitura seletiva por predicados muda *quais* corpos são lidos, nunca o contrato de segurança sobre eles.
 - **Mantém:** 2026-07-13 (#174). O gatilho graduado e a oferta no topo ficam como estão; muda só o produtor da comparação remota.
 
