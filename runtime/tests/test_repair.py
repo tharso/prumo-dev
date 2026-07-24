@@ -293,22 +293,22 @@ class RepairSkillsRestorationTests(unittest.TestCase):
             )
 
 
+try:
+    from perimeter_invariants import PERIMETER_INVARIANTS
+except ImportError:  # execução como runtime.tests.test_repair
+    from runtime.tests.perimeter_invariants import PERIMETER_INVARIANTS
+
+
 class PerimeterPropagationTests(unittest.TestCase):
     """#194: workspace existente recebe o perímetro de leitura via repair.
 
-    Codex r1 (achado 2): o repair só regenera canônicos com drift de versão —
-    então a propagação real exige simular workspace de release anterior (sem a
-    seção) + drift, e provar regra presente, autoral intacto e idempotência.
+    Codex r1 (achado 2) e diff r1 (achado 2): o repair só regenera canônicos
+    com drift de versão, e a propagação precisa ser provada nos TRÊS wrappers
+    de raiz envelhecidos, com os segmentos autorais fora do bloco gerenciado
+    preservados byte a byte (sentinelas exatas antes e depois do bloco).
     """
 
-    PERIMETER_INVARIANTS = (
-        "## Perímetro de leitura",
-        "Perímetro automático",
-        "enumeração recursiva",
-        "node_modules",
-        "Escopo autorizado pela tarefa",
-        "caminhos permitidos",
-    )
+    ROOT_WRAPPERS = ("AGENT.md", "CLAUDE.md", "AGENTS.md")
 
     def _strip_perimeter(self, text: str) -> str:
         stripped = re.sub(
@@ -320,47 +320,60 @@ class PerimeterPropagationTests(unittest.TestCase):
         assert "Perímetro de leitura" not in stripped
         return stripped
 
+    @staticmethod
+    def _authorial_head(name: str) -> str:
+        return f"# Cabeçalho autoral de {name}\n\n  linha com indentação  \n\n"
+
+    @staticmethod
+    def _authorial_tail(name: str) -> str:
+        return f"\n\n<!-- nota autoral de {name}: o Prumo não pode tocar -->\n\n\n"
+
+    def _age_wrappers(self, workspace: Path) -> None:
+        """Reescreve os três wrappers como se viessem de release antiga."""
+        for name in self.ROOT_WRAPPERS:
+            (workspace / name).write_text(
+                self._authorial_head(name)
+                + "<!-- prumo:begin -->\n"
+                + "Bloco antigo do Prumo, de release sem perímetro de leitura.\n"
+                + "<!-- prumo:end -->"
+                + self._authorial_tail(name),
+                encoding="utf-8",
+            )
+
     def test_repair_with_drift_propagates_perimeter_to_canonical_and_wrappers(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             workspace = _make_test_workspace(Path(tmpdir))
             agent_md = workspace / "Prumo" / "AGENT.md"
-            claude_wrapper = workspace / "CLAUDE.md"
 
-            # Simula workspace gerado por release anterior: sem a seção de
-            # perímetro no canônico, wrapper com bloco gerenciado antigo
-            # (delimitado) + conteúdo autoral fora dele, e core defasado.
+            # Simula workspace gerado por release anterior: canônico sem a
+            # seção de perímetro, três wrappers antigos com conteúdo autoral
+            # fora do bloco gerenciado, core defasado.
             agent_md.write_text(
                 self._strip_perimeter(agent_md.read_text(encoding="utf-8")),
                 encoding="utf-8",
             )
-            authorial_tail = "<!-- nota autoral: o Prumo não pode tocar nesta linha -->"
-            claude_wrapper.write_text(
-                "# Meu CLAUDE.md customizado\n"
-                "\n"
-                "<!-- prumo:begin -->\n"
-                "Bloco antigo do Prumo, de release sem perímetro de leitura.\n"
-                "<!-- prumo:end -->\n"
-                "\n"
-                f"{authorial_tail}\n",
-                encoding="utf-8",
-            )
+            self._age_wrappers(workspace)
             _force_core_version(workspace, "5.0.0")
 
             result = repair_workspace(workspace)
 
             self.assertIn("version_drift", result)
             regenerated_agent = agent_md.read_text(encoding="utf-8")
-            merged_wrapper = claude_wrapper.read_text(encoding="utf-8")
-            for invariant in self.PERIMETER_INVARIANTS:
+            for invariant in PERIMETER_INVARIANTS:
                 with self.subTest(target="Prumo/AGENT.md", invariant=invariant):
                     self.assertIn(invariant, regenerated_agent)
-                with self.subTest(target="CLAUDE.md", invariant=invariant):
-                    self.assertIn(invariant, merged_wrapper)
-            # Conteúdo autoral fora dos delimitadores preservado byte a byte;
-            # bloco gerenciado antigo substituído.
-            self.assertIn("# Meu CLAUDE.md customizado", merged_wrapper)
-            self.assertIn(authorial_tail, merged_wrapper)
-            self.assertNotIn("Bloco antigo do Prumo", merged_wrapper)
+
+            for name in self.ROOT_WRAPPERS:
+                merged = (workspace / name).read_text(encoding="utf-8")
+                for invariant in PERIMETER_INVARIANTS:
+                    with self.subTest(target=name, invariant=invariant):
+                        self.assertIn(invariant, merged)
+                with self.subTest(target=name, check="autoral byte a byte"):
+                    # Segmentos fora do bloco gerenciado idênticos aos
+                    # originais — incluindo whitespace (sem strip).
+                    self.assertTrue(merged.startswith(self._authorial_head(name)))
+                    self.assertTrue(merged.endswith(self._authorial_tail(name)))
+                self.assertNotIn("Bloco antigo do Prumo", merged)
 
     def test_second_repair_after_perimeter_propagation_is_idempotent(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -370,6 +383,7 @@ class PerimeterPropagationTests(unittest.TestCase):
                 self._strip_perimeter(agent_md.read_text(encoding="utf-8")),
                 encoding="utf-8",
             )
+            self._age_wrappers(workspace)
             _force_core_version(workspace, "5.0.0")
 
             repair_workspace(workspace)

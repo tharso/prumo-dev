@@ -8,12 +8,12 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 
 | Tópico                | Entradas                                                                                  |
 |-----------------------|-------------------------------------------------------------------------------------------|
-| `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first), 2026-05-04 (#77), 2026-06-21 (#97 mapas), 2026-06-25 (#114 perfil modular), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#139 guarda-corpos), 2026-07-02 (#140 fichário), 2026-07-02 (#141 diário), 2026-07-03 (#147 ideias), 2026-07-03 (#148 conexões) |
+| `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first), 2026-05-04 (#77), 2026-06-21 (#97 mapas), 2026-06-25 (#114 perfil modular), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#139 guarda-corpos), 2026-07-02 (#140 fichário), 2026-07-02 (#141 diário), 2026-07-03 (#147 ideias), 2026-07-03 (#148 conexões), 2026-07-24 (#194 perímetro de leitura) |
 | `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-04 (#158 detecção defasagem), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime), 2026-07-05 (#170 transporte de update local), 2026-07-12 (#172 taxonomia do picker) |
 | `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first), 2026-05-06 (quality-gate), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#141 diário — emenda à #68) |
 | `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist), 2026-06-24 (#110 não-bundle), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime), 2026-07-05 (#170 transporte de update local) |
-| `dispatch-bootstrap`  | 2026-04-21 (#69 despacho), 2026-06-23 (#104 briefing rico), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-05 (#160 porta/instalação agnóstica), 2026-07-12 (#172 taxonomia do picker) |
-| `multiagent-coord`    | 2026-04-20 (#68 HANDOVER)                                                                 |
+| `dispatch-bootstrap`  | 2026-04-21 (#69 despacho), 2026-06-23 (#104 briefing rico), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-05 (#160 porta/instalação agnóstica), 2026-07-12 (#172 taxonomia do picker), 2026-07-24 (#194 perímetro de leitura) |
+| `multiagent-coord`    | 2026-04-20 (#68 HANDOVER), 2026-07-24 (#194 perímetro de leitura — delegação)             |
 | `documentation`       | 2026-04-14 (CLAUDE.md), 2026-06-21 (#97 mapas), 2026-07-03 (#149 guia Obsidian)           |
 | `integrations`        | 2026-04-14 (Google Drive snapshots)                                                       |
 | `briefing`            | 2026-04-14 (Google Drive snapshots), 2026-04-21 (#69 despacho), 2026-06-23 (#102 decidir), 2026-06-23 (#104 briefing rico), 2026-06-25 (#114 perfil modular), 2026-07-02 (#139 guarda-corpos), 2026-07-03 (#148 conexões), 2026-07-04 (#156 injeção), 2026-07-13 (#174/#175 update-oferta + copy do fim) |
@@ -58,6 +58,25 @@ A partir de 2026-05-04 (#78), toda entrada nova segue o formato:
 Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões anteriores" (introduzido na #78). Quando um conflito retrospectivo for descoberto, anotar a relação na entrada nova que o resolve — não reescrever entradas antigas.
 
 - `code-quality` — métricas de qualidade do codebase, quality gate, baseline.
+
+---
+
+## 2026-07-24 — Perímetro de leitura: o agente não enumera o workspace (#194)
+
+**Tópicos:** workspace-layout, dispatch-bootstrap, multiagent-coord
+
+**Issues relacionadas:** #194 (executa), #195/#197/#196 (dieta do briefing — plano irmão revisado no mesmo loop com o Codex).
+
+**Relações com decisões anteriores:**
+- **Estende:** 2026-06-21 (#97 mapas). O `AGENT.md` já era a fonte canônica de navegação; o mapa agora ganha força normativa — além de dizer onde as coisas estão, delimita onde o agente pode **listar por iniciativa própria**.
+- **Estende:** 2026-04-21 (#69 despacho) e 2026-06-28 (#134/#135). A abertura de sessão declara que "se localizar" não inclui varredura do terreno: o perímetro entra no protocolo do `dispatch.md`.
+- **Mantém:** 2026-04-20 (#68). A coordenação multiagente por lock fica intacta; a novidade é o perímetro viajar **no prompt da delegação** — subagente não herda módulo nenhum.
+
+**Contexto:** briefings lentos no workspace real (investigação de 23–24/07). Medição: ~493 mil entradas no workspace, 73% dentro de 30 `node_modules`; o Prumo é 0,1% do diretório em que mora. Agentes (Cowork à frente; pior em subagentes, que nascem sem `AGENT.md` no contexto) faziam enumeração recursiva da raiz "pra se localizar" — caso real com output de 29,3 MB, retries e contexto poluído antes do briefing começar. Nenhuma skill mandava listar; nenhuma proibia — o `load-policy.md` regulava profundidade de leitura, não listagem.
+
+**Decisão:** o mapa do workspace vira **perímetro de leitura**, declarado nos templates (AGENT.md canônico + adapter da raiz + wrappers; gerador Python e template markdown em paridade travada por invariantes) e no `load-policy.md` (seção "Listagem de diretórios"): (1) **perímetro automático** — por iniciativa própria, só os caminhos do mapa, zero exploração espontânea da raiz; (2) proibição **por efeito, não por comando** — nenhuma enumeração recursiva ou ilimitada por qualquer ferramenta, com `node_modules`/`.git`/caches/builds fora de qualquer listagem; (3) **escopo autorizado pela tarefa** — caminho citado pelo usuário abre expansão dirigida e rasa (o "continuar o projeto X" do dispatch segue funcionando); (4) **delegação leva o perímetro no prompt do subagente** (exemplo canônico no load-policy). Propagação a workspaces existentes via `prumo repair` (drift de versão), com preservação **byte a byte** do conteúdo autoral dos wrappers — o `merge_wrapper_content` foi corrigido nesta issue para honrar esse contrato (os strips que normalizavam whitespace autoral saíram).
+
+**Alternativas consideradas:** perímetro absoluto (rejeitado — Codex r1: regressão funcional do dispatch de projeto); proibição por lista de comandos (rejeitado — `rg --files`, `tree` e glob produzem a mesma explosão); regra de subagente só em `multiagent.md` (rejeitado — subagente não carrega módulo; a regra tem que viajar na delegação). Design fechado em 3 rodadas com o Codex antes da implementação; diff revisado no mesmo loop.
 
 ---
 

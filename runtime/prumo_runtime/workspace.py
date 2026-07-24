@@ -104,18 +104,14 @@ def render_wrapper_merge_block(relative: str, rendered: str, config: WorkspaceCo
 
 def merge_wrapper_content(existing: str, relative: str, rendered: str, config: WorkspaceConfig) -> str:
     block = render_wrapper_merge_block(relative, rendered, config).rstrip()
-    existing = existing.rstrip()
     if WRAPPER_BLOCK_BEGIN in existing and WRAPPER_BLOCK_END in existing:
+        # #194 (Codex diff r1): os segmentos fora do bloco gerenciado são
+        # autorais — preservados byte a byte, sem normalizar whitespace.
+        # Só o intervalo [begin..end] é substituído.
         before, remainder = existing.split(WRAPPER_BLOCK_BEGIN, 1)
         _, after = remainder.split(WRAPPER_BLOCK_END, 1)
-        rebuilt = before.rstrip()
-        if rebuilt:
-            rebuilt += "\n\n"
-        rebuilt += block
-        after = after.strip()
-        if after:
-            rebuilt += "\n\n" + after
-        return rebuilt + "\n"
+        return before + block + after
+    existing = existing.rstrip()
     if not existing:
         return block + "\n"
     # Wrapper gerado pelo runtime em versão pré-#90 (sem managed block):

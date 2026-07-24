@@ -5,19 +5,12 @@ from pathlib import Path
 
 from prumo_runtime import templates
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+try:
+    from perimeter_invariants import PERIMETER_INVARIANTS
+except ImportError:  # execução como runtime.tests.test_templates
+    from runtime.tests.perimeter_invariants import PERIMETER_INVARIANTS
 
-# Invariantes do perímetro de leitura (#194). A MESMA coleção vale para o
-# template markdown (fonte canônica em skills/) e para o gerador Python —
-# é o guard de paridade md ↔ py acordado na revisão do Codex (r1, achado 5).
-PERIMETER_INVARIANTS = (
-    "## Perímetro de leitura",
-    "Perímetro automático",
-    "enumeração recursiva",
-    "node_modules",
-    "Escopo autorizado pela tarefa",
-    "caminhos permitidos",
-)
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 class TemplateAdapterTests(unittest.TestCase):

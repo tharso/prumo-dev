@@ -71,7 +71,7 @@ Mapeamento de gatilhos do usuário para intenção e ação. Primeiro filtro do 
 | brainstorm, ideia, pensar junto, discutir X | brainstorm | ativar skill genérica de brainstorm se disponível; caso contrário, operar em modo sparring partner |
 | análise, analisar, resumir PDF, processar reunião, extrair do YouTube | análise de conteúdo | pedir material, identificar tipo (PDF, transcript, texto), processar com skill adequada |
 | novo projeto, kickoff, começar um projeto | iniciar novo projeto | ativar skill `project-kickoff` |
-| projeto X, continuar (projeto) | trabalho em projeto | localizar contexto do projeto pelo caminho citado pelo usuário ou registrado em `Agente/PROJETOS.md`/`PAUTA.md`; expansão dirigida e rasa (perímetro em `load-policy.md`), nunca varredura da raiz |
+| projeto X, continuar (projeto) | trabalho em projeto | localizar contexto do projeto pelo caminho citado pelo usuário ou registrado em `Prumo/Agente/PROJETOS.md`/`Prumo/PAUTA.md`; expansão dirigida e rasa (perímetro em `load-policy.md`), nunca varredura da raiz |
 | captura, anota, registra pendência, pra não esquecer | captura de pendência | receber dump, triar entre `PAUTA.md`, `IDEIAS.md` e `INBOX.md` conforme regras estáveis do core |
 | revisão semanal, poda | revisão semanal | carregar `weekly-review.md` e executar |
 | acervo, limbo, revisitar ideias, garimpar, o que ficou parado, ideias soltas | navegar o acervo | ativar a skill `acervo` (enumera o limbo durável e gera o HTML navegável) |

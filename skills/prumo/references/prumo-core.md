@@ -342,8 +342,8 @@ Histórico completo de versão vive em `CHANGELOG.md`.
 
 Versão atual deste core:
 
-- `5.33.0`
+- `5.34.0`
 
 ---
 
-*Prumo Core v5.33.0 — https://github.com/tharso/prumo*
+*Prumo Core v5.34.0 — https://github.com/tharso/prumo*
