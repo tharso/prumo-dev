@@ -169,7 +169,7 @@ def parse_manifest(skill_text: str) -> tuple[list[dict], list[str]] | None:
         )
         if structural:
             continue
-        if len(cells) < 5 or not all(cells[:5]):
+        if len(cells) != 5 or not all(cells):
             invalid.append(s)
             continue
         file_cell = cells[2]

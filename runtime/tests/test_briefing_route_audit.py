@@ -90,6 +90,16 @@ class ManifestParserTest(unittest.TestCase):
         self.assertEqual(len(rows), 3)
         self.assertEqual(len(invalid), 1)
 
+    def test_extra_column_is_invalid(self) -> None:
+        # r4: len != 5 exato — coluna extra também é linha inválida.
+        skill = self.SKILL.replace(
+            "| F0 | sempre | `Prumo/AGENT.md` | (integral) | instrução |",
+            "| F0 | sempre | `Prumo/AGENT.md` | (integral) | instrução | extra |",
+        )
+        rows, invalid = audit.parse_manifest(skill)
+        self.assertEqual(len(rows), 3)
+        self.assertEqual(len(invalid), 1)
+
     def test_partially_malformed_line_is_reported_not_swallowed(self) -> None:
         # Codex série r2: linha inválida engolida = subcontagem silenciosa
         # com o resto válido.
@@ -224,9 +234,11 @@ class FailClosedTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             report = audit.measure(Path(tmp))
         self.assertEqual(report["mode"], "legacy")
-        self.assertTrue(
-            any("rota mandatória ausente" in e for e in report["errors"]),
-            f"faltou erro de rota ausente: {report['errors'][:3]}",
+        missing = [e for e in report["errors"] if "rota mandatória ausente" in e]
+        self.assertEqual(
+            len(missing),
+            len(audit.LEGACY_ROUTE),
+            f"cada item ausente da rota deve virar um erro: {len(missing)}/{len(audit.LEGACY_ROUTE)}",
         )
 
     def test_main_returns_2_on_errors_even_with_generous_ceiling(self) -> None:
