@@ -103,6 +103,11 @@
     font-size: 14px; color: var(--text-soft);
   }
   .howto b { color: var(--text); }
+  .legend {
+    font-family: var(--mono); font-size: 12px; color: var(--text-faint);
+    margin: 8px 0 0; padding: 0 20px;
+  }
+  .legend b { color: var(--text-soft); }
 
   .topbar {
     position: sticky; top: 0; z-index: 50;
@@ -178,6 +183,11 @@
   }
   .evid p { margin: 0 0 8px; } .evid p:last-child { margin: 0; }
   .evid ul { margin: 4px 0; padding-left: 18px; } .evid li { margin-bottom: 5px; }
+  .content {
+    background: var(--bg-2); border-left: 3px solid var(--line);
+    border-radius: 0 10px 10px 0; padding: 14px 18px; margin: 6px 0 4px;
+    font-size: 14px; color: var(--text); white-space: pre-wrap; overflow-wrap: anywhere;
+  }
   .q { font-style: italic; font-size: 15px; color: var(--text); }
   .ref { font-family: var(--mono); font-size: 11px; color: var(--accent); }
   mark { background: rgba(240, 140, 132, 0.2); color: var(--red); padding: 0 3px; border-radius: 3px; font-weight: 500; }
@@ -334,6 +344,7 @@
     <div class="doc-meta">__META__</div>
     <p class="doc-intro">__INTRO__</p>
     <div class="howto">__HOWTO__</div>
+    <div class="legend"><b>⚑</b> = a ação pede um detalhe no comentário (pra quem delegar, até quando adiar, motivo do descarte). Sem ele, o Prumo pergunta antes de executar.</div>
   </header>
 
   <main id="app"></main>
@@ -383,6 +394,7 @@ const CONFIG = {
     requiresNote: 'Esta ação precisa de um detalhe no comentário.',
     requiresNotePrefix: 'Falta no comentário: ',
     commentPlaceholder: 'Comentário (entra no relatório como instrução)',
+    contentUnreadable: 'conteúdo ilegível (base64 inválido) — abra o item pelo link',
     saved: 'salvo ✓',
     generate: 'Copiar respostas',
     generateAndCopy: 'Gerar e copiar respostas',
@@ -403,8 +415,22 @@ const CONFIG = {
 // SECTION: { id, num, title, sub }
 // POINT (dois tipos):
 //   despacho: { id, sec, type:'despacho', badges?, link?, title, contexto,
-//               evidencia?, sugestao?,
+//               conteudo_b64?, evidencia?, sugestao?,
 //               actions: [{ key, label, tone, effect, requires? }] }
+//      conteudo_b64: texto do item (nota integral, excerpt) codificado em
+//             BASE64 (UTF-8). Codificação MECÂNICA, EM LINHA ÚNICA, sem
+//             exceção — `python3 -c` (b64encode já é linha única) ou
+//             `printf '%s' "$texto" | base64 | tr -d '\r\n'` no shell (o GNU base64 quebra em 76
+//             colunas e emite newline final; qualquer quebra dentro do literal
+//             JS é SyntaxError antes do fromB64 — que só tolera whitespace
+//             DEPOIS do parse). Nunca "à mão". O alfabeto base64 não contém
+//             aspas, `\`, `<` nem quebras de linha: o texto do usuário NÃO TEM
+//             COMO quebrar ou injetar este script, por construção. O template
+//             decodifica (fromB64) e escapa (escapeHtml) no render; base64
+//             inválido vira aviso visível, nunca execução.
+//             `contexto`/`evidencia` continuam markup leve DO GERADOR: texto de
+//             TERCEIRO em massa nunca vai neles (vai no conteudo_b64); citação
+//             curta entra escapada (&lt;tag&gt;; apóstrofo em string JS: \').
 //      tones: green|amber|red|blue|purple|slate (use 'red' p/ ação de risco)
 //      requires: texto curto do que o comentário precisa trazer (ex: 'destinatário')
 //      effect: token canônico (enum snake_case) do que o Prumo executa — use
@@ -415,12 +441,22 @@ const CONFIG = {
 //
 // badges: [{label:'P1', tone:'red'}]
 // link:   {label, href}  pode ser URL externa de conteúdo (http/https) OU path
-//          local; vem como <a target="_blank"> sanitizado (safeUrl). Para itens
+//          local RELATIVO à pasta deste HTML (./x, ../x ou nome simples).
+//          Absoluto NÃO passa no safeUrl: nem `file://`, nem `/abs`, nem
+//          `//server`. Vem como <a target="_blank"> sanitizado. Para itens
 //          de inbox (vídeo/artigo), USE este campo — não cole <a> cru no contexto.
 //          O href entra no JSON do relatório como `source_url`.
+// CONTEÚDO de item de inbox (#191 — mostrar ≠ analisar): nota curta (até ~400
+//   caracteres) vai INTEGRAL em `conteudo_b64`; acima disso, os primeiros
+//   ~400 (corte em fronteira de palavra) em `conteudo_b64` + `link` pro
+//   arquivo. Imagem/vídeo/post traz metadados + `link` de visualização. Card
+//   que só descreve o item, sem conteúdo nem link, é inválido. Análise pesada
+//   (transcrição/OCR/resumo) NUNCA na geração — é ação pós-despacho.
 // IDs reusam a numeração do panorama do briefing (1..N).
-// ATENÇÃO: escapar tags HTML literais no conteúdo (&lt;title&gt;), senão
-//   uma tag crua engole os cards seguintes.
+// ATENÇÃO (só vale pros campos de markup do gerador, `contexto`/`evidencia`/
+//   `title` — o conteudo_b64 é imune por construção): escapar tags HTML
+//   literais (&lt;title&gt;), senão uma tag crua engole os cards seguintes;
+//   dentro das strings JS, `</` vira `<\/` e apóstrofo vira \'.
 // ════════════════════════════════════════════════════════════
 const SECTIONS = [
 /*__SECTIONS__*/
@@ -449,15 +485,24 @@ function actionByKey(p, key) { return actionsOf(p).find(a => a.key === key) || n
 function safeUrl(url) {
   const u = String(url == null ? '' : url).trim();
   if (/^(https?:|mailto:)/i.test(u)) return u;
-  // Relativos/locais: começa com #, / ou . (inclui ./foo e ../foo), ou é um
-  // caminho simples sem esquema. `javascript:`/`data:` caem fora (têm `:`).
-  if (/^[#/.]/.test(u) || /^[\w][\w./?=&%+~-]*$/.test(u)) return u;
+  // Locais: âncora (#), relativo explícito (./foo, ../foo) ou caminho simples
+  // sem esquema. ABSOLUTO NÃO PASSA: `/abs` viraria file:///abs e `//server`
+  // é protocol-relative (rede) — rejeitados como `javascript:`/`data:`/`file:`
+  // (têm `:`, não casam em nenhum padrão).
+  if (/^#/.test(u) || /^\.\.?\//.test(u) || /^[\w][\w./?=&%+~-]*$/.test(u)) return u;
   return '#';
 }
 function escapeHtml(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, c => (
     { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
   ));
+}
+function fromB64(s) {
+  // Transporte do texto do usuário: base64 (UTF-8). Inválido → null, nunca throw.
+  try {
+    const bytes = atob(String(s == null ? '' : s).replace(/\s+/g, ''));
+    return new TextDecoder().decode(Uint8Array.from(bytes, c => c.charCodeAt(0)));
+  } catch (e) { return null; }
 }
 
 function initLabels() {
@@ -522,6 +567,13 @@ function cardHTML(p) {
   const tipo = p.type === 'escolha' ? `<span class="badge t-purple">${L.chooseOne}</span>` : '';
 
   let body = '';
+  // p.conteudo_b64 = texto do item do usuário em base64 (transporte inerte: o
+  // alfabeto não tem aspas, `\`, `<` nem newline — não quebra este script por
+  // construção). Decodifica e ESCAPA aqui, sempre.
+  if (p.conteudo_b64) {
+    const raw = fromB64(p.conteudo_b64);
+    body += `<div class="content">${raw == null ? `<i>${L.contentUnreadable}</i>` : escapeHtml(raw)}</div>`;
+  }
   if (p.evidencia) body += `<span class="lbl">${L.evidence}</span><div class="evid">${p.evidencia}</div>`;
   if (p.proposta)  body += `<span class="lbl">${L.proposal}</span><div class="evid">${p.proposta}</div>`;
   if (p.type !== 'escolha' && p.sugestao) body += `<span class="lbl">${L.suggestion}</span><div class="sugg">${p.sugestao}</div>`;

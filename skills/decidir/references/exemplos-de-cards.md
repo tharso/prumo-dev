@@ -111,8 +111,50 @@ Por que funciona: ações **por conteúdo** (vídeo → extrair/resumir, não "v
 
 Por que falha: é um **vídeo** e o menu não tem extrair/resumir/abrir; o link veio **inerte** (texto, não `<a>`); e "virar referência" é o buraco negro de sempre. O usuário decide no escuro e o item morre numa pasta.
 
+## Card de despacho — nota do inbox (conteúdo no card)
+
+```js
+{
+  id: '15', sec: 'inbox', type: 'despacho',
+  badges: [{label:'nota', tone:'slate'}],
+  title: 'Nota (18/07, 03h47): skill "scroll-world"',
+  contexto: 'Captura da madrugada, sem link. Texto integral abaixo.',
+  // texto: "skill scroll-world — mapa infinito que scrolla revelando um mundo;
+  //         ver se vira mecânica de onboarding"  (base64 gerado por comando)
+  conteudo_b64: 'c2tpbGwgc2Nyb2xsLXdvcmxkIOKAlCBtYXBhIGluZmluaXRvIHF1ZSBzY3JvbGxhIHJldmVsYW5kbyB1bSBtdW5kbzsgdmVyIHNlIHZpcmEgbWVjw6JuaWNhIGRlIG9uYm9hcmRpbmc=',
+  actions: [
+    { key:'make_task',  label:'Virar tarefa', tone:'blue',  effect:'make_task' },
+    { key:'make_pauta', label:'Virar pauta',  tone:'blue',  effect:'make_pauta' },
+    { key:'make_idea',  label:'Virar ideia',  tone:'slate', effect:'make_idea' },
+    { key:'discard',    label:'Descartar',    tone:'red',   effect:'discard', requires:'motivo' },
+  ]
+}
+```
+
+Por que funciona: nota curta (≤ ~400 chars) → o **texto integral** está no campo `conteudo_b64`, codificado em base64 **por comando, em linha única** (`printf '%s' "$texto" | base64 | tr -d '\r\n'` — sem o `tr`, o GNU base64 quebra em 76 colunas e o literal JS morre em SyntaxError), nunca "à mão". O transporte é inerte por construção — o alfabeto base64 não tem aspas, `\`, `<` nem newline, então uma nota com `O'Brien`, HTML ou `</script>` não quebra nem injeta o documento; o template decodifica e escapa no render. Texto de terceiro **nunca** vai em `contexto`/`evidencia` (markup do gerador). O usuário decide o destino olhando pro item, não pra uma descrição do item. Se a nota passasse de ~400: primeiros ~400 em fronteira de palavra no `conteudo_b64` + `link` relativo pro arquivo. Sem `Delegar` — nota pessoal de madrugada não tem delegado plausível.
+
+## Card RUIM — descreve o item em vez de mostrá-lo (caso real, 19/07)
+
+```js
+{
+  id: '15', type: 'despacho',
+  badges: [{label:'nota', tone:'slate'}],
+  title: 'Captura nova: Skill "scroll-world"',
+  contexto: 'Nota curta capturada em 18/07 às 03h47. Sem link ou tese explícita no preview; precisa de destino consciente, não de uma gaveta com boa autoestima.',
+  actions: [
+    { key:'make_task',  label:'Virar tarefa', tone:'blue',  effect:'make_task' },
+    { key:'make_pauta', label:'Virar pauta',  tone:'blue',  effect:'make_pauta' },
+    { key:'make_idea',  label:'Virar ideia',  tone:'slate', effect:'make_idea' },
+    { key:'discard',    label:'Descartar',    tone:'red',   effect:'discard', requires:'motivo' },
+  ]
+}
+```
+
+Por que falha: fala **sobre** a nota sem mostrar a nota — "sem tese explícita no preview" entrega que o gerador despachou do preview da listagem sem abrir o item. É **triagem no escuro**: o usuário não tem como escolher entre tarefa/pauta/ideia pra um item invisível, e a resposta inevitável vira "preciso ver o que é" no comentário — a rodada perde o propósito. A prosa até é charmosa; card não é crônica, é decisão.
+
 ## Padrões que elevam o despacho
 
+- **Mostre o item ou leve a ele — todo card baseado em fonte.** Nota ≤ ~400 chars: texto integral em `conteudo_b64` (base64 por comando; o template decodifica e escapa). Nota longa: primeiros ~400 + link. Imagem/vídeo/post: metadados + link de visualização. Email: remetente + trecho citável. E nada de análise pesada na geração (transcrever/OCR/resumir são pós-despacho). Card que só descreve ("tem uma nota aqui") é triagem no escuro.
 - **Agrupe o barato, separe o caro.** Cinco emails informativos com a mesma cara podem virar cards curtos; uma cobrança que vira atrito merece card próprio com contexto.
 - **Evidência no contexto.** Remetente, trecho literal (`.q`), referência (`.ref`), prazo. Despacho sem evidência vira chute.
 - **Só ofereça ações que cabem.** `Delegar` sem destinatário, `Confirmar` num evento sem RSVP — botão de neblina. Tire da lista do card.

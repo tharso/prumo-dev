@@ -26,17 +26,19 @@ Tokens `draft_*` produzem **rascunho** (não enviam). "Executo sem perguntar de 
 | label | key | tone | effect | requires | confirma? |
 |---|---|---|---|---|---|
 | Responder | `reply` | green | `draft_reply` | o que responder | só ao enviar |
-| Ver/Marcar visto | `mark_seen` | slate | `mark_seen` | — | não |
+| Marcar visto | `mark_seen` | slate | `mark_seen` | — | não |
 | Arquivar | `archive` | slate | `archive` | destino se arquivo local | sim p/ inbox/local |
 | Adiar | `snooze` | amber | `snooze` | até quando | não |
 | Delegar | `delegate` | blue | `draft_delegation` | destinatário | só ao enviar |
 | Sem ação | `no_action` | slate | `no_action` | — | não |
 
+`mark_seen` ≠ `no_action`: **Marcar visto** dá baixa **com rastro** — "tomei ciência" fica registrado na rodada, e o item não volta a ser cobrado. **Sem ação** encerra a triagem **sem registrar nada** — "não há decisão a tomar aqui". Se o usuário vai querer o rastro ("eu vi esse email"), é `mark_seen`.
+
 ### Email informativo
 
 | label | key | tone | effect | requires | confirma? |
 |---|---|---|---|---|---|
-| Ver/Marcar visto | `mark_seen` | slate | `mark_seen` | — | não |
+| Marcar visto | `mark_seen` | slate | `mark_seen` | — | não |
 | Rotear p/ leitura | `route_reading` | blue | `route_reading` | — | não |
 | Arquivar | `archive` | slate | `archive` | — | não |
 | Sem ação | `no_action` | slate | `no_action` | — | não |
@@ -75,8 +77,9 @@ O calendário do briefing é "evento do dia", não necessariamente convite. Sem 
 
 Inbox4Mobile traz conteúdo, não nota pura. **Classifique o conteúdo** e ofereça o menu certo — não um genérico. Subtipos: **vídeo** (link YouTube/Vimeo/etc.), **artigo/link** (URL de página), **imagem** (jpg/png), **nota** (texto sem URL).
 
-Duas regras transversais aqui:
+Regras transversais aqui:
 
+- **Mostrar ≠ analisar.** O card **mostra o item ou leva a ele em um clique** — nunca apenas descreve ("nota curta capturada em 18/07, sem tese explícita no preview" não é card, é triagem no escuro). **Nota até ~400 caracteres**: texto **integral** no campo **`conteudo_b64`** do card — codificado em **base64 (UTF-8)**, mecânico, **em linha única** e sem exceção (`python3` com `b64encode`, ou `printf '%s' "$texto" | base64 | tr -d '\r\n'` no shell; nunca "à mão"); o template decodifica e escapa no render. Base64 porque o alfabeto não carrega aspas, `\`, `<` nem quebras: o texto do usuário **não tem como** quebrar ou injetar o documento, por construção — nunca colar texto de terceiro em `contexto`/`evidencia` (markup do gerador). **Nota mais longa**: os primeiros ~400 caracteres (corte em fronteira de palavra) em `conteudo_b64` + `link` pro arquivo. **Conteúdo não-elementar** (imagem, vídeo, post): metadados baratos + **link de visualização** no campo `link` — URL externa quando o item tem; pra arquivo do workspace, path **relativo** à pasta do HTML (`./x` ou `../x`; o `safeUrl` rejeita absoluto: `file://`, `/abs`, `//server`). E o gerador **não abre nem processa conteúdo pesado na geração** — transcrever/OCR/resumir são os `effect`s **pós-despacho** desta seção, pagos só quando o usuário os despacha.
 - **Links de conteúdo vêm ATIVOS** no card (`<a target="_blank" rel="noopener">`). A regra offline da `decidir` vale para a **mecânica** (fontes/JS embutidos), **não** para os links do usuário. Card com link inerte é triagem no escuro.
 - **Não existe "virar referência" passivo.** Guardar sem motivo, tag e caminho de volta é buraco negro — viola "Ideias não são ações" (`prumo-core`, regra 5). Onde "guardar" existir, é **committal**: exige motivo + tag.
 - Remoção (`discard`) sempre confirma (ASSERT do core: confirmar plano + registrar no `REGISTRO.md` antes de remover o original).
