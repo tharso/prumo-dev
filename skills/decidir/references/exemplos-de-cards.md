@@ -131,7 +131,7 @@ Por que falha: é um **vídeo** e o menu não tem extrair/resumir/abrir; o link 
 }
 ```
 
-Por que funciona: nota curta (≤ ~400 chars) → o **texto integral** está no campo `conteudo_b64`, codificado em base64 **por comando** (`printf '%s' "$texto" | base64`), nunca "à mão". O transporte é inerte por construção — o alfabeto base64 não tem aspas, `\`, `<` nem newline, então uma nota com `O'Brien`, HTML ou `</script>` não quebra nem injeta o documento; o template decodifica e escapa no render. Texto de terceiro **nunca** vai em `contexto`/`evidencia` (markup do gerador). O usuário decide o destino olhando pro item, não pra uma descrição do item. Se a nota passasse de ~400: primeiros ~400 em fronteira de palavra no `conteudo_b64` + `link` relativo pro arquivo. Sem `Delegar` — nota pessoal de madrugada não tem delegado plausível.
+Por que funciona: nota curta (≤ ~400 chars) → o **texto integral** está no campo `conteudo_b64`, codificado em base64 **por comando, em linha única** (`printf '%s' "$texto" | base64 | tr -d '\r\n'` — sem o `tr`, o GNU base64 quebra em 76 colunas e o literal JS morre em SyntaxError), nunca "à mão". O transporte é inerte por construção — o alfabeto base64 não tem aspas, `\`, `<` nem newline, então uma nota com `O'Brien`, HTML ou `</script>` não quebra nem injeta o documento; o template decodifica e escapa no render. Texto de terceiro **nunca** vai em `contexto`/`evidencia` (markup do gerador). O usuário decide o destino olhando pro item, não pra uma descrição do item. Se a nota passasse de ~400: primeiros ~400 em fronteira de palavra no `conteudo_b64` + `link` relativo pro arquivo. Sem `Delegar` — nota pessoal de madrugada não tem delegado plausível.
 
 ## Card RUIM — descreve o item em vez de mostrá-lo (caso real, 19/07)
 

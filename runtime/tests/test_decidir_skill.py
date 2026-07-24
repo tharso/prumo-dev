@@ -8,6 +8,8 @@ skills individualmente, e a presença dos arquivos canônicos.
 import base64
 import json
 import re
+import shutil
+import subprocess
 import unittest
 from pathlib import Path
 
@@ -206,6 +208,47 @@ class DecidirConteudoEscapadoGuards(unittest.TestCase):
         # `</script>` dentro de string JS de POINTS encerraria o script do
         # documento (vale pros campos de markup do gerador; conteudo_b64 é imune).
         self.assertIn(r"vira `<\/`", html)
+
+    def test_sink_do_conteudo_encadeia_decode_e_escape(self):
+        # Round 3 do Codex: o guard anterior não travava o SINK — trocar
+        # `escapeHtml(raw)` por `${raw}` reabriria XSS com o teste verde.
+        html = (SKILL_DIR / "assets" / "template.html").read_text(encoding="utf-8")
+        self.assertIn("escapeHtml(raw)", html)
+        self.assertNotIn("${raw}", html)  # raw nunca vai cru pra interpolação
+
+    def test_produtor_documentado_e_linha_unica_em_todos_os_contratos(self):
+        # Round 3 do Codex: `printf | base64` sozinho emite newline final e,
+        # no GNU, quebra em 76 colunas — SyntaxError no literal JS antes do
+        # fromB64. O produtor contratado é linha única em TODOS os documentos.
+        for doc in (
+            SKILL_DIR / "SKILL.md",
+            SKILL_DIR / "references" / "acoes-allowlist.md",
+            SKILL_DIR / "references" / "exemplos-de-cards.md",
+            SKILL_DIR / "assets" / "template.html",
+        ):
+            with self.subTest(doc=doc.name):
+                self.assertIn(r"tr -d '\r\n'", doc.read_text(encoding="utf-8"))
+
+    @unittest.skipUnless(shutil.which("bash"), "produtor de shell exige bash")
+    def test_produtor_de_shell_roda_com_conteudo_hostil_longo(self):
+        # Executa o comando CONTRATADO com texto hostil e longo o bastante
+        # pra forçar o wrapping de 76 colunas do GNU base64 (>100 chars).
+        hostil = (
+            "O'Brien disse \"oi\" </script> '; alert(1) // barra\\invertida\n"
+            "segunda linha — travessão, e texto comprido o suficiente para "
+            "ultrapassar as setenta e seis colunas do GNU base64 com folga."
+        )
+        result = subprocess.run(
+            ["bash", "-c", "printf '%s' \"$1\" | base64 | tr -d '\\r\\n'", "_", hostil],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        b64 = result.stdout
+        self.assertNotIn("\n", b64)
+        self.assertNotIn("\r", b64)
+        self.assertRegex(b64, r"^[A-Za-z0-9+/=]+$")
+        self.assertEqual(base64.b64decode(b64).decode("utf-8"), hostil)
 
 
 if __name__ == "__main__":
