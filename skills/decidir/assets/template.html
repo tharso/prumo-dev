@@ -420,7 +420,7 @@ const CONFIG = {
 //      conteudo_b64: texto do item (nota integral, excerpt) codificado em
 //             BASE64 (UTF-8). Codificação MECÂNICA, EM LINHA ÚNICA, sem
 //             exceção — `python3 -c` (b64encode já é linha única) ou
-//             `base64 | tr -d '\r\n'` no shell (o GNU base64 quebra em 76
+//             `printf '%s' "$texto" | base64 | tr -d '\r\n'` no shell (o GNU base64 quebra em 76
 //             colunas e emite newline final; qualquer quebra dentro do literal
 //             JS é SyntaxError antes do fromB64 — que só tolera whitespace
 //             DEPOIS do parse). Nunca "à mão". O alfabeto base64 não contém

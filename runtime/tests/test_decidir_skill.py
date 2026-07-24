@@ -220,6 +220,9 @@ class DecidirConteudoEscapadoGuards(unittest.TestCase):
         # Round 3 do Codex: `printf | base64` sozinho emite newline final e,
         # no GNU, quebra em 76 colunas — SyntaxError no literal JS antes do
         # fromB64. O produtor contratado é linha única em TODOS os documentos.
+        # O pipeline COMPLETO, não só a cauda: sem o `printf '%s'` um gerador
+        # poderia usar `echo` (que injeta newline no próprio conteúdo).
+        full_producer = r"""printf '%s' "$texto" | base64 | tr -d '\r\n'"""
         for doc in (
             SKILL_DIR / "SKILL.md",
             SKILL_DIR / "references" / "acoes-allowlist.md",
@@ -227,7 +230,7 @@ class DecidirConteudoEscapadoGuards(unittest.TestCase):
             SKILL_DIR / "assets" / "template.html",
         ):
             with self.subTest(doc=doc.name):
-                self.assertIn(r"tr -d '\r\n'", doc.read_text(encoding="utf-8"))
+                self.assertIn(full_producer, doc.read_text(encoding="utf-8"))
 
     @unittest.skipUnless(shutil.which("bash"), "produtor de shell exige bash")
     def test_produtor_de_shell_roda_com_conteudo_hostil_longo(self):
