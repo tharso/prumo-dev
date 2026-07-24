@@ -11,8 +11,6 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 ### Changed
 - **`parse_command_table` extraído pra `runtime/prumo_runtime/command_table.py` (#178, épico #177)** — refactor puro, zero mudança de comportamento. A tabela "## Comandos disponíveis" do core é a fonte única da lista de comandos (#172) e o parser saiu de `menu.py` pra um módulo folha porque a M2 do #177 fará `templates.py` derivar a cadeia de fallback do AGENT.md da mesma tabela — importar de `menu` criaria o ciclo `templates ← workspace ← menu`. O `/menu` re-exporta `parse_command_table` (imports existentes preservados).
 
-## [5.33.1] - 2026-07-16
-
 ## [5.37.0] - 2026-07-24
 
 ### Fixed
