@@ -54,16 +54,22 @@ FORBIDDEN_IN_SKILL_LOAD_SECTION = (
     "PRUMO-CORE.md",
 )
 
-# Frases-invariantes: uma por predicado de leitura de corpo (a)-(g), mais a
-# precedência sobre o sinal de automatização do Estágio 1.
-BODY_READ_PREDICATE_INVARIANTS = (
-    "canal prioritário",
-    "remetente é **pessoa**",
-    "thread tem participação do usuário",
-    "prazo, pergunta direta ou pedido de ação",
-    "snippet é inconclusivo",
-    "sempre-relevante",
-    "heurística de aprofundamento",
+# Rótulo → invariante de cada predicado de leitura de corpo. Verificados
+# DENTRO do bloco do Estágio 2, na linha do próprio rótulo — busca no
+# documento inteiro deixaria a remoção de um predicado passar batida
+# (Codex, diff r2 achado 2).
+BODY_READ_PREDICATE_LABELS = {
+    "(a)": "canal prioritário",
+    "(b)": "remetente é **pessoa**",
+    "(c)": "thread tem participação do usuário",
+    "(d)": "prazo, pergunta direta ou pedido de ação",
+    "(e)": "snippet é inconclusivo",
+    "(f)": "sempre-relevante",
+    "(g)": "heurística de aprofundamento",
+}
+
+# Frases únicas fora do bloco: precedência do Estágio 1 e defesas intactas.
+BODY_READ_GLOBAL_INVARIANTS = (
     "prevalecem sobre o sinal de automatização",
     "rodam em todo corpo lido",
 )
@@ -126,7 +132,22 @@ class PreloadSingleEnumerationTests(unittest.TestCase):
     def test_body_read_predicates_present_with_defenses(self) -> None:
         text = PROCEDURE.read_text(encoding="utf-8")
         self.assertIn("Leitura de corpo por predicados", text)
-        for invariant in BODY_READ_PREDICATE_INVARIANTS:
+        block_match = re.search(
+            r"Ler o corpo via `gmail_read_message` quando:(.*?)Fica \*\*sem corpo lido\*\*",
+            text,
+            re.DOTALL,
+        )
+        self.assertIsNotNone(block_match, "bloco de predicados do Estágio 2 não encontrado")
+        block_lines = block_match.group(1).splitlines()
+        for label, invariant in BODY_READ_PREDICATE_LABELS.items():
+            with self.subTest(predicate=label):
+                line = next(
+                    (l for l in block_lines if l.lstrip().startswith(f"- {label}")),
+                    None,
+                )
+                self.assertIsNotNone(line, f"predicado {label} sumiu do bloco")
+                self.assertIn(invariant, line, f"{label} perdeu a invariante: {invariant!r}")
+        for invariant in BODY_READ_GLOBAL_INVARIANTS:
             with self.subTest(invariant=invariant):
                 self.assertIn(invariant, text)
 

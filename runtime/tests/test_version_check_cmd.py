@@ -139,14 +139,19 @@ class VersionCheckCommandTests(unittest.TestCase):
         self.assertEqual(payload["source"], "no_cache")
         self.assertFalse(payload["fresh"])
 
-    def test_cache_write_failure_is_reported(self) -> None:
+    def test_cache_write_failure_is_reported_and_not_fresh(self) -> None:
         with mock.patch.object(
             version_check, "_fetch_remote_version", return_value="9.9.9"
         ), mock.patch.object(version_check, "_write_cache", return_value=False):
             rc, payload = self._run(["version-check", "--ensure-fresh"])
         self.assertEqual(rc, 0)
-        self.assertEqual(payload["source"], "fetched")
+        # Buscou mas não persistiu: fonte honesta, e NUNCA fresh —
+        # nada foi gravado, o próximo briefing precisa rebuscar.
+        self.assertEqual(payload["source"], "fetched_unpersisted")
         self.assertTrue(payload["cache_write_failed"])
+        self.assertFalse(payload["fresh"])
+        self.assertEqual(payload["remote_version"], "9.9.9")
+        self.assertTrue(payload["update_available"])
 
     def test_without_ensure_fresh_never_fetches(self) -> None:
         boom = mock.patch.object(

@@ -1,8 +1,11 @@
 """
-Version check automático — banner educado em stderr (#87).
+Version check — cache TTL 24h com produtor explícito (#87 → #195).
 
-Verifica versão remota com cache (TTL 24h), mostra banner 1x/24h
-para humano em terminal interativo. Silencioso em CI, JSON, pipes.
+O PRODUTOR do cache é `prumo version-check --ensure-fresh` (preflight do
+briefing): rede no máximo 1x/24h, falha re-tenta em 1h. O banner (#87) é
+cache-only — notifica humano em terminal interativo 1x/24h a partir do
+cache e escreve apenas `last_notified_at` (nunca busca rede nem produz
+versão). Silencioso em CI, JSON, pipes.
 """
 from __future__ import annotations
 
@@ -206,7 +209,14 @@ def ensure_fresh_status(*, allow_network: bool) -> dict[str, Any]:
             new_cache["failed"] = True
         cache_write_failed = not _write_cache(new_cache, cache_file)
         cache = new_cache
-        source = "fetched" if remote is not None else "fetch_failed"
+        if remote is None:
+            source = "fetch_failed"
+        elif cache_write_failed:
+            # Buscou mas não persistiu: o dado vale pra ESTA resposta, mas o
+            # próximo briefing vai rebuscar — não fingir cache saudável.
+            source = "fetched_unpersisted"
+        else:
+            source = "fetched"
     elif cache is not None and cache.get("failed"):
         # Falha recente persistida: dentro do cooldown (FAILURE_TTL_HOURS)
         # não re-tenta; o consumidor deve avisar em uma linha, não fingir
@@ -222,6 +232,7 @@ def ensure_fresh_status(*, allow_network: bool) -> dict[str, Any]:
         "fresh": (
             cache is not None
             and not failed
+            and not cache_write_failed
             and not _should_fetch(cache, ttl_hours=ttl)
         ),
         "failed": failed,
@@ -237,9 +248,11 @@ def read_cached_remote_version() -> str | None:
     """Lê a versão remota do cache SEM buscar na rede.
 
     O briefing (`prumo briefing --format json`) usa isto para computar a
-    severidade da defasagem sem adicionar latência: o cache é populado pela
-    checagem periódica (banner). Se o cache não existe/expirou, devolve None e
-    o agente cai no Passo 2 do `version-update.md` (WebFetch do VERSION).
+    severidade da defasagem sem adicionar latência: o cache é populado pelo
+    produtor explícito (`prumo version-check --ensure-fresh`, #195). Devolve
+    a última versão conhecida mesmo com TTL vencido (staleness é problema do
+    preflight, não do painel); se o cache não existe ou não tem versão,
+    devolve None e o agente cai no Passo 2 do `version-update.md`.
     """
     cache = _read_cache(_cache_path())
     if not cache:
