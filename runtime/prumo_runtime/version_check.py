@@ -26,7 +26,8 @@ BANNER_COOLDOWN_HOURS = 24
 
 # "fim" entra aqui (#174): o /fim promete read-only e sem rede — o banner
 # de versão faria fetch+escrita de cache no `prumo fim` textual.
-SUPPRESS_COMMANDS = {"update", "upgrade", "version", "fim"}
+# "version-check" (#195): o comando É a checagem; banner em cima seria eco.
+SUPPRESS_COMMANDS = {"update", "upgrade", "version", "fim", "version-check"}
 
 
 def check_and_notify(command: str | None, format_arg: str | None) -> None:
@@ -176,6 +177,45 @@ def _is_newer(remote: str, local: str) -> bool:
         return r > l
     except (ValueError, AttributeError):
         return False
+
+
+def ensure_fresh_status(*, allow_network: bool) -> dict[str, Any]:
+    """Status do cache de versão; com `allow_network`, refresca se stale (#195).
+
+    É o PRODUTOR do cache no fluxo do briefing: busca e grava no máximo
+    1x/TTL (24h; falha re-tenta em 1h). Sem `allow_network`, zero rede —
+    apenas reporta o cache atual. Nunca levanta: falha vira status.
+    """
+    cache_file = _cache_path()
+    cache = _read_cache(cache_file)
+    ttl = _get_ttl_hours()
+    source = "cache" if cache is not None else "no_cache"
+
+    if allow_network and _should_fetch(cache, ttl_hours=ttl):
+        remote = _fetch_remote_version()
+        now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        new_cache: dict[str, Any] = {
+            "checked_at": now,
+            "remote_version": remote,
+            "last_notified_at": cache.get("last_notified_at") if cache else None,
+        }
+        if remote is None:
+            new_cache["failed"] = True
+        _write_cache(new_cache, cache_file)
+        cache = new_cache
+        source = "fetched" if remote is not None else "fetch_failed"
+
+    remote_version = (cache or {}).get("remote_version")
+    return {
+        "local_version": __version__,
+        "remote_version": remote_version,
+        "checked_at": (cache or {}).get("checked_at"),
+        "fresh": cache is not None and not _should_fetch(cache, ttl_hours=ttl),
+        "source": source,
+        "update_available": bool(
+            remote_version and _is_newer(remote_version, __version__)
+        ),
+    }
 
 
 def read_cached_remote_version() -> str | None:

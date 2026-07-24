@@ -10,6 +10,7 @@ from prumo_runtime.commands.repair import run_repair
 from prumo_runtime.commands.setup import run_setup
 from prumo_runtime.commands.start import run_start
 from prumo_runtime.commands.update import run_update
+from prumo_runtime.commands.version_check_cmd import run_version_check
 
 __all__ = [
     "run_acervo",
@@ -25,4 +26,5 @@ __all__ = [
     "run_setup",
     "run_start",
     "run_update",
+    "run_version_check",
 ]

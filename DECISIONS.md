@@ -9,14 +9,14 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 | Tópico                | Entradas                                                                                  |
 |-----------------------|-------------------------------------------------------------------------------------------|
 | `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first), 2026-05-04 (#77), 2026-06-21 (#97 mapas), 2026-06-25 (#114 perfil modular), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#139 guarda-corpos), 2026-07-02 (#140 fichário), 2026-07-02 (#141 diário), 2026-07-03 (#147 ideias), 2026-07-03 (#148 conexões), 2026-07-24 (#194 perímetro de leitura) |
-| `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-04 (#158 detecção defasagem), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime), 2026-07-05 (#170 transporte de update local), 2026-07-12 (#172 taxonomia do picker), 2026-07-19 (#191 decidir mostra o item) |
+| `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-04 (#158 detecção defasagem), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime), 2026-07-05 (#170 transporte de update local), 2026-07-12 (#172 taxonomia do picker), 2026-07-19 (#191 decidir mostra o item), 2026-07-24 (#195 dieta fase 1 — produtor do cache de versão) |
 | `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first), 2026-05-06 (quality-gate), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#141 diário — emenda à #68) |
 | `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist), 2026-06-24 (#110 não-bundle), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime), 2026-07-05 (#170 transporte de update local) |
 | `dispatch-bootstrap`  | 2026-04-21 (#69 despacho), 2026-06-23 (#104 briefing rico), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-05 (#160 porta/instalação agnóstica), 2026-07-12 (#172 taxonomia do picker), 2026-07-24 (#194 perímetro de leitura) |
 | `multiagent-coord`    | 2026-04-20 (#68 HANDOVER), 2026-07-24 (#194 perímetro de leitura — delegação)             |
 | `documentation`       | 2026-04-14 (CLAUDE.md), 2026-06-21 (#97 mapas), 2026-07-03 (#149 guia Obsidian)           |
 | `integrations`        | 2026-04-14 (Google Drive snapshots)                                                       |
-| `briefing`            | 2026-04-14 (Google Drive snapshots), 2026-04-21 (#69 despacho), 2026-06-23 (#102 decidir), 2026-06-23 (#104 briefing rico), 2026-06-25 (#114 perfil modular), 2026-07-02 (#139 guarda-corpos), 2026-07-03 (#148 conexões), 2026-07-04 (#156 injeção), 2026-07-13 (#174/#175 update-oferta + copy do fim) |
+| `briefing`            | 2026-04-14 (Google Drive snapshots), 2026-04-21 (#69 despacho), 2026-06-23 (#102 decidir), 2026-06-23 (#104 briefing rico), 2026-06-25 (#114 perfil modular), 2026-07-02 (#139 guarda-corpos), 2026-07-03 (#148 conexões), 2026-07-04 (#156 injeção), 2026-07-13 (#174/#175 update-oferta + copy do fim), 2026-07-24 (#195 dieta fase 1) |
 | `personalization`     | 2026-04-21 (tharso-voice)                                                                 |
 | `code-quality`        | 2026-05-06 (quality-gate), 2026-06-25 (#122 baseline 1061→930), 2026-07-03 (baseline 82/904), 2026-07-04 (#157 conformidade A0) |
 | `touchpoint`          | 2026-05-18 (landing page sync), 2026-07-03 (#149 guia Obsidian — candidato à landing), 2026-07-05 (#160 instalação agnóstica), 2026-07-05 (#108 update via runtime) |
@@ -58,6 +58,25 @@ A partir de 2026-05-04 (#78), toda entrada nova segue o formato:
 Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões anteriores" (introduzido na #78). Quando um conflito retrospectivo for descoberto, anotar a relação na entrada nova que o resolve — não reescrever entradas antigas.
 
 - `code-quality` — métricas de qualidade do codebase, quality gate, baseline.
+
+---
+
+## 2026-07-24 — Dieta do briefing, fase 1: paralelismo, produtor do cache, predicados, pré-carga única (#195)
+
+**Tópicos:** briefing, skills-distribution
+
+**Issues relacionadas:** #195 (executa), #194 (irmã — perímetro de leitura), #197/#196 (próximas fases do mesmo plano).
+
+**Relações com decisões anteriores:**
+- **Estende:** 2026-07-04 (#158). A #158 tirou a rede do painel leve (o payload lê a versão pública do cache); mas ninguém refrescava o cache no fluxo do briefing — a skill fazia WebFetch todo dia e o cache podia ficar stale pra sempre. A rede agora mora num **comando explícito de preflight** (`prumo version-check --ensure-fresh`, máx. 1x/24h); o painel segue zero-rede, intocado.
+- **Mantém:** 2026-07-04 (#156). As defesas de conteúdo de terceiro rodam em **todo corpo lido** — a leitura seletiva por predicados muda *quais* corpos são lidos, nunca o contrato de segurança sobre eles.
+- **Mantém:** 2026-07-13 (#174). O gatilho graduado e a oferta no topo ficam como estão; muda só o produtor da comparação remota.
+
+**Contexto:** dores medidas na investigação de 23–24/07 (mesma da #194): tempo até a primeira resposta e tempo total do briefing. Fatores por design: canais consultados em série (latências somam), WebFetch do `VERSION` a cada briefing, corpo de todo email lido após o filtro de metadata, e duas listas de pré-carga (SKILL.md × procedure) que se sobrepunham sem coincidir.
+
+**Decisão:** (1) DAG explícito — canais independentes começam juntos, classificação após contexto local, escritas serializadas, falha parcial não cancela os demais; (2) produtor do cache de versão em subcomando runtime dedicado, rede máx. 1x/24h; (3) leitura de corpo por predicados objetivos com fail-open no snippet inconclusivo (recall de P1/P2 preservado); (4) lista canônica única de pré-carga no procedure, SKILL.md aponta, guard textual anti-drift. **Gate de merge:** protocolo de validação manual executado com evidência no PR (corpos lidos/não lidos + predicado disparador, contagem de `gmail_read_message`, zero P1/P2 perdido).
+
+**Alternativas consideradas:** cache agent-owned em `.prumo/state/` para o caso sem runtime (rejeitado — cria superfície nova num caminho minoritário e conflita com "agente não escreve estado fingindo ser runtime"); "ler corpo só de P1/P2" (rejeitado — circular: a prioridade muitas vezes só aparece no corpo; viraram predicados); paralelismo irrestrito (rejeitado — classificação depende de contexto local e escritas disputariam arquivos; virou DAG). Desenho fechado com o Codex (r1–r3 do plano).
 
 ---
 

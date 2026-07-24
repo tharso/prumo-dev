@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.36.0] - 2026-07-24
+
+### Changed
+- **Dieta do briefing, fase 1: paralelismo, produtor do cache de versão, corpo por predicados, pré-carga única (#195)** — as dores eram tempo até a primeira resposta e tempo total. Quatro mudanças, nenhuma toca contrato de interface: (1) **DAG explícito** no Passo 4 — leituras locais mínimas (`PAUTA`, `PERFIL`, `PESSOAS`, `EMAIL-CURADORIA`), queries de metadata do Gmail, Calendar e listagem plana do `Inbox4Mobile/` **começam juntos** (paralelizar não muda tokens, muda o relógio); classificação só após contexto local; escritas serializadas no fechamento; falha de um canal não derruba os demais. (2) **`prumo version-check --ensure-fresh`** — o runtime já tinha cache TTL 24h que o payload lê, mas ninguém o refrescava no fluxo do briefing e a skill fazia WebFetch todo dia; o subcomando novo é o **produtor** explícito: rede no máximo 1x/24h (falha re-tenta em 1h), grava o cache, responde JSON; o painel (`prumo briefing --format json`) segue **zero-rede** (extensão da #158; sem runtime, WebFetch como antes). (3) **Leitura de corpo por predicados** objetivos — canal prioritário, remetente pessoa/conhecido, thread com participação, prazo/pedido no assunto, snippet inconclusivo (fail-open que preserva P1/P2), sempre-relevante, gatilhos de risco; automatizado/informativo claro classifica por metadata; as **defesas de conteúdo de terceiro rodam em todo corpo lido**, sem exceção. (4) **Pré-carga com lista canônica ÚNICA** no `briefing-procedure.md` (união exata das duas listas antigas + `PESSOAS.md`); o `SKILL.md` aponta pra lá sem segunda enumeração — guard textual anti-drift trava o formato (`test_briefing_preload_guard.py`). Design e diff revisados no loop com o Codex (#195, r1–r3 + rounds de código).
+
 ## [5.35.0] - 2026-07-24
 
 ### Changed
