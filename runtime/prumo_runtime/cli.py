@@ -17,6 +17,7 @@ from prumo_runtime.commands import (
     run_setup,
     run_start,
     run_update,
+    run_version_check,
 )
 from prumo_runtime.workspace import WorkspaceError
 
@@ -170,6 +171,17 @@ def build_parser() -> argparse.ArgumentParser:
         help="Pula confirmacao interativa (pra CI/automacao).",
     )
     update.set_defaults(handler=run_update)
+
+    version_check = subparsers.add_parser(
+        "version-check",
+        help="Status do cache de versão em JSON; com --ensure-fresh, busca e grava no máximo 1x/24h (#195)",
+    )
+    version_check.add_argument(
+        "--ensure-fresh",
+        action="store_true",
+        help="Refrescar o cache se estiver stale (rede no máximo 1x/24h; falha re-tenta em 1h)",
+    )
+    version_check.set_defaults(handler=run_version_check)
 
     return parser
 

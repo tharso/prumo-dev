@@ -1,6 +1,6 @@
 # Version Update
 
-> **module_version: 4.24.0**
+> **module_version: 4.25.0**
 >
 > Fonte canônica do fluxo de verificação e aplicação de atualização do Prumo.
 
@@ -59,10 +59,11 @@ Ela deve acontecer como preflight antes do panorama principal.
 
 ## Passo 2: comparar com a versão remota (ação, não opção)
 
-Esta comparação **não é opcional** no briefing. **Busque agora** o `VERSION` remoto bruto e compare com o `prumo_version` do workspace:
+Esta comparação **não é opcional** no briefing. Quem a produz (#195):
 
+- **Com runtime no PATH:** rodar `prumo version-check --ensure-fresh`. É o **produtor** do cache TTL 24h que o payload lê: busca a rede **no máximo 1x/24h** (falha re-tenta em 1h), grava o cache e responde JSON (`remote_version`, `fresh`, `update_available`). Nos demais briefings do dia responde do cache — **não** fazer WebFetch quando `fresh: true`.
 - Fonte: `https://raw.githubusercontent.com/tharso/prumo/main/VERSION`
-- **Sem runtime no PATH:** use **WebFetch** dessa URL raw (ou `curl` quando houver shell). **Isso é permitido e esperado** — sem runtime/shell, WebFetch do `VERSION` é o caminho sancionado. Não confunda esta busca com "drift local": comparar só o core do workspace contra si mesmo **não** é o Passo 2.
+- **Sem runtime no PATH:** use **WebFetch** dessa URL raw (ou `curl` quando houver shell). **Isso é permitido e esperado** — sem runtime/shell, WebFetch do `VERSION` é o caminho sancionado (sem cache agent-owned: o agente não escreve estado fingindo ser runtime). Não confunda esta busca com "drift local": comparar só o core do workspace contra si mesmo **não** é o Passo 2.
 - Se `VERSION` remoto > `prumo_version` do workspace, há **versão nova** → seguir para o Passo 4 (gatilho graduado: oferta ou aviso conforme a severidade).
 
 **Caso sem nenhum jeito de buscar** (sem runtime, sem shell e sem WebFetch): **avisar explicitamente** que não deu para checar — `"Não consegui checar a versão pública agora; sigo o briefing sem garantia de versão atual."` **Nunca** declarar "sem drift" ou "versão em dia" sem ter feito a comparação remota: silenciar aqui é como dizer que o tanque está cheio sem olhar o ponteiro.

@@ -18,18 +18,8 @@ O procedimento completo está nos módulos. Aqui só tem o mapa de onde cada coi
 
 ## Carregamento obrigatório
 
-1. Leia `Prumo/Agente/PERFIL.md` e `Prumo/Agente/ROTINA.md` (rituais e cadências sem hora, quando existir).
-2. Leia `.prumo/system/PRUMO-CORE.md`.
-3. Leia o módulo canônico:
-   - `skills/prumo/references/modules/briefing-procedure.md`
-4. Se `Inbox4Mobile/` existir no workspace, leia também:
-   - `skills/prumo/references/modules/inbox-processing.md`
-5. Quando disponíveis, carregue também:
-   - `skills/prumo/references/modules/load-policy.md`
-   - `skills/prumo/references/modules/version-update.md`
-   - `skills/prumo/references/modules/interaction-format.md`
-   - `skills/prumo/references/modules/runtime-paths.md`
-   - `skills/prumo/references/modules/cowork-runtime-bridge.md`
+1. Leia o módulo canônico: `skills/prumo/references/modules/briefing-procedure.md`.
+2. Siga a **"Pré-carga obrigatória"** de lá — é a lista canônica **única** do briefing (#195). Este arquivo não mantém segunda enumeração: se você encontrar duas listas, uma delas é drift.
 
 Se o repo `Prumo/` não estiver acessível, use o bundle instalado. O que não vale é inventar atalho e chamar de interpretação.
 

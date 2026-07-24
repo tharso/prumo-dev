@@ -188,9 +188,10 @@ class SkillContractGuards(unittest.TestCase):
         self.assertIn("ou, sem transporte, como a orientação por elo", text)
 
     def test_fim_textual_nao_faz_rede_nem_escreve_cache(self) -> None:
-        # O banner de versão (check_and_notify) faz fetch + escrita de cache;
-        # o `prumo fim` TEXTUAL passaria por ele sem esta supressão (review
-        # Codex) — quebrando a promessa read-only/sem-rede do /fim.
+        # Desde a #195 o banner é cache-only (nunca fetch), mas ainda escreve
+        # `last_notified_at` ao notificar; o `prumo fim` TEXTUAL passaria por
+        # ele sem esta supressão (review Codex) — quebrando a promessa
+        # read-only do /fim.
         from prumo_runtime.version_check import SUPPRESS_COMMANDS
 
         self.assertIn("fim", SUPPRESS_COMMANDS)

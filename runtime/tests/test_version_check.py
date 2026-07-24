@@ -150,13 +150,22 @@ class ShouldShowBannerTests(unittest.TestCase):
 
 
 class CheckAndNotifyIntegrationTests(unittest.TestCase):
-    def test_banner_emitted_to_stderr(self) -> None:
+    def test_banner_emitted_from_populated_cache(self) -> None:
+        # #195: o banner é cache-only — quem popula é `prumo version-check
+        # --ensure-fresh`. Cache com versão nova → banner aparece.
+        import datetime
         with tempfile.TemporaryDirectory() as tmpdir:
             cache_file = Path(tmpdir) / "prumo" / "version-check.json"
+            cache_file.parent.mkdir(parents=True)
+            now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+            cache_file.write_text(json.dumps({
+                "checked_at": now,
+                "remote_version": "9.9.9",
+                "last_notified_at": None,
+            }))
             buf = io.StringIO()
             with patch("prumo_runtime.version_check._cache_path", return_value=cache_file), \
                  patch("prumo_runtime.version_check._should_suppress", return_value=False), \
-                 patch("prumo_runtime.version_check._fetch_remote_version", return_value="9.9.9"), \
                  redirect_stderr(buf):
                 check_and_notify(command="start", format_arg="text")
             output = buf.getvalue()
@@ -170,28 +179,27 @@ class CheckAndNotifyIntegrationTests(unittest.TestCase):
             check_and_notify(command="start", format_arg="json")
         self.assertEqual(buf.getvalue(), "")
 
-    def test_offline_no_crash(self) -> None:
+    def test_no_cache_no_banner_no_crash(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             cache_file = Path(tmpdir) / "prumo" / "version-check.json"
             buf = io.StringIO()
             with patch("prumo_runtime.version_check._cache_path", return_value=cache_file), \
                  patch("prumo_runtime.version_check._should_suppress", return_value=False), \
-                 patch("prumo_runtime.version_check._fetch_remote_version", return_value=None), \
                  redirect_stderr(buf):
                 check_and_notify(command="start", format_arg="text")
             self.assertEqual(buf.getvalue(), "")
 
-    def test_cache_written_after_fetch(self) -> None:
+    def test_banner_never_fetches(self) -> None:
+        # #195: produtor único. O banner NUNCA toca a rede — nem sem cache.
         with tempfile.TemporaryDirectory() as tmpdir:
             cache_file = Path(tmpdir) / "prumo" / "version-check.json"
             with patch("prumo_runtime.version_check._cache_path", return_value=cache_file), \
                  patch("prumo_runtime.version_check._should_suppress", return_value=False), \
-                 patch("prumo_runtime.version_check._fetch_remote_version", return_value="5.3.0"), \
+                 patch("prumo_runtime.version_check._fetch_remote_version") as mock_fetch, \
                  redirect_stderr(io.StringIO()):
                 check_and_notify(command="start", format_arg="text")
-            self.assertTrue(cache_file.exists())
-            data = json.loads(cache_file.read_text())
-            self.assertEqual(data["remote_version"], "5.3.0")
+            mock_fetch.assert_not_called()
+            self.assertFalse(cache_file.exists())
 
     def test_cache_hit_does_not_fetch(self) -> None:
         import datetime
