@@ -130,6 +130,34 @@ class VersionCheckCommandTests(unittest.TestCase):
         self.assertFalse(payload["failed"])
         self.assertTrue(payload["fresh"])
 
+    def test_stale_failure_reported_when_cooldown_expired_without_network(self) -> None:
+        import datetime
+
+        stale = (
+            datetime.datetime.now(datetime.timezone.utc)
+            - datetime.timedelta(hours=2)
+        ).isoformat()
+        cache_path = version_check._cache_path()
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        cache_path.write_text(
+            json.dumps(
+                {"checked_at": stale, "remote_version": None, "failed": True}
+            ),
+            encoding="utf-8",
+        )
+        boom = mock.patch.object(
+            version_check,
+            "_fetch_remote_version",
+            side_effect=AssertionError("sem --ensure-fresh tocou a rede"),
+        )
+        with boom:
+            rc, payload = self._run(["version-check"])
+        self.assertEqual(rc, 0)
+        # Cooldown vencido ≠ cooldown ativo: é falha velha re-tentável.
+        self.assertEqual(payload["source"], "stale_failure")
+        self.assertTrue(payload["failed"])
+        self.assertFalse(payload["fresh"])
+
     def test_non_dict_cache_treated_as_missing(self) -> None:
         cache_path = version_check._cache_path()
         cache_path.parent.mkdir(parents=True, exist_ok=True)

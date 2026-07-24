@@ -27,8 +27,8 @@ DEFAULT_TTL_HOURS = 24
 FAILURE_TTL_HOURS = 1
 BANNER_COOLDOWN_HOURS = 24
 
-# "fim" entra aqui (#174): o /fim promete read-only e sem rede — o banner
-# de versão faria fetch+escrita de cache no `prumo fim` textual.
+# "fim" entra aqui (#174): o /fim promete read-only — o banner (hoje
+# cache-only, #195) ainda escreveria `last_notified_at` no `prumo fim` textual.
 # "version-check" (#195): o comando É a checagem; banner em cima seria eco.
 SUPPRESS_COMMANDS = {"update", "upgrade", "version", "fim", "version-check"}
 
@@ -218,10 +218,14 @@ def ensure_fresh_status(*, allow_network: bool) -> dict[str, Any]:
         else:
             source = "fetched"
     elif cache is not None and cache.get("failed"):
-        # Falha recente persistida: dentro do cooldown (FAILURE_TTL_HOURS)
-        # não re-tenta; o consumidor deve avisar em uma linha, não fingir
-        # cache saudável (#195, Codex achado 3).
-        source = "failure_cooldown"
+        # Falha persistida nunca passa por cache saudável (#195, Codex
+        # achado 3). Dentro do cooldown (FAILURE_TTL_HOURS) é
+        # "failure_cooldown"; vencido o cooldown sem rede permitida nesta
+        # chamada, é "stale_failure" — re-tentável no próximo ensure-fresh.
+        if _should_fetch(cache, ttl_hours=ttl):
+            source = "stale_failure"
+        else:
+            source = "failure_cooldown"
 
     remote_version = (cache or {}).get("remote_version")
     failed = bool((cache or {}).get("failed"))
