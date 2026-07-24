@@ -74,10 +74,13 @@ class CopyToBackupIgnoreTest(unittest.TestCase):
 
     def test_backup_ignore_only_targets_backup_parents(self) -> None:
         # `backups` sob um diretório qualquer do usuário NÃO é ignorado —
-        # o filtro é cirúrgico: só `.prumo`, `system` e `archive` como pai.
+        # o filtro é por CONTEXTO técnico (Codex, série #178): `archive`
+        # avulso do usuário não conta; só `<state>/archive`.
         kept = backup_ignore(str(self.tmp / "Referencias"), ["backups", "foto.png"])
         self.assertEqual(kept, set())
-        dropped = backup_ignore(str(self.tmp / "archive"), ["backups", "ARCHIVE-INDEX.json"])
+        user_archive = backup_ignore(str(self.tmp / "archive"), ["backups", "ARCHIVE-INDEX.json"])
+        self.assertEqual(user_archive, set(), "archive avulso do usuário não é contexto técnico")
+        dropped = backup_ignore(str(self.tmp / "_state" / "archive"), ["backups", "ARCHIVE-INDEX.json"])
         self.assertEqual(dropped, {"backups"})
         always = backup_ignore(str(self.tmp / "qualquer"), [".prumo", "PAUTA.md"])
         self.assertEqual(always, {".prumo"})
@@ -249,7 +252,7 @@ class PruneExpiredBackupsTest(unittest.TestCase):
         victim.write_text("referência\n", encoding="utf-8")
         self._make_old(victim, days=400)
         backups_root = self.ws / ".prumo" / "backups"
-        backups_root.mkdir(parents=True)
+        backups_root.mkdir(parents=True, exist_ok=True)
         (backups_root / "scope-link").symlink_to(outside)
 
         removed = prune_expired_backups(self.ws, today=self.today, expiry_days=90)
