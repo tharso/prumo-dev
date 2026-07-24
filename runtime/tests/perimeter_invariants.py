@@ -18,6 +18,7 @@ PERIMETER_INVARIANTS: tuple[str, ...] = (
     "por qualquer ferramenta",
     # Exclusões fixas em qualquer escopo.
     "node_modules",
+    "`.git`",
     "caches e builds ficam fora de qualquer listagem",
     # Escopo 2: autorizado pela tarefa — expansão dirigida e rasa.
     "Escopo autorizado pela tarefa",
@@ -25,7 +26,9 @@ PERIMETER_INVARIANTS: tuple[str, ...] = (
     "top-level do caminho citado",
     "rastro do alvo",
     "perguntar o caminho, não explorar",
-    # Delegação: o perímetro viaja no prompt do subagente.
+    # Delegação: o perímetro viaja no prompt do subagente, com a proibição
+    # explícita de enumerar fora dos caminhos delegados.
     "caminhos permitidos",
+    "proibição de enumerar fora deles",
     'Nunca "explore o workspace"',
 )

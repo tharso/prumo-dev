@@ -369,10 +369,16 @@ class PerimeterPropagationTests(unittest.TestCase):
                     with self.subTest(target=name, invariant=invariant):
                         self.assertIn(invariant, merged)
                 with self.subTest(target=name, check="autoral byte a byte"):
-                    # Segmentos fora do bloco gerenciado idênticos aos
-                    # originais — incluindo whitespace (sem strip).
-                    self.assertTrue(merged.startswith(self._authorial_head(name)))
-                    self.assertTrue(merged.endswith(self._authorial_tail(name)))
+                    # Segmentos fora do bloco gerenciado LITERALMENTE iguais
+                    # aos originais (whitespace incluso): extrai pelos
+                    # delimitadores e compara igualdade — startswith/endswith
+                    # aceitariam bytes extras encostados no bloco.
+                    self.assertEqual(merged.count("<!-- prumo:begin -->"), 1)
+                    self.assertEqual(merged.count("<!-- prumo:end -->"), 1)
+                    before, remainder = merged.split("<!-- prumo:begin -->", 1)
+                    _, after = remainder.split("<!-- prumo:end -->", 1)
+                    self.assertEqual(before, self._authorial_head(name))
+                    self.assertEqual(after, self._authorial_tail(name))
                 self.assertNotIn("Bloco antigo do Prumo", merged)
 
     def test_second_repair_after_perimeter_propagation_is_idempotent(self) -> None:
