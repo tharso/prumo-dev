@@ -95,12 +95,31 @@ class SandboxMeasurementTest(unittest.TestCase):
         self.assertEqual(self.report["mode"], "legacy")
 
     def test_route_has_all_legacy_items(self) -> None:
+        # A rota legacy é a Pré-carga canônica da #195 no pior caso realista
+        # (Cowork + shell + inbox) — round 1 do Codex na série.
         files = [item["file"] for item in self.report["items"]]
-        self.assertIn("CLAUDE.md", files)
-        self.assertIn(".prumo/system/PRUMO-CORE.md", files)
-        self.assertIn(
-            ".prumo/skills/prumo/references/modules/briefing-procedure.md", files
-        )
+        modules = ".prumo/skills/prumo/references/modules"
+        for expected in (
+            "CLAUDE.md",
+            "Prumo/AGENT.md",
+            ".prumo/system/PRUMO-CORE.md",
+            ".prumo/skills/briefing/SKILL.md",
+            f"{modules}/briefing-procedure.md",
+            "Prumo/Agente/PERFIL.md",
+            "Prumo/Agente/ROTINA.md",
+            "Prumo/Agente/PESSOAS.md",
+            f"{modules}/load-policy.md",
+            f"{modules}/version-update.md",
+            f"{modules}/interaction-format.md",
+            f"{modules}/runtime-paths.md",
+            f"{modules}/cowork-runtime-bridge.md",
+            f"{modules}/inbox-processing.md",
+        ):
+            with self.subTest(file=expected):
+                self.assertIn(expected, files)
+
+    def test_sandbox_route_has_no_errors(self) -> None:
+        self.assertEqual(self.report["errors"], [])
 
     def test_total_is_substantial(self) -> None:
         # Sanidade: a rota atual carrega o core (2k+) e o procedure (2k+).
@@ -117,16 +136,76 @@ class SandboxMeasurementTest(unittest.TestCase):
         self.assertLess(perfil["words"], 200)
 
     def test_missing_file_counts_zero_and_is_declared(self) -> None:
-        words, exists, note = audit.resolve_words(
+        words, exists, note, error = audit.resolve_words(
             self.ws, "Prumo/Agente/NAO-EXISTE.md", "(integral)"
         )
-        self.assertEqual((words, exists), (0, False))
+        self.assertEqual((words, exists, error), (0, False, False))
+        self.assertIn("ausente", note)
+
+    def test_missing_section_is_an_error(self) -> None:
+        # Fail-closed: seção declarada que não existe num arquivo presente é
+        # erro de rota, nunca zero silencioso (Codex série r1).
+        words, exists, note, error = audit.resolve_words(
+            self.ws, "Prumo/AGENT.md", "## Seção Que Não Existe"
+        )
+        self.assertEqual((words, exists, error), (0, True, True))
         self.assertIn("ausente", note)
 
     def test_reduction_pct_math(self) -> None:
         total = self.report["total_before_first_user_data"]
         expected = round(100 * (1 - total / audit.REFERENCE_WORDS), 1)
         self.assertEqual(self.report["reduction_pct_vs_reference"], expected)
+
+
+class FailClosedTest(unittest.TestCase):
+    def test_empty_manifest_is_error_not_zero_route(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp)
+            skill = ws / ".prumo" / "skills" / "briefing" / "SKILL.md"
+            skill.parent.mkdir(parents=True)
+            skill.write_text(
+                "# Briefing\n\n## Mapa de carregamento por fase\n\nsem tabela aqui\n",
+                encoding="utf-8",
+            )
+            report = audit.measure(ws)
+        self.assertEqual(report["mode"], "manifest")
+        self.assertTrue(report["errors"], "manifesto vazio passou sem erro")
+
+    def test_manifest_with_missing_section_reports_error(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp)
+            skill = ws / ".prumo" / "skills" / "briefing" / "SKILL.md"
+            skill.parent.mkdir(parents=True)
+            skill.write_text(
+                "\n".join(
+                    [
+                        "# Briefing",
+                        "",
+                        "## Mapa de carregamento por fase",
+                        "",
+                        "| Fase | Gatilho | Arquivo | Seção | Tipo |",
+                        "|---|---|---|---|---|",
+                        "| F0 | sempre | `Prumo/AGENT.md` | `## Não Existe` | instrução |",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            (ws / "Prumo").mkdir()
+            (ws / "Prumo" / "AGENT.md").write_text("# AGENT\n\numas palavras\n", encoding="utf-8")
+            report = audit.measure(ws)
+        self.assertTrue(any("ausente" in e for e in report["errors"]))
+
+    def test_main_returns_2_on_errors_even_with_generous_ceiling(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp)
+            skill = ws / ".prumo" / "skills" / "briefing" / "SKILL.md"
+            skill.parent.mkdir(parents=True)
+            skill.write_text(
+                "# Briefing\n\n## Mapa de carregamento por fase\n\nsem tabela\n",
+                encoding="utf-8",
+            )
+            rc = audit.main(["--workspace", str(ws), "--json", "--ceiling", "999999"])
+        self.assertEqual(rc, 2, "rota quebrada não pode passar no teto")
 
 
 if __name__ == "__main__":

@@ -34,6 +34,17 @@ class CoreMarkersTest(unittest.TestCase):
                 f"marcador estrutural sumiu do core: {marker!r} — o staging da rota depende dele",
             )
 
+    def test_markers_are_unique(self) -> None:
+        # O parser da rota usa o PRIMEIRO match exato: marcador duplicado
+        # torna o corte ambíguo sem quebrar nada visível (Codex série r1).
+        for marker in (PARTE_1, PARTE_2, GUARDRAILS, "## Comandos disponíveis"):
+            with self.subTest(marker=marker):
+                self.assertEqual(
+                    self.lines.count(marker),
+                    1,
+                    f"marcador duplicado no core: {marker!r} — o corte da rota fica ambíguo",
+                )
+
     def test_guardrails_dentro_da_parte2(self) -> None:
         idx_p1 = self.lines.index(PARTE_1)
         idx_p2 = self.lines.index(PARTE_2)
