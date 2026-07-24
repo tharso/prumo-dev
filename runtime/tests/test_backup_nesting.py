@@ -72,6 +72,39 @@ class CopyToBackupIgnoreTest(unittest.TestCase):
         copy_to_backup(source, target)
         self.assertEqual(target.read_text(encoding="utf-8"), "# AGENT\n")
 
+    def test_copy_preserves_internal_symlink_without_dereferencing(self) -> None:
+        # Codex série r2: link de nome neutro pra dentro de .prumo/backups,
+        # dereferenciado pelo copytree, contornaria o ignore e traria o
+        # backup (ou qualquer diretório externo) pra dentro da cópia.
+        source = self.tmp / "arvore"
+        source.mkdir()
+        (source / "nota.md").write_text("conteúdo\n", encoding="utf-8")
+        hidden = self.tmp / ".prumo" / "backups" / "setup" / "stamp"
+        hidden.mkdir(parents=True)
+        (hidden / "grande.md").write_text("backup antigo\n", encoding="utf-8")
+        (source / "meus-docs").symlink_to(hidden)
+
+        target = self.tmp / "destino-link-interno"
+        copy_to_backup(source, target)
+
+        self.assertTrue((target / "meus-docs").is_symlink(), "link interno foi dereferenciado")
+        self.assertEqual((target / "meus-docs").readlink(), hidden)
+        self.assertTrue((target / "nota.md").exists())
+
+    def test_copy_of_symlinked_source_root_stays_a_link(self) -> None:
+        real = self.tmp / "real-dir"
+        real.mkdir()
+        (real / "a.md").write_text("x\n", encoding="utf-8")
+        link_root = self.tmp / "link-root"
+        link_root.symlink_to(real)
+
+        target = self.tmp / "destino-link-root"
+        copy_to_backup(link_root, target)
+
+        self.assertTrue(target.is_symlink(), "source-root symlinkado foi materializado")
+        self.assertEqual(target.readlink(), real)
+        self.assertTrue((real / "a.md").exists())
+
     def test_backup_ignore_only_targets_backup_parents(self) -> None:
         # `backups` sob um diretório qualquer do usuário NÃO é ignorado —
         # o filtro é por CONTEXTO técnico (Codex, série #178): `archive`

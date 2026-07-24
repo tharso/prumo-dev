@@ -50,11 +50,17 @@ def backup_path_for(workspace: Path, relative: str, stamp: str) -> Path:
 
 
 def copy_to_backup(source: Path, backup_target: Path) -> None:
+    """Copia preservando symlinks COMO links (Codex série r2): dereferenciar
+    permitiria a um link de nome neutro contornar o `backup_ignore` e trazer
+    `.prumo/backups` (ou qualquer diretório externo) pra dentro da cópia."""
     backup_target.parent.mkdir(parents=True, exist_ok=True)
-    if source.is_dir():
-        shutil.copytree(source, backup_target, ignore=backup_ignore)
+    if source.is_symlink():
+        backup_target.symlink_to(source.readlink())
         return
-    shutil.copy2(source, backup_target)
+    if source.is_dir():
+        shutil.copytree(source, backup_target, ignore=backup_ignore, symlinks=True)
+        return
+    shutil.copy2(source, backup_target, follow_symlinks=False)
 
 
 def move_with_backup(
