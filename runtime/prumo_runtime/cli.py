@@ -15,6 +15,7 @@ from prumo_runtime.commands import (
     run_migrate_skills,
     run_repair,
     run_projetos,
+    run_sanitize,
     run_setup,
     run_start,
     run_update,
@@ -121,6 +122,35 @@ def build_parser() -> argparse.ArgumentParser:
     fim.add_argument("--workspace", required=True, help="Caminho do workspace")
     fim.add_argument("--format", choices=["text", "json"], default="text")
     fim.set_defaults(handler=run_fim)
+
+    sanitize = subparsers.add_parser(
+        "sanitize",
+        help=(
+            "Sanitização técnica de `.prumo/` — motor do módulo sanitize.md "
+            "(dry-run por default; `--apply --plan plano.json --yes` executa "
+            "o plano aprovado com backup único)"
+        ),
+    )
+    sanitize.add_argument("--workspace", required=True, help="Caminho do workspace")
+    sanitize.add_argument("--format", choices=["text", "json"], default="text")
+    sanitize.add_argument("--apply", action="store_true", help="Executa o plano (exige --plan e --yes)")
+    sanitize.add_argument(
+        "--plan",
+        default=None,
+        help="Relatório JSON do dry-run aprovado — só o que está nele executa",
+    )
+    sanitize.add_argument(
+        "--yes", action="store_true", help="Confirma a execução (aprovação já colhida)"
+    )
+    sanitize.add_argument(
+        "--rules",
+        default=None,
+        help="Subconjunto de regras, separado por vírgula (aprovação seletiva)",
+    )
+    sanitize.add_argument("--ephemeral-days", type=int, default=14)
+    sanitize.add_argument("--backup-expiry-days", type=int, default=90)
+    sanitize.add_argument("--cache-days", type=int, default=30)
+    sanitize.set_defaults(handler=run_sanitize)
 
     menu = subparsers.add_parser(
         "menu",

@@ -35,6 +35,9 @@ ANNOUNCED_COMMANDS = [
     "prumo start --format json",
     # Inbox preview estruturado (anunciado em adapter_hints)
     "prumo inbox preview --workspace . --format json",
+    # Sanitização técnica (anunciada no módulo sanitize.md, #179)
+    "prumo sanitize --workspace . --format json",
+    "prumo sanitize --workspace . --apply --rules handover_legacy --yes",
 ]
 
 
