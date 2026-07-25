@@ -138,7 +138,7 @@ class PreloadSingleEnumerationTests(unittest.TestCase):
             f"sobrando={sorted(listed - CANONICAL_PRELOAD_UNION)}",
         )
 
-    def test_procedure_declares_parallel_dag(self) -> None:
+    def test_procedure_declares_adaptive_dag(self) -> None:
         text = PROCEDURE.read_text(encoding="utf-8")
         for invariant in DAG_INVARIANTS:
             with self.subTest(invariant=invariant):
