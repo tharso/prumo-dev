@@ -45,6 +45,19 @@ PAUTA = """# Pauta
 
 - **Ideia adormecida** com [[conexao]]
 - Segunda ideia hibernada
+
+## Horizonte (importante mas não urgente)
+
+- Aposta de longo prazo sem pressa nenhuma
+
+## Agendado Futuro
+
+- Setembro: rever contrato
+- Outubro: renovar domínio
+
+## Notas do sistema
+
+- Config: brain dump aos domingos
 """
 
 
@@ -129,6 +142,41 @@ class SeedParityTest(unittest.TestCase):
         seed = [item["text"] for item in self.by_id["hibernando"]["items"]]
         self.assertEqual(seed, direct)
         self.assertIn("[[conexao]]", seed[0])
+
+    def test_non_canonical_sections_full_parity(self) -> None:
+        # #206: seção autoral não pode sumir entre transportes — item a item,
+        # como LISTA ORDENADA (label é display, não chave: dict colapsaria
+        # labels duplicados e o teste passaria sorrindo sobre o cadáver).
+        from prumo_runtime.pauta_parsing import extract_all_sections
+
+        canonical_labels = {
+            "Quente (precisa de atenção agora)",
+            "Em andamento",
+            "Agendado / Lembretes",
+            "Hibernando",
+        }
+        direct = [
+            (label, items)
+            for label, items in extract_all_sections(self.pauta_text)
+            if label not in canonical_labels
+        ]
+        seed = [
+            (s["label"], [i["text"] for i in s["items"]])
+            for s in self.panorama["pauta"]["outras_secoes"]
+        ]
+        self.assertEqual(seed, direct)
+
+    def test_grand_total_parity_nothing_lost(self) -> None:
+        from prumo_runtime.pauta_parsing import extract_all_sections
+
+        direct_total = sum(
+            len(items) for _, items in extract_all_sections(self.pauta_text)
+        )
+        block = self.panorama["pauta"]
+        seed_total = sum(s["count"] for s in block["sections"]) + sum(
+            s["count"] for s in block["outras_secoes"]
+        )
+        self.assertEqual(seed_total, direct_total, "a semente perdeu item da PAUTA")
 
     def test_cobrar_states_cover_all_categories(self) -> None:
         states = {
@@ -233,6 +281,11 @@ class SeedFirstTextGuard(unittest.TestCase):
         self.assertIn("semente-primeiro, #197", procedure)
         self.assertIn("prumo_local_panorama.v1", procedure)
         self.assertIn("dois casos apenas", procedure)
+        self.assertIn(
+            "`pauta.outras_secoes` presente como lista",
+            procedure,
+            "gate por capacidade (#206): schema + campo, nunca só presença de binário",
+        )
 
 
 class SeedReadOnlyTest(unittest.TestCase):

@@ -1,6 +1,6 @@
 # Briefing Procedure
 
-> **module_version: 4.30.0**
+> **module_version: 4.31.0**
 >
 > Fonte canônica do procedimento de briefing do Prumo.
 > Se este módulo conflitar com um resumo em `SKILL.md`, este módulo vence.
@@ -71,7 +71,7 @@ Não parar no drift local: "comparar só o core do workspace contra si mesmo" n�
 
 ## Passo 3: estado operacional
 
-**Com runtime no trilho novo (semente-primeiro, #197):** o JSON de `prumo briefing --workspace <path> --format json` carrega o bloco `local_panorama` (schema `prumo_local_panorama.v1`) com tudo que este passo consome: itens da PAUTA por seção — **incluindo `Hibernando`** — com a linha integral (`text`), a versão de exibição (`display_text` — campo ESPARSO: presente só quando o item foi truncado no teto; ausente, usar `text`) e o marker de cobrança já parseado (também esparso: só existe quando o item tem marker) (`cobrar.state`: `future|tomorrow|today|overdue|invalid` + `visible_today`); contagem do `INBOX.md`; cauda do `REGISTRO.md` (ponte associativa do Passo 5); e sinais mecânicos de faxina (`local_panorama.faxina`: linhas da tabela do registro, processados velhos). Montar o estado operacional **a partir da semente — não reler `PAUTA.md`/`INBOX.md` integrais pra exibir**.
+**Com runtime no trilho novo (semente-primeiro, #197):** o JSON de `prumo briefing --workspace <path> --format json` carrega o bloco `local_panorama` (schema `prumo_local_panorama.v1`) com tudo que este passo consome. **Gate por CAPACIDADE, não por presença de binário (#206):** confiar na semente exige `local_panorama.schema_version == prumo_local_panorama.v1` **E** `pauta.outras_secoes` presente como lista — um runtime mais velho no PATH (que anuncia v1 sem o campo, ou nem tem `local_panorama`) significa semente incompleta: cair no fallback de leitura direta, nunca consumir semente capenga. O que a semente carrega: itens da PAUTA por seção — **incluindo `Hibernando`** — com a linha integral (`text`), a versão de exibição (`display_text` — campo ESPARSO: presente só quando o item foi truncado no teto; ausente, usar `text`) e o marker de cobrança já parseado (também esparso: só existe quando o item tem marker) (`cobrar.state`: `future|tomorrow|today|overdue|invalid` + `visible_today`); **seções autorais fora das 4 canônicas vêm em `pauta.outras_secoes`** (mesma estrutura de itens — nada da PAUTA fica fora do transporte, #206); contagem do `INBOX.md`; cauda do `REGISTRO.md` (ponte associativa do Passo 5); e sinais mecânicos de faxina (`local_panorama.faxina`: linhas da tabela do registro, processados velhos). Montar o estado operacional **a partir da semente — não reler `PAUTA.md`/`INBOX.md` integrais pra exibir**.
 
 Arquivo bruto abre em **dois casos apenas**:
 
@@ -255,7 +255,7 @@ A proposta deve considerar deadlines de hoje, blockers, agenda disponível e ite
 
 Junto à proposta do dia, **no máximo uma** sugestão associativa por briefing (regra 17 do core) — conexão ("o que você anotou ontem conversa com aquilo de março — costuro?") **ou** ressurgência por relevância ("faz 40 dias que você anotou X; hoje você mexeu em Y — ataca, deixa cozinhando, ou arquiva?" — os verbos do acervo). Regras:
 
-1. **Fonte restrita ao já-carregado:** o conteúdo da PAUTA que já está no contexto — na semente, as seções integrais de `local_panorama.pauta` **incluindo `hibernando`** (o limbo vem dentro dela); no fallback, `PAUTA.md` integral —, a cauda do `REGISTRO.md` (na semente, `local_panorama.registro.tail`) e as capturas do dia — mais as conexões `[[...]]` visíveis nesses itens (escritas pelo garimpo da revisão semanal). **Zero leitura nova** por causa da ponte: o briefing não abre `IDEIAS.md` nem `Referencias/` pra procurá-la.
+1. **Fonte restrita ao já-carregado:** o conteúdo da PAUTA que já está no contexto — na semente, as seções integrais de `local_panorama.pauta` **incluindo `hibernando` e as `outras_secoes` autorais**; no fallback, `PAUTA.md` integral —, a cauda do `REGISTRO.md` (na semente, `local_panorama.registro.tail`) e as capturas do dia — mais as conexões `[[...]]` visíveis nesses itens (escritas pelo garimpo da revisão semanal). **Zero leitura nova** por causa da ponte: o briefing não abre `IDEIAS.md` nem `Referencias/` pra procurá-la.
 2. A ponte precisa ser explicável em uma frase apontando itens concretos; similaridade de palavra solta não conta (regra 17).
 3. **Opcional e não-bloqueante:** sem ponte com significado real hoje → sem ponte. Ela nunca atrasa nem trava o briefing.
 4. Ressurgir item de `IDEIAS.md`/`Referencias/` não é papel do briefing — é do garimpo semanal e do `/acervo`.

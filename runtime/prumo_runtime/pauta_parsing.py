@@ -35,6 +35,36 @@ def _section_header_matches(header_text: str, marker: str) -> bool:
     return tail[0] in _SECTION_HEADER_SEPARATORS
 
 
+def section_matches_heading(header_text: str, heading: str) -> bool:
+    """Versão pública do matcher tolerante (#206): o `local_panorama` usa pra
+    separar seções canônicas das demais sem duplicar a regra."""
+    return _section_header_matches(header_text.strip(), f"## {heading}")
+
+
+def extract_all_sections(markdown: str) -> list[tuple[str, list[str]]]:
+    """TODAS as seções `## ` da PAUTA, na ordem do arquivo (#206).
+
+    Cada entrada é (label cru sem o `## `, itens filtrados pela MESMA regra
+    do `extract_section` — linhas vazias e `_..._` fora). É a base da
+    paridade semente × leitura direta: seção que o usuário inventou
+    ("Horizonte", "Agendado futuro") não pode sumir no transporte.
+    """
+    sections: list[tuple[str, list[str]]] = []
+    current: list[str] | None = None
+    for line in markdown.splitlines():
+        if line.startswith("## "):
+            current = []
+            sections.append((line[3:].strip(), current))
+            continue
+        if current is None:
+            continue
+        stripped = line.strip()
+        if not stripped or stripped.startswith("_"):
+            continue
+        current.append(stripped)
+    return sections
+
+
 def extract_section(markdown: str, heading: str) -> list[str]:
     lines = markdown.splitlines()
     capture = False

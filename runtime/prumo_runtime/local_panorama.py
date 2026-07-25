@@ -24,7 +24,11 @@ import json
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
-from prumo_runtime.pauta_parsing import cobrar_state, extract_section
+from prumo_runtime.pauta_parsing import (
+    cobrar_state,
+    extract_all_sections,
+    section_matches_heading,
+)
 
 PANORAMA_SCHEMA_VERSION = "prumo_local_panorama.v1"
 
@@ -67,26 +71,63 @@ def _display_text(item: str) -> str:
     return text
 
 
+def _build_items(raw_items: list[str], today: date) -> list[dict]:
+    items = []
+    for raw in raw_items:
+        cobrar = cobrar_state(raw, today)
+        item: dict = {
+            "text": raw,
+            "visible_today": True if cobrar is None else cobrar["visible_today"],
+        }
+        # Orçamento: display_text só existe quando DIFERE do text (item
+        # cortado no teto) e cobrar só quando há marker — item curto sem
+        # marker custa uma chave, não quatro.
+        display = _display_text(raw)
+        if display != raw.strip().removeprefix("- ").strip():
+            item["display_text"] = display
+        if cobrar is not None:
+            item["cobrar"] = cobrar
+        items.append(item)
+    return items
+
+
 def build_pauta_block(pauta_text: str, today: date) -> dict:
+    """Seções canônicas em `sections` (sempre as 4, mesmo vazias) + TODAS as
+    demais seções `## ` do arquivo em `outras_secoes` (#206) — a PAUTA real
+    tem seções autorais ("Horizonte", "Agendado futuro") que não podem sumir
+    no transporte da semente.
+
+    Parse ÚNICO via `extract_all_sections`: ocorrências REPETIDAS de um
+    heading canônico ("## Quente" duas vezes, ou "## Quente — hoje") ACUMULAM
+    na canônica em ordem de arquivo — nunca somem. Em `outras_secoes`, o
+    `label` é display (não necessariamente único); a identidade é a posição
+    na lista. `count`/`visible_count` contam LINHAS transportadas/visíveis
+    (prosa solta em seção autoral viaja como linha — fail-open; julgar o que
+    é acionável é papel da curadoria, não do transporte)."""
+    canonical_items: dict[str, list[str]] = {sid: [] for sid, _ in PAUTA_SECTIONS}
+    outras = []
+    for label, raw_items in extract_all_sections(pauta_text):
+        matched = None
+        for section_id, heading in PAUTA_SECTIONS:
+            if section_matches_heading(f"## {label}", heading):
+                matched = section_id
+                break
+        if matched is not None:
+            canonical_items[matched].extend(raw_items)
+            continue
+        items = _build_items(raw_items, today)
+        outras.append(
+            {
+                "label": label,
+                "items": items,
+                "count": len(items),
+                "visible_count": sum(1 for item in items if item["visible_today"]),
+            }
+        )
+
     sections = []
     for section_id, heading in PAUTA_SECTIONS:
-        raw_items = extract_section(pauta_text, heading)
-        items = []
-        for raw in raw_items:
-            cobrar = cobrar_state(raw, today)
-            item: dict = {
-                "text": raw,
-                "visible_today": True if cobrar is None else cobrar["visible_today"],
-            }
-            # Orçamento: display_text só existe quando DIFERE do text (item
-            # cortado no teto) e cobrar só quando há marker — item curto sem
-            # marker custa uma chave, não quatro.
-            display = _display_text(raw)
-            if display != raw.strip().removeprefix("- ").strip():
-                item["display_text"] = display
-            if cobrar is not None:
-                item["cobrar"] = cobrar
-            items.append(item)
+        items = _build_items(canonical_items[section_id], today)
         sections.append(
             {
                 "id": section_id,
@@ -96,7 +137,7 @@ def build_pauta_block(pauta_text: str, today: date) -> dict:
                 "visible_count": sum(1 for item in items if item["visible_today"]),
             }
         )
-    return {"sections": sections}
+    return {"sections": sections, "outras_secoes": outras}
 
 
 def _count_inbox_items(inbox_text: str) -> int:
@@ -184,7 +225,7 @@ def build_local_panorama(
     """
     completeness: dict[str, dict] = {}
 
-    pauta_block: dict = {"sections": []}
+    pauta_block: dict = {"sections": [], "outras_secoes": []}
     if pauta_path.exists():
         try:
             pauta_block = build_pauta_block(
