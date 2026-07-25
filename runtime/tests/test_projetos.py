@@ -38,7 +38,7 @@ NOW = datetime(2026, 7, 24, 20, 0, 0, tzinfo=timezone.utc)
 
 def _make_repo(tmp: Path) -> Path:
     repo = tmp / "repo"
-    repo.mkdir()
+    repo.mkdir(parents=True)
     subprocess.run(["git", "-C", str(repo), "init", "-q", "-b", "main"], check=True)
     subprocess.run(["git", "-C", str(repo), "config", "user.email", "t@t"], check=True)
     subprocess.run(["git", "-C", str(repo), "config", "user.name", "T"], check=True)
@@ -449,6 +449,135 @@ class CrlfRoundtripTests(unittest.TestCase):
         self.assertEqual(report["errors"], [])
         self.assertTrue(new_text.startswith("# Projetos\r\n\r\nnota autoral\r\n"))
         self.assertIn(PULSO_BEGIN + "\r\n", new_text)
+
+
+class BindingMatrixTests(unittest.TestCase):
+    """Codex diff r2, achado 9: as condições declaradas viram fixtures."""
+
+    def test_detached_head_is_reported_not_crashed(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = _make_repo(Path(tmp))
+            sha = subprocess.run(
+                ["git", "-C", str(repo), "rev-parse", "HEAD"],
+                capture_output=True, text=True, check=True,
+            ).stdout.strip()
+            subprocess.run(["git", "-C", str(repo), "checkout", "-q", "--detach", sha], check=True)
+            pulse = collect_git_pulse(repo, now=NOW)
+        self.assertEqual(pulse["branch"], "(detached)")
+        self.assertTrue(pulse["complete"])
+
+    def test_git_timeout_is_visible_error(self) -> None:
+        from unittest import mock
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = _make_repo(Path(tmp))
+            with mock.patch.object(projetos, "_run_git", return_value=None):
+                pulse = collect_git_pulse(repo, now=NOW)
+        self.assertFalse(pulse["complete"])
+        self.assertTrue(pulse["errors"])
+
+    def test_lstat_permission_failure_is_visible(self) -> None:
+        from unittest import mock
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = _make_repo(Path(tmp))
+            (repo / "novo.md").write_text("x\n", encoding="utf-8")
+            with mock.patch.object(projetos.os, "lstat", side_effect=OSError("negado")):
+                pulse = collect_git_pulse(repo, now=NOW)
+        self.assertTrue(pulse["dirty"])
+        self.assertFalse(pulse["complete"])
+        self.assertTrue(any("stat" in e for e in pulse["errors"]))
+
+    def test_mode_only_change_counts_as_activity(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = _make_repo(Path(tmp))
+            target = repo / "a.md"
+            os.utime(target, (1000000000, 1000000000))
+            os.chmod(target, 0o755)  # mode muda → porcelain acusa; ctime recente
+            pulse = collect_git_pulse(repo, now=NOW)
+        self.assertTrue(pulse["dirty"])
+        self.assertIsNotNone(pulse["working_tree_activity_at"])
+        self.assertGreater(pulse["working_tree_activity_at"], "2020-01-01")
+
+    def test_sync_does_not_touch_git_index(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = _make_repo(Path(tmp))
+            (repo / "sujo.md").write_text("x\n", encoding="utf-8")
+            index = repo / ".git" / "index"
+            before = index.read_bytes()
+            collect_git_pulse(repo, now=NOW)
+            after = index.read_bytes()
+        self.assertEqual(before, after, "git status atualizou o index — sync deixou de ser read-only no projeto")
+
+    def test_multi_section_sync_is_literally_stable_outside_blocks(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo_a = _make_repo(Path(tmp) / "a")
+            repo_b = _make_repo(Path(tmp) / "b")
+            text = (
+                "# Projetos\n\nprosa autoral 1\n\n"
+                "## Projetos registrados\n\n"
+                f"### A\n- Caminho: {repo_a}\n- Nota: alfa\n\n"
+                f"### B\n- Caminho: {repo_b}\n- Nota: beta\n\n"
+                "## Rodapé autoral\n\nfim\n"
+            )
+            new_text, report = sync_index_text(
+                text, home=Path(tmp) / "h", workspace=Path(tmp) / "ws", now=NOW
+            )
+            self.assertEqual(report["errors"], [])
+            # Remove os blocos gerados e compara o restante LITERALMENTE.
+            import re as _re
+            stripped = _re.sub(
+                rf"{_re.escape(PULSO_BEGIN)}.*?{_re.escape(PULSO_END)}\n",
+                "",
+                new_text,
+                flags=_re.DOTALL,
+            )
+        self.assertEqual(stripped, text, "bytes autorais mudaram fora dos blocos")
+
+    def test_repair_preserves_authorial_projetos_md(self) -> None:
+        import re as _re
+        from prumo_runtime.workspace import (
+            WorkspaceConfig, create_missing_files, ensure_directories,
+            install_skills, repair_workspace,
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp) / "ws"
+            config = WorkspaceConfig(
+                workspace=ws, user_name="T", layout_mode="nested", workspace_name="W"
+            )
+            ensure_directories(ws)
+            install_skills(ws, layout_mode="nested")
+            create_missing_files(config)
+            projetos_md = ws / "Prumo" / "Agente" / "PROJETOS.md"
+            custom = "# Projetos\n\nconteúdo 100% autoral do usuário\n"
+            projetos_md.write_text(custom, encoding="utf-8")
+            core = ws / ".prumo" / "system" / "PRUMO-CORE.md"
+            core.write_text(
+                _re.sub(r"prumo_version:\s*[0-9.]+", "prumo_version: 5.0.0",
+                        core.read_text(encoding="utf-8"), count=1),
+                encoding="utf-8",
+            )
+            repair_workspace(ws)
+            after = projetos_md.read_text(encoding="utf-8")
+        self.assertEqual(after, custom, "repair tocou o PROJETOS.md autoral")
+
+    def test_projetos_command_never_writes_version_cache(self) -> None:
+        import io
+        from contextlib import redirect_stdout
+        from unittest import mock
+        from prumo_runtime import version_check
+        from prumo_runtime.cli import main
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp) / "ws"
+            agente = ws / "Prumo" / "Agente"
+            agente.mkdir(parents=True)
+            (agente / "PROJETOS.md").write_text(_index(""), encoding="utf-8")
+            boom = mock.patch.object(
+                version_check, "_write_cache",
+                side_effect=AssertionError("banner escreveu cache no `projetos`"),
+            )
+            with boom, mock.patch.object(version_check, "_should_suppress", wraps=version_check._should_suppress):
+                with redirect_stdout(io.StringIO()):
+                    rc = main(["projetos", "--workspace", str(ws), "--format", "json"])
+        self.assertEqual(rc, 0)
 
 
 class SanitizeTests(unittest.TestCase):

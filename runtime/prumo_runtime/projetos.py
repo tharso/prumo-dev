@@ -108,11 +108,11 @@ def parse_projects_index(text: str) -> ParseResult:
     current: Entry | None = None
     for i in range(container_start + 1, container_end):
         stripped = lines[i].strip()
-        if stripped.startswith("###"):
-            name = stripped[3:].strip()
-            if not name:
-                result.errors.append(f"linha {i + 1}: seção de projeto sem nome")
+        if stripped.startswith("###") and not stripped.startswith("####"):
+            if not re.match(r"###[ \t]+\S", stripped):
+                result.errors.append(f"linha {i + 1}: seção de projeto malformada (use `### Nome`)")
                 continue
+            name = stripped[3:].strip()
             if current is not None:
                 current.section_end = i
             current = Entry(name=name, path_raw=None, header_line=i, section_end=container_end)
@@ -204,11 +204,15 @@ def _iso(ts: float) -> str:
 
 def _run_git(repo: Path, *args: str) -> subprocess.CompletedProcess | None:
     try:
+        env = dict(os.environ, GIT_OPTIONAL_LOCKS="0")
+        # OPTIONAL_LOCKS=0: `git status` não atualiza stat-cache/index — o
+        # contrato do sync é escrever SOMENTE o PROJETOS.md (Codex r2).
         return subprocess.run(
             ["git", "-C", str(repo), *args],
             capture_output=True,
             text=True,
             timeout=GIT_TIMEOUT_SECONDS,
+            env=env,
         )
     except (subprocess.TimeoutExpired, OSError):
         return None
@@ -243,9 +247,19 @@ def collect_git_pulse(path: Path, *, now: datetime) -> dict | None:
     elif log.returncode == 0:
         for line in log.stdout.splitlines():
             when, _, subject = line.partition("\t")
-            pulse["commits"].append({"date": when, "subject": subject})
+            # Sanitiza NA ORIGEM: o payload JSON expõe os commits e o
+            # orçamento de 80 chars vale nos dois formatos (Codex r2).
+            pulse["commits"].append(
+                {"date": when, "subject": sanitize_text(subject)[:SUBJECT_LIMIT]}
+            )
         if pulse["commits"]:
             pulse["last_commit_at"] = pulse["commits"][0]["date"]
+    else:
+        head = _run_git(path, "rev-parse", "--verify", "HEAD")
+        if head is not None and head.returncode == 0:
+            # HEAD existe e o log falhou mesmo assim: erro real, não unborn.
+            pulse["errors"].append("git log falhou")
+            pulse["complete"] = False
 
     porcelain = _run_git(path, "status", "--porcelain")
     if porcelain is None or porcelain.returncode != 0:
@@ -271,9 +285,13 @@ def collect_git_pulse(path: Path, *, now: datetime) -> dict | None:
                     pulse["errors"].append("diretório untracked não varrido — coleta parcial")
                 continue
             try:
-                stats.append(os.lstat(path / rel).st_mtime)
+                st = os.lstat(path / rel)
+                # chmod muda ctime sem tocar mtime: dirty por metadata
+                # também é atividade (Codex r2) — usar o mais recente.
+                stats.append(max(st.st_mtime, st.st_ctime))
             except OSError:
                 pulse["complete"] = False
+                pulse["errors"].append(f"sem stat em mudança do working tree: {rel}")
         if stats:
             pulse["working_tree_activity_at"] = _iso(max(stats))
 
@@ -332,6 +350,7 @@ def collect_folder_pulse(
                 mtime = child.lstat().st_mtime
             except OSError:
                 pulse["complete"] = False
+                pulse["errors"].append(f"sem stat: {child.name}")
                 continue
             if latest is None or mtime > latest:
                 latest = mtime
@@ -353,14 +372,15 @@ def read_narrative(project_path: Path) -> dict:
         "file_mtime": None,
         "error": None,
     }
+    if ctx.is_symlink():
+        # Antes do exists(): link QUEBRADO tem exists()==False e viraria
+        # "narrativa ausente" em silêncio (Codex r2).
+        narrative["exists"] = True
+        narrative["error"] = "contexto é symlink — ignorado"
+        return narrative
     if not ctx.exists():
         return narrative
     narrative["exists"] = True
-    if ctx.is_symlink():
-        # Contexto symlinkado escaparia do projeto registrado — recusar
-        # sem seguir (perímetro, #194).
-        narrative["error"] = "contexto é symlink — ignorado"
-        return narrative
     try:
         narrative["file_mtime"] = _iso(ctx.lstat().st_mtime)
         text = ctx.read_bytes().decode("utf-8")
@@ -509,10 +529,12 @@ def sync_index_text(
         return None, report
 
     canonical_seen: dict[str, str] = {}
+    resolutions: dict[int, tuple[Path | None, str | None]] = {}
     for entry in parsed.entries:
         if not entry.path_raw:
             continue
         resolved, err = resolve_registered_path(entry.path_raw, home=home, workspace=workspace)
+        resolutions[entry.header_line] = (resolved, err)
         if resolved is None:
             continue
         key = str(resolved)
@@ -537,7 +559,9 @@ def sync_index_text(
             info["note"] = "sem caminho registrado — pulso não coletado"
             report["projects"].append(info)
             continue
-        resolved, err = resolve_registered_path(entry.path_raw, home=home, workspace=workspace)
+        # Canonicalizado UMA vez na pré-validação — reutilizar fecha a
+        # janela de troca de alvo entre validação e coleta (Codex r2).
+        resolved, err = resolutions[entry.header_line]
         if err is None and not resolved.exists():
             err = "caminho registrado não existe"
         if err is not None:
