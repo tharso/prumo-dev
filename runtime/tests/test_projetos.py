@@ -600,12 +600,12 @@ class Round3Tests(unittest.TestCase):
             repo = _make_repo(Path(tmp))
             real = projetos._run_git
 
-            def selective(path, *args):
+            def selective(path, *args, **kwargs):
                 if args and args[0] == "log":
                     return subprocess.CompletedProcess(args, 1, "", "boom")
                 if args and args[0] == "rev-parse":
                     return None  # timeout
-                return real(path, *args)
+                return real(path, *args, **kwargs)
 
             with mock.patch.object(projetos, "_run_git", side_effect=selective):
                 pulse = collect_git_pulse(repo, now=NOW)
@@ -667,6 +667,137 @@ class NoMutationWithoutWorkTests(unittest.TestCase):
             )
         self.assertEqual(report["errors"], [])
         self.assertEqual(new_text, text, "sync sem trabalho mutou o documento")
+
+
+class FirstRealUseTests(unittest.TestCase):
+    """Bugs descobertos no primeiro sync real (25/07, workspace do dono)."""
+
+    def test_context_file_does_not_count_as_folder_activity(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "docs"
+            root.mkdir()
+            old_file = root / "antigo.md"
+            old_file.write_text("x\n", encoding="utf-8")
+            os.utime(old_file, (1200000000, 1200000000))
+            # Contexto recém-escrito NÃO pode virar "atividade":
+            (root / ".prumo-contexto.md").write_text(
+                "---\nupdated: 2026-07-25T01:27:00-03:00\n---\n", encoding="utf-8"
+            )
+            pulse = collect_folder_pulse(root, now=NOW)
+        self.assertEqual(
+            pulse["last_activity_at"],
+            datetime.fromtimestamp(1200000000, tz=timezone.utc).isoformat(),
+            "o próprio .prumo-contexto.md contou como atividade — frescor eternamente stale",
+        )
+
+    def test_porcelain_paths_with_spaces_and_unicode_are_stattable(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = _make_repo(Path(tmp))
+            weird = repo / "Docs" / "Tharso, the guy — Vieira.html"
+            weird.parent.mkdir()
+            weird.write_text("x\n", encoding="utf-8")
+            pulse = collect_git_pulse(repo, now=NOW)
+        self.assertTrue(pulse["dirty"])
+        self.assertFalse(
+            any("sem stat" in e for e in pulse["errors"]),
+            f"porcelain citado quebrou o stat: {pulse['errors']}",
+        )
+
+    def test_porcelain_rename_pair_uses_new_path(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = _make_repo(Path(tmp))
+            subprocess.run(["git", "-C", str(repo), "mv", "a.md", "b renomeado.md"], check=True)
+            pulse = collect_git_pulse(repo, now=NOW)
+        self.assertTrue(pulse["dirty"])
+        self.assertFalse(any("sem stat" in e for e in pulse["errors"]), pulse["errors"])
+
+
+class HotfixRound2Tests(unittest.TestCase):
+    def test_context_file_not_activity_in_git_repo_either(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = _make_repo(Path(tmp))
+            os.utime(repo / "a.md", (1200000000, 1200000000))
+            (repo / ".prumo-contexto.md").write_text(
+                "---\nupdated: 2026-07-25T01:00:00-03:00\n---\n", encoding="utf-8"
+            )
+            pulse = collect_git_pulse(repo, now=NOW)
+        wt = pulse["working_tree_activity_at"]
+        self.assertTrue(wt is None or wt < "2026", f"contexto contou como atividade git: {wt}")
+
+    def test_context_file_does_not_consume_scan_cap(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "docs"
+            root.mkdir()
+            (root / ".prumo-contexto.md").write_text("---\nupdated: 2026-07-25\n---\n", encoding="utf-8")
+            real = root / "z-real.md"
+            real.write_text("x\n", encoding="utf-8")
+            pulse = collect_folder_pulse(root, now=NOW, max_entries=1)
+        self.assertFalse(pulse["truncated"], "contexto consumiu o cap")
+        self.assertIsNotNone(pulse["last_activity_at"])
+
+    def test_porcelain_z_parser_handles_copy_and_non_utf8(self) -> None:
+        from prumo_runtime.projetos import parse_porcelain_z
+        data = b"C  novo.md\x00velho.md\x00?? arquivo \xff bin\x00 M normal.md\x00"
+        entries = parse_porcelain_z(data)
+        self.assertEqual(len(entries), 3)
+        self.assertTrue(entries[0].startswith("C "))
+        self.assertIn("normal.md", entries[2])
+
+
+class HotfixRound3Tests(unittest.TestCase):
+    def test_narrative_only_change_is_dirty_but_not_activity(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = _make_repo(Path(tmp))
+            (repo / ".prumo-contexto.md").write_text(
+                "---\nupdated: 2026-07-25T01:00:00-03:00\n---\n", encoding="utf-8"
+            )
+            pulse = collect_git_pulse(repo, now=NOW)
+        self.assertTrue(pulse["dirty"], "mudança na narrativa sumiu do dirty — repo mentiu limpeza")
+        wt = pulse["working_tree_activity_at"]
+        self.assertTrue(wt is None or wt < "2026", "narrativa contou como atividade")
+
+    def test_commit_touching_only_narrative_does_not_reopen_stale(self) -> None:
+        # Ordem CAUSAL fixada (Codex hotfix r4): commit base 20/07 <
+        # narrativa 22/07 < commit-do-contexto 24/07 < now 26/07.
+        # SEM a exclusão, a atividade seria 24/07 > narrativa → stale;
+        # COM a exclusão, atividade = 20/07 → fresh. O assert prova a
+        # exclusão de verdade — não depende do relógio.
+        import os as _os
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp) / "repo"
+            repo.mkdir(parents=True)
+            env_base = dict(
+                _os.environ,
+                GIT_COMMITTER_DATE="2026-07-20T10:00:00-03:00",
+                GIT_AUTHOR_DATE="2026-07-20T10:00:00-03:00",
+            )
+            subprocess.run(["git", "-C", str(repo), "init", "-q", "-b", "main"], check=True)
+            subprocess.run(["git", "-C", str(repo), "config", "user.email", "t@t"], check=True)
+            subprocess.run(["git", "-C", str(repo), "config", "user.name", "T"], check=True)
+            (repo / "a.md").write_text("x\n", encoding="utf-8")
+            subprocess.run(["git", "-C", str(repo), "add", "."], check=True)
+            subprocess.run(
+                ["git", "-C", str(repo), "commit", "-q", "-m", "base"], check=True, env=env_base
+            )
+            (repo / ".prumo-contexto.md").write_text(
+                "---\nupdated: 2026-07-22T10:00:00-03:00\n---\n", encoding="utf-8"
+            )
+            subprocess.run(["git", "-C", str(repo), "add", ".prumo-contexto.md"], check=True)
+            env_ctx = dict(
+                _os.environ,
+                GIT_COMMITTER_DATE="2026-07-24T10:00:00-03:00",
+                GIT_AUTHOR_DATE="2026-07-24T10:00:00-03:00",
+            )
+            subprocess.run(
+                ["git", "-C", str(repo), "commit", "-q", "-m", "docs: contexto"],
+                check=True,
+                env=env_ctx,
+            )
+            pulse = projetos._collect_project(
+                repo, now=datetime(2026, 7, 26, 12, 0, tzinfo=timezone.utc)
+            )
+        self.assertIn("2026-07-24", pulse["last_commit_at"], "histórico exibido deve mostrar o commit da narrativa")
+        self.assertEqual(pulse["staleness"], "fresh", f"commit da narrativa reabriu o stale: {pulse}")
 
 
 class SanitizeTests(unittest.TestCase):

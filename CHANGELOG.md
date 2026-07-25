@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.41.0] - 2026-07-25
+
+### Fixed
+- **Dois bugs do `prumo projetos` pegos no PRIMEIRO sync real (#201, adoção no workspace do dono)** — (1) o próprio `.prumo-contexto.md` contava como "atividade" da pasta: segundos depois de escrever a narrativa, o frescor virava `stale` pra sempre — a narrativa saiu da varredura de atividade; (2) `git status --porcelain` **cita** paths com espaço/unicode (aspas + escapes octais) e o stat quebrava em nomes reais como `"Docs/Tharso, the guy — …"` — trocado por `--porcelain -z` (NUL-separado, sem quoting; par de rename tratado). 3 testes de primeiro uso reproduzem os dois casos. Nenhuma fixture teria pego isso — o uso real é o round que falta.
+
 ## [5.40.0] - 2026-07-24
 
 ### Added

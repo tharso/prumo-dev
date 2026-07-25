@@ -203,7 +203,9 @@ def _iso(ts: float) -> str:
     return datetime.fromtimestamp(ts, tz=timezone.utc).isoformat()
 
 
-def _run_git(repo: Path, *args: str) -> subprocess.CompletedProcess | None:
+def _run_git(
+    repo: Path, *args: str, binary: bool = False
+) -> subprocess.CompletedProcess | None:
     try:
         env = dict(os.environ, GIT_OPTIONAL_LOCKS="0")
         # OPTIONAL_LOCKS=0: `git status` não atualiza stat-cache/index — o
@@ -211,12 +213,32 @@ def _run_git(repo: Path, *args: str) -> subprocess.CompletedProcess | None:
         return subprocess.run(
             ["git", "-C", str(repo), *args],
             capture_output=True,
-            text=True,
+            text=not binary,
             timeout=GIT_TIMEOUT_SECONDS,
             env=env,
         )
     except (subprocess.TimeoutExpired, OSError):
         return None
+
+
+def parse_porcelain_z(data: bytes) -> list[str]:
+    """Parse de `git status --porcelain -z` em BYTES (path não-UTF8 não pode
+    derrubar a coleta — decodificação com surrogateescape, round-trip seguro
+    pro lstat via os.fsdecode/fsencode). Rename/copy em QUALQUER das duas
+    colunas de status pula o token seguinte (path antigo)."""
+    entries: list[str] = []
+    skip_next = False
+    for raw in data.split(b"\0"):
+        if not raw:
+            continue
+        if skip_next:
+            skip_next = False
+            continue
+        item = raw.decode("utf-8", errors="surrogateescape")
+        entries.append(item)
+        if len(item) >= 2 and ("R" in item[:2] or "C" in item[:2]):
+            skip_next = True
+    return entries
 
 
 def collect_git_pulse(path: Path, *, now: datetime) -> dict | None:
@@ -255,6 +277,19 @@ def collect_git_pulse(path: Path, *, now: datetime) -> dict | None:
             )
         if pulse["commits"]:
             pulse["last_commit_at"] = pulse["commits"][0]["date"]
+            # Pro CÁLCULO de atividade, commit que só toca a narrativa não
+            # conta (senão commitar o contexto recria o stale — Codex r2).
+            act = _run_git(
+                path, "log", "-1", "--format=%cI", "--", ".", f":(exclude){CONTEXT_FILENAME}"
+            )
+            if act is not None and act.returncode == 0 and act.stdout.strip():
+                pulse["_activity_commit_at"] = act.stdout.strip()
+            elif act is not None and act.returncode == 0:
+                pass  # todos os commits tocam só a narrativa: sem atividade
+            else:
+                reason = "timeout" if act is None else "erro"
+                pulse["errors"].append(f"git log de atividade falhou ({reason})")
+                pulse["complete"] = False
     else:
         head = _run_git(path, "rev-parse", "--verify", "HEAD")
         if head is None:
@@ -266,13 +301,19 @@ def collect_git_pulse(path: Path, *, now: datetime) -> dict | None:
             pulse["errors"].append("git log falhou")
             pulse["complete"] = False
 
-    porcelain = _run_git(path, "status", "--porcelain")
+    porcelain = _run_git(path, "status", "--porcelain", "-z", binary=True)
     if porcelain is None or porcelain.returncode != 0:
         pulse["errors"].append("git status falhou")
         pulse["complete"] = False
         return pulse
-    entries = porcelain.stdout.splitlines()
-    pulse["dirty"] = bool(entries)
+    # -z em BYTES: sem C-quoting (path com espaço/unicode vinha citado e o
+    # stat falhava — primeiro sync real, 25/07) e sem decode estrito.
+    all_entries = parse_porcelain_z(porcelain.stdout)
+    # dirty reflete TODAS as mudanças (inclusive a narrativa — repo com só
+    # o contexto modificado não é "limpo"; Codex hotfix r2). Só o CÁLCULO
+    # de atividade exclui a narrativa.
+    entries = [item for item in all_entries if item[3:] != CONTEXT_FILENAME]
+    pulse["dirty"] = bool(all_entries)
     if entries:
         stats: list[float] = []
         if len(entries) > PORCELAIN_STAT_LIMIT:
@@ -280,8 +321,6 @@ def collect_git_pulse(path: Path, *, now: datetime) -> dict | None:
             pulse["errors"].append("mudanças demais no working tree — coleta parcial")
         for line in entries[:PORCELAIN_STAT_LIMIT]:
             rel = line[3:]
-            if " -> " in rel:
-                rel = rel.split(" -> ", 1)[1]
             if rel.endswith("/"):
                 # Diretório untracked colapsado: o mtime real está lá dentro
                 # e não vamos varrer — coleta incompleta, nunca "fresh".
@@ -290,7 +329,7 @@ def collect_git_pulse(path: Path, *, now: datetime) -> dict | None:
                     pulse["errors"].append("diretório untracked não varrido — coleta parcial")
                 continue
             try:
-                st = os.lstat(path / rel)
+                st = os.lstat(os.fsencode(str(path)) + b"/" + os.fsencode(rel))
                 # chmod muda ctime sem tocar mtime: dirty por metadata
                 # também é atividade (Codex r2) — usar o mais recente.
                 stats.append(max(st.st_mtime, st.st_ctime))
@@ -301,7 +340,8 @@ def collect_git_pulse(path: Path, *, now: datetime) -> dict | None:
             pulse["working_tree_activity_at"] = _iso(max(stats))
 
     candidates = []
-    for value in (pulse["last_commit_at"], pulse["working_tree_activity_at"]):
+    activity_commit = pulse.pop("_activity_commit_at", None)
+    for value in (activity_commit, pulse["working_tree_activity_at"]):
         parsed = _parse_when(value) if value else None
         if parsed is not None:
             candidates.append((parsed, value))
@@ -334,6 +374,10 @@ def collect_folder_pulse(
             pulse["complete"] = False
             continue
         for child in children:
+            if child.name == CONTEXT_FILENAME:
+                # Antes do cap: a narrativa nem consome orçamento de
+                # varredura (Codex, hotfix r1).
+                continue
             if visited >= max_entries:
                 pulse["truncated"] = True
                 pulse["complete"] = False
