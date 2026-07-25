@@ -128,14 +128,20 @@ def _registro_table_rows(registro_text: str) -> int:
     return max(rows - 1, 0) if rows else 0
 
 
-def _processed_signals(processed_path: Path, today: date) -> tuple[int, int]:
+def _processed_signals(processed_path: Path, today: date) -> tuple[int, int, str | None]:
+    """(total, stale, error). Arquivo AUSENTE é estado legítimo (nada
+    processado ainda) → (0, 0, None); corrompido ou com schema inválido é
+    fonte INCOMPLETA → error preenchido (a semente nunca declara faxina
+    limpa em cima de lixo ilegível)."""
+    if not processed_path.exists():
+        return 0, 0, None
     try:
         payload = json.loads(processed_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError, ValueError):
-        return 0, 0
-    items = payload.get("items", [])
+    except (OSError, json.JSONDecodeError, ValueError) as exc:
+        return 0, 0, f"_processed.json ilegível: {exc}"
+    items = payload.get("items", []) if isinstance(payload, dict) else None
     if not isinstance(items, list):
-        return 0, 0
+        return 0, 0, "_processed.json sem lista `items`"
     total = 0
     stale = 0
     cutoff = today - timedelta(days=_PROCESSED_STALE_DAYS)
@@ -150,7 +156,7 @@ def _processed_signals(processed_path: Path, today: date) -> tuple[int, int]:
             continue
         if when < cutoff:
             stale += 1
-    return total, stale
+    return total, stale, None
 
 
 def build_local_panorama(
@@ -207,7 +213,12 @@ def build_local_panorama(
             registro_path, complete=False, error="arquivo ausente"
         )
 
-    processed_total, processed_stale = _processed_signals(processed_path, today)
+    processed_total, processed_stale, processed_error = _processed_signals(
+        processed_path, today
+    )
+    completeness["processed"] = _source_status(
+        processed_path, complete=processed_error is None, error=processed_error
+    )
 
     preview_status = str(preview.get("status") or "ausente")
     completeness["inbox4mobile"] = {

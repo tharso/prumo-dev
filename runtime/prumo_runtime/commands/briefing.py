@@ -107,6 +107,7 @@ def same_local_day(value: str | None, timezone_name: str) -> bool:
 def build_inbox_line(workspace: Path, inbox_text: str, preview: dict) -> str:
     inbox_count = count_inbox_items(inbox_text)
     preview_count = int(preview.get("count") or 0)
+    raw_files = int(preview.get("raw_files_count") or 0)
     preview_path = preview.get("preview_path")
     preview_hint = ""
     if isinstance(preview_path, Path) and preview_path.exists():
@@ -117,6 +118,13 @@ def build_inbox_line(workspace: Path, inbox_text: str, preview: dict) -> str:
         return f"Inbox4Mobile: 0 item(ns). {note}{preview_hint}".strip()
 
     if preview_count == 0:
+        # Sem vitrine E com arquivo real no diretório: contagem indeterminada —
+        # "Inbox limpa" sem evidência seria mentira (#197, semente read-only).
+        if raw_files > 0:
+            return (
+                f"Inbox4Mobile: {raw_files} arquivo(s) no diretório sem vitrine gerada — "
+                "conteúdo não inventariado. Rode `prumo inbox preview` pra gerar."
+            )
         if inbox_count == 0 or "_Inbox limpo._" in inbox_text:
             return "Inbox4Mobile: 0 item(ns). Inbox limpa."
         return f"INBOX.md acusa {inbox_count} item(ns), mas o preview local não trouxe vitrine.{preview_hint}"

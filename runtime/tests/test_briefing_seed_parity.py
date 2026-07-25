@@ -155,18 +155,84 @@ class SeedParityTest(unittest.TestCase):
             self.panorama["inbox"]["count"], count_inbox_items(self.inbox_text)
         )
 
-    def test_registro_tail_present_for_bridge(self) -> None:
-        tail = self.panorama["registro"]["tail"]
-        self.assertTrue(tail)
-        self.assertIn("linha 14", tail[-1])
+    def test_registro_tail_full_differential_parity(self) -> None:
+        registro_text = (self.ws / "REGISTRO.md").read_text(encoding="utf-8")
+        direct_tail = [
+            line.rstrip() for line in registro_text.splitlines() if line.strip()
+        ][-10:]
+        self.assertEqual(self.panorama["registro"]["tail"], direct_tail)
+
+    def test_faxina_signals_differential_parity(self) -> None:
+        registro_text = (self.ws / "REGISTRO.md").read_text(encoding="utf-8")
+        direct_rows = sum(
+            1
+            for line in registro_text.splitlines()
+            if line.strip().startswith("|")
+            and not set(line.strip()) <= {"|", "-", " ", ":"}
+        ) - 1  # header
+        self.assertEqual(self.panorama["faxina"]["registro_table_rows"], direct_rows)
+        self.assertEqual(self.panorama["faxina"]["processed_entries"], 0)
+        self.assertEqual(self.panorama["faxina"]["processed_stale_entries"], 0)
 
     def test_generated_for_uses_workspace_timezone(self) -> None:
         self.assertEqual(self.panorama["generated_for"], self.today.isoformat())
 
     def test_completeness_all_sources_ok(self) -> None:
         completeness = self.payload["payload_completeness"]
-        for source in ("pauta", "inbox", "registro"):
+        for source in ("pauta", "inbox", "registro", "processed"):
             self.assertTrue(completeness[source]["complete"], source)
+
+
+class SeedFirstTextGuard(unittest.TestCase):
+    """Registro CONGELADO das menções a `PAUTA.md` no briefing-procedure.
+
+    A #197 fechou a porta da releitura integral; este guard fecha a janela:
+    linha nova mencionando `PAUTA.md` no procedure só entra atualizando o
+    registro CONSCIENTEMENTE — e toda menção precisa estar qualificada
+    (semente-primeiro, fallback por fonte, edição ou apresentação), nunca
+    como ordem incondicional de leitura.
+    """
+
+    ALLOWED_ANCHORS = (
+        "não reler `PAUTA.md`/`INBOX.md` integrais pra exibir",  # Passo 3, a regra
+        "**Edição** — atualizar `PAUTA.md`/`REGISTRO.md` no fechamento",  # caso 1
+        "pauta incompleta → ler `PAUTA.md`",  # caso 2, fallback por fonte
+        "fallback integral — ler `PAUTA.md` e `INBOX.md` como sempre",  # sem runtime
+        "arquivo `PAUTA.md` só no fallback do Passo 3",  # DAG do Passo 4
+        "`Prumo/PAUTA.md` direto só no fallback do Passo 3",  # classificação
+        "Pendências vivas de `PAUTA.md`",  # Passo 5, apresentação
+        "no fallback, `PAUTA.md` integral",  # ponte associativa
+        "Atualizar `PAUTA.md` se algo mudou",  # Passo 6, edição
+        "Se `PAUTA.md` estiver vazia",  # Passo 7, brain dump
+    )
+
+    def test_every_pauta_mention_is_registered(self) -> None:
+        procedure = (
+            Path(__file__).resolve().parents[2]
+            / "skills/prumo/references/modules/briefing-procedure.md"
+        ).read_text(encoding="utf-8")
+        offenders = []
+        for number, line in enumerate(procedure.splitlines(), start=1):
+            if "PAUTA.md" not in line:
+                continue
+            if not any(anchor in line for anchor in self.ALLOWED_ANCHORS):
+                offenders.append(f"linha {number}: {line.strip()[:120]}")
+        self.assertEqual(
+            offenders,
+            [],
+            "menção nova a PAUTA.md no procedure sem registro no guard — "
+            "a releitura integral só entra qualificada (semente/fallback/edição); "
+            f"atualize ALLOWED_ANCHORS conscientemente: {offenders}",
+        )
+
+    def test_seed_first_rule_is_present(self) -> None:
+        procedure = (
+            Path(__file__).resolve().parents[2]
+            / "skills/prumo/references/modules/briefing-procedure.md"
+        ).read_text(encoding="utf-8")
+        self.assertIn("semente-primeiro, #197", procedure)
+        self.assertIn("prumo_local_panorama.v1", procedure)
+        self.assertIn("dois casos apenas", procedure)
 
 
 class SeedReadOnlyTest(unittest.TestCase):
@@ -200,6 +266,49 @@ class SeedReadOnlyTest(unittest.TestCase):
                 payload["payload_completeness"]["inbox4mobile"]["complete"],
                 "stale tem que sinalizar incompletude da fonte",
             )
+
+    def test_card_never_claims_clean_inbox_without_evidence(self) -> None:
+        # Primeiro uso: arquivos reais no Inbox4Mobile, nenhum índice ainda.
+        # O cartão NÃO pode dizer "Inbox limpa" — contagem é indeterminada.
+        with tempfile.TemporaryDirectory(prefix="prumo-seed-honesto-") as tmp:
+            ws, _, _ = _build_workspace(tmp)
+            (ws / "INBOX.md").write_text("# Inbox\n\n_Inbox limpo._\n", encoding="utf-8")
+            (ws / "Inbox4Mobile" / "captura-real.md").write_text("- algo\n", encoding="utf-8")
+            payload = build_briefing_payload(ws)
+            inbox_line = next(
+                s["text"] for s in payload["sections"] if s["id"] == "inbox_mobile"
+            )
+            self.assertNotIn("Inbox limpa", inbox_line)
+            self.assertIn("não inventariado", inbox_line)
+            self.assertIn("prumo inbox preview", inbox_line)
+
+    def test_corrupted_index_is_not_reported_as_gerado(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="prumo-seed-corrupt-") as tmp:
+            ws, _, _ = _build_workspace(tmp)
+            (ws / "Inbox4Mobile" / "_preview-index.json").write_text(
+                "{lixo", encoding="utf-8"
+            )
+            payload = build_briefing_payload(ws)
+            block = payload["local_panorama"]["inbox4mobile"]
+            self.assertEqual(block["status"], "invalido")
+            self.assertFalse(payload["payload_completeness"]["inbox4mobile"]["complete"])
+
+    def test_corrupted_processed_marks_source_incomplete(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="prumo-seed-proc-") as tmp:
+            ws, _, _ = _build_workspace(tmp)
+            (ws / "Inbox4Mobile" / "_processed.json").write_text("{lixo", encoding="utf-8")
+            payload = build_briefing_payload(ws)
+            processed = payload["payload_completeness"]["processed"]
+            self.assertFalse(processed["complete"])
+            self.assertIn("ilegível", processed["error"])
+
+    def test_missing_processed_is_legitimate_and_complete(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="prumo-seed-noproc-") as tmp:
+            ws, _, _ = _build_workspace(tmp)
+            payload = build_briefing_payload(ws)
+            processed = payload["payload_completeness"]["processed"]
+            self.assertFalse(processed["present"])
+            self.assertTrue(processed["complete"], "ausente = nada processado, não é erro")
 
     def test_missing_pauta_signals_source_and_keeps_others(self) -> None:
         with tempfile.TemporaryDirectory(prefix="prumo-seed-partial-") as tmp:

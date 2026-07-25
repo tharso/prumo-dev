@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -100,26 +101,29 @@ def summarize_inbox_entry(entry: dict, workspace: Path | None = None) -> str:
     return filename
 
 
-def _newest_inbox_mtime(inbox_dir: Path) -> float | None:
-    """Maior mtime entre os ARQUIVOS do top-level do Inbox4Mobile (listagem
-    plana e rasa — dentro do perímetro #194; symlinks ignorados). É o que
-    permite julgar frescor do índice sem regenerar nada."""
+def _scan_inbox_top_level(inbox_dir: Path) -> tuple[float | None, int]:
+    """(maior mtime, contagem) dos ARQUIVOS do top-level do Inbox4Mobile
+    (listagem plana e rasa — dentro do perímetro #194; symlinks ignorados).
+    Permite julgar frescor do índice E honestidade do cartão ("0 itens" só
+    quando o diretório está vazio de verdade) sem regenerar nada."""
     newest: float | None = None
+    count = 0
     try:
         entries = list(inbox_dir.iterdir())
     except OSError:
-        return None
+        return None, 0
     for entry in entries:
         if entry.is_symlink() or not entry.is_file():
             continue
         if entry.name in {"inbox-preview.html"} or entry.name.startswith("."):
             continue
+        count += 1
         try:
             mtime = entry.stat().st_mtime
         except OSError:
             continue
         newest = mtime if newest is None else max(newest, mtime)
-    return newest
+    return newest, count
 
 
 def load_inbox_preview(
@@ -172,7 +176,7 @@ def load_inbox_preview(
                     preview_status = "falhou"
                     preview_note = "preview indisponível; segui sem vitrine."
     elif inbox_dir.exists() and index_path.exists():
-        newest = _newest_inbox_mtime(inbox_dir)
+        newest, _ = _scan_inbox_top_level(inbox_dir)
         try:
             index_mtime = index_path.stat().st_mtime
         except OSError:
@@ -187,6 +191,7 @@ def load_inbox_preview(
             )
 
     freshness: dict[str, str | None] = {"index_mtime": None, "newest_inbox_mtime": None}
+    raw_files_count = 0
     if index_path.exists():
         try:
             freshness["index_mtime"] = datetime.fromtimestamp(
@@ -195,13 +200,25 @@ def load_inbox_preview(
         except OSError:
             pass
     if inbox_dir.exists():
-        newest = _newest_inbox_mtime(inbox_dir)
+        newest, raw_files_count = _scan_inbox_top_level(inbox_dir)
         if newest is not None:
             freshness["newest_inbox_mtime"] = datetime.fromtimestamp(
                 newest, tz=timezone.utc
             ).isoformat(timespec="seconds")
 
-    payload = load_json(index_path)
+    # Índice presente mas ilegível/estruturalmente inválido NÃO pode passar
+    # por "gerado" com zero itens — vira status próprio e fonte incompleta.
+    payload: dict = {}
+    if index_path.exists():
+        try:
+            loaded = json.loads(index_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError, ValueError):
+            loaded = None
+        if isinstance(loaded, dict) and isinstance(loaded.get("items", []), list):
+            payload = loaded
+        else:
+            preview_status = "invalido"
+            preview_note = "índice do preview ilegível — rode `prumo inbox preview` pra regenerar."
     raw_items = payload.get("items", [])
     items: list[dict] = []
     if isinstance(raw_items, list):
@@ -221,4 +238,5 @@ def load_inbox_preview(
         "count": len(items),
         "items": items,
         "freshness": freshness,
+        "raw_files_count": raw_files_count,
     }
