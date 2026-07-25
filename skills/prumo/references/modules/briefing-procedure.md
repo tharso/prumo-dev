@@ -76,7 +76,7 @@ Não parar no drift local: "comparar só o core do workspace contra si mesmo" n�
 Arquivo bruto abre em **dois casos apenas**:
 
 1. **Edição** — atualizar `PAUTA.md`/`REGISTRO.md` no fechamento (Passo 6) sempre relê o arquivo antes de escrever.
-2. **Sinalização** — `payload_completeness.<fonte>.complete == false`, ambiguidade real num item, ou a heurística de aprofundamento (`load-policy.md`) mandar abrir. O fallback é **por fonte**: pauta incompleta → ler `PAUTA.md`; `inbox4mobile` stale/ausente → regenerar com `prumo inbox preview` (operação explícita) ou listar direto; as demais fontes seguem servidas pela semente. Alerta técnico genérico (`degradation`) NÃO é motivo pra releitura integral.
+2. **Sinalização** — `payload_completeness.<fonte>.complete == false`, ambiguidade real num item, ou a heurística de aprofundamento (`load-policy.md`) mandar abrir. O fallback é **por fonte**: pauta incompleta → ler `PAUTA.md`; `inbox4mobile` com status ≠ `gerado` (enum completo: `gerado|stale|ausente|invalido|indeterminado`) → regenerar com `prumo inbox preview` (operação explícita) ou listar direto; as demais fontes seguem servidas pela semente. Alerta técnico genérico (`degradation`) NÃO é motivo pra releitura integral.
 
 **Sem runtime, sem `local_panorama` no JSON, ou JSON com erro:** fallback integral — ler `PAUTA.md` e `INBOX.md` como sempre. Nunca inventar dado a partir de JSON parcial (regras do AGENT.md: não fabricar JSON, não simular runtime).
 

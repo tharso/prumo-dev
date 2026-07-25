@@ -142,6 +142,7 @@ class BuildLocalPanoramaTest(unittest.TestCase):
             "note": "",
             "count": 2,
             "freshness": {"index_mtime": "2026-07-25T09:00:00+00:00"},
+            "index_present": True,
         }
 
     def _build(self, **overrides):
@@ -187,6 +188,7 @@ class BuildLocalPanoramaTest(unittest.TestCase):
             "note": "índice mais velho que o Inbox4Mobile",
             "count": 1,
             "freshness": {},
+            "index_present": True,
         }
         _, completeness = self._build(preview=preview)
         self.assertTrue(completeness["inbox4mobile"]["present"])

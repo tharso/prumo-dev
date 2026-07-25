@@ -118,18 +118,21 @@ def _scan_inbox_top_level(inbox_dir: Path) -> dict:
     except OSError as exc:
         result["error"] = f"varredura do Inbox4Mobile falhou: {exc}"
         return result
+    import stat as stat_module
+
     for entry in entries:
-        if entry.is_symlink() or not entry.is_file():
+        try:
+            st = entry.lstat()  # UMA operação por entrada: classifica e data
+        except OSError as exc:
+            result["error"] = f"stat falhou em {entry.name}: {exc}"
+            continue
+        if stat_module.S_ISLNK(st.st_mode) or not stat_module.S_ISREG(st.st_mode):
             continue
         if entry.name in _OPERATIONAL_NAMES:
             continue
         result["count"] += 1
-        try:
-            mtime = entry.stat().st_mtime
-        except OSError:
-            continue
         result["newest"] = (
-            mtime if result["newest"] is None else max(result["newest"], mtime)
+            st.st_mtime if result["newest"] is None else max(result["newest"], st.st_mtime)
         )
     return result
 
@@ -140,11 +143,15 @@ def load_inbox_preview(
     """Vitrine do Inbox4Mobile.
 
     Por default é SEMENTE READ-ONLY (#197): apenas lê o índice existente e
-    reporta `gerado|stale|ausente` comparando mtimes — zero subprocesso, zero
-    escrita. A regeneração (subprocesso de até 20s que reescreve
+    reporta o status comparando mtimes — zero subprocesso, zero escrita. O
+    enum COMPLETO de status é `gerado|stale|ausente|invalido|indeterminado`
+    (`invalido`: índice symlinkado/ilegível/sem `items` válido;
+    `indeterminado`: a varredura do diretório falhou). Qualquer status
+    diferente de `gerado` significa fonte incompleta — o consumidor faz
+    fallback por fonte. A regeneração (subprocesso de até 20s que reescreve
     preview+índice) só acontece com `allow_regen=True` — a operação explícita
     do `prumo inbox preview` — e NUNCA é acionada implicitamente pelo
-    briefing.
+    briefing; outputs symlinkados abortam ANTES do subprocesso.
     """
     paths = workspace_paths(workspace)
     inbox_dir = paths.inbox4mobile_root
@@ -154,7 +161,23 @@ def load_inbox_preview(
     preview_status = "ausente"
     preview_note = ""
 
-    if allow_regen and inbox_dir.exists():
+    # Preflight de symlink ANTES de qualquer subprocesso: regenerar com
+    # outputs symlinkados escreveria através do link em alvo externo — o
+    # leitor recusaria DEPOIS, mas aí o estrago já teria acontecido.
+    regen_blocked = ""
+    for candidate, label in (
+        (inbox_dir, "Inbox4Mobile"),
+        (preview_path, "inbox-preview.html"),
+        (index_path, "_preview-index.json"),
+    ):
+        if candidate.is_symlink():
+            regen_blocked = f"{label} é symlink — regeneração recusada."
+            break
+
+    if allow_regen and inbox_dir.exists() and regen_blocked:
+        preview_status = "invalido"
+        preview_note = regen_blocked
+    elif allow_regen and inbox_dir.exists():
         script_path = preview_script_path(repo_root)
         if script_path is not None:
             try:
@@ -268,4 +291,5 @@ def load_inbox_preview(
         "freshness": freshness,
         "raw_files_count": raw_files_count,
         "scan_error": scan_error,
+        "index_present": index_path.exists() or index_path.is_symlink(),
     }

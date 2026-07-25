@@ -382,6 +382,66 @@ class SeedReadOnlyTest(unittest.TestCase):
             self.assertEqual(block["status"], "invalido")
             self.assertEqual(block["count"], 0, "índice symlinkado não pode ser lido")
 
+    def test_explicit_regen_refuses_symlinked_outputs_before_subprocess(self) -> None:
+        from prumo_runtime.inbox_preview import load_inbox_preview
+
+        with tempfile.TemporaryDirectory(prefix="prumo-regen-link-") as tmp:
+            ws, _, _ = _build_workspace(tmp)
+            outside_html = Path(tmp) / "alvo.html"
+            outside_html.write_text("<html>externo</html>", encoding="utf-8")
+            (ws / "Inbox4Mobile" / "captura.md").write_text("- x\n", encoding="utf-8")
+            (ws / "Inbox4Mobile" / "inbox-preview.html").symlink_to(outside_html)
+            with mock.patch(
+                "prumo_runtime.inbox_preview.subprocess.run",
+                side_effect=AssertionError("subprocesso rodou com output symlinkado"),
+            ):
+                preview = load_inbox_preview(ws, None, allow_regen=True)
+            self.assertEqual(preview["status"], "invalido")
+            self.assertIn("symlink", preview["note"])
+            self.assertEqual(
+                outside_html.read_text(encoding="utf-8"),
+                "<html>externo</html>",
+                "alvo externo tinha que ficar byte-idêntico",
+            )
+
+    def test_stat_failure_on_entry_makes_scan_inconclusive(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="prumo-stat-fail-") as tmp:
+            ws, _, _ = _build_workspace(tmp)
+            (ws / "INBOX.md").write_text("# Inbox\n\n_Inbox limpo._\n", encoding="utf-8")
+            (ws / "Inbox4Mobile" / "captura.md").write_text("- x\n", encoding="utf-8")
+            real_lstat = Path.lstat
+
+            def failing_lstat(self_path):
+                if self_path.name == "captura.md":
+                    raise OSError("stat negado simulado")
+                return real_lstat(self_path)
+
+            with mock.patch.object(Path, "lstat", failing_lstat):
+                payload = build_briefing_payload(ws)
+            block = payload["local_panorama"]["inbox4mobile"]
+            self.assertEqual(block["status"], "indeterminado")
+            inbox_line = next(
+                s["text"] for s in payload["sections"] if s["id"] == "inbox_mobile"
+            )
+            self.assertNotIn("Inbox limpa", inbox_line)
+
+    def test_indeterminate_without_index_is_not_present(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="prumo-ind-present-") as tmp:
+            ws, _, _ = _build_workspace(tmp)
+            (ws / "Inbox4Mobile" / "captura.md").write_text("- x\n", encoding="utf-8")
+            real_iterdir = Path.iterdir
+
+            def failing_iterdir(self_path):
+                if self_path.name == "Inbox4Mobile":
+                    raise OSError("negado")
+                return real_iterdir(self_path)
+
+            with mock.patch.object(Path, "iterdir", failing_iterdir):
+                payload = build_briefing_payload(ws)
+            source = payload["payload_completeness"]["inbox4mobile"]
+            self.assertFalse(source["present"], "sem índice no disco, present é False")
+            self.assertFalse(source["complete"])
+
     def test_invalid_processed_entry_fails_visible_keeping_counts(self) -> None:
         with tempfile.TemporaryDirectory(prefix="prumo-seed-badproc-") as tmp:
             ws, _, _ = _build_workspace(tmp)

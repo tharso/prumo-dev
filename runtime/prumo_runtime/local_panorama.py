@@ -230,7 +230,9 @@ def build_local_panorama(
 
     preview_status = str(preview.get("status") or "ausente")
     completeness["inbox4mobile"] = {
-        "present": preview_status != "ausente",
+        # present = o ÍNDICE existe de fato (não derivado do status — um scan
+        # inconclusivo sem índice é ausente E indeterminado ao mesmo tempo).
+        "present": bool(preview.get("index_present")),
         "complete": preview_status == "gerado",
         "error": str(preview.get("note") or "") or None,
         "mtime": (preview.get("freshness") or {}).get("index_mtime"),
