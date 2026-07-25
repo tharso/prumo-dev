@@ -1,6 +1,6 @@
 # Load Policy
 
-> **module_version: 5.46.0**
+> **module_version: 5.47.0**
 >
 > Política canônica de leitura incremental do Prumo.
 
@@ -20,7 +20,12 @@
 2. **Playbook (sob demanda, conforme intenção do usuário):**
    - `.prumo/system/PRUMO-CORE.md` — Parte 2
    - `Prumo/Agente/PERFIL.md` e `Prumo/Agente/ROTINA.md` (rituais/cadências)
-   - `PAUTA.md` integral, `INBOX.md`, `REGISTRO.md` integral
+   - `PAUTA.md` integral, `INBOX.md`, `REGISTRO.md` integral — **exceto no
+     briefing com runtime (#197):** lá o bloco `local_panorama` do
+     `prumo briefing --format json` substitui essas leituras de exibição;
+     arquivo bruto abre só pra edição ou por sinalização
+     (`payload_completeness` incompleto por fonte, ambiguidade, heurística
+     abaixo). Ver o Passo 3 do `briefing-procedure.md`.
    - demais módulos da tabela "Módulos canônicos" em `prumo-core.md`
 3. **Leve (preferencial dentro de playbook):**
    - `Inbox4Mobile/_preview-index.json`

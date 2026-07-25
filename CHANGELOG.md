@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.47.0] - 2026-07-25
+
+### Added
+- **Dieta do briefing, fase 2: o runtime vira a semente do panorama local (#197)** — o agente pagava duas vezes (o runtime montava o painel e o procedure mandava reler `PAUTA.md`/`INBOX.md` integrais mesmo assim) e a "semente em milissegundos" nem existia (`load_inbox_preview` REGENERAVA preview+índice via subprocesso de até 20s a cada briefing). Quatro peças: (1) **`local_panorama` versionado** (`prumo_local_panorama.v1`) no payload do `prumo briefing`: itens da PAUTA por seção — **incluindo `Hibernando`** — com linha integral (`text`), exibição com teto (`display_text`, 200 chars) e **marker de cobrança parseado** (`cobrar.state`: `future|tomorrow|today|overdue|invalid` + `visible_today`, fail-open em marker quebrado); contagem do INBOX; **cauda do `REGISTRO.md`** (ponte associativa, 10 linhas); sinais mecânicos de faxina (linhas da tabela do registro, processados >14d). (2) **`payload_completeness` por fonte** (present/complete/error/mtime) — o consumidor faz fallback POR FONTE incompleta, nunca releitura integral por alerta técnico. (3) **Semente read-only**: `load_inbox_preview` só regenera com `allow_regen=True` (a operação explícita do `prumo inbox preview`); o briefing lê o índice existente e reporta o status por comparação de mtime — enum completo `gerado|stale|ausente|invalido|indeterminado`; qualquer status ≠ `gerado` = fonte incompleta com fallback por fonte (listagem plana e rasa, dentro do perímetro #194). (4) **Oráculo diferencial de paridade** (`test_briefing_seed_parity.py`): a mesma fixture pelos dois caminhos (leitura direta × payload) tem que produzir o MESMO panorama — seções, >3 itens, os 5 estados de cobrança, virada de ano, timezone do workspace, hibernando com `[[conexões]]`, stale/missing do preview e falha por fonte. `adapter_contract_version` → `2026-07-25`. Canônicos sincronizados: Passo 3 do `briefing-procedure.md` (semente-primeiro + os DOIS únicos casos de abrir arquivo bruto: edição e sinalização), `load-policy.md`, `skills/briefing/SKILL.md`. Decisão no DECISIONS.md (estende #104, mantém #148/#195).
+
 ## [5.46.0] - 2026-07-25
 
 ### Added

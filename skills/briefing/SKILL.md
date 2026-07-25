@@ -28,7 +28,7 @@ Se o repo `Prumo/` não estiver acessível, use o bundle instalado. O que não v
 O cartão do runtime (`prumo start` / `prumo briefing`) é a **prévia** — retrato rápido e local (pauta, inbox, próximo movimento). O **briefing** é a curadoria rica deste fluxo: email/agenda + panorama numerado único → `decidir`.
 
 1. Pedir "briefing" dispara a **curadoria rica** (`briefing-procedure.md`). **Nunca** entregar o cartão do runtime como briefing final — entregar a prévia e parar é o beco sem saída que esta refatoração corrige.
-2. `prumo briefing --workspace <path> --format json` pode ser lido como **painel local** (semente da parte determinística), mas a resposta é o panorama numerado rico.
+2. `prumo briefing --workspace <path> --format json` pode ser lido como **painel local** (semente da parte determinística), mas a resposta é o panorama numerado rico. Com runtime no trilho novo, o bloco `local_panorama` desse JSON **substitui a releitura de `PAUTA.md`/`INBOX.md` pra exibição** (#197) — os dois únicos casos de abrir arquivo bruto e o fallback por fonte estão no Passo 3 do `briefing-procedure.md`.
 3. Ao final, registrar o dia: `prumo briefing --workspace <path> --mark-done`.
 4. A regra "entregar a saída do runtime como veio e encerrar" vale para a **prévia** (`prumo start` / `prumo:abrir`), **não** para o briefing.
 

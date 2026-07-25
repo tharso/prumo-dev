@@ -16,6 +16,7 @@ from prumo_runtime.daily_operator import (
     selection_contract_payload,
 )
 from prumo_runtime.inbox_preview import load_inbox_preview, summarize_inbox_entry
+from prumo_runtime.local_panorama import build_local_panorama
 from prumo_runtime.pauta_parsing import extract_section, filter_by_due_date
 from prumo_runtime.version_check import compute_staleness, read_cached_remote_version
 from prumo_runtime.workspace import (
@@ -106,6 +107,7 @@ def same_local_day(value: str | None, timezone_name: str) -> bool:
 def build_inbox_line(workspace: Path, inbox_text: str, preview: dict) -> str:
     inbox_count = count_inbox_items(inbox_text)
     preview_count = int(preview.get("count") or 0)
+    raw_files = int(preview.get("raw_files_count") or 0)
     preview_path = preview.get("preview_path")
     preview_hint = ""
     if isinstance(preview_path, Path) and preview_path.exists():
@@ -116,6 +118,19 @@ def build_inbox_line(workspace: Path, inbox_text: str, preview: dict) -> str:
         return f"Inbox4Mobile: 0 item(ns). {note}{preview_hint}".strip()
 
     if preview_count == 0:
+        # Varredura falhou: nem "limpa" nem contagem — indeterminado honesto.
+        if preview.get("scan_error"):
+            return (
+                f"Inbox4Mobile: inventário indeterminado ({preview['scan_error']}). "
+                "Rode `prumo inbox preview` ou verifique o diretório."
+            )
+        # Sem vitrine E com arquivo real no diretório: contagem indeterminada —
+        # "Inbox limpa" sem evidência seria mentira (#197, semente read-only).
+        if raw_files > 0:
+            return (
+                f"Inbox4Mobile: {raw_files} arquivo(s) no diretório sem vitrine gerada — "
+                "conteúdo não inventariado. Rode `prumo inbox preview` pra gerar."
+            )
         if inbox_count == 0 or "_Inbox limpo._" in inbox_text:
             return "Inbox4Mobile: 0 item(ns). Inbox limpa."
         return f"INBOX.md acusa {inbox_count} item(ns), mas o preview local não trouxe vitrine.{preview_hint}"
@@ -225,7 +240,10 @@ def build_briefing_payload(workspace: Path) -> dict:
     andamento = filter_by_due_date(extract_section(pauta_text, "Em andamento"), today)
     agendado = filter_by_due_date(extract_section(pauta_text, "Agendado"), today)
 
-    preview = load_inbox_preview(workspace, repo_root)
+    # Semente read-only (#197): o painel NUNCA regenera o preview — só lê o
+    # índice existente e reporta frescor. Regenerar é operação explícita do
+    # `prumo inbox preview`.
+    preview = load_inbox_preview(workspace, repo_root, allow_regen=False)
 
     # Modelo A (#104): montar o painel NÃO marca "briefing feito". O painel é a
     # prévia/semente, não o briefing — quem marca é a curadoria rica, ao final,
@@ -274,6 +292,14 @@ def build_briefing_payload(workspace: Path) -> dict:
     next_move = next_move_payload(actions)
     proposal = choose_proposal(quente, agendado, andamento)
     daily_operation = daily_operation_payload(workspace)
+    local_panorama, payload_completeness = build_local_panorama(
+        pauta_path=paths.pauta,
+        inbox_path=paths.inbox,
+        registro_path=paths.registro,
+        processed_path=paths.inbox_processed,
+        preview=preview,
+        today=today,
+    )
     degradation = build_briefing_degradation(
         core_outdated=core_outdated,
         next_move=next_move,
@@ -328,6 +354,8 @@ def build_briefing_payload(workspace: Path) -> dict:
         "platform": overview["platform"],
         "capabilities": overview["capabilities"],
         "daily_operation": daily_operation,
+        "local_panorama": local_panorama,
+        "payload_completeness": payload_completeness,
         "next_move": next_move,
         "selection_contract": selection_contract_payload(next_move),
         "last_briefing_at": last_briefing_at,

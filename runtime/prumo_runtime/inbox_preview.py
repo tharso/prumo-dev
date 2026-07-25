@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -99,16 +101,102 @@ def summarize_inbox_entry(entry: dict, workspace: Path | None = None) -> str:
     return filename
 
 
-def load_inbox_preview(workspace: Path, repo_root: Path | None) -> dict:
+# Mobília operacional da vitrine — MESMO conjunto que `generate_inbox_preview`
+# exclui (o gerador ignora `_processed.json` por nome e os outputs por path).
+# Dotfile NÃO é exclusão: conteúdo real oculto conta como conteúdo.
+_OPERATIONAL_NAMES = {"inbox-preview.html", "_preview-index.json", "_processed.json"}
+
+
+def _scan_inbox_top_level(inbox_dir: Path) -> dict:
+    """Snapshot ÚNICO do top-level do Inbox4Mobile (listagem plana e rasa —
+    perímetro #194): {newest, count, error}. Conta ARQUIVOS de conteúdo pelo
+    predicado canônico (exclui mobília operacional e symlinks; dotfile real
+    conta). Falha de varredura vira `error` — nunca "vazio" de mentira."""
+    result: dict = {"newest": None, "count": 0, "error": None}
+    try:
+        entries = list(inbox_dir.iterdir())
+    except OSError as exc:
+        result["error"] = f"varredura do Inbox4Mobile falhou: {exc}"
+        return result
+    import stat as stat_module
+
+    for entry in entries:
+        try:
+            st = entry.lstat()  # UMA operação por entrada: classifica e data
+        except OSError as exc:
+            result["error"] = f"stat falhou em {entry.name}: {exc}"
+            continue
+        if stat_module.S_ISLNK(st.st_mode) or not stat_module.S_ISREG(st.st_mode):
+            continue
+        if entry.name in _OPERATIONAL_NAMES:
+            continue
+        result["count"] += 1
+        result["newest"] = (
+            st.st_mtime if result["newest"] is None else max(result["newest"], st.st_mtime)
+        )
+    return result
+
+
+def load_inbox_preview(
+    workspace: Path, repo_root: Path | None, *, allow_regen: bool = False
+) -> dict:
+    """Vitrine do Inbox4Mobile.
+
+    Por default é SEMENTE READ-ONLY (#197): apenas lê o índice existente e
+    reporta o status comparando mtimes — zero subprocesso, zero escrita. O
+    enum COMPLETO de status é `gerado|stale|ausente|invalido|indeterminado`
+    (`invalido`: índice symlinkado/ilegível/sem `items` válido;
+    `indeterminado`: a varredura do diretório falhou). Qualquer status
+    diferente de `gerado` significa fonte incompleta — o consumidor faz
+    fallback por fonte. A regeneração (subprocesso de até 20s que reescreve
+    preview+índice) só acontece com `allow_regen=True` — a operação explícita
+    do `prumo inbox preview` — e NUNCA é acionada implicitamente pelo
+    briefing; outputs symlinkados abortam ANTES do subprocesso.
+    """
     paths = workspace_paths(workspace)
     inbox_dir = paths.inbox4mobile_root
     preview_path = inbox_dir / "inbox-preview.html"
     index_path = paths.inbox_preview_index
+
+    # Root symlinkado (quebrado incluso — is_symlink() enxerga o que exists()
+    # esconde): NENHUM acesso aos filhos. Nem _processed, nem varredura, nem
+    # índice, nem subprocesso — recusar pra escrita e depois ler seria barrar
+    # o caminhão e entrar nele pra conferir a carga.
+    if inbox_dir.is_symlink():
+        return {
+            "status": "invalido",
+            "note": "Inbox4Mobile é symlink — recusado; aponte o diretório real.",
+            "preview_path": preview_path,
+            "index_path": index_path,
+            "count": 0,
+            "items": [],
+            "freshness": {"index_mtime": None, "newest_inbox_mtime": None},
+            "raw_files_count": 0,
+            "scan_error": "Inbox4Mobile é symlink",
+            "index_present": False,
+        }
+
     processed = load_processed_filenames(workspace)
     preview_status = "ausente"
     preview_note = ""
 
-    if inbox_dir.exists():
+    # Preflight de symlink ANTES de qualquer subprocesso: regenerar com
+    # outputs symlinkados escreveria através do link em alvo externo — o
+    # leitor recusaria DEPOIS, mas aí o estrago já teria acontecido.
+    regen_blocked = ""
+    for candidate, label in (
+        (inbox_dir, "Inbox4Mobile"),
+        (preview_path, "inbox-preview.html"),
+        (index_path, "_preview-index.json"),
+    ):
+        if candidate.is_symlink():
+            regen_blocked = f"{label} é symlink — regeneração recusada."
+            break
+
+    if allow_regen and inbox_dir.exists() and regen_blocked:
+        preview_status = "invalido"
+        preview_note = regen_blocked
+    elif allow_regen and inbox_dir.exists():
         script_path = preview_script_path(repo_root)
         if script_path is not None:
             try:
@@ -137,8 +225,70 @@ def load_inbox_preview(workspace: Path, repo_root: Path | None) -> dict:
                 else:
                     preview_status = "falhou"
                     preview_note = "preview indisponível; segui sem vitrine."
+    # SNAPSHOT ÚNICO do diretório: status, frescor e contagem bruta saem da
+    # MESMA varredura (duas passadas abririam janela pra estados divergentes).
+    scan = (
+        _scan_inbox_top_level(inbox_dir)
+        if inbox_dir.exists()
+        else {"newest": None, "count": 0, "error": None}
+    )
+    scan_error = scan["error"]
+    raw_files_count = scan["count"]
 
-    payload = load_json(index_path)
+    if not allow_regen and inbox_dir.exists():
+        if scan_error is not None:
+            preview_status = "indeterminado"
+            preview_note = f"{scan_error} — frescor e contagem indeterminados."
+        elif index_path.exists():
+            try:
+                index_mtime = index_path.stat().st_mtime
+            except OSError:
+                index_mtime = None
+            if index_mtime is not None and (
+                scan["newest"] is None or index_mtime >= scan["newest"]
+            ):
+                preview_status = "gerado"
+            else:
+                preview_status = "stale"
+                preview_note = (
+                    "índice do preview mais velho que o Inbox4Mobile; "
+                    "rode `prumo inbox preview` pra regenerar."
+                )
+
+    freshness: dict[str, str | None] = {"index_mtime": None, "newest_inbox_mtime": None}
+    if index_path.exists():
+        try:
+            freshness["index_mtime"] = datetime.fromtimestamp(
+                index_path.stat().st_mtime, tz=timezone.utc
+            ).isoformat(timespec="seconds")
+        except OSError:
+            pass
+    if scan["newest"] is not None:
+        freshness["newest_inbox_mtime"] = datetime.fromtimestamp(
+            scan["newest"], tz=timezone.utc
+        ).isoformat(timespec="seconds")
+
+    # Índice presente mas symlinkado, ilegível ou estruturalmente inválido
+    # (sem a chave `items` como lista de objetos) NÃO passa por "gerado" com
+    # zero itens — vira status próprio e fonte incompleta.
+    payload: dict = {}
+    if index_path.is_symlink():
+        preview_status = "invalido"
+        preview_note = "índice do preview é symlink — recusado; rode `prumo inbox preview`."
+    elif index_path.exists():
+        try:
+            loaded = json.loads(index_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError, ValueError):
+            loaded = None
+        if (
+            isinstance(loaded, dict)
+            and isinstance(loaded.get("items"), list)
+            and all(isinstance(item, dict) for item in loaded["items"])
+        ):
+            payload = loaded
+        else:
+            preview_status = "invalido"
+            preview_note = "índice do preview ilegível — rode `prumo inbox preview` pra regenerar."
     raw_items = payload.get("items", [])
     items: list[dict] = []
     if isinstance(raw_items, list):
@@ -157,4 +307,8 @@ def load_inbox_preview(workspace: Path, repo_root: Path | None) -> dict:
         "index_path": index_path,
         "count": len(items),
         "items": items,
+        "freshness": freshness,
+        "raw_files_count": raw_files_count,
+        "scan_error": scan_error,
+        "index_present": index_path.exists() or index_path.is_symlink(),
     }
