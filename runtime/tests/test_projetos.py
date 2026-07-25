@@ -744,6 +744,34 @@ class HotfixRound2Tests(unittest.TestCase):
         self.assertIn("normal.md", entries[2])
 
 
+class HotfixRound3Tests(unittest.TestCase):
+    def test_narrative_only_change_is_dirty_but_not_activity(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = _make_repo(Path(tmp))
+            (repo / ".prumo-contexto.md").write_text(
+                "---\nupdated: 2026-07-25T01:00:00-03:00\n---\n", encoding="utf-8"
+            )
+            pulse = collect_git_pulse(repo, now=NOW)
+        self.assertTrue(pulse["dirty"], "mudança na narrativa sumiu do dirty — repo mentiu limpeza")
+        wt = pulse["working_tree_activity_at"]
+        self.assertTrue(wt is None or wt < "2026", "narrativa contou como atividade")
+
+    def test_commit_touching_only_narrative_does_not_reopen_stale(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = _make_repo(Path(tmp))
+            (repo / ".prumo-contexto.md").write_text(
+                "---\nupdated: 2026-07-25T23:59:00-03:00\n---\n", encoding="utf-8"
+            )
+            subprocess.run(["git", "-C", str(repo), "add", ".prumo-contexto.md"], check=True)
+            subprocess.run(
+                ["git", "-C", str(repo), "commit", "-q", "-m", "docs: contexto"], check=True
+            )
+            pulse = projetos._collect_project(repo, now=datetime(2026, 7, 26, 12, 0, tzinfo=timezone.utc))
+        # last_commit_at (histórico exibido) avança; o frescor NÃO reabre.
+        self.assertIsNotNone(pulse["last_commit_at"])
+        self.assertEqual(pulse["staleness"], "fresh", f"commit da narrativa reabriu o stale: {pulse}")
+
+
 class SanitizeTests(unittest.TestCase):
     def test_removes_controls_and_neutralizes_markers(self) -> None:
         dirty = f"a\x07b {PULSO_BEGIN} c <!-- livre --> d"

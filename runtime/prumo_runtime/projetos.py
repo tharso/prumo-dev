@@ -277,6 +277,16 @@ def collect_git_pulse(path: Path, *, now: datetime) -> dict | None:
             )
         if pulse["commits"]:
             pulse["last_commit_at"] = pulse["commits"][0]["date"]
+            # Pro CÁLCULO de atividade, commit que só toca a narrativa não
+            # conta (senão commitar o contexto recria o stale — Codex r2).
+            act = _run_git(
+                path, "log", "-1", "--format=%cI", "--", ".", f":(exclude){CONTEXT_FILENAME}"
+            )
+            if act is not None and act.returncode == 0 and act.stdout.strip():
+                pulse["_activity_commit_at"] = act.stdout.strip()
+            elif act is None:
+                pulse["errors"].append("git log de atividade falhou (timeout)")
+                pulse["complete"] = False
     else:
         head = _run_git(path, "rev-parse", "--verify", "HEAD")
         if head is None:
@@ -295,14 +305,12 @@ def collect_git_pulse(path: Path, *, now: datetime) -> dict | None:
         return pulse
     # -z em BYTES: sem C-quoting (path com espaço/unicode vinha citado e o
     # stat falhava — primeiro sync real, 25/07) e sem decode estrito.
-    entries = [
-        item
-        for item in parse_porcelain_z(porcelain.stdout)
-        # A narrativa não é atividade do projeto — também em repo git
-        # (Codex, hotfix r1): o contexto untracked puxava o timestamp.
-        if item[3:] != CONTEXT_FILENAME
-    ]
-    pulse["dirty"] = bool(entries)
+    all_entries = parse_porcelain_z(porcelain.stdout)
+    # dirty reflete TODAS as mudanças (inclusive a narrativa — repo com só
+    # o contexto modificado não é "limpo"; Codex hotfix r2). Só o CÁLCULO
+    # de atividade exclui a narrativa.
+    entries = [item for item in all_entries if item[3:] != CONTEXT_FILENAME]
+    pulse["dirty"] = bool(all_entries)
     if entries:
         stats: list[float] = []
         if len(entries) > PORCELAIN_STAT_LIMIT:
@@ -329,7 +337,8 @@ def collect_git_pulse(path: Path, *, now: datetime) -> dict | None:
             pulse["working_tree_activity_at"] = _iso(max(stats))
 
     candidates = []
-    for value in (pulse["last_commit_at"], pulse["working_tree_activity_at"]):
+    activity_commit = pulse.pop("_activity_commit_at", None)
+    for value in (activity_commit, pulse["working_tree_activity_at"]):
         parsed = _parse_when(value) if value else None
         if parsed is not None:
             candidates.append((parsed, value))
