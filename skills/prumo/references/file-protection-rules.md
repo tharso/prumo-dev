@@ -35,7 +35,7 @@ Ao final da geração de arquivos, mostrar resumo claro:
 | AGENTS.md (raiz) | agents-md-template.md | Ponteiro de compatibilidade para Codex e outros agentes. |
 | Prumo/AGENT.md | agent-md-template.md | Fonte canônica: navegação, fallback chain, regras do workspace. |
 | Prumo/Agente/PERFIL.md | perfil-template.md | Configuração pessoal: áreas, tom, integrações. Nunca atualizado automaticamente. |
-| .prumo/system/PRUMO-CORE.md | prumo-core.md | Motor do sistema. Atualizável automaticamente. |
+| .prumo/system/PRUMO-CORE.md | prumo-core.md | Motor do sistema (única cópia completa no workspace — a vendored em `.prumo/skills/` é stub-ponteiro, #179). Atualizável automaticamente. |
 | Prumo/PAUTA.md | file-templates.md | Estado atual. Itens quentes, andamento, agendados. |
 | Prumo/INBOX.md | file-templates.md | Itens não processados. |
 | Prumo/REGISTRO.md | file-templates.md | Audit trail de itens processados. |

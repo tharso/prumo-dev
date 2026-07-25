@@ -6,6 +6,13 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.45.0] - 2026-07-25
+
+### Changed
+- **O core do workspace tem UMA casa (#179, épico #177, critério 1)** — a cópia vendored `.prumo/skills/prumo/references/prumo-core.md` vira **stub-ponteiro** (marcador `<!-- prumo-core-stub: v1 -->`) escrito por `install_skills` após o vendoring; o core canônico da instância é só `.prumo/system/PRUMO-CORE.md` (a casa da allowlist manual, do `parse_core_version` e do `/menu`). A dupla byte-idêntica que a auditoria de 15/07 achou tinha drift latente: o update manual sem runtime só atualizava uma. Propriedades defensivas do stub: sem `prumo_version:` (a validação do Passo 5 do `version-update.md` o reprova como fonte) e sem `## Comandos disponíveis` (`parse_command_table` devolve vazio). Source, plugin instalado no host e `_bundled/` do wheel seguem com core completo (rodam sem workspace); módulos vizinhos seguem completos (#77 intacta). **Migração de graça**: como o install é rmtree+copytree, o primeiro `prumo repair` pós-update converte instâncias legadas.
+- **`version-update.md`**: cópia vendored sai da lista de transportes válidos; Passo 5 ganha validação de fonte (header + tabela obrigatórios — stub é reprovado); declarado o efeito: "não existe mais cópia que fica pra trás após o update manual".
+- Travado por `test_core_single_copy.py` (5 testes): exatamente 1 core completo ATIVO por workspace (backups legítimos podem guardar cores completos — não contam e o repair não os toca); stub sem versão/tabela; repair converte legado; módulos vendored seguem completos.
+
 ## [5.44.0] - 2026-07-25
 
 ### Changed

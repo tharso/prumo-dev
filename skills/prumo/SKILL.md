@@ -323,7 +323,7 @@ Após coletar todas as respostas:
 7. Gerar `AGENT.md` na raiz (ponteiro, mesmo conteúdo adaptado)
 8. Ler `references/agents-md-template.md` → gerar `AGENTS.md` na raiz (ponteiro)
 9. Ler `references/file-templates.md` → gerar arquivos auxiliares em `Prumo/`
-10. Copiar skills para `.prumo/skills/` (cópia completa do diretório `skills/` do repo, em pasta de infra invisível)
+10. Copiar skills para `.prumo/skills/` (cópia completa do diretório `skills/` do repo, em pasta de infra invisível). **Exceção (#179):** após a cópia, substituir `.prumo/skills/prumo/references/prumo-core.md` pelo stub-ponteiro — o core do workspace tem UMA casa (`.prumo/system/PRUMO-CORE.md`). Se `references/prumo-core.md` da fonte já for o stub (começa com `# Prumo Core — ponteiro`), a fonte do core completo é o bundle do plugin ou o system core existente.
 
 **Separação de responsabilidades:**
 - Raiz: ponteiros de compatibilidade (CLAUDE.md, AGENT.md, AGENTS.md). Todos apontam para `Prumo/AGENT.md`.

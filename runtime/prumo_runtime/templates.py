@@ -567,6 +567,41 @@ def render_inbox_processed_json() -> str:
     return '{\n  "version": "1.0",\n  "items": []\n}\n'
 
 
+# Marcador machine-readable do stub do core vendored (#179, critério 1 do
+# épico #177). Testes, doctor e o Passo 5 do version-update reconhecem por ele.
+CORE_STUB_MARKER = "<!-- prumo-core-stub: v1 -->"
+
+
+def render_core_stub() -> str:
+    """Stub-ponteiro que substitui o core vendored em `.prumo/skills/`.
+
+    Neste workspace o core canônico é `.prumo/system/PRUMO-CORE.md` — a casa
+    que a allowlist do update manual escreve, que `parse_core_version` lê e
+    de onde o `/menu` deriva. A cópia vendored virava a segunda casa (drift
+    latente: update manual só atualizava a primeira). Propriedades defensivas
+    do stub: sem `prumo_version:` (nenhum scanner o confunde com core; a
+    validação do Passo 5 do `version-update.md` o reprova como fonte) e sem
+    `## Comandos disponíveis` (`parse_command_table` devolve vazio).
+    """
+    return f"""# Prumo Core — ponteiro (stub)
+
+{CORE_STUB_MARKER}
+<!-- gerado por install_skills. Não editar; não copiar por cima do core. -->
+
+Este arquivo NÃO é o core. Neste workspace, o core canônico mora em
+`.prumo/system/PRUMO-CORE.md` — leia e aplique as regras de lá.
+
+Fora de um workspace (repo clonado ou plugin instalado no host), a fonte é o
+`skills/prumo/references/prumo-core.md` do próprio bundle — lá ele é completo.
+
+1. Nunca copiar este stub por cima de `.prumo/system/PRUMO-CORE.md`. Ele não
+   declara versão de propósito: usado como fonte de update manual, a
+   validação do Passo 5 do `version-update.md` falha.
+2. Os módulos vizinhos (`references/modules/*.md`) continuam completos e
+   canônicos — só o core virou ponteiro.
+"""
+
+
 def load_prumo_core_text(repo_root: Path | None) -> str:
     if repo_root:
         candidate = repo_root / "skills" / "prumo" / "references" / "prumo-core.md"

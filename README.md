@@ -161,7 +161,7 @@ O workspace do Prumo é Markdown puro — se você usa o [Obsidian](https://obsi
 
 ## Versão
 
-`5.44.0`
+`5.45.0`
 
 ## Licença
 
