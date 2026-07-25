@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -99,7 +100,40 @@ def summarize_inbox_entry(entry: dict, workspace: Path | None = None) -> str:
     return filename
 
 
-def load_inbox_preview(workspace: Path, repo_root: Path | None) -> dict:
+def _newest_inbox_mtime(inbox_dir: Path) -> float | None:
+    """Maior mtime entre os ARQUIVOS do top-level do Inbox4Mobile (listagem
+    plana e rasa — dentro do perímetro #194; symlinks ignorados). É o que
+    permite julgar frescor do índice sem regenerar nada."""
+    newest: float | None = None
+    try:
+        entries = list(inbox_dir.iterdir())
+    except OSError:
+        return None
+    for entry in entries:
+        if entry.is_symlink() or not entry.is_file():
+            continue
+        if entry.name in {"inbox-preview.html"} or entry.name.startswith("."):
+            continue
+        try:
+            mtime = entry.stat().st_mtime
+        except OSError:
+            continue
+        newest = mtime if newest is None else max(newest, mtime)
+    return newest
+
+
+def load_inbox_preview(
+    workspace: Path, repo_root: Path | None, *, allow_regen: bool = False
+) -> dict:
+    """Vitrine do Inbox4Mobile.
+
+    Por default é SEMENTE READ-ONLY (#197): apenas lê o índice existente e
+    reporta `gerado|stale|ausente` comparando mtimes — zero subprocesso, zero
+    escrita. A regeneração (subprocesso de até 20s que reescreve
+    preview+índice) só acontece com `allow_regen=True` — a operação explícita
+    do `prumo inbox preview` — e NUNCA é acionada implicitamente pelo
+    briefing.
+    """
     paths = workspace_paths(workspace)
     inbox_dir = paths.inbox4mobile_root
     preview_path = inbox_dir / "inbox-preview.html"
@@ -108,7 +142,7 @@ def load_inbox_preview(workspace: Path, repo_root: Path | None) -> dict:
     preview_status = "ausente"
     preview_note = ""
 
-    if inbox_dir.exists():
+    if allow_regen and inbox_dir.exists():
         script_path = preview_script_path(repo_root)
         if script_path is not None:
             try:
@@ -137,6 +171,35 @@ def load_inbox_preview(workspace: Path, repo_root: Path | None) -> dict:
                 else:
                     preview_status = "falhou"
                     preview_note = "preview indisponível; segui sem vitrine."
+    elif inbox_dir.exists() and index_path.exists():
+        newest = _newest_inbox_mtime(inbox_dir)
+        try:
+            index_mtime = index_path.stat().st_mtime
+        except OSError:
+            index_mtime = None
+        if index_mtime is not None and (newest is None or index_mtime >= newest):
+            preview_status = "gerado"
+        else:
+            preview_status = "stale"
+            preview_note = (
+                "índice do preview mais velho que o Inbox4Mobile; "
+                "rode `prumo inbox preview` pra regenerar."
+            )
+
+    freshness: dict[str, str | None] = {"index_mtime": None, "newest_inbox_mtime": None}
+    if index_path.exists():
+        try:
+            freshness["index_mtime"] = datetime.fromtimestamp(
+                index_path.stat().st_mtime, tz=timezone.utc
+            ).isoformat(timespec="seconds")
+        except OSError:
+            pass
+    if inbox_dir.exists():
+        newest = _newest_inbox_mtime(inbox_dir)
+        if newest is not None:
+            freshness["newest_inbox_mtime"] = datetime.fromtimestamp(
+                newest, tz=timezone.utc
+            ).isoformat(timespec="seconds")
 
     payload = load_json(index_path)
     raw_items = payload.get("items", [])
@@ -157,4 +220,5 @@ def load_inbox_preview(workspace: Path, repo_root: Path | None) -> dict:
         "index_path": index_path,
         "count": len(items),
         "items": items,
+        "freshness": freshness,
     }

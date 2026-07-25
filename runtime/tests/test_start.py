@@ -375,7 +375,7 @@ class StartCommandTests(unittest.TestCase):
             self.assertEqual(rc, 0)
             payload = json.loads(buffer.getvalue())
             self.assertEqual(payload["user_name"], "Batata")
-            self.assertEqual(payload["adapter_contract_version"], "2026-03-28")
+            self.assertEqual(payload["adapter_contract_version"], "2026-07-25")
             self.assertEqual(payload["workspace_resolution"]["source"], "explicit")
             self.assertEqual(payload["adapter_hints"]["preferred_entrypoint"]["shell_command"], "prumo")
             self.assertEqual(

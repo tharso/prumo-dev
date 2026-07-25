@@ -12,11 +12,11 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 | `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-04 (#158 detecção defasagem), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime), 2026-07-05 (#170 transporte de update local), 2026-07-12 (#172 taxonomia do picker), 2026-07-19 (#191 decidir mostra o item), 2026-07-24 (#195 dieta fase 1 — produtor do cache de versão), 2026-07-16 (#177 dívidas estruturais) |
 | `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first), 2026-05-06 (quality-gate), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#141 diário — emenda à #68) |
 | `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist), 2026-06-24 (#110 não-bundle), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime), 2026-07-05 (#170 transporte de update local), 2026-07-16 (#177 dívidas estruturais) |
-| `dispatch-bootstrap`  | 2026-04-21 (#69 despacho), 2026-06-23 (#104 briefing rico), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-05 (#160 porta/instalação agnóstica), 2026-07-12 (#172 taxonomia do picker), 2026-07-24 (#194 perímetro de leitura), 2026-07-24 (#201 índice de projetos) |
+| `dispatch-bootstrap`  | 2026-04-21 (#69 despacho), 2026-06-23 (#104 briefing rico), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-05 (#160 porta/instalação agnóstica), 2026-07-12 (#172 taxonomia do picker), 2026-07-24 (#194 perímetro de leitura), 2026-07-24 (#201 índice de projetos), 2026-07-25 (#197 semente substitui releitura) |
 | `multiagent-coord`    | 2026-04-20 (#68 HANDOVER), 2026-07-24 (#194 perímetro de leitura — delegação)             |
 | `documentation`       | 2026-04-14 (CLAUDE.md), 2026-06-21 (#97 mapas), 2026-07-03 (#149 guia Obsidian)           |
 | `integrations`        | 2026-04-14 (Google Drive snapshots)                                                       |
-| `briefing`            | 2026-04-14 (Google Drive snapshots), 2026-04-21 (#69 despacho), 2026-06-23 (#102 decidir), 2026-06-23 (#104 briefing rico), 2026-06-25 (#114 perfil modular), 2026-07-02 (#139 guarda-corpos), 2026-07-03 (#148 conexões), 2026-07-04 (#156 injeção), 2026-07-13 (#174/#175 update-oferta + copy do fim), 2026-07-24 (#195 dieta fase 1), 2026-07-16 (#177 dívidas estruturais), 2026-07-24 (#201 roteamento de conteúdo configurável) |
+| `briefing`            | 2026-04-14 (Google Drive snapshots), 2026-04-21 (#69 despacho), 2026-06-23 (#102 decidir), 2026-06-23 (#104 briefing rico), 2026-06-25 (#114 perfil modular), 2026-07-02 (#139 guarda-corpos), 2026-07-03 (#148 conexões), 2026-07-04 (#156 injeção), 2026-07-13 (#174/#175 update-oferta + copy do fim), 2026-07-24 (#195 dieta fase 1), 2026-07-16 (#177 dívidas estruturais), 2026-07-24 (#201 roteamento de conteúdo configurável), 2026-07-25 (#197 semente substitui releitura) |
 | `personalization`     | 2026-04-21 (tharso-voice)                                                                 |
 | `code-quality`        | 2026-05-06 (quality-gate), 2026-06-25 (#122 baseline 1061→930), 2026-07-03 (baseline 82/904), 2026-07-04 (#157 conformidade A0), 2026-07-24 (baseline 82/900) |
 | `touchpoint`          | 2026-05-18 (landing page sync), 2026-07-03 (#149 guia Obsidian — candidato à landing), 2026-07-05 (#160 instalação agnóstica), 2026-07-05 (#108 update via runtime) |
@@ -60,6 +60,21 @@ Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões ant
 - `code-quality` — métricas de qualidade do codebase, quality gate, baseline.
 
 ---
+
+## 2026-07-25 — Dieta do briefing, fase 2: a semente do runtime substitui a releitura local (#197)
+
+**Tópicos:** briefing, dispatch-bootstrap
+
+**Issues relacionadas:** #197 (executa), #195 (fase 1 — os ganhos compõem), #196 (o dois-tempos depende desta pra ter primeiro tempo rápido).
+
+**Relações com decisões anteriores:**
+- **Estende:** 2026-06-23 (#104). O painel do runtime era "prévia, não briefing"; segue sendo — mas o bloco `local_panorama` do payload agora é AUTORIZADO a substituir a releitura de `PAUTA.md`/`INBOX.md` pra exibição. A #104 tinha deixado "semente read-only" como fatia posterior; é esta.
+- **Mantém:** 2026-07-03 (#148). As fontes da ponte associativa não mudam — a cauda do `REGISTRO.md` e o `Hibernando` que a ponte usa vêm DENTRO da semente (mesmos dados, transporte diferente); zero leitura nova.
+- **Mantém:** 2026-07-24 (#195). A pré-carga canônica única e o DAG do Passo 4 ficam intactos; esta fase corta as releituras de exibição do Passo 3.
+
+**Contexto:** o agente pagava duas vezes — o runtime montava o painel em milissegundos e o procedure mandava reler os arquivos integrais mesmo assim. Pior: a "semente em milissegundos" não existia — `load_inbox_preview` disparava um subprocesso que REGENERAVA preview+índice (timeout 20s) a cada briefing.
+
+**Decisão:** (1) payload ganha `local_panorama` versionado (`prumo_local_panorama.v1`): itens por seção incluindo `Hibernando` (linha integral + display com teto), `cobrar` parseado (5 estados, fail-open), contagem do INBOX, cauda do REGISTRO, sinais de faxina; (2) `payload_completeness` por fonte — fallback POR FONTE, nunca releitura integral por alerta técnico; (3) semente READ-ONLY: o briefing nunca regenera o preview (regeneração é operação explícita do `prumo inbox preview`; frescor por mtime, `gerado|stale|ausente`); (4) paridade travada por ORÁCULO DIFERENCIAL (mesma fixture pelos dois caminhos, incluindo os 5 estados de cobrança e virada de ano); (5) orçamento declarado no contrato (display 200 chars, cauda 10 linhas, linha do item — nunca o arquivo). Procedure/load-policy/SKILL sincronizados; `adapter_contract_version` 2026-07-25.
 
 ## 2026-07-24 — Índice de projetos com pulso puxado: contexto sem engolir o workspace (#201)
 

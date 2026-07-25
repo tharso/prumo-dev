@@ -66,7 +66,9 @@ def _build_actions(workspace: Path) -> list[dict[str, object]]:
 def build_inbox_preview_payload(workspace: Path) -> dict[str, object]:
     workspace = workspace.expanduser().resolve()
     overview = workspace_overview(workspace)
-    preview = load_inbox_preview(workspace, repo_root_from(Path(__file__)))
+    # A operação EXPLÍCITA de regeneração (#197): aqui o subprocesso roda; o
+    # painel do briefing lê o resultado em modo read-only.
+    preview = load_inbox_preview(workspace, repo_root_from(Path(__file__)), allow_regen=True)
     docs = documentation_targets(workspace)
     samples = [summarize_inbox_entry(item, workspace) for item in preview["items"][:5]]
     note = str(preview.get("note") or "").strip()

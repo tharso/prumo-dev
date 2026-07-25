@@ -16,6 +16,7 @@ from prumo_runtime.daily_operator import (
     selection_contract_payload,
 )
 from prumo_runtime.inbox_preview import load_inbox_preview, summarize_inbox_entry
+from prumo_runtime.local_panorama import build_local_panorama
 from prumo_runtime.pauta_parsing import extract_section, filter_by_due_date
 from prumo_runtime.version_check import compute_staleness, read_cached_remote_version
 from prumo_runtime.workspace import (
@@ -225,7 +226,10 @@ def build_briefing_payload(workspace: Path) -> dict:
     andamento = filter_by_due_date(extract_section(pauta_text, "Em andamento"), today)
     agendado = filter_by_due_date(extract_section(pauta_text, "Agendado"), today)
 
-    preview = load_inbox_preview(workspace, repo_root)
+    # Semente read-only (#197): o painel NUNCA regenera o preview — só lê o
+    # índice existente e reporta frescor. Regenerar é operação explícita do
+    # `prumo inbox preview`.
+    preview = load_inbox_preview(workspace, repo_root, allow_regen=False)
 
     # Modelo A (#104): montar o painel NÃO marca "briefing feito". O painel é a
     # prévia/semente, não o briefing — quem marca é a curadoria rica, ao final,
@@ -274,6 +278,14 @@ def build_briefing_payload(workspace: Path) -> dict:
     next_move = next_move_payload(actions)
     proposal = choose_proposal(quente, agendado, andamento)
     daily_operation = daily_operation_payload(workspace)
+    local_panorama, payload_completeness = build_local_panorama(
+        pauta_path=paths.pauta,
+        inbox_path=paths.inbox,
+        registro_path=paths.registro,
+        processed_path=paths.inbox_processed,
+        preview=preview,
+        today=today,
+    )
     degradation = build_briefing_degradation(
         core_outdated=core_outdated,
         next_move=next_move,
@@ -328,6 +340,8 @@ def build_briefing_payload(workspace: Path) -> dict:
         "platform": overview["platform"],
         "capabilities": overview["capabilities"],
         "daily_operation": daily_operation,
+        "local_panorama": local_panorama,
+        "payload_completeness": payload_completeness,
         "next_move": next_move,
         "selection_contract": selection_contract_payload(next_move),
         "last_briefing_at": last_briefing_at,

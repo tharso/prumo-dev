@@ -128,6 +128,33 @@ def parse_cobrar_date(item: str, today: date) -> date | None:
     return candidate
 
 
+def cobrar_state(item: str, today: date) -> dict | None:
+    """Estado estruturado do marker `| cobrar:` de um item (#197).
+
+    Retorna None quando o item não tem marker. Com marker:
+    - `state`: `future` (2+ dias), `tomorrow` (véspera), `today`, `overdue`
+      (passado) ou `invalid` (marker mal formado — fail-open).
+    - `date`: ISO da data resolvida (None em `invalid`).
+    - `visible_today`: a MESMA regra de `is_item_visible_today` — véspera,
+      dia, atrasado e inválido aparecem; futuro (2+ dias) fica de fora.
+    """
+    if not _COBRAR_MARKER_PATTERN.search(item):
+        return None
+    due = parse_cobrar_date(item, today)
+    if due is None:
+        return {"state": "invalid", "date": None, "visible_today": True}
+    delta = (due - today).days
+    if delta > 1:
+        state = "future"
+    elif delta == 1:
+        state = "tomorrow"
+    elif delta == 0:
+        state = "today"
+    else:
+        state = "overdue"
+    return {"state": state, "date": due.isoformat(), "visible_today": delta <= 1}
+
+
 def is_item_visible_today(item: str, today: date) -> bool:
     """Decide se um item da pauta deve aparecer no briefing do dia.
 

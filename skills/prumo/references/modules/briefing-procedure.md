@@ -1,6 +1,6 @@
 # Briefing Procedure
 
-> **module_version: 4.29.0**
+> **module_version: 4.30.0**
 >
 > Fonte canônica do procedimento de briefing do Prumo.
 > Se este módulo conflitar com um resumo em `SKILL.md`, este módulo vence.
@@ -71,13 +71,18 @@ Não parar no drift local: "comparar só o core do workspace contra si mesmo" n�
 
 ## Passo 3: estado operacional
 
-1. Ler `PAUTA.md`.
-2. Ler `INBOX.md`.
-3. Checar faxina pendente (módulo `faxina.md`): se registro/índices/processados
-   passaram dos thresholds, rodar a faxina antes de apresentar — ela age sozinha
-   e o resultado entra no briefing em uma linha.
+**Com runtime no trilho novo (semente-primeiro, #197):** o JSON de `prumo briefing --workspace <path> --format json` carrega o bloco `local_panorama` (schema `prumo_local_panorama.v1`) com tudo que este passo consome: itens da PAUTA por seção — **incluindo `Hibernando`** — com a linha integral (`text`), a versão de exibição (`display_text`) e o marker de cobrança já parseado (`cobrar.state`: `future|tomorrow|today|overdue|invalid` + `visible_today`); contagem do `INBOX.md`; cauda do `REGISTRO.md` (ponte associativa do Passo 5); e sinais mecânicos de faxina (`local_panorama.faxina`: linhas da tabela do registro, processados velhos). Montar o estado operacional **a partir da semente — não reler `PAUTA.md`/`INBOX.md` integrais pra exibir**.
 
-Ao ler a PAUTA, aplicar o filtro de cobrança: itens com marker `| cobrar: DD/MM` só são elegíveis para o briefing quando a data é hoje, ontem (véspera) ou passada (atrasado). Itens com cobrança para daqui a 2+ dias ficam de fora do briefing — o objetivo é não cobrar antes da hora. Itens sem marker aparecem sempre. Marker ambíguo ou não-parseável: fail-open (mostrar o item).
+Arquivo bruto abre em **dois casos apenas**:
+
+1. **Edição** — atualizar `PAUTA.md`/`REGISTRO.md` no fechamento (Passo 6) sempre relê o arquivo antes de escrever.
+2. **Sinalização** — `payload_completeness.<fonte>.complete == false`, ambiguidade real num item, ou a heurística de aprofundamento (`load-policy.md`) mandar abrir. O fallback é **por fonte**: pauta incompleta → ler `PAUTA.md`; `inbox4mobile` stale/ausente → regenerar com `prumo inbox preview` (operação explícita) ou listar direto; as demais fontes seguem servidas pela semente. Alerta técnico genérico (`degradation`) NÃO é motivo pra releitura integral.
+
+**Sem runtime, sem `local_panorama` no JSON, ou JSON com erro:** fallback integral — ler `PAUTA.md` e `INBOX.md` como sempre. Nunca inventar dado a partir de JSON parcial (regras do AGENT.md: não fabricar JSON, não simular runtime).
+
+Checar faxina pendente (módulo `faxina.md`): se os sinais da semente (ou a checagem manual, no fallback) passaram dos thresholds, rodar a faxina antes de apresentar — ela age sozinha e o resultado entra no briefing em uma linha.
+
+Filtro de cobrança (a regra é a mesma nos dois caminhos): itens com marker `| cobrar: DD/MM` só são elegíveis para o briefing quando a data é hoje, ontem (véspera) ou passada (atrasado). Itens com cobrança para daqui a 2+ dias ficam de fora do briefing — o objetivo é não cobrar antes da hora. Itens sem marker aparecem sempre. Marker ambíguo ou não-parseável: fail-open (mostrar o item). Na semente, `visible_today` já vem calculado por essa regra (e o teste de paridade do runtime trava a equivalência); em leitura direta, aplicar manualmente.
 
 Não persistir estado de briefing entre sessões. A janela temporal de email é fixa em 24h (ver Passo 4).
 

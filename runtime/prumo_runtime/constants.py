@@ -7,7 +7,7 @@ from prumo_runtime.workspace_paths import workspace_paths
 
 RUNTIME_VERSION = __version__
 SCHEMA_VERSION = "1.0"
-ADAPTER_CONTRACT_VERSION = "2026-03-28"
+ADAPTER_CONTRACT_VERSION = "2026-07-25"
 DEFAULT_AGENT_NAME = "Prumo"
 DEFAULT_TIMEZONE = "America/Sao_Paulo"
 DEFAULT_BRIEFING_TIME = "09:00"

@@ -6,6 +6,8 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [Unreleased]
+
 ## [5.46.0] - 2026-07-25
 
 ### Added
