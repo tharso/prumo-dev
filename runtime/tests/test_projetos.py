@@ -580,6 +580,64 @@ class BindingMatrixTests(unittest.TestCase):
         self.assertEqual(rc, 0)
 
 
+class Round3Tests(unittest.TestCase):
+    def test_removed_path_replaces_old_pulse_with_note(self) -> None:
+        text = _index(
+            "## Projetos registrados\n\n### SemCaminho\n\n"
+            f"{PULSO_BEGIN}\n(pulso gerado ... frescor: fresh)\nvelho\n{PULSO_END}\n"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            new_text, report = sync_index_text(
+                text, home=Path(tmp) / "h", workspace=Path(tmp) / "ws", now=NOW
+            )
+        self.assertIsNotNone(new_text)
+        self.assertNotIn("frescor: fresh", new_text)
+        self.assertIn("sem caminho registrado", new_text)
+
+    def test_revparse_timeout_is_error_not_unborn(self) -> None:
+        from unittest import mock
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = _make_repo(Path(tmp))
+            real = projetos._run_git
+
+            def selective(path, *args):
+                if args and args[0] == "log":
+                    return subprocess.CompletedProcess(args, 1, "", "boom")
+                if args and args[0] == "rev-parse":
+                    return None  # timeout
+                return real(path, *args)
+
+            with mock.patch.object(projetos, "_run_git", side_effect=selective):
+                pulse = collect_git_pulse(repo, now=NOW)
+        self.assertFalse(pulse["complete"])
+        self.assertTrue(any("rev-parse" in e for e in pulse["errors"]))
+
+    def test_insertion_adds_only_marker_delimited_bytes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = _make_repo(Path(tmp))
+            text = _index(
+                "## Projetos registrados\n\n"
+                f"### Repo\n- Caminho: {repo}\n"  # sem blank no fim
+            )
+            new_text, report = sync_index_text(
+                text, home=Path(tmp) / "h", workspace=Path(tmp) / "ws", now=NOW
+            )
+            import re as _re
+            stripped = _re.sub(
+                rf"{_re.escape(PULSO_BEGIN)}.*?{_re.escape(PULSO_END)}\n",
+                "",
+                new_text,
+                flags=_re.DOTALL,
+            )
+        self.assertEqual(stripped, text, "inserção adicionou bytes fora dos delimitadores")
+
+    def test_windows_absolute_path_is_accepted_as_format(self) -> None:
+        resolved, err = resolve_registered_path(
+            "C:/Users/dono/Code/proj", home=Path("/Users/b"), workspace=Path("/Users/b/V")
+        )
+        self.assertIsNone(err, "formato absoluto do Windows não pode ser rejeitado")
+
+
 class SanitizeTests(unittest.TestCase):
     def test_removes_controls_and_neutralizes_markers(self) -> None:
         dirty = f"a\x07b {PULSO_BEGIN} c <!-- livre --> d"

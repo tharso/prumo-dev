@@ -174,7 +174,8 @@ def resolve_registered_path(
         return None, "caminho vazio"
     if "$" in raw or _GLOB_CHARS & set(raw):
         return None, "caminho não pode conter glob ou variável"
-    if not (raw.startswith("/") or raw.startswith("~")):
+    windows_abs = bool(re.match(r"^[A-Za-z]:[\\/]", raw))
+    if not (raw.startswith("/") or raw.startswith("~") or windows_abs):
         return None, "caminho deve ser absoluto ou começar com ~"
     if raw.startswith("~"):
         if raw != "~" and not raw.startswith("~/"):
@@ -256,7 +257,11 @@ def collect_git_pulse(path: Path, *, now: datetime) -> dict | None:
             pulse["last_commit_at"] = pulse["commits"][0]["date"]
     else:
         head = _run_git(path, "rev-parse", "--verify", "HEAD")
-        if head is not None and head.returncode == 0:
+        if head is None:
+            # Timeout aqui não pode virar "unborn" silencioso (Codex r3).
+            pulse["errors"].append("git rev-parse falhou (timeout)")
+            pulse["complete"] = False
+        elif head.returncode == 0:
             # HEAD existe e o log falhou mesmo assim: erro real, não unborn.
             pulse["errors"].append("git log falhou")
             pulse["complete"] = False
@@ -558,6 +563,12 @@ def sync_index_text(
         if not entry.path_raw:
             info["note"] = "sem caminho registrado — pulso não coletado"
             report["projects"].append(info)
+            if entry.block_inner_start is not None:
+                # Pulso antigo de um caminho removido continuaria mentindo
+                # frescor (Codex r3) — o miolo vira nota explícita.
+                replacements.append(
+                    (entry, [f"(sem caminho registrado — pulso não coletado; {synced_at})" + newline])
+                )
             continue
         # Canonicalizado UMA vez na pré-validação — reutilizar fecha a
         # janela de troca de alvo entre validação e coleta (Codex r2).
@@ -610,10 +621,10 @@ def sync_index_text(
         if entry.block_inner_start is not None:
             lines[entry.block_inner_start : entry.block_inner_end] = body
         else:
+            # Inserção estrita: SÓ os marcadores + miolo — nenhum byte
+            # decorativo fora dos delimitadores (Codex r3).
             insert_at = entry.section_end
             block = [PULSO_BEGIN + newline, *body, PULSO_END + newline]
-            if insert_at > 0 and lines[insert_at - 1].strip() != "":
-                block = [newline, *block]
             lines[insert_at:insert_at] = block
     return "".join(lines), report
 
