@@ -1,6 +1,6 @@
 # Briefing Procedure
 
-> **module_version: 4.31.0**
+> **module_version: 4.32.0**
 >
 > Fonte canônica do procedimento de briefing do Prumo.
 > Se este módulo conflitar com um resumo em `SKILL.md`, este módulo vence.
@@ -8,9 +8,9 @@
 
 ## REGRA DE NUMERAÇÃO (obrigatória, sem exceção)
 
-Todo item acionável do briefing recebe um número sequencial único, do primeiro ao último, sem reiniciar entre seções. Se há 5 emails, 3 eventos de calendário e 4 pendências, os números vão de 1 a 12. Emails: 1-5. Agenda: 6-8. Pendências: 9-12. Isso permite ao usuário responder "3, 7, 12" para despachar múltiplos itens de uma vez.
+Todo item acionável do briefing recebe um número sequencial único, do primeiro ao último, sem reiniciar entre seções **nem entre os dois tempos (#196)**. Se há 4 pendências locais, 5 emails e 3 eventos de calendário, os números vão de 1 a 12: pendências e inbox no primeiro tempo (1–4), emails (5–9) e agenda (10–12) no segundo, continuando de onde parou. Isso permite ao usuário responder "3, 7, 12" para despachar múltiplos itens de uma vez, inclusive misturando itens dos dois tempos.
 
-Nunca reiniciar a contagem ao mudar de seção. Nunca usar sub-numeração (1.1, 1.2). Nunca omitir a numeração em itens que pedem decisão ou atenção.
+Nunca reiniciar a contagem ao mudar de seção ou de tempo. Nunca usar sub-numeração (1.1, 1.2). Nunca omitir a numeração em itens que pedem decisão ou atenção. Elementos estruturais (abertura, avisos, proposta do dia) não recebem número — número é de item despachável.
 
 ## Pré-carga obrigatória (lista canônica ÚNICA, #195)
 
@@ -38,7 +38,7 @@ O cartão do runtime (`prumo start` / `prumo briefing`) é a **prévia** — um 
 1. **Nunca** entregar a saída do runtime como briefing final nem encerrar nela. Entregar o cartão e parar é beco sem saída — o usuário pediu o briefing, não a prévia.
 2. Conduzir a curadoria rica abaixo. `prumo briefing --workspace <path> --format json` pode ser lido como **painel local** (semente determinística da parte local), mas a resposta é sempre o panorama numerado rico.
 3. **Sem MCP de email/agenda:** entregar o panorama com o que há localmente (pauta, inbox) e **declarar em uma linha** que email e/ou agenda estão indisponíveis — e **orientar** a reestabelecer o acesso ou checar a agenda manualmente. Não mascarar: sem o calendário, compromissos com hora (incluindo rituais que viram evento) podem não estar refletidos, e o silêncio passaria por "agenda vazia" quando na verdade é "agenda não lida". Nunca cair de volta no cartão da prévia como "solução".
-4. Ao final do briefing, registrar o dia: `prumo briefing --workspace <path> --mark-done` (quando há shell). Isso marca "briefing feito hoje" sem remontar o painel.
+4. Ao final do briefing **completo** — completo segundo a VARIANTE do host (tabela "Quando cada variante está COMPLETA" no Passo 5) —, registrar o dia: `prumo briefing --workspace <path> --mark-done` (quando há shell). Isso marca "briefing feito hoje" sem remontar o painel. **Escape do usuário NUNCA marca** — o briefing não aconteceu inteiro e a prévia pode voltar a recomendá-lo.
 
 ## Passo 1: configuração e data local
 
@@ -62,7 +62,7 @@ Não parar no drift local: "comparar só o core do workspace contra si mesmo" n�
 1. Se houver versão nova detectável (incl. `VERSION` remoto > `prumo_version` do workspace), seguir o **gatilho graduado** do canônico: severidade `info` → avisar a diferença em uma linha e seguir o briefing; `warning`/`alert` → item 4 (oferta no topo). Não bloquear em nenhum caso.
 2. Se `Prumo/VERSION` local for maior que o `prumo_version` do `.prumo/system/PRUMO-CORE.md` do workspace (core do workspace defasado), aplicar o mesmo gatilho graduado: `info` → avisar em uma linha e seguir; `warning`/`alert` → item 4 (oferta no topo; o canônico cobre este caso em "workspace core defasado").
 3. Se a checagem falhar, registrar em uma linha e seguir. O briefing não vira refém de updater manco.
-4. **Severidade → OFERTA no topo (#158, #174):** ler `version_status.severity` do payload (ou computar a distância de versão). Se `warning`/`alert`, a **oferta de atualizar abre a resposta — e o briefing segue logo abaixo, na MESMA resposta**. Não esperar a escolha: é isso que mantém o **não-bloqueante**; a pergunta fica respondível a qualquer momento.
+4. **Severidade → OFERTA no topo (#158, #174; com o dois-tempos da #196, "no topo" = abrindo o PRIMEIRO TEMPO):** ler `version_status.severity` do payload (ou computar a distância de versão). Se `warning`/`alert`, a **oferta de atualizar abre o primeiro tempo — e o briefing segue logo abaixo, na MESMA resposta**. Não esperar a escolha: é isso que mantém o **não-bloqueante**; a pergunta fica respondível a qualquer momento.
    > *(exemplo COM transporte seguro — sem transporte, o `a` sai e vale o caso "sem transporte" do canônico: orientação por elo + `b`/`c`)*
    > Saiu a 5.34 (você está na 5.31) — quer que eu atualize? a) **atualizar agora** — atualizo pelo caminho seguro disponível (runtime ou fonte local, ver canônico) assim que você responder; b) **depois** — sigo e te lembro no `/fim`; c) **ver diagnóstico** primeiro.
    >
@@ -88,17 +88,19 @@ Não persistir estado de briefing entre sessões. A janela temporal de email é 
 
 ## Passo 4: canais de entrada
 
-### Ordem de execução (DAG, #195)
+### Ordem de execução (DAG lógico, execução ADAPTATIVA — #195 emendada pela #196/#205)
 
-Os canais independentes **começam juntos** — o tempo do briefing era a soma das latências em fila, e paralelizar não muda o gasto de tokens, só o relógio:
+O DAG segue como ordem **lógica** de dependências; a promessa de paralelismo FÍSICO caiu (medição do spike #205: tool calls serializam em todos os hosts, inclusive cross-server). Execução adaptativa, fail-independent:
 
-1. **Em paralelo, desde o início:** leituras locais mínimas (a PAUTA via `local_panorama.pauta` da semente — arquivo `PAUTA.md` só no fallback do Passo 3 —, `PERFIL.md`, `PESSOAS.md`, `EMAIL-CURADORIA.md`) ∥ queries de metadata do Gmail (Camadas 1 e 2) ∥ Calendar MCP ∥ listagem plana de `Inbox4Mobile/`.
+1. **Primeiro o local, sem esperar o externo:** leituras locais mínimas (a PAUTA via `local_panorama.pauta` da semente — arquivo `PAUTA.md` só no fallback do Passo 3 —, `PERFIL.md`, `PESSOAS.md`, `EMAIL-CURADORIA.md`, e a **listagem plana de `Inbox4Mobile/`** quando não veio na semente — o primeiro tempo apresenta a triagem do inbox, então o inventário dele é LOCAL, nunca espera canal externo). O **primeiro tempo do Passo 5 sai daqui, antes de qualquer resultado de email/calendário**. Na sequência, os canais externos em ordem de prioridade: metadata do Gmail (Camadas 1 e 2) → Calendar MCP. **Paralelismo por subagente: DESLIGADO por default** — só habilitar num canal comprovadamente lento com ganho líquido demonstrado (#205: spawn ~3s; 22–28s por chamada de metadata medidos).
 2. **Classificação só depois do contexto local:** a triagem de prioridade cruza com `PAUTA`/`PERFIL`/`PESSOAS` — não classificar antes de tê-los.
 3. **Leitura de corpos** segue os predicados do Estágio 2 (abaixo), após a classificação preliminar por metadata.
 4. **Escritas serializadas no fechamento** (Passo 6): faxina, `_processed.json`, `PAUTA`, `REGISTRO` — nunca concorrendo com leituras em andamento.
 5. **Falha parcial não cancela os demais canais:** email fora do ar não derruba calendário nem pauta; declarar a indisponibilidade em uma linha e seguir.
 
 ### Inbox4Mobile (obrigatório quando a pasta existir)
+
+**Estágio LOCAL, ANTES da emissão do primeiro tempo — SEM abrir bruto:** inventário (passo 1), comparação com `_processed.json` (passo 2) e a **triagem leve** (classificação por nome/índice/preview — o Estágio A do `inbox-processing.md`) rodam antes de o primeiro tempo sair: o inbox é apresentado NELE e nada disso espera canal externo. **Abrir arquivo bruto do Inbox4Mobile (Estágio B — aprofundamento) só DEPOIS da primeira entrega** — é o ASSERT do core: proibido no primeiro tempo; em host de resposta única, o ASSERT cobre a resposta inteira, então o aprofundamento fica pra turno posterior ou pedido explícito do usuário.
 
 Se `Inbox4Mobile/` existir no workspace:
 
@@ -232,17 +234,33 @@ Se `EMAIL-CURADORIA.md` não existir, criar com estrutura:
 
 Consolidar agenda por conta quando houver mais de um calendário. Cada evento do dia é um item numerado (continuar da numeração dos emails).
 
-## Passo 5: montar o briefing
+## Passo 5: montar o briefing — em DOIS TEMPOS (#196)
 
-Entregar em uma resposta única, numerada de 1 a N:
+O briefing chega em **dois tempos na MESMA resposta**, com numeração sequencial única de 1 a N — nunca reinicia entre os tempos, o despacho em lote ("3, 7, 12") sobrevive intacto. A capacidade do host decide a variante (matriz abaixo); host sem a capacidade entrega resposta única como sempre.
 
-1. Abertura com data correta no fuso do usuário.
-2. Agenda do dia, consolidada por conta quando aplicável.
-3. Emails curados (Camadas 1, 2 e 3 aplicadas), com classificação Responder/Ver/Sem ação e prioridade P1/P2/P3.
-4. Pendências vivas de `PAUTA.md` (quente, em andamento, agendado), **respeitando o marker `| cobrar: DD/MM`**. Item com marker de cobrança só aparece no briefing quando falta no máximo 1 dia para a data (véspera ou dia). Itens com cobrança no passado (atrasados) sempre aparecem. Item sem marker aparece sempre. Marker mal formado ou ambíguo: mostrar o item (fail-open, melhor ruído que perda silenciosa). **Rituais do `PERFIL.md`/`ROTINA.md` não são pendências** — não entram aqui como itens; rituais com hora aparecem como eventos da agenda, não como pauta.
-5. Inbox4Mobile: se houver itens novos (detectados no Passo 4), apresentar a contagem e a triagem. Linkar `inbox-preview.html` quando o preview estiver atualizado. Na primeira resposta do briefing, não despejar conteúdo bruto dos arquivos — preferir resumo numerado com classificação. **Este item é sobre formato de apresentação. A triagem real acontece no Passo 4 — não pular o Passo 4 por causa deste item.**
+### Primeiro tempo: panorama local imediato
 
-Depois da lista numerada, entregar a proposta do dia em uma linha curta e oferecer opções respondíveis:
+Emitido a partir da semente (ou da leitura direta, conforme o gate do Passo 3) **antes de aguardar qualquer resultado de email/calendário** — a ordem é critério estrutural: a parte local nunca espera a parte lenta.
+
+Componentes do primeiro tempo (estruturais sem número; **só item despachável numera**, 1..k conforme houver):
+
+- Abertura com data correta no fuso do usuário (sem número).
+- Pendências vivas da PAUTA (quente, em andamento, agendado) — **cada pendência é um item numerado**, **respeitando o marker `| cobrar: DD/MM`**. Item com marker de cobrança só aparece no briefing quando falta no máximo 1 dia para a data (véspera ou dia). Itens com cobrança no passado (atrasados) sempre aparecem. Item sem marker aparece sempre. Marker mal formado ou ambíguo: mostrar o item (fail-open, melhor ruído que perda silenciosa). **Rituais do `PERFIL.md`/`ROTINA.md` não são pendências** — não entram aqui como itens; rituais com hora aparecem como eventos da agenda, não como pauta.
+- Inbox4Mobile: se houver itens novos (detectados no Passo 4), apresentar a contagem e a triagem — **itens de triagem numeram**. Linkar `inbox-preview.html` quando o preview estiver atualizado. No primeiro tempo, não despejar conteúdo bruto dos arquivos — preferir resumo numerado com classificação. **Este item é sobre formato de apresentação. A triagem real acontece no Passo 4 — não pular o Passo 4 por causa deste item.**
+- Fechar o primeiro tempo com UMA linha (sem número): *"Curadoria de email e agenda chegando na sequência."* — e **seguir sem esperar resposta**.
+
+A numeração do primeiro tempo (1..k, com k variável — é quantos itens houver) fica **congelada** (snapshot lógico): o segundo tempo continua de k+1; nunca renumerar. Se o usuário despachar itens entre os tempos, atender e anotar — sem recompor o panorama.
+
+### Segundo tempo: curadoria na sequência (automático)
+
+Continua **na mesma resposta, sem pergunta no meio** — a variante com pergunta bloqueante foi rejeitada no desenho: quando a resposta é quase sempre "sim", ela só adiciona um degrau de espera. Execução **adaptativa** (#205: tool calls serializam em todos os hosts medidos): os canais rodam em sequência priorizada e fail-independent (metadata do Gmail → Calendar → corpos por predicado do Passo 4); **paralelismo por subagente fica DESLIGADO por default** — só habilitar quando uma comparação equivalente demonstrar ganho líquido num canal comprovadamente lento (spawn de ~3s+ por agente; medido 22–28s por chamada de metadata).
+
+Componentes do segundo tempo (itens k+1..N, cada um com seu número):
+
+- Emails curados (Camadas 1, 2 e 3 aplicadas), com classificação Responder/Ver/Sem ação e prioridade P1/P2/P3 — **cada email é um item, continuando de k+1**.
+- Agenda do dia, consolidada por conta quando aplicável — **cada evento é um item, continuando após o último email** (é a ordem da REGRA DE NUMERAÇÃO e do Passo 4/Calendário).
+
+Depois da lista numerada — **só no segundo tempo, porque precisa do quadro completo** — entregar a proposta do dia em uma linha curta (sem número) e oferecer opções respondíveis:
 
 - `a) Aceitar e seguir`
 - `b) Ajustar`
@@ -250,6 +268,29 @@ Depois da lista numerada, entregar a proposta do dia em uma linha curta e oferec
 - `d) Tá bom por hoje`
 
 A proposta deve considerar deadlines de hoje, blockers, agenda disponível e itens com cobrança elegível hoje.
+
+### Escape do usuário (best-effort, declarado como tal)
+
+"Só o local hoje", "para por aí", "chega" — a qualquer momento entre ou durante os tempos: interromper o que ainda **não começou**. Leituras de corpo não-iniciadas não acontecem; chamada já em voo não é cancelada (best-effort — sem promessa de cancelamento; as queries de metadata já disparadas são custo marginal). Atenção ao sentido: **"segue tudo"/"continua" é o CONTRÁRIO de escape** — cancela um escape anterior e manda completar o segundo tempo. **Escape não marca o briefing como feito**: sem `--mark-done` — a prévia pode voltar a recomendar o briefing, e está certa: ele não aconteceu inteiro.
+
+### Quando cada variante está COMPLETA (e pode marcar o dia)
+
+| Variante | Completa quando | `--mark-done` |
+|---|---|---|
+| Dois tempos | o segundo tempo foi entregue (proposta do dia inclusa) | sim |
+| Resposta única / um tempo com oferta | a resposta única foi entregue (ela É o briefing inteiro daquele host) | sim |
+| Zero canais externos | o primeiro tempo + declaração de indisponibilidade foram entregues (é o briefing possível) | sim |
+| Escape do usuário (qualquer variante) | nunca — o briefing não aconteceu inteiro | **não** |
+
+### Matriz por host (aceite por host, #205)
+
+| Host | Variante hoje | Transporte do 1º tempo |
+|---|---|---|
+| Cowork | **dois tempos completo** (automático provado ao vivo) | leitura direta (runtime inalcançável por topologia) |
+| Claude Code (desktop e CLI) | resposta única — **provisório** até o roteiro automático+escape ser medido lá | semente do runtime (gate do Passo 3) |
+| Codex CLI e afins | um tempo com oferta: panorama completo + oferta de aprofundar email/agenda como próximo comando | conforme gate do Passo 3 |
+
+Granular por canal externo: **0 canais** (sem Gmail e sem Calendar) → só o primeiro tempo com declaração de indisponibilidade (comportamento atual); **1 canal** → segundo tempo parcial com declaração do que falta; **2** → segundo tempo completo.
 
 ### Ponte associativa (opcional, teto da regra 17)
 
@@ -264,7 +305,7 @@ Junto à proposta do dia, **no máximo uma** sugestão associativa por briefing 
 
 Quando o panorama tiver **6+ itens acionáveis** (conta só item que pede decisão — não evento puramente informativo), oferecer o despacho no formato visual além do chat: gerar o HTML interativo da skill `decidir` e linká-lo. Abaixo de 6, despachar em chat sai mais barato — não gerar.
 
-- **Aditivo, não substitutivo.** O panorama numerado em chat continua sendo a camada base (ASSERT do core: panorama único, sem blocos progressivos). O HTML é a camada rica de despacho. Os cards **reusam os mesmos números** do panorama (o item `7` do chat vira o card `id: '7'`).
+- **Aditivo, não substitutivo.** O panorama numerado em chat continua sendo a camada base (regra 12 do core: dois tempos com numeração única — o HTML nunca substitui o chat). O HTML é a camada rica de despacho. Os cards **reusam os mesmos números** do panorama (o item `7` do chat vira o card `id: '7'`).
 - **Override do usuário, sempre.** "quero visual" / "gera o decidir" → gerar mesmo com poucos itens. "resolve no chat" / "sem HTML" → não gerar. Sinais conflitantes → perguntar "visual ou chat?".
 - **Como gerar:** seguir `skills/decidir/SKILL.md` (preencher `assets/template.html`, ações da allowlist por tipo, salvar em `.prumo/state/decidir/`, copiar a fonte, offline). O usuário abre no próprio browser, despacha, clica "Copiar respostas" e cola de volta; o Prumo lê o bloco JSON e executa em camadas.
 - **Acoplamento brando.** Se a skill `decidir` não estiver disponível ou a escrita do arquivo falhar, **cair no despacho em chat** — nunca travar o briefing.
@@ -278,7 +319,7 @@ Depois do briefing:
 1. Atualizar `PAUTA.md` se algo mudou.
 2. Registrar ações no `REGISTRO.md`.
 3. Manter `Inbox4Mobile/_processed.json` sincronizado quando houver fallback sem deleção física.
-4. Registrar o briefing do dia: `prumo briefing --workspace <path> --mark-done` (quando há shell). Marca "briefing feito hoje" — sem isso, a prévia segue recomendando o briefing como se não tivesse acontecido.
+4. Registrar o briefing do dia: `prumo briefing --workspace <path> --mark-done` (quando há shell) — **somente se a variante do host se completou** (tabela do Passo 5; escape nunca marca). Marca "briefing feito hoje" — sem isso, a prévia segue recomendando o briefing como se não tivesse acontecido.
 
 ## Passo 7: brain dump obrigatório quando a pauta estiver vazia
 

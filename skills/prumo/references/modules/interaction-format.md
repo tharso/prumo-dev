@@ -1,6 +1,6 @@
 # Interaction Format
 
-> **module_version: 4.19.0**
+> **module_version: 4.20.0**
 >
 > Fonte canônica do contrato de interface do Prumo no chat.
 
@@ -19,6 +19,8 @@ Quando o Prumo apresentar itens no mesmo fluxo:
 2. manter a numeração contínua ao mudar de bloco ou assunto relacionado;
 3. não reiniciar do `1.` só porque abriu um subtítulo novo;
 4. só zerar a numeração quando um fluxo novo realmente começou.
+
+O briefing em **dois tempos** (#196) é o caso canônico desta regra: o segundo tempo continua a numeração exatamente de onde o primeiro parou (k+1..N), na mesma resposta — dois tempos são UM fluxo, nunca dois.
 
 Exemplo bom:
 

@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.49.0] - 2026-07-25
+
+### Changed
+- **Briefing em DOIS TEMPOS: panorama local imediato, curadoria automática na sequência (#196)** — a dor era o tempo até a primeira resposta; a ideia do dono ("panorama primeiro, pergunta depois") virou a variante automática-com-escape (pergunta bloqueante quando a resposta é quase sempre "sim" só adiciona degrau). O Passo 5 do `briefing-procedure.md` foi remodelado: **primeiro tempo** (abertura, PAUTA com filtro de cobrança, Inbox4Mobile — numerado 1..k, emitido da semente/leitura direta ANTES de aguardar qualquer canal externo — critério estrutural) fecha com aviso de uma linha e **segue sem esperar resposta**; **segundo tempo** (emails curados e depois a agenda — k+1..N, numeração congelada no primeiro tempo, nunca renumera) carrega a proposta do dia, a ponte associativa e a oferta do `decidir` (só ali — precisam do quadro completo). **Escape best-effort declarado**: impede leituras não-iniciadas, não cancela chamada em voo, e NÃO marca `--mark-done` (a prévia pode voltar a cobrar — correto). **Execução adaptativa** (#205: tool calls serializam em todos os hosts medidos): canais em sequência priorizada fail-independent; **paralelismo por subagente DESLIGADO por default** (spawn ~3s; 22–28s por chamada de metadata medidos — capacidade provada, vantagem não). **Matriz por host com aceite por host**: Cowork = dois tempos completo (automático provado ao vivo; transporte por leitura direta — runtime inalcançável por topologia); Claude Code = resposta única provisória até o roteiro automático+escape; Codex CLI = um tempo com oferta; granular por canal externo (0/1/2). **Governança**: regra 12 do core reescrita (revoga parcialmente o "sem blocos progressivos" de #102/#104, MANTENDO numeração única, panorama-base em chat e `decidir` aditivo); ASSERT do Inbox4Mobile redefinido conscientemente ("primeira resposta" → "primeiro tempo", registro do guard atualizado); oferta de update do #174 abre o primeiro tempo; defesas do #156 intactas; decisão completa no DECISIONS.md. `interaction-format.md` declara o dois-tempos como caso canônico da numeração contínua; `skills/briefing/SKILL.md` sincronizada.
+
 ## [5.48.0] - 2026-07-25
 
 ### Added

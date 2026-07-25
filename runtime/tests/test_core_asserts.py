@@ -24,7 +24,10 @@ EXPECTED_ASSERTS = {
     "ASSERT: Se existir Prumo/Inbox4Mobile/_preview-index.json, linkar inbox-preview.html antes de abrir qualquer arquivo bruto.",
     "ASSERT: Antes de deletar item de inbox, confirmar com o usuário o plano único de commit.",
     "ASSERT: Registrar no Prumo/REGISTRO.md antes de remover o original do inbox.",
-    "ASSERT: Na primeira resposta do briefing, é proibido abrir arquivo bruto de Prumo/Inbox4Mobile/*.",
+    # #196: "primeira resposta" redefinida conscientemente como "primeiro
+    # tempo" (a proibição segue idêntica em substância — o que muda é o nome
+    # da janela; em host de resposta única, vale a resposta inteira).
+    "ASSERT: No primeiro tempo do briefing (#196 — a primeira entrega da resposta em dois tempos; em host de resposta única, a resposta inteira), é proibido abrir arquivo bruto de Prumo/Inbox4Mobile/*.",
     (
         "ASSERT: No update aplicado à mão (sem runtime), a allowlist de escrita é apenas "
         ".prumo/system/PRUMO-CORE.md e .prumo/backups/<scope>/<timestamp>/... — via runtime, "
