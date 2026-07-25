@@ -97,6 +97,7 @@ TWO_TEMPOS_INVARIANTS = (
     "Quando cada variante está COMPLETA",
     "Escape do usuário (qualquer variante) | nunca",
     "seguir sem esperar resposta",
+    "Estágio LOCAL, integral, ANTES da emissão do primeiro tempo",
 )
 
 

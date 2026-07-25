@@ -100,6 +100,8 @@ O DAG segue como ordem **lógica** de dependências; a promessa de paralelismo F
 
 ### Inbox4Mobile (obrigatório quando a pasta existir)
 
+**Estágio LOCAL, integral, ANTES da emissão do primeiro tempo:** os passos 1–4 abaixo rodam por inteiro (inventário, comparação com `_processed.json` e triagem) antes de o primeiro tempo sair — o inbox é apresentado NELE, então nada daqui espera canal externo.
+
 Se `Inbox4Mobile/` existir no workspace:
 
 1. **Listar os arquivos da pasta** (excluindo `_preview-index.json`, `_processed.json`, `inbox-preview.html`).

@@ -76,7 +76,7 @@ O cartão do runtime (`prumo start` / `prumo briefing`) é a **prévia** — ret
 
 O briefing entrega:
 
-- panorama numerado único: agenda, emails curados e pendências numerados sequencialmente de 1 a N;
+- panorama numerado único em dois tempos: pendências e inbox no primeiro tempo (1..k), emails curados e depois a agenda no segundo (k+1..N) — numeração sequencial que nunca reinicia;
 - proposta do dia em seguida, com opções curtas para responder;
 - curadoria de email: classificação em `Responder` / `Ver` / `Sem ação` com prioridade P1 (ação hoje) / P2 (ação esta semana) / P3 (informativo);
 - email e calendário via Gmail/Calendar MCP direto.
