@@ -669,6 +669,49 @@ class NoMutationWithoutWorkTests(unittest.TestCase):
         self.assertEqual(new_text, text, "sync sem trabalho mutou o documento")
 
 
+class FirstRealUseTests(unittest.TestCase):
+    """Bugs descobertos no primeiro sync real (25/07, workspace do dono)."""
+
+    def test_context_file_does_not_count_as_folder_activity(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "docs"
+            root.mkdir()
+            old_file = root / "antigo.md"
+            old_file.write_text("x\n", encoding="utf-8")
+            os.utime(old_file, (1200000000, 1200000000))
+            # Contexto recém-escrito NÃO pode virar "atividade":
+            (root / ".prumo-contexto.md").write_text(
+                "---\nupdated: 2026-07-25T01:27:00-03:00\n---\n", encoding="utf-8"
+            )
+            pulse = collect_folder_pulse(root, now=NOW)
+        self.assertEqual(
+            pulse["last_activity_at"],
+            datetime.fromtimestamp(1200000000, tz=timezone.utc).isoformat(),
+            "o próprio .prumo-contexto.md contou como atividade — frescor eternamente stale",
+        )
+
+    def test_porcelain_paths_with_spaces_and_unicode_are_stattable(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = _make_repo(Path(tmp))
+            weird = repo / "Docs" / "Tharso, the guy — Vieira.html"
+            weird.parent.mkdir()
+            weird.write_text("x\n", encoding="utf-8")
+            pulse = collect_git_pulse(repo, now=NOW)
+        self.assertTrue(pulse["dirty"])
+        self.assertFalse(
+            any("sem stat" in e for e in pulse["errors"]),
+            f"porcelain citado quebrou o stat: {pulse['errors']}",
+        )
+
+    def test_porcelain_rename_pair_uses_new_path(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = _make_repo(Path(tmp))
+            subprocess.run(["git", "-C", str(repo), "mv", "a.md", "b renomeado.md"], check=True)
+            pulse = collect_git_pulse(repo, now=NOW)
+        self.assertTrue(pulse["dirty"])
+        self.assertFalse(any("sem stat" in e for e in pulse["errors"]), pulse["errors"])
+
+
 class SanitizeTests(unittest.TestCase):
     def test_removes_controls_and_neutralizes_markers(self) -> None:
         dirty = f"a\x07b {PULSO_BEGIN} c <!-- livre --> d"

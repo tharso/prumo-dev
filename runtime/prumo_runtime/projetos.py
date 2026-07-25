@@ -266,12 +266,25 @@ def collect_git_pulse(path: Path, *, now: datetime) -> dict | None:
             pulse["errors"].append("git log falhou")
             pulse["complete"] = False
 
-    porcelain = _run_git(path, "status", "--porcelain")
+    porcelain = _run_git(path, "status", "--porcelain", "-z")
     if porcelain is None or porcelain.returncode != 0:
         pulse["errors"].append("git status falhou")
         pulse["complete"] = False
         return pulse
-    entries = porcelain.stdout.splitlines()
+    # -z: NUL-separado e SEM C-quoting — path com espaço/unicode vinha
+    # citado ("...") com escapes octais e o stat falhava (primeiro sync
+    # real, 25/07). No -z, renames vêm como par "XY new\0old"; o campo
+    # que interessa (estado atual) é o primeiro.
+    raw_entries = [e for e in porcelain.stdout.split("\0") if e]
+    entries = []
+    skip_next = False
+    for item in raw_entries:
+        if skip_next:
+            skip_next = False
+            continue
+        entries.append(item)
+        if len(item) >= 2 and item[0] in "RC":
+            skip_next = True  # o próximo token é o path antigo do rename
     pulse["dirty"] = bool(entries)
     if entries:
         stats: list[float] = []
@@ -280,8 +293,6 @@ def collect_git_pulse(path: Path, *, now: datetime) -> dict | None:
             pulse["errors"].append("mudanças demais no working tree — coleta parcial")
         for line in entries[:PORCELAIN_STAT_LIMIT]:
             rel = line[3:]
-            if " -> " in rel:
-                rel = rel.split(" -> ", 1)[1]
             if rel.endswith("/"):
                 # Diretório untracked colapsado: o mtime real está lá dentro
                 # e não vamos varrer — coleta incompleta, nunca "fresh".
@@ -343,6 +354,11 @@ def collect_folder_pulse(
             visited += 1
             if child.is_symlink():
                 continue  # jamais atravessar (perímetro, #194)
+            if child.name == CONTEXT_FILENAME:
+                # A narrativa não é atividade do projeto: contá-la deixaria
+                # o frescor eternamente stale segundos após escrevê-la
+                # (descoberto no primeiro sync real, 25/07).
+                continue
             if child.is_dir():
                 if child.name in EXCLUDED_DIR_NAMES:
                     continue
