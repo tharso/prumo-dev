@@ -144,24 +144,26 @@ class SeedParityTest(unittest.TestCase):
         self.assertIn("[[conexao]]", seed[0])
 
     def test_non_canonical_sections_full_parity(self) -> None:
-        # #206: seção autoral não pode sumir entre transportes — item a item.
+        # #206: seção autoral não pode sumir entre transportes — item a item,
+        # como LISTA ORDENADA (label é display, não chave: dict colapsaria
+        # labels duplicados e o teste passaria sorrindo sobre o cadáver).
         from prumo_runtime.pauta_parsing import extract_all_sections
 
-        direct = {
-            label: items
+        canonical_labels = {
+            "Quente (precisa de atenção agora)",
+            "Em andamento",
+            "Agendado / Lembretes",
+            "Hibernando",
+        }
+        direct = [
+            (label, items)
             for label, items in extract_all_sections(self.pauta_text)
-            if label
-            not in {
-                "Quente (precisa de atenção agora)",
-                "Em andamento",
-                "Agendado / Lembretes",
-                "Hibernando",
-            }
-        }
-        seed = {
-            s["label"]: [i["text"] for i in s["items"]]
+            if label not in canonical_labels
+        ]
+        seed = [
+            (s["label"], [i["text"] for i in s["items"]])
             for s in self.panorama["pauta"]["outras_secoes"]
-        }
+        ]
         self.assertEqual(seed, direct)
 
     def test_grand_total_parity_nothing_lost(self) -> None:
@@ -279,6 +281,11 @@ class SeedFirstTextGuard(unittest.TestCase):
         self.assertIn("semente-primeiro, #197", procedure)
         self.assertIn("prumo_local_panorama.v1", procedure)
         self.assertIn("dois casos apenas", procedure)
+        self.assertIn(
+            "`pauta.outras_secoes` presente como lista",
+            procedure,
+            "gate por capacidade (#206): schema + campo, nunca só presença de binário",
+        )
 
 
 class SeedReadOnlyTest(unittest.TestCase):

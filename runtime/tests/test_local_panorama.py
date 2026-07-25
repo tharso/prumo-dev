@@ -161,6 +161,49 @@ class PautaBlockTest(unittest.TestCase):
         self.assertEqual(aposta["cobrar"]["state"], "future")
         self.assertFalse(aposta["visible_today"])
 
+    def test_duplicated_canonical_heading_accumulates_never_lost(self) -> None:
+        # Crítico do r1: "## Quente" repetido (ou "## Quente — hoje") tem que
+        # ACUMULAR na canônica — a versão anterior perdia a 2ª ocorrência.
+        pauta = (
+            "# Pauta\n\n## Quente\n\n- item um\n\n## Horizonte\n\n- aposta\n\n"
+            "## Quente — repescagem\n\n- item dois\n- item três\n"
+        )
+        block = build_pauta_block(pauta, TODAY)
+        quente = next(s for s in block["sections"] if s["id"] == "quente")
+        self.assertEqual(
+            [i["text"] for i in quente["items"]],
+            ["- item um", "- item dois", "- item três"],
+            "ocorrência repetida de canônica não pode sumir",
+        )
+        self.assertEqual([s["label"] for s in block["outras_secoes"]], ["Horizonte"])
+        from prumo_runtime.pauta_parsing import extract_all_sections
+
+        direct_total = sum(len(items) for _, items in extract_all_sections(pauta))
+        seed_total = sum(s["count"] for s in block["sections"]) + sum(
+            s["count"] for s in block["outras_secoes"]
+        )
+        self.assertEqual(seed_total, direct_total)
+
+    def test_duplicated_authorial_labels_survive_as_positions(self) -> None:
+        # label é display, não chave: duas "## Notas" viajam como duas
+        # entradas posicionais, nunca colapsam.
+        pauta = "# P\n\n## Notas\n\n- a\n\n## Notas\n\n- b\n"
+        block = build_pauta_block(pauta, TODAY)
+        self.assertEqual(
+            [(s["label"], [i["text"] for i in s["items"]]) for s in block["outras_secoes"]],
+            [("Notas", ["- a"]), ("Notas", ["- b"])],
+        )
+
+    def test_prose_lines_travel_fail_open(self) -> None:
+        # Prosa solta em seção autoral viaja como linha (fail-open): count é
+        # "linhas transportadas", não "itens acionáveis" — julgamento de
+        # acionabilidade é da curadoria (#196), não do transporte.
+        pauta = "# P\n\n## Contexto do trimestre\n\nMeta: fechar o ciclo até setembro.\n\n- bullet real\n"
+        block = build_pauta_block(pauta, TODAY)
+        secao = block["outras_secoes"][0]
+        self.assertEqual(secao["count"], 2)
+        self.assertIn("Meta: fechar o ciclo até setembro.", secao["items"][0]["text"])
+
 
 class BuildLocalPanoramaTest(unittest.TestCase):
     def setUp(self) -> None:

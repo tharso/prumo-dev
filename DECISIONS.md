@@ -12,11 +12,11 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 | `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-04 (#158 detecção defasagem), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime), 2026-07-05 (#170 transporte de update local), 2026-07-12 (#172 taxonomia do picker), 2026-07-19 (#191 decidir mostra o item), 2026-07-24 (#195 dieta fase 1 — produtor do cache de versão), 2026-07-16 (#177 dívidas estruturais) |
 | `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first), 2026-05-06 (quality-gate), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#141 diário — emenda à #68) |
 | `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist), 2026-06-24 (#110 não-bundle), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime), 2026-07-05 (#170 transporte de update local), 2026-07-16 (#177 dívidas estruturais) |
-| `dispatch-bootstrap`  | 2026-04-21 (#69 despacho), 2026-06-23 (#104 briefing rico), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-05 (#160 porta/instalação agnóstica), 2026-07-12 (#172 taxonomia do picker), 2026-07-24 (#194 perímetro de leitura), 2026-07-24 (#201 índice de projetos), 2026-07-25 (#197 semente substitui releitura) |
+| `dispatch-bootstrap`  | 2026-04-21 (#69 despacho), 2026-06-23 (#104 briefing rico), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-05 (#160 porta/instalação agnóstica), 2026-07-12 (#172 taxonomia do picker), 2026-07-24 (#194 perímetro de leitura), 2026-07-24 (#201 índice de projetos), 2026-07-25 (#197 semente substitui releitura), 2026-07-25 (#206 outras_secoes + gate por capacidade) |
 | `multiagent-coord`    | 2026-04-20 (#68 HANDOVER), 2026-07-24 (#194 perímetro de leitura — delegação)             |
 | `documentation`       | 2026-04-14 (CLAUDE.md), 2026-06-21 (#97 mapas), 2026-07-03 (#149 guia Obsidian)           |
 | `integrations`        | 2026-04-14 (Google Drive snapshots)                                                       |
-| `briefing`            | 2026-04-14 (Google Drive snapshots), 2026-04-21 (#69 despacho), 2026-06-23 (#102 decidir), 2026-06-23 (#104 briefing rico), 2026-06-25 (#114 perfil modular), 2026-07-02 (#139 guarda-corpos), 2026-07-03 (#148 conexões), 2026-07-04 (#156 injeção), 2026-07-13 (#174/#175 update-oferta + copy do fim), 2026-07-24 (#195 dieta fase 1), 2026-07-16 (#177 dívidas estruturais), 2026-07-24 (#201 roteamento de conteúdo configurável), 2026-07-25 (#197 semente substitui releitura) |
+| `briefing`            | 2026-04-14 (Google Drive snapshots), 2026-04-21 (#69 despacho), 2026-06-23 (#102 decidir), 2026-06-23 (#104 briefing rico), 2026-06-25 (#114 perfil modular), 2026-07-02 (#139 guarda-corpos), 2026-07-03 (#148 conexões), 2026-07-04 (#156 injeção), 2026-07-13 (#174/#175 update-oferta + copy do fim), 2026-07-24 (#195 dieta fase 1), 2026-07-16 (#177 dívidas estruturais), 2026-07-24 (#201 roteamento de conteúdo configurável), 2026-07-25 (#197 semente substitui releitura), 2026-07-25 (#206 outras_secoes + gate por capacidade) |
 | `personalization`     | 2026-04-21 (tharso-voice)                                                                 |
 | `code-quality`        | 2026-05-06 (quality-gate), 2026-06-25 (#122 baseline 1061→930), 2026-07-03 (baseline 82/904), 2026-07-04 (#157 conformidade A0), 2026-07-24 (baseline 82/900) |
 | `touchpoint`          | 2026-05-18 (landing page sync), 2026-07-03 (#149 guia Obsidian — candidato à landing), 2026-07-05 (#160 instalação agnóstica), 2026-07-05 (#108 update via runtime) |
@@ -60,6 +60,21 @@ Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões ant
 - `code-quality` — métricas de qualidade do codebase, quality gate, baseline.
 
 ---
+
+## 2026-07-25 — Semente carrega a PAUTA inteira: seções autorais em `outras_secoes`, gate por capacidade (#206)
+
+**Tópicos:** briefing, dispatch-bootstrap
+
+**Issues relacionadas:** #206 (executa), #205 (o achado veio da medição em dados reais), #197 (contrato estendido), #196 (a paridade entre transportes depende disto).
+
+**Relações com decisões anteriores:**
+- **Estende:** 2026-07-25 (#197). O `local_panorama.v1` ganha `pauta.outras_secoes` — TODAS as seções `## ` não-canônicas da PAUTA, na ordem do arquivo, com a mesma estrutura de item. Campo ADITIVO: v1 mantido (consumidor que ignora o campo continua correto).
+- **Habilita:** o desenho da #196. A paridade semente × leitura direta proíbe divergência; sem este campo, "Horizonte"/"Agendado futuro"/"Notas do sistema" (≈22 itens no workspace real) sumiam no transporte.
+- **Mantém:** o matcher estrito de headings (#114/#195): "Agendado Futuro" segue NÃO casando com "Agendado" — agora viaja inteiro em `outras_secoes` em vez de sumir. Ocorrência repetida de heading canônico ACUMULA na canônica.
+
+**Contexto:** o spike #205, medindo no workspace real, achou 7 seções na PAUTA contra 4 canônicas no contrato — a semente escondia o que a leitura direta via.
+
+**Decisão:** (1) `outras_secoes` com label como DISPLAY (não chave; identidade é a posição — labels duplicados sobrevivem); (2) `count`/`visible_count` contam linhas transportadas/visíveis, não "itens acionáveis" (prosa solta viaja fail-open; acionabilidade é julgamento da curadoria); (3) **gate por capacidade no consumo**: confiar na semente exige `schema_version == prumo_local_panorama.v1` E `pauta.outras_secoes` presente como lista — runtime velho no PATH que anuncia v1 sem o campo = semente incompleta = fallback direto; (4) guard de paridade total (soma da semente == leitura direta de todos os `## `).
 
 ## 2026-07-25 — Dieta do briefing, fase 2: a semente do runtime substitui a releitura local (#197)
 

@@ -27,7 +27,6 @@ from pathlib import Path
 from prumo_runtime.pauta_parsing import (
     cobrar_state,
     extract_all_sections,
-    extract_section,
     section_matches_heading,
 )
 
@@ -96,32 +95,43 @@ def build_pauta_block(pauta_text: str, today: date) -> dict:
     """Seções canônicas em `sections` (sempre as 4, mesmo vazias) + TODAS as
     demais seções `## ` do arquivo em `outras_secoes` (#206) — a PAUTA real
     tem seções autorais ("Horizonte", "Agendado futuro") que não podem sumir
-    no transporte da semente."""
-    sections = []
-    for section_id, heading in PAUTA_SECTIONS:
-        raw_items = extract_section(pauta_text, heading)
+    no transporte da semente.
+
+    Parse ÚNICO via `extract_all_sections`: ocorrências REPETIDAS de um
+    heading canônico ("## Quente" duas vezes, ou "## Quente — hoje") ACUMULAM
+    na canônica em ordem de arquivo — nunca somem. Em `outras_secoes`, o
+    `label` é display (não necessariamente único); a identidade é a posição
+    na lista. `count`/`visible_count` contam LINHAS transportadas/visíveis
+    (prosa solta em seção autoral viaja como linha — fail-open; julgar o que
+    é acionável é papel da curadoria, não do transporte)."""
+    canonical_items: dict[str, list[str]] = {sid: [] for sid, _ in PAUTA_SECTIONS}
+    outras = []
+    for label, raw_items in extract_all_sections(pauta_text):
+        matched = None
+        for section_id, heading in PAUTA_SECTIONS:
+            if section_matches_heading(f"## {label}", heading):
+                matched = section_id
+                break
+        if matched is not None:
+            canonical_items[matched].extend(raw_items)
+            continue
         items = _build_items(raw_items, today)
-        sections.append(
+        outras.append(
             {
-                "id": section_id,
-                "label": heading,
+                "label": label,
                 "items": items,
                 "count": len(items),
                 "visible_count": sum(1 for item in items if item["visible_today"]),
             }
         )
 
-    outras = []
-    for label, raw_items in extract_all_sections(pauta_text):
-        if any(
-            section_matches_heading(f"## {label}", heading)
-            for _, heading in PAUTA_SECTIONS
-        ):
-            continue
-        items = _build_items(raw_items, today)
-        outras.append(
+    sections = []
+    for section_id, heading in PAUTA_SECTIONS:
+        items = _build_items(canonical_items[section_id], today)
+        sections.append(
             {
-                "label": label,
+                "id": section_id,
+                "label": heading,
                 "items": items,
                 "count": len(items),
                 "visible_count": sum(1 for item in items if item["visible_today"]),
