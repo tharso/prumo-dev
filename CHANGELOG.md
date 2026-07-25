@@ -6,6 +6,14 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.50.0] - 2026-07-25
+
+### Fixed
+- **Camada 1 do briefing: fim dos 100% falso-positivos por tokenização (#210, P1 do relatório de execução)** — `subject:PRUMO` casava `prumo-dev` e o canal prioritário devolveu 14/14 notificações de CI no briefing real de 25/07, enterrando qualquer captura legítima. Desenho novo (robustecido pelo Codex): `label:Prumo` é o ÚNICO P1 automático (label não tokeniza); a busca por assunto vira **coleta de candidatos** SEM exclusão de remetente (excluir na query amputaria captura legítima antes de o filtro decidir — r1 do Codex) com **pós-filtro EXATO obrigatório** — só vira P1 o token com FRONTEIRA (`(?<![A-Za-z0-9_])(?:PRUMO|INBOX):` — substring pura aceitaria `SUPERPRUMO:`). Reprovado não é descartado: segue pra Camada 2 como email comum. Exemplos canônicos congelados por guard + **oráculo executável** da regra (`test_camada1_post_filter_reference_oracle`).
+
+### Changed
+- **Preflight de versão: remoto MENOR que o local é resposta SUSPEITA, nunca "em dia" (#215)** — caso real: o WebFetch do Cowork serviu `5.18.0` quando o público estava em `5.49.0` (~30 versões de cache stale); um agente desatento leria "remoto menor" como "estou em dia" e silenciaria o drift verdadeiro. Protocolo novo no `version-update.md` E NO RUNTIME (r1 do Codex: regra só no texto deixaria o produtor contradizendo o módulo): `ensure_fresh_status` re-busca com cache-busting (`?nocache=` + `Cache-Control: no-cache`); persistindo menor → `remote_suspect: true`, `update_available: null` (nunca false-como-em-dia), `fresh: false`, source `fetched_suspect`, e a versão suspeita NÃO alimenta a severidade do painel (`read_cached_remote_version` → None). 4 testes novos. Guard das âncoras no módulo.
+
 ## [5.49.0] - 2026-07-25
 
 ### Changed

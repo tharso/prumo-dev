@@ -146,6 +146,60 @@ class PreloadSingleEnumerationTests(unittest.TestCase):
             with self.subTest(invariant=invariant):
                 self.assertIn(invariant, text)
 
+    def test_camada1_query_and_exact_post_filter(self) -> None:
+        # #210: o Gmail tokeniza o subject (prumo-dev casa subject:PRUMO —
+        # 14/14 falso-positivos no briefing real). O contrato: label é o
+        # único P1 automático; subject coleta CANDIDATOS com pós-filtro
+        # literal. O guard congela a query E os exemplos canônicos.
+        text = PROCEDURE.read_text(encoding="utf-8")
+        anchors = (
+            "label:Prumo after:{ontem}",
+            "(subject:PRUMO OR subject:INBOX) after:{ontem}",
+            "NENHUM remetente é excluído na query",
+            "Pós-filtro EXATO obrigatório (#210)",
+            "(?<!\\w)(?:PRUMO|INBOX):",
+            "`ÉPRUMO: oferta` → NÃO casa",
+            "`Run failed: tharso/prumo-dev CI` → NÃO casa",
+            "`SUPERPRUMO: promoção` → NÃO casa",
+            "segue pra Camada 2 como email comum",
+        )
+        for anchor in anchors:
+            with self.subTest(anchor=anchor):
+                self.assertIn(anchor, text)
+
+    def test_camada1_post_filter_reference_oracle(self) -> None:
+        # Oráculo executável da regra ESCRITA (a MESMA regex de referência do
+        # módulo): token com fronteira — substring pura aceitaria SUPERPRUMO:.
+        post_filter = re.compile(r"(?<!\w)(?:PRUMO|INBOX):").search
+
+        cases = {
+            "PRUMO: pagar o boleto amanhã": True,
+            "Re: INBOX: link pra ler depois": True,
+            "Run failed: tharso/prumo-dev CI": False,
+            "prumo update disponível": False,
+            "[tharso/prumo-dev] Run failed: Specs canônicas": False,
+            "Fwd: PRUMO: comprovante": True,
+            "SUPERPRUMO: promoção imperdível": False,
+            "MYINBOX: novidades da semana": False,
+            "ÉPRUMO: oferta relâmpago": False,
+        }
+        for subject, expected in cases.items():
+            with self.subTest(subject=subject):
+                self.assertEqual(bool(post_filter(subject)), expected)
+
+    def test_version_update_treats_smaller_remote_as_suspect(self) -> None:
+        # #215: WebFetch serviu 5.18.0 quando o real era 5.49.0. Remoto menor
+        # que o local é SUSPEITO → cache-busting → unknown; nunca "em dia".
+        text = VERSION_UPDATE.read_text(encoding="utf-8")
+        for anchor in (
+            "resposta SUSPEITA — nunca \"em dia\" (#215)",
+            "cache-busting",
+            "declarar status **desconhecido**",
+            "**Nunca** ler \"remoto menor\" como \"estou em dia\"",
+        ):
+            with self.subTest(anchor=anchor):
+                self.assertIn(anchor, text)
+
     def test_two_tempos_contracts_present(self) -> None:
         # #196: os contratos do briefing em dois tempos são invariantes —
         # emissão local sem espera, numeração congelada, escape que nunca
