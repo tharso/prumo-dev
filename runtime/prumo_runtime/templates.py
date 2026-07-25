@@ -389,6 +389,16 @@ def render_projects_md() -> str:
 ## Estado atual
 
 _Sem informações registradas ainda._
+
+## Projetos registrados
+
+> Projetos com caminho no disco que o Prumo acompanha (#201). Registre com
+> `### Nome` + `- Caminho: /absoluto/ou/~/relativo-ao-home` e rode
+> `prumo projetos --sync` — o pulso (git/atividade) entra no bloco gerenciado
+> de cada seção; todo o resto é seu e nunca é tocado. Narrativa rica vive no
+> `.prumo-contexto.md` na raiz de cada projeto (template nas references).
+
+_Nenhum projeto registrado ainda._
 """
 
 

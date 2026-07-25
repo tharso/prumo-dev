@@ -9,6 +9,7 @@ from prumo_runtime.commands.migrate_skills import run_migrate_skills
 from prumo_runtime.commands.repair import run_repair
 from prumo_runtime.commands.setup import run_setup
 from prumo_runtime.commands.start import run_start
+from prumo_runtime.commands.projetos import run_projetos
 from prumo_runtime.commands.update import run_update
 from prumo_runtime.commands.version_check_cmd import run_version_check
 
@@ -25,6 +26,7 @@ __all__ = [
     "run_repair",
     "run_setup",
     "run_start",
+    "run_projetos",
     "run_update",
     "run_version_check",
 ]

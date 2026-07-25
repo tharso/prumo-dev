@@ -1,6 +1,6 @@
 # Runtime File Governance
 
-> **module_version: 4.20.0**
+> **module_version: 4.21.0**
 >
 > Política canônica de ciclo de vida dos arquivos vivos do Prumo.
 
@@ -93,7 +93,7 @@ Mora aqui:
 3. `ROTINA.md`: rituais, horários, hábitos e cadências **sem** hora marcada — contexto que informa o julgamento, não pendência;
 4. `SAUDE.md`: saúde, exames, médicos, histórico clínico;
 5. `INFRA.md`: contas, domínios, ferramentas e serviços digitais;
-6. `PROJETOS.md`: projetos, clientes e frentes de trabalho;
+6. `PROJETOS.md`: projetos, clientes e frentes de trabalho — autoral com ilhas gerenciadas: os blocos `prumo:pulso` são reescritos SÓ pelo `prumo projetos --sync` (#201), byte a byte preservado fora deles;
 7. `RELACOES.md`: família, amigos e dinâmicas relacionais.
 
 Contexto pessoal que muda comportamento. Rituais **com** hora marcada não moram aqui — vão para a agenda. Nada disso é pendência datada (isso é `PAUTA.md`) nem trilha de auditoria (isso é `REGISTRO.md`).

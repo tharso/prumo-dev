@@ -14,6 +14,7 @@ from prumo_runtime.commands import (
     run_migrate,
     run_migrate_skills,
     run_repair,
+    run_projetos,
     run_setup,
     run_start,
     run_update,
@@ -182,6 +183,19 @@ def build_parser() -> argparse.ArgumentParser:
         help="Refrescar o cache se estiver stale (rede no máximo 1x/24h; falha re-tenta em 1h)",
     )
     version_check.set_defaults(handler=run_version_check)
+
+    projetos = subparsers.add_parser(
+        "projetos",
+        help="Índice de projetos: report do PROJETOS.md; com --sync, coleta o pulso dos caminhos registrados (#201)",
+    )
+    projetos.add_argument("--workspace", default=None, help="Workspace do Prumo (default: diretório atual)")
+    projetos.add_argument(
+        "--sync",
+        action="store_true",
+        help="Coletar pulso (git/mtime) dos caminhos registrados e atualizar os blocos gerenciados",
+    )
+    projetos.add_argument("--format", choices=["text", "json"], default="text")
+    projetos.set_defaults(handler=run_projetos)
 
     return parser
 

@@ -8,15 +8,15 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 
 | Tópico                | Entradas                                                                                  |
 |-----------------------|-------------------------------------------------------------------------------------------|
-| `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first), 2026-05-04 (#77), 2026-06-21 (#97 mapas), 2026-06-25 (#114 perfil modular), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#139 guarda-corpos), 2026-07-02 (#140 fichário), 2026-07-02 (#141 diário), 2026-07-03 (#147 ideias), 2026-07-03 (#148 conexões), 2026-07-24 (#194 perímetro de leitura), 2026-07-16 (#177 dívidas estruturais) |
+| `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first), 2026-05-04 (#77), 2026-06-21 (#97 mapas), 2026-06-25 (#114 perfil modular), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#139 guarda-corpos), 2026-07-02 (#140 fichário), 2026-07-02 (#141 diário), 2026-07-03 (#147 ideias), 2026-07-03 (#148 conexões), 2026-07-24 (#194 perímetro de leitura), 2026-07-16 (#177 dívidas estruturais), 2026-07-24 (#201 índice de projetos) |
 | `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-04 (#158 detecção defasagem), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime), 2026-07-05 (#170 transporte de update local), 2026-07-12 (#172 taxonomia do picker), 2026-07-19 (#191 decidir mostra o item), 2026-07-24 (#195 dieta fase 1 — produtor do cache de versão), 2026-07-16 (#177 dívidas estruturais) |
 | `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first), 2026-05-06 (quality-gate), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#141 diário — emenda à #68) |
 | `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist), 2026-06-24 (#110 não-bundle), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime), 2026-07-05 (#170 transporte de update local), 2026-07-16 (#177 dívidas estruturais) |
-| `dispatch-bootstrap`  | 2026-04-21 (#69 despacho), 2026-06-23 (#104 briefing rico), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-05 (#160 porta/instalação agnóstica), 2026-07-12 (#172 taxonomia do picker), 2026-07-24 (#194 perímetro de leitura) |
+| `dispatch-bootstrap`  | 2026-04-21 (#69 despacho), 2026-06-23 (#104 briefing rico), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-05 (#160 porta/instalação agnóstica), 2026-07-12 (#172 taxonomia do picker), 2026-07-24 (#194 perímetro de leitura), 2026-07-24 (#201 índice de projetos) |
 | `multiagent-coord`    | 2026-04-20 (#68 HANDOVER), 2026-07-24 (#194 perímetro de leitura — delegação)             |
 | `documentation`       | 2026-04-14 (CLAUDE.md), 2026-06-21 (#97 mapas), 2026-07-03 (#149 guia Obsidian)           |
 | `integrations`        | 2026-04-14 (Google Drive snapshots)                                                       |
-| `briefing`            | 2026-04-14 (Google Drive snapshots), 2026-04-21 (#69 despacho), 2026-06-23 (#102 decidir), 2026-06-23 (#104 briefing rico), 2026-06-25 (#114 perfil modular), 2026-07-02 (#139 guarda-corpos), 2026-07-03 (#148 conexões), 2026-07-04 (#156 injeção), 2026-07-13 (#174/#175 update-oferta + copy do fim), 2026-07-24 (#195 dieta fase 1), 2026-07-16 (#177 dívidas estruturais) |
+| `briefing`            | 2026-04-14 (Google Drive snapshots), 2026-04-21 (#69 despacho), 2026-06-23 (#102 decidir), 2026-06-23 (#104 briefing rico), 2026-06-25 (#114 perfil modular), 2026-07-02 (#139 guarda-corpos), 2026-07-03 (#148 conexões), 2026-07-04 (#156 injeção), 2026-07-13 (#174/#175 update-oferta + copy do fim), 2026-07-24 (#195 dieta fase 1), 2026-07-16 (#177 dívidas estruturais), 2026-07-24 (#201 roteamento de conteúdo configurável) |
 | `personalization`     | 2026-04-21 (tharso-voice)                                                                 |
 | `code-quality`        | 2026-05-06 (quality-gate), 2026-06-25 (#122 baseline 1061→930), 2026-07-03 (baseline 82/904), 2026-07-04 (#157 conformidade A0), 2026-07-24 (baseline 82/900) |
 | `touchpoint`          | 2026-05-18 (landing page sync), 2026-07-03 (#149 guia Obsidian — candidato à landing), 2026-07-05 (#160 instalação agnóstica), 2026-07-05 (#108 update via runtime) |
@@ -58,6 +58,27 @@ A partir de 2026-05-04 (#78), toda entrada nova segue o formato:
 Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões anteriores" (introduzido na #78). Quando um conflito retrospectivo for descoberto, anotar a relação na entrada nova que o resolve — não reescrever entradas antigas.
 
 - `code-quality` — métricas de qualidade do codebase, quality gate, baseline.
+
+---
+
+## 2026-07-24 — Índice de projetos com pulso puxado: contexto sem engolir o workspace (#201)
+
+**Tópicos:** workspace-layout, dispatch-bootstrap, briefing
+
+**Issues relacionadas:** #201 (executa), #194 (materializa o escopo autorizado), #94 (conversa — camada de busca sobre o workspace segue aberta).
+
+**Relações com decisões anteriores:**
+- **Estende:** 2026-06-25 (#114). O `PROJETOS.md` modular ganha o contêiner `## Projetos registrados` com ilhas gerenciadas (`prumo:pulso`) — **sem autorizar sobrescrita de conteúdo pessoal**: só o miolo dos blocos é reescrito, transacionalmente, e estrutura inválida significa zero escrita.
+- **Estende (materializa):** 2026-07-24 (#194). O caminho registrado é a forma concreta do "escopo autorizado pela tarefa": leitura por lista explícita, expansão delimitada (git/mtime raso com exclusões), varredura que jamais atravessa symlink.
+- **Mantém:** 2026-07-03 (#148). As fontes da ponte associativa NÃO se ampliam — `PROJETOS.md`/`.prumo-contexto.md` ficam FORA da pré-carga do briefing; entram só quando a intenção pedir.
+- **Mantém:** 2026-07-04 (#156, regra 18). Tudo que vem dos projetos (branch, subject de commit, narrativa) é dado: sanitizado, incapaz de abrir/fechar blocos gerenciados ou instruir o agente.
+- **Mantém:** regra 16 do core. Registro é opt-in por pedido explícito; `--sync` jamais cria estruturas em projeto nenhum.
+
+**Contexto:** ideia do dono (24/07): mover projetos pra fora do workspace + symlinks de MDs de contexto. Refinada em conversa: a leitura já está protegida pelo perímetro; mover 460k arquivos quebraria dezenas de rastros na PAUTA/REGISTRO; symlinks são frágeis com iCloud e recusados pelo próprio backup (#182). O que faltava era o CONTEXTO fluir — e o frescor não pode depender de encerramento formal de sessão ("vai deixar coisas pra trás, certeza" — o dono).
+
+**Decisão:** três peças: (1) `.prumo-contexto.md` na RAIZ do projeto (arquivo único — pasta `.prumo/` colidiria com a detecção de workspace), narrativa com `updated:` RFC 3339; (2) `PROJETOS.md` como índice autoral-com-ilhas; (3) `prumo projetos [--sync]` com pulso determinístico (git: branch/dirty/commits com stat dos paths do porcelain; pasta: mtime raso maxdepth 2 cap 400) e **staleness que nunca declara `fresh` sob dúvida** (coleta incompleta, date-only no mesmo dia, narrativa ausente → `indeterminate`). Touchpoint junto: o path pessoal do dono (`Projetos/Revue/INBox_Revue`) saiu do canônico — Camada 3 roteia pela seção "Roteamento de conteúdo" do `EMAIL-CURADORIA.md`, com guard anti-regressão.
+
+**Alternativas consideradas:** mover projetos + symlinks (rejeitado — riscos acima, ganho já entregue pelo perímetro); mtime como fallback do `updated:` (rejeitado no design review — checkout/touch declarariam narrativa fresca); pasta `.prumo/` no projeto (rejeitado — colide com `detect_nested_layout`); hook de git para atualizar narrativa (rejeitado — automação com LLM em hook é frágil; o pulso puxado dá o piso sem depender de disciplina). Design fechado com o Codex em 2 rodadas antes do código.
 
 ---
 

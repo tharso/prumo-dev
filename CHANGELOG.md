@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.40.0] - 2026-07-24
+
+### Added
+- **Índice de projetos com pulso determinístico — o Prumo enxerga os projetos sem engolir o workspace (#201)** — ideia do dono refinada em conversa: nada de mover 460k arquivos nem symlinks (frágeis com iCloud/backup — o próprio backup recusa links desde a #182); o que faltava era o CONTEXTO fluir. Três peças: (1) **`.prumo-contexto.md`** na raiz de cada projeto (arquivo único — pasta `.prumo/` colidiria com a detecção de workspace), narrativa com frontmatter `updated:` RFC 3339, template nas references; (2) **`Prumo/Agente/PROJETOS.md` ganha o contêiner `## Projetos registrados`** (`### Nome` + `- Caminho:`) — autoral com ilhas gerenciadas: só o miolo dos blocos `prumo:pulso` é reescrito, transacionalmente, byte a byte preservado fora deles, estrutura inválida = zero escrita; (3) **`prumo projetos [--sync]`**: sem flag zero acesso externo; com `--sync`, pulso por caminho REGISTRADO (materialização do escopo autorizado da #194) — git (branch, dirty via porcelain com stat dos próprios paths, últimos commits) ou pasta (mtime raso, maxdepth 2, cap 400, sem atravessar symlink) — e **staleness cruzada honesta**: narrativa mais velha que a atividade = `stale`; coleta incompleta, date-only no mesmo dia ou narrativa ausente = `indeterminate`, **nunca `fresh` sob dúvida** (responde à objeção do dono: esquecer de atualizar degrada gracioso e o sistema DENUNCIA, não mente). Conteúdo vindo dos projetos é dado (regra 18): sanitizado, incapaz de abrir/fechar blocos. Registro é opt-in por pedido explícito (regra 16); `--sync` jamais cria estruturas. De quebra, o **path pessoal do dono saiu do canônico**: a Camada 3 do briefing roteia pra pasta registrada no `EMAIL-CURADORIA.md` (seção nova no template; sem rota → apresenta, pergunta 1×, registra só com confirmação), com guard anti-regressão. 32 testes TDD; design fechado com o Codex em 2 rodadas antes do código (issue #201).
+
 ## [5.39.0] - 2026-07-24
 
 ### Added
