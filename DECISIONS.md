@@ -16,7 +16,7 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 | `multiagent-coord`    | 2026-04-20 (#68 HANDOVER), 2026-07-24 (#194 perímetro de leitura — delegação)             |
 | `documentation`       | 2026-04-14 (CLAUDE.md), 2026-06-21 (#97 mapas), 2026-07-03 (#149 guia Obsidian)           |
 | `integrations`        | 2026-04-14 (Google Drive snapshots)                                                       |
-| `briefing`            | 2026-04-14 (Google Drive snapshots), 2026-04-21 (#69 despacho), 2026-06-23 (#102 decidir), 2026-06-23 (#104 briefing rico), 2026-06-25 (#114 perfil modular), 2026-07-02 (#139 guarda-corpos), 2026-07-03 (#148 conexões), 2026-07-04 (#156 injeção), 2026-07-13 (#174/#175 update-oferta + copy do fim), 2026-07-24 (#195 dieta fase 1), 2026-07-16 (#177 dívidas estruturais), 2026-07-24 (#201 roteamento de conteúdo configurável), 2026-07-25 (#197 semente substitui releitura), 2026-07-25 (#206 outras_secoes + gate por capacidade), 2026-07-25 (#196 briefing em dois tempos), 2026-07-25 (#210/#215 camada 1 + remoto suspeito) |
+| `briefing`            | 2026-04-14 (Google Drive snapshots), 2026-04-21 (#69 despacho), 2026-06-23 (#102 decidir), 2026-06-23 (#104 briefing rico), 2026-06-25 (#114 perfil modular), 2026-07-02 (#139 guarda-corpos), 2026-07-03 (#148 conexões), 2026-07-04 (#156 injeção), 2026-07-13 (#174/#175 update-oferta + copy do fim), 2026-07-24 (#195 dieta fase 1), 2026-07-16 (#177 dívidas estruturais), 2026-07-24 (#201 roteamento de conteúdo configurável), 2026-07-25 (#197 semente substitui releitura), 2026-07-25 (#206 outras_secoes + gate por capacidade), 2026-07-25 (#196 briefing em dois tempos), 2026-07-25 (#210/#215 camada 1 + remoto suspeito), 2026-07-25 (#214/#217/#218/#211 conformidade detectável) |
 | `personalization`     | 2026-04-21 (tharso-voice)                                                                 |
 | `code-quality`        | 2026-05-06 (quality-gate), 2026-06-25 (#122 baseline 1061→930), 2026-07-03 (baseline 82/904), 2026-07-04 (#157 conformidade A0), 2026-07-24 (baseline 82/900), 2026-07-25 (baseline ruff 6 / 868) |
 | `touchpoint`          | 2026-05-18 (landing page sync), 2026-07-03 (#149 guia Obsidian — candidato à landing), 2026-07-05 (#160 instalação agnóstica), 2026-07-05 (#108 update via runtime) |
@@ -60,6 +60,18 @@ Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões ant
 - `code-quality` — métricas de qualidade do codebase, quality gate, baseline.
 
 ---
+
+## 2026-07-25 — Conformidade do briefing: pulo silencioso vira violação detectável (#214/#217/#218/#211)
+
+**Tópicos:** briefing, governance
+
+**Issues relacionadas:** #214, #217, #218, #211 (executa; lote B da triagem do relatório de execução, validada pelo Codex).
+
+**Relações com decisões anteriores:** estende 2026-07-25 (#196 — a tabela de conclusão por variante ganha a proibição explícita de marcação sem runtime; recomendação do Codex: caminho portátil pertence à #216, nunca improvisado); estende #104/#102 (o `decidir` automático com 6+ era a intenção original — "oferecer" foi desambiguado pra "entregar pronto"); mantém regra 16 (criar evento de calendário SÓ com confirmação).
+
+**Contexto:** o briefing real de 25/07 pulou a faxina em silêncio, transformou 14 acionáveis numa pergunta, carimbou o dia com hora inventada e mostrou "dia livre" com compromisso só no email.
+
+**Decisão:** conformidade auditável a olho nu — toda obrigação do fluxo produz LINHA VISÍVEL no briefing (faxina declarada, divergência sinalizada, ausência de marcação declarada) ou artefato pronto (decidir linkado). Regra que não deixa rastro quando pulada não é regra.
 
 ## 2026-07-25 — Camada 1 por label+pós-filtro exato; remoto menor é suspeito (#210, #215)
 

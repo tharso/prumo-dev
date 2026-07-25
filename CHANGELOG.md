@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.51.0] - 2026-07-25
+
+### Changed
+- **Conformidade do briefing: o pulo silencioso vira violação detectável (#214, #217, #218, #211 — lote B do relatório de execução)** — quatro regras que o briefing real de 25/07 provou serem puláveis sem ninguém notar: (1) **sem runtime NÃO HÁ marcação do dia** — proibido escrever `last-briefing.json` à mão (um agente gravou timestamp INVENTADO fingindo ser o runtime); a ausência é declarada em uma linha e o caminho portátil, se vier, nasce na #216; (2) **a checagem de faxina declara o resultado SEMPRE** — linha obrigatória no primeiro tempo ("Faxina: nada pendente" ou o que foi feito); briefing sem a linha está fora de conformidade; (3) **`decidir` com 6+ acionáveis é GERADO automaticamente** — "oferecer" significa entregar o link pronto, nunca perguntar antes (14 itens viraram opção c) no caso real); (4) **sinal de divergência agenda × email** — calendário vazio + email com hora explícita = aviso em linha própria + oferta de criar o evento (só com confirmação). Guards das 7 âncoras (`CONFORMIDADE_INVARIANTS`).
+
 ## [5.50.0] - 2026-07-25
 
 ### Fixed
