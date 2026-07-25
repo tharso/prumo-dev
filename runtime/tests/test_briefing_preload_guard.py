@@ -74,14 +74,29 @@ BODY_READ_GLOBAL_INVARIANTS = (
     "rodam em todo corpo lido",
 )
 
-# Invariantes do DAG do Passo 4 — inclusive a dependência que o paralelismo
-# NÃO pode atropelar (classificação exige contexto local).
+# Invariantes do DAG do Passo 4 — desde a #196 a execução é ADAPTATIVA
+# (o "começam juntos" físico caiu na medição do #205), mas as dependências
+# lógicas seguem invioláveis (classificação exige contexto local).
 DAG_INVARIANTS = (
-    "Ordem de execução (DAG",
-    "começam juntos",
+    "Ordem de execução (DAG lógico, execução ADAPTATIVA",
+    "Primeiro o local, sem esperar o externo",
+    "Paralelismo por subagente: DESLIGADO por default",
     "Classificação só depois do contexto local",
     "Escritas serializadas",
     "não cancela os demais",
+)
+
+# Contratos centrais do briefing em dois tempos (#196): emissão local antes
+# de qualquer espera externa, numeração congelada e contínua, escape
+# best-effort que nunca marca o dia, e conclusão definida POR VARIANTE.
+TWO_TEMPOS_INVARIANTS = (
+    "antes de aguardar qualquer resultado de email/calendário",
+    "nunca renumerar",
+    "sem reiniciar entre seções **nem entre os dois tempos (#196)**",
+    '"segue tudo"/"continua" é o CONTRÁRIO de escape',
+    "Quando cada variante está COMPLETA",
+    "Escape do usuário (qualquer variante) | nunca",
+    "seguir sem esperar resposta",
 )
 
 
@@ -126,6 +141,15 @@ class PreloadSingleEnumerationTests(unittest.TestCase):
     def test_procedure_declares_parallel_dag(self) -> None:
         text = PROCEDURE.read_text(encoding="utf-8")
         for invariant in DAG_INVARIANTS:
+            with self.subTest(invariant=invariant):
+                self.assertIn(invariant, text)
+
+    def test_two_tempos_contracts_present(self) -> None:
+        # #196: os contratos do briefing em dois tempos são invariantes —
+        # emissão local sem espera, numeração congelada, escape que nunca
+        # marca, conclusão POR VARIANTE.
+        text = PROCEDURE.read_text(encoding="utf-8")
+        for invariant in TWO_TEMPOS_INVARIANTS:
             with self.subTest(invariant=invariant):
                 self.assertIn(invariant, text)
 
