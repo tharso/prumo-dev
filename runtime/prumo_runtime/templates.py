@@ -6,7 +6,8 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from prumo_runtime import __version__
-from prumo_runtime.constants import DEFAULT_AGENT_NAME
+from prumo_runtime.command_table import parse_command_table, parse_intent_modules
+from prumo_runtime.constants import DEFAULT_AGENT_NAME, repo_root_from
 
 
 def now_display(timezone_name: str) -> str:
@@ -76,23 +77,59 @@ O workspace pode conter outros projetos com centenas de milhares de arquivos (`n
 4. **Delegação leva o perímetro junto:** o prompt de qualquer subagente inclui os caminhos permitidos e a proibição de enumerar fora deles. Nunca "explore o workspace"."""
 
 
-def _render_fallback_chain(skills_path: str) -> str:
+# Comando da tabela do core → diretório da skill, quando o nome diverge.
+# `setup` mora em skills/prumo/ (é a skill-CORE, #134/#135).
+_COMMAND_SKILL_DIRS = {"setup": "prumo"}
+
+
+def _render_fallback_chain(skills_path: str, core_text: str) -> str:
+    """Cadeia de fallback DERIVADA da fonte única (#179, épico #177).
+
+    Comandos vêm da tabela `## Comandos disponíveis` do core (a mesma que o
+    `/menu` parseia); intenções sem comando (#172) vêm da subseção
+    `### Manutenção sem comando próprio`. Nada hardcoded — comando que entra
+    ou sai do core muda o AGENT.md renderizado sozinho.
+    """
+    rows = [f"| abrir | `{skills_path}abrir/SKILL.md` |"]  # entrada curta ("prumo" cru, #135)
+    seen = {"abrir"}
+    for cmd in parse_command_table(core_text):
+        name = cmd["command"].lstrip("/")
+        if name in seen:
+            continue
+        seen.add(name)
+        skill_dir = _COMMAND_SKILL_DIRS.get(name, name)
+        rows.append(f"| {name} | `{skills_path}{skill_dir}/SKILL.md` |")
+
+    intent_rows = []
+    for item in parse_intent_modules(core_text):
+        module_rel = item["module"].split("skills/", 1)[-1]
+        intent_rows.append(f"| {item['intent']} | `{skills_path}{module_rel}` |")
+
+    intent_section = ""
+    if intent_rows:
+        intent_lines = "\n".join(intent_rows)
+        intent_section = f"""
+
+Manutenção sem comando próprio (#172) — atende por linguagem natural:
+
+| Intenção | Módulo |
+|---|---|
+{intent_lines}"""
+
+    command_lines = "\n".join(rows)
     return f"""## Cadeia de resolução de comandos
 
 Ordem de tentativa: slash command → runtime CLI → skill direto.
 
-Se o slash command não funcionar, tentar `prumo <comando>` no terminal.
-Se o runtime não estiver no PATH, ler a skill correspondente no workspace:
+Se o slash command não funcionar e o runtime tiver subcomando homônimo,
+tentar `prumo <comando>` no terminal (nem todo comando tem — `/higiene`,
+por exemplo, vive só como skill; nesse caso, pular direto pra skill).
+Se o runtime não estiver no PATH, ler a skill correspondente no workspace
+(tabela derivada da fonte única `## Comandos disponíveis` do core):
 
 | Comando | Skill |
 |---|---|
-| abrir | `{skills_path}abrir/SKILL.md` |
-| briefing | `{skills_path}briefing/SKILL.md` |
-| setup | `{skills_path}prumo/SKILL.md` |
-| higiene | `{skills_path}higiene/SKILL.md` |
-| faxina | `{skills_path}prumo/references/modules/faxina.md` |
-| sanitize | `{skills_path}prumo/references/modules/sanitize.md` |
-| doctor | `{skills_path}prumo/references/modules/doctor.md` |"""
+{command_lines}{intent_section}"""
 
 
 def render_agent_md(
@@ -104,10 +141,17 @@ def render_agent_md(
     core_path: str = "PRUMO-CORE.md",
     state_path: str = "_state/",
     skills_path: str | None = None,
+    core_text: str | None = None,
 ) -> str:
     fallback_section = ""
     if skills_path:
-        fallback_section = "\n" + _render_fallback_chain(skills_path) + "\n"
+        if core_text is None:
+            # Deriva da fonte única mesmo quando o caller não passa o core
+            # (ex.: render fora do fluxo de setup). Em wheel, repo_root_from
+            # cai no _bundled/; no pior caso o fallback literal rende uma
+            # cadeia mínima (só `abrir`), nunca uma lista hardcoded paralela.
+            core_text = load_prumo_core_text(repo_root_from(Path(__file__)))
+        fallback_section = "\n" + _render_fallback_chain(skills_path, core_text) + "\n"
 
     opening_reads = [
         "1. Este `AGENT.md` (você já está lendo).",

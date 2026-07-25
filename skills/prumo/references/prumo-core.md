@@ -1,6 +1,6 @@
 # Prumo Core — Motor do sistema
 
-> **prumo_version: 5.41.0**
+> **prumo_version: 5.42.0**
 >
 > Núcleo estável do Prumo. Define regras, guardrails e localização dos módulos canônicos.
 > Procedimento detalhado não mora aqui.
@@ -68,7 +68,15 @@ Arquivos de estado esperados em `.prumo/state/`:
 | `/setup` | Onboarding e configuração (wizard ou rápido); também reconfigura |
 | `/higiene` | Higiene assistida do workspace: pauta parada, contradições, órfãos e referências quebradas, PERFIL pesado — propõe, você decide |
 
-Manutenção sem comando próprio (#172): a **faxina** (automática — roda no briefing e no `/fim`), a **sanitização técnica** e o **doctor** atendem por linguagem natural — módulos `faxina.md`, `sanitize.md` e `doctor.md` do core.
+### Manutenção sem comando próprio (#172)
+
+Atendem por **linguagem natural** (tabela de intenções do `dispatch.md`), sem comando ou skill própria:
+
+| Intenção | Módulo |
+|---|---|
+| faxina (automática — roda no briefing e no `/fim`) | `.prumo/skills/prumo/references/modules/faxina.md` |
+| sanitização técnica | `.prumo/skills/prumo/references/modules/sanitize.md` |
+| diagnóstico da instalação (doctor) | `.prumo/skills/prumo/references/modules/doctor.md` |
 
 No Cowork, os comandos canônicos aparecem sem prefixo do plugin.
 Pra **abrir o sistema**, é só dizer "prumo" (ou "oi prumo"), sem barra — o Prumo cumprimenta e oferece o que dá pra fazer (skill `abrir`).
@@ -342,8 +350,8 @@ Histórico completo de versão vive em `CHANGELOG.md`.
 
 Versão atual deste core:
 
-- `5.41.0`
+- `5.42.0`
 
 ---
 
-*Prumo Core v5.41.0 — https://github.com/tharso/prumo*
+*Prumo Core v5.42.0 — https://github.com/tharso/prumo*
