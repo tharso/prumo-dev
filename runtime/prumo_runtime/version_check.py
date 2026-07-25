@@ -30,7 +30,8 @@ BANNER_COOLDOWN_HOURS = 24
 # "fim" entra aqui (#174): o /fim promete read-only — o banner (hoje
 # cache-only, #195) ainda escreveria `last_notified_at` no `prumo fim` textual.
 # "version-check" (#195): o comando É a checagem; banner em cima seria eco.
-SUPPRESS_COMMANDS = {"update", "upgrade", "version", "fim", "version-check"}
+# "projetos" (#201): o report promete read-only — o banner escreveria last_notified_at.
+SUPPRESS_COMMANDS = {"update", "upgrade", "version", "fim", "version-check", "projetos"}
 
 
 def check_and_notify(command: str | None, format_arg: str | None) -> None:

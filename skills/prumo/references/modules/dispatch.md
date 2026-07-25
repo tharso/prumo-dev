@@ -1,6 +1,6 @@
 # Dispatch
 
-> **module_version: 5.39.0**
+> **module_version: 5.40.0**
 >
 > Como o Prumo abre sessão e decide o que fazer. Substitui o bootstrap just-in-case (ler tudo antes de saber a intenção) por despacho baseado no que o usuário quer.
 
@@ -71,7 +71,9 @@ Mapeamento de gatilhos do usuário para intenção e ação. Primeiro filtro do 
 | brainstorm, ideia, pensar junto, discutir X | brainstorm | ativar skill genérica de brainstorm se disponível; caso contrário, operar em modo sparring partner |
 | análise, analisar, resumir PDF, processar reunião, extrair do YouTube | análise de conteúdo | pedir material, identificar tipo (PDF, transcript, texto), processar com skill adequada |
 | novo projeto, kickoff, começar um projeto | iniciar novo projeto | ativar skill `project-kickoff` |
-| projeto X, continuar (projeto) | trabalho em projeto | localizar contexto do projeto pelo caminho citado pelo usuário ou registrado em `Prumo/Agente/PROJETOS.md`/`Prumo/PAUTA.md`; expansão dirigida e rasa (perímetro em `load-policy.md`), nunca varredura da raiz |
+| projeto X, continuar (projeto) | trabalho em projeto | localizar contexto do projeto pelo caminho citado pelo usuário ou registrado em `Prumo/Agente/PROJETOS.md`/`Prumo/PAUTA.md`; se registrado, ler o `.prumo-contexto.md` do projeto; expansão dirigida e rasa (perímetro em `load-policy.md`), nunca varredura da raiz |
+| registrar projeto, acompanhar projeto | registro de projeto (#201) | pedido explícito do usuário: adicionar `### Nome` + `- Caminho:` em `Prumo/Agente/PROJETOS.md` (contêiner "Projetos registrados") e OFERECER criar `.prumo-contexto.md` + convenção no CLAUDE.md do projeto — cada criação com aprovação específica (regra 16); depois `prumo projetos --sync` |
+| sincronizar projetos, como estão os projetos | pulso dos projetos (#201) | rodar `prumo projetos --sync` (com shell) e apresentar o report; frescor `stale`/`indeterminate` vira aviso, nunca silêncio |
 | captura, anota, registra pendência, pra não esquecer | captura de pendência | receber dump, triar entre `PAUTA.md`, `IDEIAS.md` e `INBOX.md` conforme regras estáveis do core |
 | revisão semanal, poda | revisão semanal | carregar `weekly-review.md` e executar |
 | acervo, limbo, revisitar ideias, garimpar, o que ficou parado, ideias soltas | navegar o acervo | ativar a skill `acervo` (enumera o limbo durável e gera o HTML navegável) |
