@@ -24,7 +24,12 @@ import json
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
-from prumo_runtime.pauta_parsing import cobrar_state, extract_section
+from prumo_runtime.pauta_parsing import (
+    cobrar_state,
+    extract_all_sections,
+    extract_section,
+    section_matches_heading,
+)
 
 PANORAMA_SCHEMA_VERSION = "prumo_local_panorama.v1"
 
@@ -67,26 +72,35 @@ def _display_text(item: str) -> str:
     return text
 
 
+def _build_items(raw_items: list[str], today: date) -> list[dict]:
+    items = []
+    for raw in raw_items:
+        cobrar = cobrar_state(raw, today)
+        item: dict = {
+            "text": raw,
+            "visible_today": True if cobrar is None else cobrar["visible_today"],
+        }
+        # Orçamento: display_text só existe quando DIFERE do text (item
+        # cortado no teto) e cobrar só quando há marker — item curto sem
+        # marker custa uma chave, não quatro.
+        display = _display_text(raw)
+        if display != raw.strip().removeprefix("- ").strip():
+            item["display_text"] = display
+        if cobrar is not None:
+            item["cobrar"] = cobrar
+        items.append(item)
+    return items
+
+
 def build_pauta_block(pauta_text: str, today: date) -> dict:
+    """Seções canônicas em `sections` (sempre as 4, mesmo vazias) + TODAS as
+    demais seções `## ` do arquivo em `outras_secoes` (#206) — a PAUTA real
+    tem seções autorais ("Horizonte", "Agendado futuro") que não podem sumir
+    no transporte da semente."""
     sections = []
     for section_id, heading in PAUTA_SECTIONS:
         raw_items = extract_section(pauta_text, heading)
-        items = []
-        for raw in raw_items:
-            cobrar = cobrar_state(raw, today)
-            item: dict = {
-                "text": raw,
-                "visible_today": True if cobrar is None else cobrar["visible_today"],
-            }
-            # Orçamento: display_text só existe quando DIFERE do text (item
-            # cortado no teto) e cobrar só quando há marker — item curto sem
-            # marker custa uma chave, não quatro.
-            display = _display_text(raw)
-            if display != raw.strip().removeprefix("- ").strip():
-                item["display_text"] = display
-            if cobrar is not None:
-                item["cobrar"] = cobrar
-            items.append(item)
+        items = _build_items(raw_items, today)
         sections.append(
             {
                 "id": section_id,
@@ -96,7 +110,24 @@ def build_pauta_block(pauta_text: str, today: date) -> dict:
                 "visible_count": sum(1 for item in items if item["visible_today"]),
             }
         )
-    return {"sections": sections}
+
+    outras = []
+    for label, raw_items in extract_all_sections(pauta_text):
+        if any(
+            section_matches_heading(f"## {label}", heading)
+            for _, heading in PAUTA_SECTIONS
+        ):
+            continue
+        items = _build_items(raw_items, today)
+        outras.append(
+            {
+                "label": label,
+                "items": items,
+                "count": len(items),
+                "visible_count": sum(1 for item in items if item["visible_today"]),
+            }
+        )
+    return {"sections": sections, "outras_secoes": outras}
 
 
 def _count_inbox_items(inbox_text: str) -> int:
@@ -184,7 +215,7 @@ def build_local_panorama(
     """
     completeness: dict[str, dict] = {}
 
-    pauta_block: dict = {"sections": []}
+    pauta_block: dict = {"sections": [], "outras_secoes": []}
     if pauta_path.exists():
         try:
             pauta_block = build_pauta_block(

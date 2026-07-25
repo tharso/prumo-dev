@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.48.0] - 2026-07-25
+
+### Added
+- **`local_panorama.pauta.outras_secoes` — seções autorais da PAUTA entram na semente (#206)** — achado do spike #205 em dados REAIS: a PAUTA do dono tem 7 seções e o contrato transportava só as 4 canônicas; "Horizonte (importante mas não urgente)", "Agendado futuro" e "Notas do sistema" (≈22 itens) ficavam invisíveis pra semente enquanto a leitura direta os via — exatamente a divergência entre transportes que a paridade da #196 proíbe. Agora TODAS as seções `## ` não-canônicas viajam em `outras_secoes` (mesma estrutura de item: `text`, `display_text`/`cobrar` esparsos, `visible_today`), na ordem do arquivo; o matcher estrito continua decidindo o que é canônico ("Agendado Futuro" NÃO é engolido por "Agendado" — vem inteiro em `outras_secoes`). Campo ADITIVO: `prumo_local_panorama.v1` mantido (consumidores atuais ignoram o campo novo). Guard de paridade total: soma de itens da semente (canônicas + outras) == leitura direta de todos os `## ` — nada da PAUTA fica fora do transporte. `extract_all_sections`/`section_matches_heading` públicos em `pauta_parsing`.
+
 ## [5.47.0] - 2026-07-25
 
 ### Added

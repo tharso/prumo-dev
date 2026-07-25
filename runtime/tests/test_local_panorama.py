@@ -39,6 +39,19 @@ PAUTA = """# Pauta
 
 - **Projeto adormecido** com [[conexao-antiga]]
 - Outro hibernado
+
+## Horizonte (importante mas não urgente)
+
+- Ideia de longo prazo
+- Outra aposta | cobrar: 30/12
+
+## Agendado Futuro
+
+- Compromisso de setembro
+
+## Notas do sistema
+
+- Configuração X vale Y
 """
 
 
@@ -105,6 +118,48 @@ class PautaBlockTest(unittest.TestCase):
 
     def test_hibernando_preserves_associative_links(self) -> None:
         self.assertIn("[[conexao-antiga]]", self.by_id["hibernando"]["items"][0]["text"])
+
+    def test_non_canonical_sections_are_transported(self) -> None:
+        # #206: a PAUTA real tem seções autorais — não podem sumir na semente.
+        outras = {s["label"]: s for s in self.block["outras_secoes"]}
+        self.assertEqual(
+            list(outras),
+            ["Horizonte (importante mas não urgente)", "Agendado Futuro", "Notas do sistema"],
+            "todas as seções não-canônicas, na ordem do arquivo",
+        )
+        self.assertEqual(outras["Horizonte (importante mas não urgente)"]["count"], 2)
+        self.assertEqual(outras["Agendado Futuro"]["count"], 1)
+
+    def test_canonical_sections_never_duplicate_into_outras(self) -> None:
+        # "Quente" (com sufixo visual ou sem) casa com a canônica → fora de outras.
+        outras_labels = [s["label"] for s in self.block["outras_secoes"]]
+        for label in outras_labels:
+            self.assertNotIn("Quente", label)
+            self.assertNotIn("Hibernando", label)
+
+    def test_agendado_futuro_is_not_swallowed_by_agendado(self) -> None:
+        # O matcher estrito rejeita "Agendado Futuro" como "Agendado" (a letra
+        # F não é separador) — tem que vir em outras_secoes, não sumir.
+        self.assertEqual(self.by_id["agendado"]["count"], 1, "só o Agendado 1")
+        outras = {s["label"] for s in self.block["outras_secoes"]}
+        self.assertIn("Agendado Futuro", outras)
+
+    def test_total_item_count_parity_with_direct_reading(self) -> None:
+        # Guard da #206: NADA se perde — soma da semente == leitura direta.
+        from prumo_runtime.pauta_parsing import extract_all_sections
+
+        direct_total = sum(len(items) for _, items in extract_all_sections(PAUTA))
+        seed_total = sum(s["count"] for s in self.block["sections"]) + sum(
+            s["count"] for s in self.block["outras_secoes"]
+        )
+        self.assertEqual(seed_total, direct_total)
+
+    def test_outras_items_carry_cobrar_and_budget_fields(self) -> None:
+        outras = {s["label"]: s for s in self.block["outras_secoes"]}
+        aposta = outras["Horizonte (importante mas não urgente)"]["items"][1]
+        self.assertIn("cobrar", aposta)
+        self.assertEqual(aposta["cobrar"]["state"], "future")
+        self.assertFalse(aposta["visible_today"])
 
 
 class BuildLocalPanoramaTest(unittest.TestCase):
