@@ -1,6 +1,6 @@
 # Briefing Procedure
 
-> **module_version: 4.31.0**
+> **module_version: 4.32.0**
 >
 > Fonte canônica do procedimento de briefing do Prumo.
 > Se este módulo conflitar com um resumo em `SKILL.md`, este módulo vence.
@@ -38,7 +38,7 @@ O cartão do runtime (`prumo start` / `prumo briefing`) é a **prévia** — um 
 1. **Nunca** entregar a saída do runtime como briefing final nem encerrar nela. Entregar o cartão e parar é beco sem saída — o usuário pediu o briefing, não a prévia.
 2. Conduzir a curadoria rica abaixo. `prumo briefing --workspace <path> --format json` pode ser lido como **painel local** (semente determinística da parte local), mas a resposta é sempre o panorama numerado rico.
 3. **Sem MCP de email/agenda:** entregar o panorama com o que há localmente (pauta, inbox) e **declarar em uma linha** que email e/ou agenda estão indisponíveis — e **orientar** a reestabelecer o acesso ou checar a agenda manualmente. Não mascarar: sem o calendário, compromissos com hora (incluindo rituais que viram evento) podem não estar refletidos, e o silêncio passaria por "agenda vazia" quando na verdade é "agenda não lida". Nunca cair de volta no cartão da prévia como "solução".
-4. Ao final do briefing, registrar o dia: `prumo briefing --workspace <path> --mark-done` (quando há shell). Isso marca "briefing feito hoje" sem remontar o painel.
+4. Ao final do briefing **completo** (os dois tempos entregues), registrar o dia: `prumo briefing --workspace <path> --mark-done` (quando há shell). Isso marca "briefing feito hoje" sem remontar o painel. **Escape do usuário antes do segundo tempo NÃO marca** — o briefing não aconteceu inteiro e a prévia pode voltar a recomendá-lo.
 
 ## Passo 1: configuração e data local
 
@@ -62,7 +62,7 @@ Não parar no drift local: "comparar só o core do workspace contra si mesmo" n�
 1. Se houver versão nova detectável (incl. `VERSION` remoto > `prumo_version` do workspace), seguir o **gatilho graduado** do canônico: severidade `info` → avisar a diferença em uma linha e seguir o briefing; `warning`/`alert` → item 4 (oferta no topo). Não bloquear em nenhum caso.
 2. Se `Prumo/VERSION` local for maior que o `prumo_version` do `.prumo/system/PRUMO-CORE.md` do workspace (core do workspace defasado), aplicar o mesmo gatilho graduado: `info` → avisar em uma linha e seguir; `warning`/`alert` → item 4 (oferta no topo; o canônico cobre este caso em "workspace core defasado").
 3. Se a checagem falhar, registrar em uma linha e seguir. O briefing não vira refém de updater manco.
-4. **Severidade → OFERTA no topo (#158, #174):** ler `version_status.severity` do payload (ou computar a distância de versão). Se `warning`/`alert`, a **oferta de atualizar abre a resposta — e o briefing segue logo abaixo, na MESMA resposta**. Não esperar a escolha: é isso que mantém o **não-bloqueante**; a pergunta fica respondível a qualquer momento.
+4. **Severidade → OFERTA no topo (#158, #174; com o dois-tempos da #196, "no topo" = abrindo o PRIMEIRO TEMPO):** ler `version_status.severity` do payload (ou computar a distância de versão). Se `warning`/`alert`, a **oferta de atualizar abre o primeiro tempo — e o briefing segue logo abaixo, na MESMA resposta**. Não esperar a escolha: é isso que mantém o **não-bloqueante**; a pergunta fica respondível a qualquer momento.
    > *(exemplo COM transporte seguro — sem transporte, o `a` sai e vale o caso "sem transporte" do canônico: orientação por elo + `b`/`c`)*
    > Saiu a 5.34 (você está na 5.31) — quer que eu atualize? a) **atualizar agora** — atualizo pelo caminho seguro disponível (runtime ou fonte local, ver canônico) assim que você responder; b) **depois** — sigo e te lembro no `/fim`; c) **ver diagnóstico** primeiro.
    >
@@ -232,17 +232,31 @@ Se `EMAIL-CURADORIA.md` não existir, criar com estrutura:
 
 Consolidar agenda por conta quando houver mais de um calendário. Cada evento do dia é um item numerado (continuar da numeração dos emails).
 
-## Passo 5: montar o briefing
+## Passo 5: montar o briefing — em DOIS TEMPOS (#196)
 
-Entregar em uma resposta única, numerada de 1 a N:
+O briefing chega em **dois tempos na MESMA resposta**, com numeração sequencial única de 1 a N — nunca reinicia entre os tempos, o despacho em lote ("3, 7, 12") sobrevive intacto. A capacidade do host decide a variante (matriz abaixo); host sem a capacidade entrega resposta única como sempre.
+
+### Primeiro tempo: panorama local imediato
+
+Emitido a partir da semente (ou da leitura direta, conforme o gate do Passo 3) **antes de aguardar qualquer resultado de email/calendário** — a ordem é critério estrutural: a parte local nunca espera a parte lenta.
 
 1. Abertura com data correta no fuso do usuário.
-2. Agenda do dia, consolidada por conta quando aplicável.
-3. Emails curados (Camadas 1, 2 e 3 aplicadas), com classificação Responder/Ver/Sem ação e prioridade P1/P2/P3.
-4. Pendências vivas de `PAUTA.md` (quente, em andamento, agendado), **respeitando o marker `| cobrar: DD/MM`**. Item com marker de cobrança só aparece no briefing quando falta no máximo 1 dia para a data (véspera ou dia). Itens com cobrança no passado (atrasados) sempre aparecem. Item sem marker aparece sempre. Marker mal formado ou ambíguo: mostrar o item (fail-open, melhor ruído que perda silenciosa). **Rituais do `PERFIL.md`/`ROTINA.md` não são pendências** — não entram aqui como itens; rituais com hora aparecem como eventos da agenda, não como pauta.
-5. Inbox4Mobile: se houver itens novos (detectados no Passo 4), apresentar a contagem e a triagem. Linkar `inbox-preview.html` quando o preview estiver atualizado. Na primeira resposta do briefing, não despejar conteúdo bruto dos arquivos — preferir resumo numerado com classificação. **Este item é sobre formato de apresentação. A triagem real acontece no Passo 4 — não pular o Passo 4 por causa deste item.**
+2. Pendências vivas da PAUTA (quente, em andamento, agendado), **respeitando o marker `| cobrar: DD/MM`**. Item com marker de cobrança só aparece no briefing quando falta no máximo 1 dia para a data (véspera ou dia). Itens com cobrança no passado (atrasados) sempre aparecem. Item sem marker aparece sempre. Marker mal formado ou ambíguo: mostrar o item (fail-open, melhor ruído que perda silenciosa). **Rituais do `PERFIL.md`/`ROTINA.md` não são pendências** — não entram aqui como itens; rituais com hora aparecem como eventos da agenda, não como pauta.
+3. Inbox4Mobile: se houver itens novos (detectados no Passo 4), apresentar a contagem e a triagem. Linkar `inbox-preview.html` quando o preview estiver atualizado. No primeiro tempo, não despejar conteúdo bruto dos arquivos — preferir resumo numerado com classificação. **Este item é sobre formato de apresentação. A triagem real acontece no Passo 4 — não pular o Passo 4 por causa deste item.**
+4. Fechar o primeiro tempo com UMA linha: *"Curadoria de email e agenda chegando na sequência."* — e **seguir sem esperar resposta**.
 
-Depois da lista numerada, entregar a proposta do dia em uma linha curta e oferecer opções respondíveis:
+A numeração do primeiro tempo (1..k) fica **congelada** (snapshot lógico): o segundo tempo continua de k+1; nunca renumerar. Se o usuário despachar itens entre os tempos, atender e anotar — sem recompor o panorama.
+
+### Segundo tempo: curadoria na sequência (automático)
+
+Continua **na mesma resposta, sem pergunta no meio** — a variante com pergunta bloqueante foi rejeitada no desenho: quando a resposta é quase sempre "sim", ela só adiciona um degrau de espera. Execução **adaptativa** (#205: tool calls serializam em todos os hosts medidos): os canais rodam em sequência priorizada e fail-independent (metadata do Gmail → Calendar → corpos por predicado do Passo 4); **paralelismo por subagente fica DESLIGADO por default** — só habilitar quando uma comparação equivalente demonstrar ganho líquido num canal comprovadamente lento (spawn de ~3s+ por agente; medido 22–28s por chamada de metadata).
+
+Itens k+1..N:
+
+5. Agenda do dia, consolidada por conta quando aplicável.
+6. Emails curados (Camadas 1, 2 e 3 aplicadas), com classificação Responder/Ver/Sem ação e prioridade P1/P2/P3.
+
+Depois da lista numerada — **só no segundo tempo, porque precisa do quadro completo** — entregar a proposta do dia em uma linha curta e oferecer opções respondíveis:
 
 - `a) Aceitar e seguir`
 - `b) Ajustar`
@@ -250,6 +264,20 @@ Depois da lista numerada, entregar a proposta do dia em uma linha curta e oferec
 - `d) Tá bom por hoje`
 
 A proposta deve considerar deadlines de hoje, blockers, agenda disponível e itens com cobrança elegível hoje.
+
+### Escape do usuário (best-effort, declarado como tal)
+
+"Só o local hoje", "para por aí", "segue tudo" — a qualquer momento entre ou durante os tempos: interromper o que ainda **não começou**. Leituras de corpo não-iniciadas não acontecem; chamada já em voo não é cancelada (best-effort — sem promessa de cancelamento; as queries de metadata já disparadas são custo marginal). **Escape não marca o briefing como feito**: sem `--mark-done` — a prévia pode voltar a recomendar o briefing, e está certa: ele não aconteceu inteiro.
+
+### Matriz por host (aceite por host, #205)
+
+| Host | Variante hoje | Transporte do 1º tempo |
+|---|---|---|
+| Cowork | **dois tempos completo** (automático provado ao vivo) | leitura direta (runtime inalcançável por topologia) |
+| Claude Code (desktop e CLI) | resposta única — **provisório** até o roteiro automático+escape ser medido lá | semente do runtime (gate do Passo 3) |
+| Codex CLI e afins | um tempo com oferta: panorama completo + oferta de aprofundar email/agenda como próximo comando | conforme gate do Passo 3 |
+
+Granular por canal externo: **0 canais** (sem Gmail e sem Calendar) → só o primeiro tempo com declaração de indisponibilidade (comportamento atual); **1 canal** → segundo tempo parcial com declaração do que falta; **2** → segundo tempo completo.
 
 ### Ponte associativa (opcional, teto da regra 17)
 
@@ -264,7 +292,7 @@ Junto à proposta do dia, **no máximo uma** sugestão associativa por briefing 
 
 Quando o panorama tiver **6+ itens acionáveis** (conta só item que pede decisão — não evento puramente informativo), oferecer o despacho no formato visual além do chat: gerar o HTML interativo da skill `decidir` e linká-lo. Abaixo de 6, despachar em chat sai mais barato — não gerar.
 
-- **Aditivo, não substitutivo.** O panorama numerado em chat continua sendo a camada base (ASSERT do core: panorama único, sem blocos progressivos). O HTML é a camada rica de despacho. Os cards **reusam os mesmos números** do panorama (o item `7` do chat vira o card `id: '7'`).
+- **Aditivo, não substitutivo.** O panorama numerado em chat continua sendo a camada base (regra 12 do core: dois tempos com numeração única — o HTML nunca substitui o chat). O HTML é a camada rica de despacho. Os cards **reusam os mesmos números** do panorama (o item `7` do chat vira o card `id: '7'`).
 - **Override do usuário, sempre.** "quero visual" / "gera o decidir" → gerar mesmo com poucos itens. "resolve no chat" / "sem HTML" → não gerar. Sinais conflitantes → perguntar "visual ou chat?".
 - **Como gerar:** seguir `skills/decidir/SKILL.md` (preencher `assets/template.html`, ações da allowlist por tipo, salvar em `.prumo/state/decidir/`, copiar a fonte, offline). O usuário abre no próprio browser, despacha, clica "Copiar respostas" e cola de volta; o Prumo lê o bloco JSON e executa em camadas.
 - **Acoplamento brando.** Se a skill `decidir` não estiver disponível ou a escrita do arquivo falhar, **cair no despacho em chat** — nunca travar o briefing.

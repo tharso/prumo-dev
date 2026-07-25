@@ -12,11 +12,11 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 | `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-04 (#158 detecção defasagem), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime), 2026-07-05 (#170 transporte de update local), 2026-07-12 (#172 taxonomia do picker), 2026-07-19 (#191 decidir mostra o item), 2026-07-24 (#195 dieta fase 1 — produtor do cache de versão), 2026-07-16 (#177 dívidas estruturais) |
 | `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first), 2026-05-06 (quality-gate), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#141 diário — emenda à #68) |
 | `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist), 2026-06-24 (#110 não-bundle), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime), 2026-07-05 (#170 transporte de update local), 2026-07-16 (#177 dívidas estruturais) |
-| `dispatch-bootstrap`  | 2026-04-21 (#69 despacho), 2026-06-23 (#104 briefing rico), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-05 (#160 porta/instalação agnóstica), 2026-07-12 (#172 taxonomia do picker), 2026-07-24 (#194 perímetro de leitura), 2026-07-24 (#201 índice de projetos), 2026-07-25 (#197 semente substitui releitura), 2026-07-25 (#206 outras_secoes + gate por capacidade) |
+| `dispatch-bootstrap`  | 2026-04-21 (#69 despacho), 2026-06-23 (#104 briefing rico), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-05 (#160 porta/instalação agnóstica), 2026-07-12 (#172 taxonomia do picker), 2026-07-24 (#194 perímetro de leitura), 2026-07-24 (#201 índice de projetos), 2026-07-25 (#197 semente substitui releitura), 2026-07-25 (#206 outras_secoes + gate por capacidade), 2026-07-25 (#196 briefing em dois tempos) |
 | `multiagent-coord`    | 2026-04-20 (#68 HANDOVER), 2026-07-24 (#194 perímetro de leitura — delegação)             |
 | `documentation`       | 2026-04-14 (CLAUDE.md), 2026-06-21 (#97 mapas), 2026-07-03 (#149 guia Obsidian)           |
 | `integrations`        | 2026-04-14 (Google Drive snapshots)                                                       |
-| `briefing`            | 2026-04-14 (Google Drive snapshots), 2026-04-21 (#69 despacho), 2026-06-23 (#102 decidir), 2026-06-23 (#104 briefing rico), 2026-06-25 (#114 perfil modular), 2026-07-02 (#139 guarda-corpos), 2026-07-03 (#148 conexões), 2026-07-04 (#156 injeção), 2026-07-13 (#174/#175 update-oferta + copy do fim), 2026-07-24 (#195 dieta fase 1), 2026-07-16 (#177 dívidas estruturais), 2026-07-24 (#201 roteamento de conteúdo configurável), 2026-07-25 (#197 semente substitui releitura), 2026-07-25 (#206 outras_secoes + gate por capacidade) |
+| `briefing`            | 2026-04-14 (Google Drive snapshots), 2026-04-21 (#69 despacho), 2026-06-23 (#102 decidir), 2026-06-23 (#104 briefing rico), 2026-06-25 (#114 perfil modular), 2026-07-02 (#139 guarda-corpos), 2026-07-03 (#148 conexões), 2026-07-04 (#156 injeção), 2026-07-13 (#174/#175 update-oferta + copy do fim), 2026-07-24 (#195 dieta fase 1), 2026-07-16 (#177 dívidas estruturais), 2026-07-24 (#201 roteamento de conteúdo configurável), 2026-07-25 (#197 semente substitui releitura), 2026-07-25 (#206 outras_secoes + gate por capacidade), 2026-07-25 (#196 briefing em dois tempos) |
 | `personalization`     | 2026-04-21 (tharso-voice)                                                                 |
 | `code-quality`        | 2026-05-06 (quality-gate), 2026-06-25 (#122 baseline 1061→930), 2026-07-03 (baseline 82/904), 2026-07-04 (#157 conformidade A0), 2026-07-24 (baseline 82/900) |
 | `touchpoint`          | 2026-05-18 (landing page sync), 2026-07-03 (#149 guia Obsidian — candidato à landing), 2026-07-05 (#160 instalação agnóstica), 2026-07-05 (#108 update via runtime) |
@@ -60,6 +60,24 @@ Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões ant
 - `code-quality` — métricas de qualidade do codebase, quality gate, baseline.
 
 ---
+
+## 2026-07-25 — Briefing em dois tempos: panorama local imediato, curadoria automática na sequência (#196)
+
+**Tópicos:** briefing, dispatch-bootstrap
+
+**Issues relacionadas:** #196 (executa; desenho aprovado pelo dono em 24/07 e pelo Codex em r1–r3 + adendo pós-spike), #205 (spike que habilitou), #197/#206 (a semente que torna o primeiro tempo imediato), #195 (a execução dos canais).
+
+**Relações com decisões anteriores:**
+- **Revoga parcialmente:** 2026-06-23 (#104) e 2026-06-23 (#102) — a regra "panorama único, sem blocos progressivos" (regra 12 do core) cai; o briefing passa a DOIS tempos na mesma resposta. **Mantidos** da mesma decisão: numeração sequencial única sem reinício (o despacho "3, 7, 12" sobrevive), panorama em chat como camada base, `decidir` aditivo, prévia do runtime ≠ briefing.
+- **Estende:** 2026-07-13 (#174) — a oferta de update "no topo da resposta" vira "abrindo o PRIMEIRO tempo"; semântica anti-nag intacta.
+- **Mantém:** 2026-07-03 (#148) — a ponte associativa mora junto à proposta do dia, que agora vive só no SEGUNDO tempo; fonte restrita ao já-carregado preservada (as seções vêm dentro da semente).
+- **Mantém:** 2026-07-04 (#156) — defesas de conteúdo de terceiro intactas em todo corpo lido, em qualquer tempo.
+- **Redefine conscientemente:** o ASSERT do Inbox4Mobile — "primeira resposta" vira "primeiro tempo" (em host de resposta única, a resposta inteira); proibição idêntica em substância, registro do guard atualizado.
+- **Estende:** 2026-07-24 (#195) — o "em paralelo, desde o início" do DAG vira EXECUÇÃO ADAPTATIVA (medição do #205: tool calls serializam em todos os hosts; cross-server inclusive): sequência priorizada fail-independent; paralelismo por subagente DESLIGADO por default (só com ganho líquido demonstrado — spawn ~3s, 22–28s por chamada medidos).
+
+**Contexto:** dor = tempo até a primeira resposta. Ideia do dono ("panorama primeiro, pergunta depois") refinada pra automático-com-escape: pergunta bloqueante quando a resposta é quase sempre "sim" só adiciona degrau. O spike #205 provou o fluxo automático ao vivo no Cowork e derrubou duas suposições (paralelismo físico de tool calls; runtime alcançável no Cowork — VM isolada, transporte por leitura direta).
+
+**Decisão:** dois tempos com numeração congelada no primeiro (snapshot lógico, nunca renumerar); proposta do dia/ponte/`decidir` só no segundo; escape BEST-EFFORT declarado (impede o não-iniciado, não cancela voo, NÃO marca `--mark-done`); matriz por host com aceite por host (Cowork completo; Claude Code resposta-única provisório até o roteiro; Codex CLI um-tempo-com-oferta; granular por canal 0/1/2); transporte do primeiro tempo pelo gate por capacidade (#206). Landing prumo.me atualizada como critério de aceite (a página prometia "o dia vem montado" em bloco único).
 
 ## 2026-07-25 — Semente carrega a PAUTA inteira: seções autorais em `outras_secoes`, gate por capacidade (#206)
 

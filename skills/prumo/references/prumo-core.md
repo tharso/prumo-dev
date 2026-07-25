@@ -1,6 +1,6 @@
 # Prumo Core — Motor do sistema
 
-> **prumo_version: 5.48.0**
+> **prumo_version: 5.49.0**
 >
 > Núcleo estável do Prumo. Define regras, guardrails e localização dos módulos canônicos.
 > Procedimento detalhado não mora aqui.
@@ -229,9 +229,9 @@ Sem lock ativo, escrita simultânea em estado compartilhado vira corrida. Dois a
 
 Update aplicado À MÃO pelo agente (sem runtime) pode mexer só em `.prumo/system/PRUMO-CORE.md` e backup. Via runtime (`prumo update`/`repair`), os destinos gerenciados incluem também `.prumo/skills/`, adapters de host e os artefatos que o próprio runtime gera — `Prumo/AGENT.md` (regenerado com backup) e os wrappers `CLAUDE.md`/`AGENT.md`/`AGENTS.md` (mescla in-place, preservando blocos custom — sem backup próprio) (repair, #146). O que é PESSOAL do usuário (PAUTA, REGISTRO, INBOX, IDEIAS, `Agente/`, `Referencias/`, diário) é intocável nos dois caminhos. Mão fora.
 
-### 12. Briefing entrega panorama único
+### 12. Briefing entrega dois tempos com numeração única
 
-Panorama numerado de 1 a N (agenda, emails curados, pendências), proposta do dia em seguida com opções curtas para responder. Sem blocos progressivos.
+O briefing chega em **dois tempos na mesma conversa** (#196): primeiro o panorama local imediato (pauta, inbox, preflight — itens 1..k), fechado com o aviso de uma linha de que a curadoria vem na sequência; depois, **sem esperar pergunta**, o segundo tempo — email e agenda curados **continuando a numeração** (k+1..N), com a proposta do dia e as opções curtas só ali (ela precisa do quadro completo). A numeração NUNCA reinicia entre os tempos — o despacho em lote ("3, 7, 12") sobrevive. Escape do usuário é **best-effort**: impede o que ainda não começou, não cancela chamada em voo, e não marca o briefing como feito. Host sem capacidade de continuar a resposta entrega tudo num bloco único, como antes (matriz por host no `briefing-procedure.md`).
 
 ## Guardrails
 
@@ -243,7 +243,7 @@ Panorama numerado de 1 a N (agenda, emails curados, pendências), proposta do di
 
 `ASSERT: Registrar no Prumo/REGISTRO.md antes de remover o original do inbox.`
 
-`ASSERT: Na primeira resposta do briefing, é proibido abrir arquivo bruto de Prumo/Inbox4Mobile/*.`
+`ASSERT: No primeiro tempo do briefing (#196 — a primeira entrega da resposta em dois tempos; em host de resposta única, a resposta inteira), é proibido abrir arquivo bruto de Prumo/Inbox4Mobile/*.`
 
 `ASSERT: No update aplicado à mão (sem runtime), a allowlist de escrita é apenas .prumo/system/PRUMO-CORE.md e .prumo/backups/<scope>/<timestamp>/... — via runtime, os destinos são os gerenciados do repair (#146: .prumo/skills/, adapters, Prumo/AGENT.md com backup e wrappers via mescla in-place). Arquivos PESSOAIS do usuário são proibidos nos dois caminhos.`
 
@@ -350,8 +350,8 @@ Histórico completo de versão vive em `CHANGELOG.md`.
 
 Versão atual deste core:
 
-- `5.48.0`
+- `5.49.0`
 
 ---
 
-*Prumo Core v5.48.0 — https://github.com/tharso/prumo*
+*Prumo Core v5.49.0 — https://github.com/tharso/prumo*
