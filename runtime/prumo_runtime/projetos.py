@@ -557,11 +557,6 @@ def sync_index_text(
     synced_at = now.date().isoformat()
     lines = text.splitlines(keepends=True)
     newline = "\r\n" if "\r\n" in text else "\n"
-    if lines and not lines[-1].endswith(("\n", "\r\n")):
-        # Sem newline final, um bloco inserido no fim colaria o marcador na
-        # última linha e o parse seguinte acusaria órfão (Codex r4). Um byte
-        # estrutural documentado — única exceção ao "só miolos".
-        lines[-1] += newline
     replacements: list[tuple[Entry, list[str]]] = []
     for entry in parsed.entries:
         info: dict = {"name": entry.name, "path": entry.path_raw}
@@ -621,6 +616,16 @@ def sync_index_text(
             )
         ]
         replacements.append((entry, body))
+
+    needs_eof_insert = any(
+        entry.block_inner_start is None and entry.section_end >= len(lines)
+        for entry, _ in replacements
+    )
+    if needs_eof_insert and lines and not lines[-1].endswith(("\n", "\r\n")):
+        # Sem newline final, um bloco inserido no EOF colaria o marcador na
+        # última linha e o parse seguinte acusaria órfão (Codex r4/r5). Byte
+        # estrutural aplicado SÓ neste caso — doc sem inserção fica intocado.
+        lines[-1] += newline
 
     for entry, body in sorted(replacements, key=lambda item: item[0].header_line, reverse=True):
         if entry.block_inner_start is not None:

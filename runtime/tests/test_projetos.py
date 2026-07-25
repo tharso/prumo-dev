@@ -658,6 +658,17 @@ class NoFinalNewlineTests(unittest.TestCase):
         self.assertEqual(second, first, "segundo sync não é idempotente")
 
 
+class NoMutationWithoutWorkTests(unittest.TestCase):
+    def test_sync_without_projects_is_byte_identical_even_without_final_newline(self) -> None:
+        text = "# Projetos\n\nsó prosa autoral, sem contêiner"  # sem newline final
+        with tempfile.TemporaryDirectory() as tmp:
+            new_text, report = sync_index_text(
+                text, home=Path(tmp) / "h", workspace=Path(tmp) / "ws", now=NOW
+            )
+        self.assertEqual(report["errors"], [])
+        self.assertEqual(new_text, text, "sync sem trabalho mutou o documento")
+
+
 class SanitizeTests(unittest.TestCase):
     def test_removes_controls_and_neutralizes_markers(self) -> None:
         dirty = f"a\x07b {PULSO_BEGIN} c <!-- livre --> d"
