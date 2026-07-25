@@ -220,8 +220,6 @@ class CheckAndNotifyIntegrationTests(unittest.TestCase):
             mock_fetch.assert_not_called()
 
 
-if __name__ == "__main__":
-    unittest.main()
 
 
 class RemoteSuspectTests(unittest.TestCase):
@@ -299,3 +297,7 @@ class RemoteSuspectTests(unittest.TestCase):
                     read_cached_remote_version(),
                     "versão suspeita não alimenta severidade do painel",
                 )
+
+
+if __name__ == "__main__":
+    unittest.main()

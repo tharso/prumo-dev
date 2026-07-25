@@ -141,13 +141,14 @@ Coleta de CANDIDATOS — P1 só depois do pós-filtro (a query é AMPLA de prop�
 (subject:PRUMO OR subject:INBOX) after:{ontem}
 ```
 
-**Pós-filtro EXATO obrigatório (#210):** o Gmail tokeniza o subject — `subject:PRUMO` casa `prumo-dev`, e no briefing real de 25/07 o canal devolveu 14/14 falso-positivos de CI. Candidato só vira P1 se o assunto contém o **token `PRUMO:` ou `INBOX:` com fronteira** — os dois-pontos no fim E nada de letra/dígito/`_` imediatamente antes (regex de referência: `(?<![A-Za-z0-9_])(?:PRUMO|INBOX):`). Exemplos canônicos:
+**Pós-filtro EXATO obrigatório (#210):** o Gmail tokeniza o subject — `subject:PRUMO` casa `prumo-dev`, e no briefing real de 25/07 o canal devolveu 14/14 falso-positivos de CI. Candidato só vira P1 se o assunto contém o **token `PRUMO:` ou `INBOX:` com fronteira** — os dois-pontos no fim E nada de letra/dígito/`_` imediatamente antes — letra em QUALQUER alfabeto (regex de referência, Unicode: `(?<!\w)(?:PRUMO|INBOX):`). Exemplos canônicos:
 
 - `PRUMO: pagar o boleto amanhã` → casa ✓
 - `Re: INBOX: link pra ler depois` → casa ✓
 - `Run failed: tharso/prumo-dev CI` → NÃO casa (não existe `PRUMO:` literal)
 - `prumo update disponível` → NÃO casa
 - `SUPERPRUMO: promoção` → NÃO casa (fronteira: colado em outra palavra)
+- `ÉPRUMO: oferta` → NÃO casa (fronteira vale pra acento também)
 
 Candidato reprovado no pós-filtro não é descartado: segue pra Camada 2 como email comum (só perde o P1 automático).
 

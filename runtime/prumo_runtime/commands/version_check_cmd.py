@@ -28,7 +28,9 @@ def run_version_check(args: argparse.Namespace) -> int:
             "failed": True,
             "cache_write_failed": False,
             "source": "error",
-            "update_available": False,
+            "remote_suspect": False,
+            # Checagem falhou = INDETERMINADO (#215): false diria "em dia".
+            "update_available": None,
             "error": str(exc),
         }
     print(json.dumps(status, ensure_ascii=False, indent=2))

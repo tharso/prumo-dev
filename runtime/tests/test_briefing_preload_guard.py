@@ -157,7 +157,8 @@ class PreloadSingleEnumerationTests(unittest.TestCase):
             "(subject:PRUMO OR subject:INBOX) after:{ontem}",
             "NENHUM remetente é excluído na query",
             "Pós-filtro EXATO obrigatório (#210)",
-            "(?<![A-Za-z0-9_])(?:PRUMO|INBOX):",
+            "(?<!\\w)(?:PRUMO|INBOX):",
+            "`ÉPRUMO: oferta` → NÃO casa",
             "`Run failed: tharso/prumo-dev CI` → NÃO casa",
             "`SUPERPRUMO: promoção` → NÃO casa",
             "segue pra Camada 2 como email comum",
@@ -169,7 +170,7 @@ class PreloadSingleEnumerationTests(unittest.TestCase):
     def test_camada1_post_filter_reference_oracle(self) -> None:
         # Oráculo executável da regra ESCRITA (a MESMA regex de referência do
         # módulo): token com fronteira — substring pura aceitaria SUPERPRUMO:.
-        post_filter = re.compile(r"(?<![A-Za-z0-9_])(?:PRUMO|INBOX):").search
+        post_filter = re.compile(r"(?<!\w)(?:PRUMO|INBOX):").search
 
         cases = {
             "PRUMO: pagar o boleto amanhã": True,
@@ -180,6 +181,7 @@ class PreloadSingleEnumerationTests(unittest.TestCase):
             "Fwd: PRUMO: comprovante": True,
             "SUPERPRUMO: promoção imperdível": False,
             "MYINBOX: novidades da semana": False,
+            "ÉPRUMO: oferta relâmpago": False,
         }
         for subject, expected in cases.items():
             with self.subTest(subject=subject):
