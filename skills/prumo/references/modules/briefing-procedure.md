@@ -1,6 +1,6 @@
 # Briefing Procedure
 
-> **module_version: 4.32.0**
+> **module_version: 4.33.0**
 >
 > Fonte canônica do procedimento de briefing do Prumo.
 > Se este módulo conflitar com um resumo em `SKILL.md`, este módulo vence.
@@ -129,14 +129,26 @@ Usar integração nativa de Gmail MCP e Calendar MCP como fonte primária.
 
 Antes de executar as queries, ler `Prumo/Referencias/EMAIL-CURADORIA.md` (se existir) para carregar regras aprendidas, remetentes conhecidos e patterns de exclusão/inclusão.
 
-**Camada 1 — Canal prioritário (P1 automático):**
+**Camada 1 — Canal prioritário:**
+
+Sinal FORTE — P1 automático, sem pós-filtro (label é aplicado por filtro do próprio usuário, não passa por tokenização):
 ```
 label:Prumo after:{ontem}
 ```
+
+Coleta de CANDIDATOS — P1 só depois do pós-filtro:
 ```
-(subject:PRUMO OR subject:INBOX:) after:{ontem}
+(subject:PRUMO OR subject:INBOX) -from:notifications@github.com after:{ontem}
 ```
-Tudo que chega por esses canais é P1 e entra direto no briefing.
+
+**Pós-filtro EXATO obrigatório (#210):** o Gmail tokeniza o subject — `subject:PRUMO` casa `prumo-dev`, e no briefing real de 25/07 o canal devolveu 14/14 falso-positivos de CI. Candidato só vira P1 se o **assunto contém o token literal `PRUMO:` ou `INBOX:` (com os dois-pontos)**. Exemplos canônicos:
+
+- `PRUMO: pagar o boleto amanhã` → casa ✓
+- `Re: INBOX: link pra ler depois` → casa ✓
+- `Run failed: tharso/prumo-dev CI` → NÃO casa (não existe `PRUMO:` literal)
+- `prumo update disponível` → NÃO casa
+
+Candidato reprovado no pós-filtro não é descartado: segue pra Camada 2 como email comum (só perde o P1 automático).
 
 **Camada 2 — Emails diretos e threads ativas:**
 ```

@@ -1,6 +1,6 @@
 # Version Update
 
-> **module_version: 4.25.0**
+> **module_version: 4.26.0**
 >
 > Fonte canônica do fluxo de verificação e aplicação de atualização do Prumo.
 
@@ -65,6 +65,7 @@ Esta comparação **não é opcional** no briefing. Quem a produz (#195):
 - Fonte: `https://raw.githubusercontent.com/tharso/prumo/main/VERSION`
 - **Sem runtime no PATH:** use **WebFetch** dessa URL raw (ou `curl` quando houver shell). **Isso é permitido e esperado** — sem runtime/shell, WebFetch do `VERSION` é o caminho sancionado (sem cache agent-owned: o agente não escreve estado fingindo ser runtime). Não confunda esta busca com "drift local": comparar só o core do workspace contra si mesmo **não** é o Passo 2.
 - Se `VERSION` remoto > `prumo_version` do workspace, há **versão nova** → seguir para o Passo 4 (gatilho graduado: oferta ou aviso conforme a severidade).
+- **Remoto MENOR que qualquer versão local confiável (runtime instalado, core do workspace ou bundle do plugin) é resposta SUSPEITA — nunca "em dia" (#215):** o transporte pode servir cache velho (caso real de 25/07: o WebFetch devolveu `5.18.0` quando o público estava em `5.49.0` — ~30 versões stale). Protocolo: (1) refazer a busca com **cache-busting** (`?nocache={timestamp}` na URL, ou `curl -H "Cache-Control: no-cache"` quando houver shell) ou por outro transporte; (2) se persistir remoto < local, declarar status **desconhecido** — `"A checagem remota devolveu versão menor que a local (X < Y): provável cache velho; não consigo afirmar se há update."` — e seguir com a comparação LOCAL (bundle × workspace), que continua válida. **Nunca** ler "remoto menor" como "estou em dia".
 
 **Caso sem nenhum jeito de buscar** (sem runtime, sem shell e sem WebFetch): **avisar explicitamente** que não deu para checar — `"Não consegui checar a versão pública agora; sigo o briefing sem garantia de versão atual."` **Nunca** declarar "sem drift" ou "versão em dia" sem ter feito a comparação remota: silenciar aqui é como dizer que o tanque está cheio sem olhar o ponteiro.
 

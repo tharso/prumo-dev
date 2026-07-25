@@ -6,6 +6,14 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.50.0] - 2026-07-25
+
+### Fixed
+- **Camada 1 do briefing: fim dos 100% falso-positivos por tokenização (#210, P1 do relatório de execução)** — `subject:PRUMO` casava `prumo-dev` e o canal prioritário devolveu 14/14 notificações de CI no briefing real de 25/07, enterrando qualquer captura legítima. Desenho novo (robustecido pelo Codex): `label:Prumo` é o ÚNICO P1 automático (label não tokeniza); a busca por assunto vira **coleta de candidatos** (`-from:notifications@github.com` de cinto e suspensório) com **pós-filtro EXATO obrigatório** — só vira P1 quem contém o token literal `PRUMO:`/`INBOX:` (com dois-pontos). Reprovado não é descartado: segue pra Camada 2 como email comum. Exemplos canônicos congelados por guard + **oráculo executável** da regra (`test_camada1_post_filter_reference_oracle`).
+
+### Changed
+- **Preflight de versão: remoto MENOR que o local é resposta SUSPEITA, nunca "em dia" (#215)** — caso real: o WebFetch do Cowork serviu `5.18.0` quando o público estava em `5.49.0` (~30 versões de cache stale); um agente desatento leria "remoto menor" como "estou em dia" e silenciaria o drift verdadeiro. Protocolo novo no `version-update.md`: retry com cache-busting (ou outro transporte) → persistindo, status **desconhecido** declarado em uma linha + comparação LOCAL (bundle × workspace) segue valendo. Guard das âncoras.
+
 ## [5.49.0] - 2026-07-25
 
 ### Changed
