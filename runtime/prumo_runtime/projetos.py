@@ -284,8 +284,11 @@ def collect_git_pulse(path: Path, *, now: datetime) -> dict | None:
             )
             if act is not None and act.returncode == 0 and act.stdout.strip():
                 pulse["_activity_commit_at"] = act.stdout.strip()
-            elif act is None:
-                pulse["errors"].append("git log de atividade falhou (timeout)")
+            elif act is not None and act.returncode == 0:
+                pass  # todos os commits tocam só a narrativa: sem atividade
+            else:
+                reason = "timeout" if act is None else "erro"
+                pulse["errors"].append(f"git log de atividade falhou ({reason})")
                 pulse["complete"] = False
     else:
         head = _run_git(path, "rev-parse", "--verify", "HEAD")

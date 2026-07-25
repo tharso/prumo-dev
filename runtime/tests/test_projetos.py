@@ -757,18 +757,46 @@ class HotfixRound3Tests(unittest.TestCase):
         self.assertTrue(wt is None or wt < "2026", "narrativa contou como atividade")
 
     def test_commit_touching_only_narrative_does_not_reopen_stale(self) -> None:
+        # Ordem CAUSAL fixada (Codex hotfix r4): commit base 20/07 <
+        # narrativa 22/07 < commit-do-contexto 24/07 < now 26/07.
+        # SEM a exclusão, a atividade seria 24/07 > narrativa → stale;
+        # COM a exclusão, atividade = 20/07 → fresh. O assert prova a
+        # exclusão de verdade — não depende do relógio.
+        import os as _os
         with tempfile.TemporaryDirectory() as tmp:
-            repo = _make_repo(Path(tmp))
+            repo = Path(tmp) / "repo"
+            repo.mkdir(parents=True)
+            env_base = dict(
+                _os.environ,
+                GIT_COMMITTER_DATE="2026-07-20T10:00:00-03:00",
+                GIT_AUTHOR_DATE="2026-07-20T10:00:00-03:00",
+            )
+            subprocess.run(["git", "-C", str(repo), "init", "-q", "-b", "main"], check=True)
+            subprocess.run(["git", "-C", str(repo), "config", "user.email", "t@t"], check=True)
+            subprocess.run(["git", "-C", str(repo), "config", "user.name", "T"], check=True)
+            (repo / "a.md").write_text("x\n", encoding="utf-8")
+            subprocess.run(["git", "-C", str(repo), "add", "."], check=True)
+            subprocess.run(
+                ["git", "-C", str(repo), "commit", "-q", "-m", "base"], check=True, env=env_base
+            )
             (repo / ".prumo-contexto.md").write_text(
-                "---\nupdated: 2026-07-25T23:59:00-03:00\n---\n", encoding="utf-8"
+                "---\nupdated: 2026-07-22T10:00:00-03:00\n---\n", encoding="utf-8"
             )
             subprocess.run(["git", "-C", str(repo), "add", ".prumo-contexto.md"], check=True)
-            subprocess.run(
-                ["git", "-C", str(repo), "commit", "-q", "-m", "docs: contexto"], check=True
+            env_ctx = dict(
+                _os.environ,
+                GIT_COMMITTER_DATE="2026-07-24T10:00:00-03:00",
+                GIT_AUTHOR_DATE="2026-07-24T10:00:00-03:00",
             )
-            pulse = projetos._collect_project(repo, now=datetime(2026, 7, 26, 12, 0, tzinfo=timezone.utc))
-        # last_commit_at (histórico exibido) avança; o frescor NÃO reabre.
-        self.assertIsNotNone(pulse["last_commit_at"])
+            subprocess.run(
+                ["git", "-C", str(repo), "commit", "-q", "-m", "docs: contexto"],
+                check=True,
+                env=env_ctx,
+            )
+            pulse = projetos._collect_project(
+                repo, now=datetime(2026, 7, 26, 12, 0, tzinfo=timezone.utc)
+            )
+        self.assertIn("2026-07-24", pulse["last_commit_at"], "histórico exibido deve mostrar o commit da narrativa")
         self.assertEqual(pulse["staleness"], "fresh", f"commit da narrativa reabriu o stale: {pulse}")
 
 
