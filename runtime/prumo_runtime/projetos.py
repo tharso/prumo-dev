@@ -557,6 +557,11 @@ def sync_index_text(
     synced_at = now.date().isoformat()
     lines = text.splitlines(keepends=True)
     newline = "\r\n" if "\r\n" in text else "\n"
+    if lines and not lines[-1].endswith(("\n", "\r\n")):
+        # Sem newline final, um bloco inserido no fim colaria o marcador na
+        # última linha e o parse seguinte acusaria órfão (Codex r4). Um byte
+        # estrutural documentado — única exceção ao "só miolos".
+        lines[-1] += newline
     replacements: list[tuple[Entry, list[str]]] = []
     for entry in parsed.entries:
         info: dict = {"name": entry.name, "path": entry.path_raw}

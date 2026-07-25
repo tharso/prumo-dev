@@ -638,6 +638,26 @@ class Round3Tests(unittest.TestCase):
         self.assertIsNone(err, "formato absoluto do Windows não pode ser rejeitado")
 
 
+class NoFinalNewlineTests(unittest.TestCase):
+    def test_sync_without_final_newline_stays_parseable_and_idempotent(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = _make_repo(Path(tmp))
+            text = (
+                "# Projetos\n\n## Projetos registrados\n\n"
+                f"### Repo\n- Caminho: {repo}"  # SEM newline final
+            )
+            first, report1 = sync_index_text(
+                text, home=Path(tmp) / "h", workspace=Path(tmp) / "ws", now=NOW
+            )
+            self.assertEqual(report1["errors"], [])
+            self.assertEqual(parse_projects_index(first).errors, [], "resultado não parseia")
+            second, report2 = sync_index_text(
+                first, home=Path(tmp) / "h", workspace=Path(tmp) / "ws", now=NOW
+            )
+            self.assertEqual(report2["errors"], [])
+        self.assertEqual(second, first, "segundo sync não é idempotente")
+
+
 class SanitizeTests(unittest.TestCase):
     def test_removes_controls_and_neutralizes_markers(self) -> None:
         dirty = f"a\x07b {PULSO_BEGIN} c <!-- livre --> d"
