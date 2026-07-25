@@ -404,6 +404,53 @@ class SeedReadOnlyTest(unittest.TestCase):
                 "alvo externo tinha que ficar byte-idêntico",
             )
 
+    def test_symlinked_inbox_root_is_never_accessed(self) -> None:
+        import shutil as _sh
+
+        from prumo_runtime.inbox_preview import load_inbox_preview
+
+        with tempfile.TemporaryDirectory(prefix="prumo-root-link-") as tmp:
+            ws, _, _ = _build_workspace(tmp)
+            outside = Path(tmp) / "inbox-externo"
+            outside.mkdir()
+            (outside / "_processed.json").write_text(
+                '{"items": [{"filename": "externo.md"}]}', encoding="utf-8"
+            )
+            (outside / "_preview-index.json").write_text(
+                '{"items": [{"filename": "externo.md", "kind": "text"}]}',
+                encoding="utf-8",
+            )
+            (outside / "conteudo-externo.md").write_text("- x\n", encoding="utf-8")
+            external_before = sorted(str(p) for p in outside.rglob("*"))
+            _sh.rmtree(ws / "Inbox4Mobile")
+            (ws / "Inbox4Mobile").symlink_to(outside)
+            with mock.patch(
+                "prumo_runtime.inbox_preview.subprocess.run",
+                side_effect=AssertionError("subprocesso rodou com root symlinkado"),
+            ):
+                preview = load_inbox_preview(ws, None, allow_regen=True)
+            self.assertEqual(preview["status"], "invalido")
+            self.assertEqual(preview["count"], 0, "dado externo não pode vazar no payload")
+            self.assertEqual(preview["raw_files_count"], 0)
+            self.assertEqual(
+                external_before,
+                sorted(str(p) for p in outside.rglob("*")),
+                "alvo externo tinha que ficar intacto",
+            )
+
+    def test_broken_symlink_inbox_root_is_invalido_not_ausente(self) -> None:
+        import shutil as _sh
+
+        from prumo_runtime.inbox_preview import load_inbox_preview
+
+        with tempfile.TemporaryDirectory(prefix="prumo-root-broken-") as tmp:
+            ws, _, _ = _build_workspace(tmp)
+            _sh.rmtree(ws / "Inbox4Mobile")
+            (ws / "Inbox4Mobile").symlink_to(Path(tmp) / "nao-existe")
+            preview = load_inbox_preview(ws, None, allow_regen=False)
+            self.assertEqual(preview["status"], "invalido")
+            self.assertIn("symlink", preview["note"])
+
     def test_stat_failure_on_entry_makes_scan_inconclusive(self) -> None:
         with tempfile.TemporaryDirectory(prefix="prumo-stat-fail-") as tmp:
             ws, _, _ = _build_workspace(tmp)

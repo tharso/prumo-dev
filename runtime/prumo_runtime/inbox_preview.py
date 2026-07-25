@@ -157,6 +157,25 @@ def load_inbox_preview(
     inbox_dir = paths.inbox4mobile_root
     preview_path = inbox_dir / "inbox-preview.html"
     index_path = paths.inbox_preview_index
+
+    # Root symlinkado (quebrado incluso — is_symlink() enxerga o que exists()
+    # esconde): NENHUM acesso aos filhos. Nem _processed, nem varredura, nem
+    # índice, nem subprocesso — recusar pra escrita e depois ler seria barrar
+    # o caminhão e entrar nele pra conferir a carga.
+    if inbox_dir.is_symlink():
+        return {
+            "status": "invalido",
+            "note": "Inbox4Mobile é symlink — recusado; aponte o diretório real.",
+            "preview_path": preview_path,
+            "index_path": index_path,
+            "count": 0,
+            "items": [],
+            "freshness": {"index_mtime": None, "newest_inbox_mtime": None},
+            "raw_files_count": 0,
+            "scan_error": "Inbox4Mobile é symlink",
+            "index_present": False,
+        }
+
     processed = load_processed_filenames(workspace)
     preview_status = "ausente"
     preview_note = ""
