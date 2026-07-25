@@ -1,6 +1,6 @@
 {
-  "_note": "Atualizado em 2026-07-24 (aprovacao do Tharso na sessao da fila de merge): largest_file 904->900 (merge_wrapper_content byte a byte encolheu workspace.py, #194). Coverage MANTIDA em 82: a suite mede 83 em ambiente local e 82.0 no CI macos (flutuacao de fronteira entre plataformas) — apertar quebraria PRs por sorteio de runner. PRs so podem manter ou melhorar estas metricas.",
-  "ruff_violations": 11,
+  "_note": "Atualizado em 2026-07-25 (aprovacao do Tharso pos-epico da dieta do briefing): ruff 11->6 e largest_file 900->868 — as metricas melhoraram com folga estavel ao longo da serie #179 + #197/#206/#196 (v5.42-5.49) e a catraca trava o ganho. Coverage MANTIDA em 82: a suite mede 83-84 local e 82.0 no CI macos (flutuacao de fronteira entre plataformas) — apertar quebraria PRs por sorteio de runner; re-propor so com >=84 estavel nos dois ambientes. PRs so podem manter ou melhorar estas metricas.",
+  "ruff_violations": 6,
   "coverage_pct": 82,
-  "largest_file_lines": 900
+  "largest_file_lines": 868
 }
