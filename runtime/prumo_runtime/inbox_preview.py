@@ -101,29 +101,37 @@ def summarize_inbox_entry(entry: dict, workspace: Path | None = None) -> str:
     return filename
 
 
-def _scan_inbox_top_level(inbox_dir: Path) -> tuple[float | None, int]:
-    """(maior mtime, contagem) dos ARQUIVOS do top-level do Inbox4Mobile
-    (listagem plana e rasa — dentro do perímetro #194; symlinks ignorados).
-    Permite julgar frescor do índice E honestidade do cartão ("0 itens" só
-    quando o diretório está vazio de verdade) sem regenerar nada."""
-    newest: float | None = None
-    count = 0
+# Mobília operacional da vitrine — MESMO conjunto que `generate_inbox_preview`
+# exclui (o gerador ignora `_processed.json` por nome e os outputs por path).
+# Dotfile NÃO é exclusão: conteúdo real oculto conta como conteúdo.
+_OPERATIONAL_NAMES = {"inbox-preview.html", "_preview-index.json", "_processed.json"}
+
+
+def _scan_inbox_top_level(inbox_dir: Path) -> dict:
+    """Snapshot ÚNICO do top-level do Inbox4Mobile (listagem plana e rasa —
+    perímetro #194): {newest, count, error}. Conta ARQUIVOS de conteúdo pelo
+    predicado canônico (exclui mobília operacional e symlinks; dotfile real
+    conta). Falha de varredura vira `error` — nunca "vazio" de mentira."""
+    result: dict = {"newest": None, "count": 0, "error": None}
     try:
         entries = list(inbox_dir.iterdir())
-    except OSError:
-        return None, 0
+    except OSError as exc:
+        result["error"] = f"varredura do Inbox4Mobile falhou: {exc}"
+        return result
     for entry in entries:
         if entry.is_symlink() or not entry.is_file():
             continue
-        if entry.name in {"inbox-preview.html"} or entry.name.startswith("."):
+        if entry.name in _OPERATIONAL_NAMES:
             continue
-        count += 1
+        result["count"] += 1
         try:
             mtime = entry.stat().st_mtime
         except OSError:
             continue
-        newest = mtime if newest is None else max(newest, mtime)
-    return newest, count
+        result["newest"] = (
+            mtime if result["newest"] is None else max(result["newest"], mtime)
+        )
+    return result
 
 
 def load_inbox_preview(
@@ -175,23 +183,37 @@ def load_inbox_preview(
                 else:
                     preview_status = "falhou"
                     preview_note = "preview indisponível; segui sem vitrine."
-    elif inbox_dir.exists() and index_path.exists():
-        newest, _ = _scan_inbox_top_level(inbox_dir)
-        try:
-            index_mtime = index_path.stat().st_mtime
-        except OSError:
-            index_mtime = None
-        if index_mtime is not None and (newest is None or index_mtime >= newest):
-            preview_status = "gerado"
-        else:
-            preview_status = "stale"
-            preview_note = (
-                "índice do preview mais velho que o Inbox4Mobile; "
-                "rode `prumo inbox preview` pra regenerar."
-            )
+    # SNAPSHOT ÚNICO do diretório: status, frescor e contagem bruta saem da
+    # MESMA varredura (duas passadas abririam janela pra estados divergentes).
+    scan = (
+        _scan_inbox_top_level(inbox_dir)
+        if inbox_dir.exists()
+        else {"newest": None, "count": 0, "error": None}
+    )
+    scan_error = scan["error"]
+    raw_files_count = scan["count"]
+
+    if not allow_regen and inbox_dir.exists():
+        if scan_error is not None:
+            preview_status = "indeterminado"
+            preview_note = f"{scan_error} — frescor e contagem indeterminados."
+        elif index_path.exists():
+            try:
+                index_mtime = index_path.stat().st_mtime
+            except OSError:
+                index_mtime = None
+            if index_mtime is not None and (
+                scan["newest"] is None or index_mtime >= scan["newest"]
+            ):
+                preview_status = "gerado"
+            else:
+                preview_status = "stale"
+                preview_note = (
+                    "índice do preview mais velho que o Inbox4Mobile; "
+                    "rode `prumo inbox preview` pra regenerar."
+                )
 
     freshness: dict[str, str | None] = {"index_mtime": None, "newest_inbox_mtime": None}
-    raw_files_count = 0
     if index_path.exists():
         try:
             freshness["index_mtime"] = datetime.fromtimestamp(
@@ -199,22 +221,28 @@ def load_inbox_preview(
             ).isoformat(timespec="seconds")
         except OSError:
             pass
-    if inbox_dir.exists():
-        newest, raw_files_count = _scan_inbox_top_level(inbox_dir)
-        if newest is not None:
-            freshness["newest_inbox_mtime"] = datetime.fromtimestamp(
-                newest, tz=timezone.utc
-            ).isoformat(timespec="seconds")
+    if scan["newest"] is not None:
+        freshness["newest_inbox_mtime"] = datetime.fromtimestamp(
+            scan["newest"], tz=timezone.utc
+        ).isoformat(timespec="seconds")
 
-    # Índice presente mas ilegível/estruturalmente inválido NÃO pode passar
-    # por "gerado" com zero itens — vira status próprio e fonte incompleta.
+    # Índice presente mas symlinkado, ilegível ou estruturalmente inválido
+    # (sem a chave `items` como lista de objetos) NÃO passa por "gerado" com
+    # zero itens — vira status próprio e fonte incompleta.
     payload: dict = {}
-    if index_path.exists():
+    if index_path.is_symlink():
+        preview_status = "invalido"
+        preview_note = "índice do preview é symlink — recusado; rode `prumo inbox preview`."
+    elif index_path.exists():
         try:
             loaded = json.loads(index_path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError, ValueError):
             loaded = None
-        if isinstance(loaded, dict) and isinstance(loaded.get("items", []), list):
+        if (
+            isinstance(loaded, dict)
+            and isinstance(loaded.get("items"), list)
+            and all(isinstance(item, dict) for item in loaded["items"])
+        ):
             payload = loaded
         else:
             preview_status = "invalido"
@@ -239,4 +267,5 @@ def load_inbox_preview(
         "items": items,
         "freshness": freshness,
         "raw_files_count": raw_files_count,
+        "scan_error": scan_error,
     }

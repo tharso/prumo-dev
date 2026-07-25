@@ -310,6 +310,102 @@ class SeedReadOnlyTest(unittest.TestCase):
             self.assertFalse(processed["present"])
             self.assertTrue(processed["complete"], "ausente = nada processado, não é erro")
 
+    def test_operational_files_dont_count_but_hidden_content_does(self) -> None:
+        # Mobília operacional (índice/processed/preview) não é conteúdo; um
+        # dotfile REAL é (mesmo predicado do gerador da vitrine).
+        with tempfile.TemporaryDirectory(prefix="prumo-seed-pred-") as tmp:
+            ws, _, _ = _build_workspace(tmp)
+            (ws / "INBOX.md").write_text("# Inbox\n\n_Inbox limpo._\n", encoding="utf-8")
+            inbox_dir = ws / "Inbox4Mobile"
+            (inbox_dir / "_processed.json").write_text('{"items": []}', encoding="utf-8")
+            (inbox_dir / "_preview-index.json").write_text('{"items": []}', encoding="utf-8")
+            (inbox_dir / "inbox-preview.html").write_text("<html></html>", encoding="utf-8")
+            payload = build_briefing_payload(ws)
+            self.assertEqual(
+                payload["local_panorama"]["inbox4mobile"]["status"],
+                "gerado",
+                "só mobília operacional = índice em dia, zero conteúdo",
+            )
+            (inbox_dir / ".captura-oculta.md").write_text("- real\n", encoding="utf-8")
+            payload = build_briefing_payload(ws)
+            inbox_line = next(
+                s["text"] for s in payload["sections"] if s["id"] == "inbox_mobile"
+            )
+            self.assertNotIn("Inbox limpa", inbox_line)
+
+    def test_scan_failure_is_indeterminate_not_clean(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="prumo-seed-oserr-") as tmp:
+            ws, _, _ = _build_workspace(tmp)
+            (ws / "INBOX.md").write_text("# Inbox\n\n_Inbox limpo._\n", encoding="utf-8")
+            real_iterdir = Path.iterdir
+
+            def failing_iterdir(self_path):
+                if self_path.name == "Inbox4Mobile":
+                    raise OSError("permission denied simulada")
+                return real_iterdir(self_path)
+
+            with mock.patch.object(Path, "iterdir", failing_iterdir):
+                payload = build_briefing_payload(ws)
+            inbox_line = next(
+                s["text"] for s in payload["sections"] if s["id"] == "inbox_mobile"
+            )
+            self.assertIn("indeterminado", inbox_line)
+            self.assertNotIn("Inbox limpa", inbox_line)
+            self.assertEqual(
+                payload["local_panorama"]["inbox4mobile"]["status"], "indeterminado"
+            )
+
+    def test_index_without_items_key_is_invalid(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="prumo-seed-noitems-") as tmp:
+            ws, _, _ = _build_workspace(tmp)
+            (ws / "Inbox4Mobile" / "_preview-index.json").write_text("{}", encoding="utf-8")
+            payload = build_briefing_payload(ws)
+            self.assertEqual(payload["local_panorama"]["inbox4mobile"]["status"], "invalido")
+
+    def test_index_with_non_object_items_is_invalid(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="prumo-seed-baditems-") as tmp:
+            ws, _, _ = _build_workspace(tmp)
+            (ws / "Inbox4Mobile" / "_preview-index.json").write_text(
+                '{"items": [42]}', encoding="utf-8"
+            )
+            payload = build_briefing_payload(ws)
+            self.assertEqual(payload["local_panorama"]["inbox4mobile"]["status"], "invalido")
+
+    def test_symlinked_index_is_refused(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="prumo-seed-linkidx-") as tmp:
+            ws, _, _ = _build_workspace(tmp)
+            outside = Path(tmp) / "indice-externo.json"
+            outside.write_text('{"items": [{"filename": "x"}]}', encoding="utf-8")
+            (ws / "Inbox4Mobile" / "_preview-index.json").symlink_to(outside)
+            payload = build_briefing_payload(ws)
+            block = payload["local_panorama"]["inbox4mobile"]
+            self.assertEqual(block["status"], "invalido")
+            self.assertEqual(block["count"], 0, "índice symlinkado não pode ser lido")
+
+    def test_invalid_processed_entry_fails_visible_keeping_counts(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="prumo-seed-badproc-") as tmp:
+            ws, _, _ = _build_workspace(tmp)
+            (ws / "Inbox4Mobile" / "_processed.json").write_text(
+                json.dumps(
+                    {
+                        "items": [
+                            {"filename": "ok.md", "processed_at": "2026-07-24T10:00:00"},
+                            {"filename": "sem-data.md"},
+                            "não-sou-objeto",
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+            payload = build_briefing_payload(ws)
+            processed = payload["payload_completeness"]["processed"]
+            self.assertFalse(processed["complete"])
+            self.assertIn("inválida", processed["error"])
+            self.assertEqual(
+                payload["local_panorama"]["faxina"]["processed_entries"], 2,
+                "contagens dos válidos preservadas",
+            )
+
     def test_missing_pauta_signals_source_and_keeps_others(self) -> None:
         with tempfile.TemporaryDirectory(prefix="prumo-seed-partial-") as tmp:
             ws, _, inbox_text = _build_workspace(tmp)

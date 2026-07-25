@@ -118,6 +118,12 @@ def build_inbox_line(workspace: Path, inbox_text: str, preview: dict) -> str:
         return f"Inbox4Mobile: 0 item(ns). {note}{preview_hint}".strip()
 
     if preview_count == 0:
+        # Varredura falhou: nem "limpa" nem contagem — indeterminado honesto.
+        if preview.get("scan_error"):
+            return (
+                f"Inbox4Mobile: inventário indeterminado ({preview['scan_error']}). "
+                "Rode `prumo inbox preview` ou verifique o diretório."
+            )
         # Sem vitrine E com arquivo real no diretório: contagem indeterminada —
         # "Inbox limpa" sem evidência seria mentira (#197, semente read-only).
         if raw_files > 0:

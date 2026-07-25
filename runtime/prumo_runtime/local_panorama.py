@@ -144,19 +144,27 @@ def _processed_signals(processed_path: Path, today: date) -> tuple[int, int, str
         return 0, 0, "_processed.json sem lista `items`"
     total = 0
     stale = 0
+    invalid = 0
     cutoff = today - timedelta(days=_PROCESSED_STALE_DAYS)
     for item in items:
         if not isinstance(item, dict):
+            invalid += 1
             continue
         total += 1
         processed_at = str(item.get("processed_at") or "")
         try:
             when = datetime.fromisoformat(processed_at).date()
         except ValueError:
+            invalid += 1
             continue
         if when < cutoff:
             stale += 1
-    return total, stale, None
+    error = None
+    if invalid:
+        # Fail-visible: contagens dos válidos ficam, mas a fonte não pode se
+        # declarar completa — entrada ilegível pode esconder processado vencido.
+        error = f"{invalid} entrada(s) inválida(s) em _processed.json"
+    return total, stale, error
 
 
 def build_local_panorama(
