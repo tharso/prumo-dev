@@ -200,6 +200,14 @@ def ensure_fresh_status(*, allow_network: bool) -> dict[str, Any]:
 
     if allow_network and _should_fetch(cache, ttl_hours=ttl):
         remote = _fetch_remote_version()
+        # Remoto MENOR que o local é resposta SUSPEITA (#215: cache de
+        # CDN/proxy pode servir versão de semanas atrás — nunca ler isso
+        # como "em dia"). Retry único com cache-busting; se vier maior ou
+        # igual, o retry vence; persistindo menor, fica marcado suspeito.
+        if remote is not None and _is_newer(__version__, remote):
+            busted = _fetch_remote_version(cache_bust=True)
+            if busted is not None:
+                remote = busted
         now = datetime.datetime.now(datetime.timezone.utc).isoformat()
         new_cache: dict[str, Any] = {
             "checked_at": now,
@@ -208,10 +216,14 @@ def ensure_fresh_status(*, allow_network: bool) -> dict[str, Any]:
         }
         if remote is None:
             new_cache["failed"] = True
+        if remote is not None and _is_newer(__version__, remote):
+            new_cache["suspect"] = True
         cache_write_failed = not _write_cache(new_cache, cache_file)
         cache = new_cache
         if remote is None:
             source = "fetch_failed"
+        elif new_cache.get("suspect"):
+            source = "fetched_suspect"
         elif cache_write_failed:
             # Buscou mas não persistiu: o dado vale pra ESTA resposta, mas o
             # próximo briefing vai rebuscar — não fingir cache saudável.
@@ -230,6 +242,18 @@ def ensure_fresh_status(*, allow_network: bool) -> dict[str, Any]:
 
     remote_version = (cache or {}).get("remote_version")
     failed = bool((cache or {}).get("failed"))
+    # Suspeito = o remoto conhecido é MENOR que o local (#215). Nunca vira
+    # "em dia": update_available fica None (indeterminado) e fresh cai.
+    remote_suspect = bool(
+        remote_version and _is_newer(__version__, remote_version)
+    )
+    update_available: bool | None
+    if remote_suspect:
+        update_available = None
+    else:
+        update_available = bool(
+            remote_version and _is_newer(remote_version, __version__)
+        )
     return {
         "local_version": __version__,
         "remote_version": remote_version,
@@ -238,14 +262,14 @@ def ensure_fresh_status(*, allow_network: bool) -> dict[str, Any]:
             cache is not None
             and not failed
             and not cache_write_failed
+            and not remote_suspect
             and not _should_fetch(cache, ttl_hours=ttl)
         ),
         "failed": failed,
         "cache_write_failed": cache_write_failed,
         "source": source,
-        "update_available": bool(
-            remote_version and _is_newer(remote_version, __version__)
-        ),
+        "remote_suspect": remote_suspect,
+        "update_available": update_available,
     }
 
 
@@ -261,6 +285,11 @@ def read_cached_remote_version() -> str | None:
     """
     cache = _read_cache(_cache_path())
     if not cache:
+        return None
+    if cache.get("suspect"):
+        # Versão marcada suspeita (#215: remoto menor que o local persistiu
+        # após cache-busting) não alimenta o painel — melhor "sem dado" que
+        # severidade computada em cima de cache stale de CDN.
         return None
     remote = cache.get("remote_version")
     return remote if isinstance(remote, str) else None
@@ -314,9 +343,19 @@ def compute_staleness(local: str, remote: str | None) -> dict[str, Any]:
             "reason": reason}
 
 
-def _fetch_remote_version() -> str | None:
+def _fetch_remote_version(*, cache_bust: bool = False) -> str | None:
+    """Busca o VERSION público. Com `cache_bust`, contorna caches de CDN/
+    proxy (#215: um WebFetch serviu 5.18.0 com o público em 5.49.0): query
+    param único + Cache-Control explícito."""
+    url = REMOTE_VERSION_URL
+    if cache_bust:
+        stamp = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
+        url = f"{REMOTE_VERSION_URL}?nocache={stamp}"
+    request = urllib.request.Request(
+        url, headers={"Cache-Control": "no-cache", "Pragma": "no-cache"}
+    )
     try:
-        with urllib.request.urlopen(REMOTE_VERSION_URL, timeout=DEFAULT_FETCH_TIMEOUT) as resp:
+        with urllib.request.urlopen(request, timeout=DEFAULT_FETCH_TIMEOUT) as resp:
             return resp.read().decode("utf-8").strip()
     except (urllib.error.URLError, OSError, TimeoutError):
         return None

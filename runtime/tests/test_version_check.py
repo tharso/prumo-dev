@@ -222,3 +222,80 @@ class CheckAndNotifyIntegrationTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class RemoteSuspectTests(unittest.TestCase):
+    """#215: remoto MENOR que o local é suspeito — retry com cache-busting;
+    persistindo, nunca vira "em dia" (update_available None, fresh False)."""
+
+    def _run(self, fetch_side_effect, cache_payload=None):
+        import json as _json
+        import tempfile as _tempfile
+        from pathlib import Path as _Path
+
+        from prumo_runtime.version_check import ensure_fresh_status
+
+        with _tempfile.TemporaryDirectory() as tmp:
+            cache_file = _Path(tmp) / "version-check.json"
+            if cache_payload is not None:
+                cache_file.write_text(_json.dumps(cache_payload), encoding="utf-8")
+            with patch(
+                "prumo_runtime.version_check._cache_path", return_value=cache_file
+            ), patch(
+                "prumo_runtime.version_check._fetch_remote_version",
+                side_effect=fetch_side_effect,
+            ) as mock_fetch:
+                status = ensure_fresh_status(allow_network=True)
+            return status, mock_fetch
+
+    def test_persistent_smaller_remote_is_suspect_never_up_to_date(self) -> None:
+        status, mock_fetch = self._run(["0.1.0", "0.1.0"])
+        self.assertTrue(status["remote_suspect"])
+        self.assertIsNone(status["update_available"], "suspeito nunca afirma em-dia")
+        self.assertFalse(status["fresh"])
+        self.assertEqual(status["source"], "fetched_suspect")
+        self.assertEqual(mock_fetch.call_count, 2, "retry com cache-busting é obrigatório")
+        self.assertEqual(mock_fetch.call_args_list[1].kwargs.get("cache_bust"), True)
+
+    def test_cache_busted_retry_recovers(self) -> None:
+        status, mock_fetch = self._run(["0.1.0", "99.0.0"])
+        self.assertFalse(status["remote_suspect"])
+        self.assertTrue(status["update_available"])
+        self.assertEqual(mock_fetch.call_count, 2)
+
+    def test_fresh_cache_with_smaller_remote_is_suspect(self) -> None:
+        import datetime as _dt
+
+        now = _dt.datetime.now(_dt.timezone.utc).isoformat()
+        status, mock_fetch = self._run(
+            [], cache_payload={"checked_at": now, "remote_version": "0.1.0"}
+        )
+        self.assertTrue(status["remote_suspect"])
+        self.assertIsNone(status["update_available"])
+        self.assertFalse(status["fresh"])
+        self.assertEqual(mock_fetch.call_count, 0, "cache no TTL não refaz rede")
+
+    def test_suspect_cache_never_feeds_the_panel(self) -> None:
+        import datetime as _dt
+        import json as _json
+        import tempfile as _tempfile
+        from pathlib import Path as _Path
+
+        from prumo_runtime.version_check import read_cached_remote_version
+
+        now = _dt.datetime.now(_dt.timezone.utc).isoformat()
+        with _tempfile.TemporaryDirectory() as tmp:
+            cache_file = _Path(tmp) / "version-check.json"
+            cache_file.write_text(
+                _json.dumps(
+                    {"checked_at": now, "remote_version": "0.1.0", "suspect": True}
+                ),
+                encoding="utf-8",
+            )
+            with patch(
+                "prumo_runtime.version_check._cache_path", return_value=cache_file
+            ):
+                self.assertIsNone(
+                    read_cached_remote_version(),
+                    "versão suspeita não alimenta severidade do painel",
+                )
