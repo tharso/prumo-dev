@@ -203,7 +203,9 @@ def _iso(ts: float) -> str:
     return datetime.fromtimestamp(ts, tz=timezone.utc).isoformat()
 
 
-def _run_git(repo: Path, *args: str) -> subprocess.CompletedProcess | None:
+def _run_git(
+    repo: Path, *args: str, binary: bool = False
+) -> subprocess.CompletedProcess | None:
     try:
         env = dict(os.environ, GIT_OPTIONAL_LOCKS="0")
         # OPTIONAL_LOCKS=0: `git status` não atualiza stat-cache/index — o
@@ -211,12 +213,32 @@ def _run_git(repo: Path, *args: str) -> subprocess.CompletedProcess | None:
         return subprocess.run(
             ["git", "-C", str(repo), *args],
             capture_output=True,
-            text=True,
+            text=not binary,
             timeout=GIT_TIMEOUT_SECONDS,
             env=env,
         )
     except (subprocess.TimeoutExpired, OSError):
         return None
+
+
+def parse_porcelain_z(data: bytes) -> list[str]:
+    """Parse de `git status --porcelain -z` em BYTES (path não-UTF8 não pode
+    derrubar a coleta — decodificação com surrogateescape, round-trip seguro
+    pro lstat via os.fsdecode/fsencode). Rename/copy em QUALQUER das duas
+    colunas de status pula o token seguinte (path antigo)."""
+    entries: list[str] = []
+    skip_next = False
+    for raw in data.split(b"\0"):
+        if not raw:
+            continue
+        if skip_next:
+            skip_next = False
+            continue
+        item = raw.decode("utf-8", errors="surrogateescape")
+        entries.append(item)
+        if len(item) >= 2 and ("R" in item[:2] or "C" in item[:2]):
+            skip_next = True
+    return entries
 
 
 def collect_git_pulse(path: Path, *, now: datetime) -> dict | None:
@@ -266,25 +288,20 @@ def collect_git_pulse(path: Path, *, now: datetime) -> dict | None:
             pulse["errors"].append("git log falhou")
             pulse["complete"] = False
 
-    porcelain = _run_git(path, "status", "--porcelain", "-z")
+    porcelain = _run_git(path, "status", "--porcelain", "-z", binary=True)
     if porcelain is None or porcelain.returncode != 0:
         pulse["errors"].append("git status falhou")
         pulse["complete"] = False
         return pulse
-    # -z: NUL-separado e SEM C-quoting — path com espaço/unicode vinha
-    # citado ("...") com escapes octais e o stat falhava (primeiro sync
-    # real, 25/07). No -z, renames vêm como par "XY new\0old"; o campo
-    # que interessa (estado atual) é o primeiro.
-    raw_entries = [e for e in porcelain.stdout.split("\0") if e]
-    entries = []
-    skip_next = False
-    for item in raw_entries:
-        if skip_next:
-            skip_next = False
-            continue
-        entries.append(item)
-        if len(item) >= 2 and item[0] in "RC":
-            skip_next = True  # o próximo token é o path antigo do rename
+    # -z em BYTES: sem C-quoting (path com espaço/unicode vinha citado e o
+    # stat falhava — primeiro sync real, 25/07) e sem decode estrito.
+    entries = [
+        item
+        for item in parse_porcelain_z(porcelain.stdout)
+        # A narrativa não é atividade do projeto — também em repo git
+        # (Codex, hotfix r1): o contexto untracked puxava o timestamp.
+        if item[3:] != CONTEXT_FILENAME
+    ]
     pulse["dirty"] = bool(entries)
     if entries:
         stats: list[float] = []
@@ -301,7 +318,7 @@ def collect_git_pulse(path: Path, *, now: datetime) -> dict | None:
                     pulse["errors"].append("diretório untracked não varrido — coleta parcial")
                 continue
             try:
-                st = os.lstat(path / rel)
+                st = os.lstat(os.fsencode(str(path)) + b"/" + os.fsencode(rel))
                 # chmod muda ctime sem tocar mtime: dirty por metadata
                 # também é atividade (Codex r2) — usar o mais recente.
                 stats.append(max(st.st_mtime, st.st_ctime))
@@ -345,6 +362,10 @@ def collect_folder_pulse(
             pulse["complete"] = False
             continue
         for child in children:
+            if child.name == CONTEXT_FILENAME:
+                # Antes do cap: a narrativa nem consome orçamento de
+                # varredura (Codex, hotfix r1).
+                continue
             if visited >= max_entries:
                 pulse["truncated"] = True
                 pulse["complete"] = False
@@ -354,11 +375,6 @@ def collect_folder_pulse(
             visited += 1
             if child.is_symlink():
                 continue  # jamais atravessar (perímetro, #194)
-            if child.name == CONTEXT_FILENAME:
-                # A narrativa não é atividade do projeto: contá-la deixaria
-                # o frescor eternamente stale segundos após escrevê-la
-                # (descoberto no primeiro sync real, 25/07).
-                continue
             if child.is_dir():
                 if child.name in EXCLUDED_DIR_NAMES:
                     continue

@@ -600,12 +600,12 @@ class Round3Tests(unittest.TestCase):
             repo = _make_repo(Path(tmp))
             real = projetos._run_git
 
-            def selective(path, *args):
+            def selective(path, *args, **kwargs):
                 if args and args[0] == "log":
                     return subprocess.CompletedProcess(args, 1, "", "boom")
                 if args and args[0] == "rev-parse":
                     return None  # timeout
-                return real(path, *args)
+                return real(path, *args, **kwargs)
 
             with mock.patch.object(projetos, "_run_git", side_effect=selective):
                 pulse = collect_git_pulse(repo, now=NOW)
@@ -710,6 +710,38 @@ class FirstRealUseTests(unittest.TestCase):
             pulse = collect_git_pulse(repo, now=NOW)
         self.assertTrue(pulse["dirty"])
         self.assertFalse(any("sem stat" in e for e in pulse["errors"]), pulse["errors"])
+
+
+class HotfixRound2Tests(unittest.TestCase):
+    def test_context_file_not_activity_in_git_repo_either(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = _make_repo(Path(tmp))
+            os.utime(repo / "a.md", (1200000000, 1200000000))
+            (repo / ".prumo-contexto.md").write_text(
+                "---\nupdated: 2026-07-25T01:00:00-03:00\n---\n", encoding="utf-8"
+            )
+            pulse = collect_git_pulse(repo, now=NOW)
+        wt = pulse["working_tree_activity_at"]
+        self.assertTrue(wt is None or wt < "2026", f"contexto contou como atividade git: {wt}")
+
+    def test_context_file_does_not_consume_scan_cap(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "docs"
+            root.mkdir()
+            (root / ".prumo-contexto.md").write_text("---\nupdated: 2026-07-25\n---\n", encoding="utf-8")
+            real = root / "z-real.md"
+            real.write_text("x\n", encoding="utf-8")
+            pulse = collect_folder_pulse(root, now=NOW, max_entries=1)
+        self.assertFalse(pulse["truncated"], "contexto consumiu o cap")
+        self.assertIsNotNone(pulse["last_activity_at"])
+
+    def test_porcelain_z_parser_handles_copy_and_non_utf8(self) -> None:
+        from prumo_runtime.projetos import parse_porcelain_z
+        data = b"C  novo.md\x00velho.md\x00?? arquivo \xff bin\x00 M normal.md\x00"
+        entries = parse_porcelain_z(data)
+        self.assertEqual(len(entries), 3)
+        self.assertTrue(entries[0].startswith("C "))
+        self.assertIn("normal.md", entries[2])
 
 
 class SanitizeTests(unittest.TestCase):
