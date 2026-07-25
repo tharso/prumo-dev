@@ -55,6 +55,11 @@ EXCLUDED_DIR_NAMES = {
 
 _GLOB_CHARS = set("*?[]")
 
+# Raízes multi-parte que a regra de profundidade não pega (ex.: /tmp resolve
+# pra /private/tmp no macOS). Caminho EXATO aqui é amplo demais; descendentes
+# específicos continuam registráveis.
+_BROAD_ROOTS = {"/private/tmp", "/private/var", "/private/etc", "/usr/local"}
+
 
 @dataclass
 class Entry:
@@ -75,13 +80,23 @@ class ParseResult:
 def parse_projects_index(text: str) -> ParseResult:
     lines = text.splitlines()
     result = ParseResult()
-    container_start = None
-    for i, line in enumerate(lines):
-        if line.strip() == CONTAINER_HEADING:
-            container_start = i
-            break
-    if container_start is None:
+    container_lines = [i for i, line in enumerate(lines) if line.strip() == CONTAINER_HEADING]
+    if len(container_lines) > 1:
+        result.errors.append(f"contêiner `{CONTAINER_HEADING}` duplicado")
         return result
+    container_start = container_lines[0] if container_lines else None
+    if container_start is None:
+        for i, line in enumerate(lines):
+            if line.strip() in {PULSO_BEGIN, PULSO_END}:
+                result.errors.append(
+                    f"linha {i + 1}: marcador de pulso fora do contêiner `{CONTAINER_HEADING}`"
+                )
+        return result
+    for i, line in enumerate(lines):
+        if line.strip() in {PULSO_BEGIN, PULSO_END} and i < container_start:
+            result.errors.append(
+                f"linha {i + 1}: marcador de pulso fora do contêiner `{CONTAINER_HEADING}`"
+            )
 
     container_end = len(lines)
     for i in range(container_start + 1, len(lines)):
@@ -93,10 +108,14 @@ def parse_projects_index(text: str) -> ParseResult:
     current: Entry | None = None
     for i in range(container_start + 1, container_end):
         stripped = lines[i].strip()
-        if stripped.startswith("### "):
+        if stripped.startswith("###"):
+            name = stripped[3:].strip()
+            if not name:
+                result.errors.append(f"linha {i + 1}: seção de projeto sem nome")
+                continue
             if current is not None:
                 current.section_end = i
-            current = Entry(name=stripped[4:].strip(), path_raw=None, header_line=i, section_end=container_end)
+            current = Entry(name=name, path_raw=None, header_line=i, section_end=container_end)
             result.entries.append(current)
             continue
         if current is None:
@@ -132,6 +151,12 @@ def parse_projects_index(text: str) -> ParseResult:
             entry.block_inner_start = begins[0] + 1
             entry.block_inner_end = ends[0]
 
+    for i in range(container_end, len(lines)):
+        if lines[i].strip() in {PULSO_BEGIN, PULSO_END}:
+            result.errors.append(
+                f"linha {i + 1}: marcador de pulso fora do contêiner `{CONTAINER_HEADING}`"
+            )
+
     names = [e.name for e in result.entries]
     for name in sorted({n for n in names if names.count(n) > 1}):
         result.errors.append(f"nome de projeto duplicado: '{name}'")
@@ -160,6 +185,11 @@ def resolve_registered_path(
     else:
         raw_path = Path(raw)
     resolved = raw_path.resolve(strict=False)
+    if len(resolved.parts) <= 2 or str(resolved) in _BROAD_ROOTS:
+        # "/", "/Volumes", "/tmp" (→ /private/tmp no macOS)... — raiz ampla
+        # demais; só descendentes específicos podem ser registrados
+        # (Codex, design r2 + diff r1).
+        return None, "caminho amplo demais (raiz do sistema)"
     home = home.resolve(strict=False)
     workspace = workspace.resolve(strict=False)
     for protected in (home, workspace):
@@ -207,7 +237,10 @@ def collect_git_pulse(path: Path, *, now: datetime) -> dict | None:
     pulse["branch"] = branch.stdout.strip() if branch.returncode == 0 else "(detached)"
 
     log = _run_git(path, "log", f"-{COMMITS_LIMIT}", "--format=%cI%x09%s")
-    if log is not None and log.returncode == 0:
+    if log is None:
+        pulse["errors"].append("git log falhou (timeout)")
+        pulse["complete"] = False
+    elif log.returncode == 0:
         for line in log.stdout.splitlines():
             when, _, subject = line.partition("\t")
             pulse["commits"].append({"date": when, "subject": subject})
@@ -225,6 +258,7 @@ def collect_git_pulse(path: Path, *, now: datetime) -> dict | None:
         stats: list[float] = []
         if len(entries) > PORCELAIN_STAT_LIMIT:
             pulse["complete"] = False
+            pulse["errors"].append("mudanças demais no working tree — coleta parcial")
         for line in entries[:PORCELAIN_STAT_LIMIT]:
             rel = line[3:]
             if " -> " in rel:
@@ -233,6 +267,8 @@ def collect_git_pulse(path: Path, *, now: datetime) -> dict | None:
                 # Diretório untracked colapsado: o mtime real está lá dentro
                 # e não vamos varrer — coleta incompleta, nunca "fresh".
                 pulse["complete"] = False
+                if "diretório untracked não varrido — coleta parcial" not in pulse["errors"]:
+                    pulse["errors"].append("diretório untracked não varrido — coleta parcial")
                 continue
             try:
                 stats.append(os.lstat(path / rel).st_mtime)
@@ -241,13 +277,15 @@ def collect_git_pulse(path: Path, *, now: datetime) -> dict | None:
         if stats:
             pulse["working_tree_activity_at"] = _iso(max(stats))
 
-    candidates = [
-        value
-        for value in (pulse["last_commit_at"], pulse["working_tree_activity_at"])
-        if value
-    ]
+    candidates = []
+    for value in (pulse["last_commit_at"], pulse["working_tree_activity_at"]):
+        parsed = _parse_when(value) if value else None
+        if parsed is not None:
+            candidates.append((parsed, value))
     if candidates and pulse["complete"]:
-        pulse["last_activity_at"] = max(candidates)
+        # Máximo CRONOLÓGICO — max() lexical de ISO com offsets distintos
+        # não é ordem temporal (Codex diff r1).
+        pulse["last_activity_at"] = max(candidates, key=lambda c: c[0])[1]
     return pulse
 
 
@@ -276,6 +314,7 @@ def collect_folder_pulse(
             if visited >= max_entries:
                 pulse["truncated"] = True
                 pulse["complete"] = False
+                pulse["errors"].append("varredura truncada no cap — coleta parcial")
                 stack.clear()
                 break
             visited += 1
@@ -284,7 +323,9 @@ def collect_folder_pulse(
             if child.is_dir():
                 if child.name in EXCLUDED_DIR_NAMES:
                     continue
-                if depth + 1 <= SCAN_MAX_DEPTH:
+                if depth + 1 <= SCAN_MAX_DEPTH - 1:
+                    # Enumerar conteúdo até depth == SCAN_MAX_DEPTH (raiz=0):
+                    # dir em depth N só é aberto se seus filhos ficarem <= N.
                     stack.append((child, depth + 1))
                 continue
             try:
@@ -310,14 +351,24 @@ def read_narrative(project_path: Path) -> dict:
         "source": None,
         "date_only": False,
         "file_mtime": None,
+        "error": None,
     }
     if not ctx.exists():
         return narrative
     narrative["exists"] = True
+    if ctx.is_symlink():
+        # Contexto symlinkado escaparia do projeto registrado — recusar
+        # sem seguir (perímetro, #194).
+        narrative["error"] = "contexto é symlink — ignorado"
+        return narrative
     try:
         narrative["file_mtime"] = _iso(ctx.lstat().st_mtime)
-        text = ctx.read_text(encoding="utf-8")
+        text = ctx.read_bytes().decode("utf-8")
     except OSError:
+        narrative["error"] = "contexto ilegível"
+        return narrative
+    except UnicodeDecodeError:
+        narrative["error"] = "contexto com encoding inválido"
         return narrative
     if not text.startswith("---"):
         return narrative
@@ -342,12 +393,14 @@ def read_narrative(project_path: Path) -> dict:
 
 
 def _parse_when(value: str) -> datetime | None:
+    # RFC 3339 COM offset — timestamp naive é rejeitado: um UTC inventado
+    # compararia errado contra offsets reais (Codex diff r1).
     try:
         parsed = datetime.fromisoformat(value)
     except (ValueError, TypeError):
         return None
     if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=timezone.utc)
+        return None
     return parsed
 
 
@@ -357,6 +410,7 @@ def compute_staleness(
     last_activity_at: str | None,
     complete: bool,
     date_only: bool,
+    now: datetime,
 ) -> str:
     if not narrative_updated_at or not complete or not last_activity_at:
         return "indeterminate"
@@ -365,13 +419,18 @@ def compute_staleness(
         return "indeterminate"
     if date_only:
         narrative_day = date.fromisoformat(narrative_updated_at)
-        if narrative_day == activity.date():
+        if narrative_day > now.date():
+            return "indeterminate"  # narrativa do futuro é relógio quebrado
+        activity_day = activity.astimezone(timezone.utc).date()
+        if narrative_day == activity_day:
             # Date-only não distingue manhã de noite: nunca declarar fresh.
             return "indeterminate"
-        return "fresh" if narrative_day > activity.date() else "stale"
+        return "fresh" if narrative_day > activity_day else "stale"
     narrative = _parse_when(narrative_updated_at)
     if narrative is None:
         return "indeterminate"
+    if narrative > now:
+        return "indeterminate"  # futuro nunca é fresh (Codex reproduziu com 2099)
     return "fresh" if narrative >= activity else "stale"
 
 
@@ -422,11 +481,14 @@ def _collect_project(resolved: Path, *, now: datetime) -> dict:
         pulse = collect_folder_pulse(resolved, now=now)
     narrative = read_narrative(resolved)
     pulse["narrative"] = narrative
+    if narrative.get("error"):
+        pulse.setdefault("errors", []).append(f"narrativa: {narrative['error']}")
     pulse["staleness"] = compute_staleness(
         narrative_updated_at=narrative["updated_at"],
         last_activity_at=pulse.get("last_activity_at"),
         complete=bool(pulse.get("complete")),
         date_only=bool(narrative.get("date_only")),
+        now=now,
     )
     return pulse
 
@@ -444,6 +506,25 @@ def sync_index_text(
         "projects": [],
     }
     if parsed.errors:
+        return None, report
+
+    canonical_seen: dict[str, str] = {}
+    for entry in parsed.entries:
+        if not entry.path_raw:
+            continue
+        resolved, err = resolve_registered_path(entry.path_raw, home=home, workspace=workspace)
+        if resolved is None:
+            continue
+        key = str(resolved)
+        if key in canonical_seen:
+            report["errors"].append(
+                f"caminho duplicado após canonicalização: '{entry.path_raw}' e "
+                f"'{canonical_seen[key]}' apontam pra {key}"
+            )
+            report["structural"] = True
+        else:
+            canonical_seen[key] = entry.path_raw
+    if report["structural"]:
         return None, report
 
     synced_at = now.date().isoformat()
@@ -469,6 +550,27 @@ def sync_index_text(
             pulse = _collect_project(resolved, now=now)
             info["staleness"] = pulse["staleness"]
             info["kind"] = pulse["kind"]
+            for key in (
+                "branch",
+                "dirty",
+                "last_commit_at",
+                "working_tree_activity_at",
+                "last_activity_at",
+                "commits",
+                "truncated",
+                "complete",
+            ):
+                if key in pulse:
+                    info[key] = pulse[key]
+            narr = pulse.get("narrative") or {}
+            info["narrative"] = {
+                "exists": narr.get("exists", False),
+                "updated_at": narr.get("updated_at"),
+                "source": narr.get("source"),
+                "file_mtime": narr.get("file_mtime"),
+                "error": narr.get("error"),
+            }
+            info["errors"] = list(pulse.get("errors", []))
             for err_item in pulse.get("errors", []):
                 report["errors"].append(f"{entry.name}: {err_item}")
         report["projects"].append(info)
@@ -492,28 +594,52 @@ def sync_index_text(
     return "".join(lines), report
 
 
+_PERSISTED_STALENESS = re.compile(r"frescor:\s*(fresh|stale|indeterminate)")
+_PERSISTED_SYNCED_AT = re.compile(r"em\s+(\d{4}-\d{2}-\d{2})")
+
+
 def build_readonly_report(text: str, *, now: datetime) -> dict:
+    """Report SEM acesso externo: só o que está persistido no índice."""
     parsed = parse_projects_index(text)
+    lines = text.splitlines()
+    projects = []
+    for entry in parsed.entries:
+        info: dict = {
+            "name": entry.name,
+            "path": entry.path_raw,
+            "has_pulse": entry.block_inner_start is not None,
+            "staleness": None,
+            "synced_at": None,
+        }
+        if entry.block_inner_start is not None:
+            inner = "\n".join(lines[entry.block_inner_start : entry.block_inner_end])
+            staleness = _PERSISTED_STALENESS.search(inner)
+            synced = _PERSISTED_SYNCED_AT.search(inner)
+            info["staleness"] = staleness.group(1) if staleness else None
+            info["synced_at"] = synced.group(1) if synced else None
+        projects.append(info)
     return {
         "schema_version": SCHEMA_VERSION,
         "generated_at": now.isoformat(),
         "structural": bool(parsed.errors),
         "errors": list(parsed.errors),
-        "projects": [
-            {
-                "name": entry.name,
-                "path": entry.path_raw,
-                "has_pulse": entry.block_inner_start is not None,
-            }
-            for entry in parsed.entries
-        ],
+        "projects": projects,
     }
 
 
 def write_atomically(path: Path, content: str) -> None:
+    """Escrita integral + replace atômico, preservando o mode do original
+    (mkstemp cria 0600 — substituir um 0644 mudaria permissões; Codex r1)."""
     fd, tmp_path = tempfile.mkstemp(dir=str(path.parent), prefix=".projetos-", suffix=".tmp")
     try:
-        os.write(fd, content.encode("utf-8"))
-    finally:
-        os.close(fd)
-    Path(tmp_path).replace(path)
+        with os.fdopen(fd, "wb") as handle:
+            handle.write(content.encode("utf-8"))
+        if path.exists():
+            os.chmod(tmp_path, path.stat().st_mode & 0o7777)
+        Path(tmp_path).replace(path)
+    except Exception:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+        raise

@@ -297,6 +297,7 @@ class NarrativeAndStalenessTests(unittest.TestCase):
             last_activity_at="2026-07-24T10:00:00+00:00",
             complete=True,
             date_only=False,
+            now=NOW,
         )
         self.assertEqual(fresh, "fresh")
         stale = compute_staleness(
@@ -304,11 +305,12 @@ class NarrativeAndStalenessTests(unittest.TestCase):
             last_activity_at="2026-07-24T10:00:00+00:00",
             complete=True,
             date_only=False,
+            now=NOW,
         )
         self.assertEqual(stale, "stale")
         # Sem narrativa, coleta incompleta, ou date-only no mesmo dia: nunca fresh.
         self.assertEqual(
-            compute_staleness(narrative_updated_at=None, last_activity_at="x", complete=True, date_only=False),
+            compute_staleness(narrative_updated_at=None, last_activity_at="x", complete=True, date_only=False, now=NOW),
             "indeterminate",
         )
         self.assertEqual(
@@ -317,6 +319,7 @@ class NarrativeAndStalenessTests(unittest.TestCase):
                 last_activity_at="2026-07-24T10:00:00+00:00",
                 complete=False,
                 date_only=False,
+                now=NOW,
             ),
             "indeterminate",
         )
@@ -326,9 +329,126 @@ class NarrativeAndStalenessTests(unittest.TestCase):
                 last_activity_at="2026-07-24T10:00:00+00:00",
                 complete=True,
                 date_only=True,
+                now=NOW,
             ),
             "indeterminate",
         )
+
+
+class StalenessHardeningTests(unittest.TestCase):
+    """Codex diff r1: futuro, naive e ordem cronológica."""
+
+    def test_future_narrative_is_never_fresh(self) -> None:
+        verdict = compute_staleness(
+            narrative_updated_at="2099-01-01T00:00:00+00:00",
+            last_activity_at="2026-07-24T10:00:00+00:00",
+            complete=True,
+            date_only=False,
+            now=NOW,
+        )
+        self.assertEqual(verdict, "indeterminate")
+
+    def test_naive_timestamp_is_rejected(self) -> None:
+        verdict = compute_staleness(
+            narrative_updated_at="2026-07-24T19:00:00",
+            last_activity_at="2026-07-24T10:00:00+00:00",
+            complete=True,
+            date_only=False,
+            now=NOW,
+        )
+        self.assertEqual(verdict, "indeterminate")
+
+    def test_cross_offset_comparison_is_chronological(self) -> None:
+        # 19:00-03:00 == 22:00Z > atividade 21:00Z → fresh (lexical falharia:
+        # "2026-07-24T19" < "2026-07-24T21").
+        verdict = compute_staleness(
+            narrative_updated_at="2026-07-24T19:00:00-03:00",
+            last_activity_at="2026-07-24T21:00:00+00:00",
+            complete=True,
+            date_only=False,
+            now=datetime(2026, 7, 24, 23, 0, 0, tzinfo=timezone.utc),
+        )
+        self.assertEqual(verdict, "fresh")
+
+
+class GrammarHardeningTests(unittest.TestCase):
+    """Codex diff r1: contêiner único e marcadores reservados no doc inteiro."""
+
+    def test_duplicated_container_is_error(self) -> None:
+        text = _index(
+            "## Projetos registrados\n\n### A\n- Caminho: /Volumes/x/a\n\n"
+            "## Outra\n\n## Projetos registrados\n\n### B\n- Caminho: /Volumes/x/b\n"
+        )
+        self.assertTrue(parse_projects_index(text).errors)
+
+    def test_marker_outside_container_is_error(self) -> None:
+        text = _index(
+            f"## Notas\n{PULSO_BEGIN}\n{PULSO_END}\n\n"
+            "## Projetos registrados\n\n### A\n- Caminho: /Volumes/x/a\n"
+        )
+        self.assertTrue(parse_projects_index(text).errors)
+
+    def test_broad_roots_volumes_tmp_rejected(self) -> None:
+        home, ws = Path("/Users/batata"), Path("/Users/batata/Vida")
+        for raw in ("/Volumes", "/tmp", "/private"):
+            with self.subTest(raw=raw):
+                resolved, err = resolve_registered_path(raw, home=home, workspace=ws)
+                self.assertIsNone(resolved)
+                self.assertIsNotNone(err)
+
+    def test_canonical_duplicate_is_structural_zero_write(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "alvo"
+            target.mkdir()
+            text = _index(
+                "## Projetos registrados\n\n"
+                f"### A\n- Caminho: {target}\n\n"
+                f"### B\n- Caminho: {target}/\n"
+            )
+            new_text, report = sync_index_text(
+                text, home=Path(tmp) / "h", workspace=Path(tmp) / "ws", now=NOW
+            )
+        self.assertIsNone(new_text)
+        self.assertTrue(report["structural"])
+
+
+class NarrativeHardeningTests(unittest.TestCase):
+    def test_symlinked_context_is_refused_visibly(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp) / "proj"
+            project.mkdir()
+            real = Path(tmp) / "fora.md"
+            real.write_text("---\nupdated: 2026-07-24T10:00:00+00:00\n---\n", encoding="utf-8")
+            (project / ".prumo-contexto.md").symlink_to(real)
+            narrative = read_narrative(project)
+        self.assertTrue(narrative["exists"])
+        self.assertIsNone(narrative["updated_at"])
+        self.assertIn("symlink", narrative["error"])
+
+    def test_invalid_encoding_degrades_visibly(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp) / "proj"
+            project.mkdir()
+            (project / ".prumo-contexto.md").write_bytes(b"\xff\xfe caos")
+            narrative = read_narrative(project)
+        self.assertIn("encoding", narrative["error"])
+
+
+class CrlfRoundtripTests(unittest.TestCase):
+    def test_crlf_document_preserves_authorial_bytes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = _make_repo(Path(tmp))
+            body = (
+                "# Projetos\r\n\r\nnota autoral\r\n\r\n"
+                "## Projetos registrados\r\n\r\n"
+                f"### Repo\r\n- Caminho: {repo}\r\n"
+            )
+            new_text, report = sync_index_text(
+                body, home=Path(tmp) / "h", workspace=Path(tmp) / "ws", now=NOW
+            )
+        self.assertEqual(report["errors"], [])
+        self.assertTrue(new_text.startswith("# Projetos\r\n\r\nnota autoral\r\n"))
+        self.assertIn(PULSO_BEGIN + "\r\n", new_text)
 
 
 class SanitizeTests(unittest.TestCase):
@@ -479,6 +599,12 @@ class SkillGuardsTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
         self.assertNotIn("Revue", procedure, "path pessoal do dono vazou de volta pro canônico")
         self.assertIn("Roteamento de conteúdo", procedure)
+        # O template REAL do setup (file-templates) também precisa da seção —
+        # sem ela, workspace novo nasce sem o lugar do registro (Codex r1.9).
+        file_templates = (
+            self.REPO_ROOT / "skills" / "prumo" / "references" / "file-templates.md"
+        ).read_text(encoding="utf-8")
+        self.assertIn("## Roteamento de conteúdo", file_templates)
 
     def test_contexto_template_reference_exists_with_frontmatter(self) -> None:
         template = (

@@ -60,7 +60,9 @@ def run_projetos(args: argparse.Namespace) -> int:
         )
         return 2
 
-    text = index.read_text(encoding="utf-8")
+    # read_bytes preserva CRLF — o modo texto traduziria e a regravação
+    # mudaria bytes autorais fora dos blocos (Codex diff r1).
+    text = index.read_bytes().decode("utf-8")
     if not getattr(args, "sync", False):
         report = build_readonly_report(text, now=now)
         _print(report, fmt)

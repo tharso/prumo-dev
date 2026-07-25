@@ -230,6 +230,10 @@ Após o primeiro ciclo de feedback, apagar esta seção de setup e manter apenas
 
 (ex: `noreply@github.com`, `marketing@servico.com`)
 
+## Roteamento de conteúdo
+
+(pasta de destino para conteúdo de consumo — artigo, vídeo, newsletter curada. Vazia até o usuário registrar; a Camada 3 do briefing pergunta uma vez e registra só com confirmação)
+
 ## Regras contextuais
 
 (ex: "Newsletter sobre IA sobe pra P2 se há artigo em andamento na PAUTA")
