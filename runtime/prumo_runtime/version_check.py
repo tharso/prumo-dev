@@ -144,7 +144,16 @@ def _should_fetch(cache: dict[str, Any] | None, ttl_hours: float = DEFAULT_TTL_H
     if checked_time.tzinfo is None:
         checked_time = checked_time.replace(tzinfo=datetime.timezone.utc)
 
-    effective_ttl = FAILURE_TTL_HOURS if cache.get("failed") else ttl_hours
+    cached_remote = cache.get("remote_version")
+    remote_smaller = isinstance(cached_remote, str) and _is_newer(
+        __version__, cached_remote
+    )
+    # Remoto MENOR que o local (#215) fura o TTL normal — cache assim é
+    # suspeito (legado sem flag incluso) e re-tenta no cooldown curto de
+    # falha, nunca fica 24h envenenando o preflight.
+    effective_ttl = (
+        FAILURE_TTL_HOURS if (cache.get("failed") or remote_smaller) else ttl_hours
+    )
     elapsed = (now - checked_time).total_seconds() / 3600
     return elapsed >= effective_ttl
 
@@ -286,13 +295,15 @@ def read_cached_remote_version() -> str | None:
     cache = _read_cache(_cache_path())
     if not cache:
         return None
-    if cache.get("suspect"):
-        # Versão marcada suspeita (#215: remoto menor que o local persistiu
-        # após cache-busting) não alimenta o painel — melhor "sem dado" que
-        # severidade computada em cima de cache stale de CDN.
-        return None
     remote = cache.get("remote_version")
-    return remote if isinstance(remote, str) else None
+    if not isinstance(remote, str):
+        return None
+    # Suspeito não alimenta o painel (#215) — pela flag OU por COMPARAÇÃO
+    # (cache legado gravado antes da flag existir também é rejeitado):
+    # melhor "sem dado" que severidade computada sobre cache stale de CDN.
+    if cache.get("suspect") or _is_newer(__version__, remote):
+        return None
+    return remote
 
 
 def _minor_distance(local: tuple[int, ...], remote: tuple[int, ...]) -> int:

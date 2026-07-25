@@ -261,17 +261,73 @@ class RemoteSuspectTests(unittest.TestCase):
         self.assertTrue(status["update_available"])
         self.assertEqual(mock_fetch.call_count, 2)
 
-    def test_fresh_cache_with_smaller_remote_is_suspect(self) -> None:
+    def test_legacy_fresh_cache_with_smaller_remote_pierces_ttl(self) -> None:
+        # Cache LEGADO (gravado antes da flag suspect existir) com remoto
+        # menor: fura o TTL e refaz com cache-busting — nunca fica 24h
+        # envenenando o preflight (r3 do Codex).
         import datetime as _dt
 
-        now = _dt.datetime.now(_dt.timezone.utc).isoformat()
+        # 2h atrás: fora do cooldown de 1h do suspeito, DENTRO do TTL de 24h
+        # — um cache saudável não re-buscaria; o suspeito fura.
+        two_hours_ago = (
+            _dt.datetime.now(_dt.timezone.utc) - _dt.timedelta(hours=2)
+        ).isoformat()
         status, mock_fetch = self._run(
-            [], cache_payload={"checked_at": now, "remote_version": "0.1.0"}
+            ["0.1.0", "0.1.0"],
+            cache_payload={"checked_at": two_hours_ago, "remote_version": "0.1.0"},
         )
+        self.assertEqual(mock_fetch.call_count, 2, "remoto menor fura o TTL + retry bust")
         self.assertTrue(status["remote_suspect"])
         self.assertIsNone(status["update_available"])
         self.assertFalse(status["fresh"])
-        self.assertEqual(mock_fetch.call_count, 0, "cache no TTL não refaz rede")
+
+    def test_smaller_remote_without_network_reports_suspect(self) -> None:
+        import datetime as _dt
+        import json as _json
+        import tempfile as _tempfile
+        from pathlib import Path as _Path
+
+        from prumo_runtime.version_check import ensure_fresh_status
+
+        now = _dt.datetime.now(_dt.timezone.utc).isoformat()
+        with _tempfile.TemporaryDirectory() as tmp:
+            cache_file = _Path(tmp) / "version-check.json"
+            cache_file.write_text(
+                _json.dumps({"checked_at": now, "remote_version": "0.1.0"}),
+                encoding="utf-8",
+            )
+            with patch(
+                "prumo_runtime.version_check._cache_path", return_value=cache_file
+            ), patch(
+                "prumo_runtime.version_check._fetch_remote_version",
+                side_effect=AssertionError("sem allow_network não há rede"),
+            ):
+                status = ensure_fresh_status(allow_network=False)
+        self.assertTrue(status["remote_suspect"])
+        self.assertIsNone(status["update_available"])
+        self.assertFalse(status["fresh"])
+
+    def test_legacy_suspect_cache_rejected_by_comparison(self) -> None:
+        # Painel rejeita por COMPARAÇÃO, não só pela flag — cache legado
+        # sem "suspect" também devolve None.
+        import datetime as _dt
+        import json as _json
+        import tempfile as _tempfile
+        from pathlib import Path as _Path
+
+        from prumo_runtime.version_check import read_cached_remote_version
+
+        now = _dt.datetime.now(_dt.timezone.utc).isoformat()
+        with _tempfile.TemporaryDirectory() as tmp:
+            cache_file = _Path(tmp) / "version-check.json"
+            cache_file.write_text(
+                _json.dumps({"checked_at": now, "remote_version": "0.1.0"}),
+                encoding="utf-8",
+            )
+            with patch(
+                "prumo_runtime.version_check._cache_path", return_value=cache_file
+            ):
+                self.assertIsNone(read_cached_remote_version())
 
     def test_suspect_cache_never_feeds_the_panel(self) -> None:
         import datetime as _dt
