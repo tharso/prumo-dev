@@ -97,7 +97,8 @@ TWO_TEMPOS_INVARIANTS = (
     "Quando cada variante está COMPLETA",
     "Escape do usuário (qualquer variante) | nunca",
     "seguir sem esperar resposta",
-    "Estágio LOCAL, integral, ANTES da emissão do primeiro tempo",
+    "Estágio LOCAL, ANTES da emissão do primeiro tempo — SEM abrir bruto",
+    "Abrir arquivo bruto do Inbox4Mobile (Estágio B — aprofundamento) só DEPOIS da primeira entrega",
 )
 
 
