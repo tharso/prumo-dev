@@ -97,6 +97,9 @@ TWO_TEMPOS_INVARIANTS = (
     "Quando cada variante está COMPLETA",
     "Escape do usuário (qualquer variante) | nunca",
     "seguir sem esperar resposta",
+    "arquivo-semente `.prumo/state/local-panorama.json` (#216",
+    "Frescor POR FONTE**: o arquivo carrega `source_mtimes`",
+    "O agente **NUNCA escreve** esse arquivo",
     "Estágio LOCAL, ANTES da emissão do primeiro tempo — SEM abrir bruto",
     "Abrir arquivo bruto do Inbox4Mobile (Estágio B — aprofundamento) só DEPOIS da primeira entrega",
 )

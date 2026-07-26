@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.53.0] - 2026-07-26
+
+### Added
+- **`prumo seed` — a semente do briefing vira ARQUIVO pra hosts sem runtime (#216, opção b escolhida pelo dono)** — no Cowork o runtime é inalcançável por topologia (VM isolada, spike #205) e o briefing pagava leitura direta integral (50–63k tokens medidos). Agora o runtime da máquina local grava `.prumo/state/local-panorama.json` (escrita atômica via mkstemp; mesmo `local_panorama` da #197/#206 + `payload_completeness` + **`source_mtimes`** — o mtime de cada fonte no momento da geração) e o agente do Cowork LÊ o arquivo. Consumo no Passo 3 com **gate duplo**: capacidade (schema + `outras_secoes`) E **frescor POR FONTE** (mtime gravado × mtime atual via listagem plana — fonte que mudou cai no fallback direto sozinha; as demais seguem servidas). O agente NUNCA escreve o arquivo (estado do runtime, #214). Quem roda: manual, `/fim` sugerindo ou launchd (agendamento é operação da máquina, não produto). `seed` em `SUPPRESS_COMMANDS`. 7 testes + 3 âncoras de guard.
+
 ## [5.52.0] - 2026-07-26
 
 ### Changed

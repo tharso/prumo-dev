@@ -16,6 +16,7 @@ from prumo_runtime.commands import (
     run_repair,
     run_projetos,
     run_sanitize,
+    run_seed,
     run_setup,
     run_start,
     run_update,
@@ -151,6 +152,17 @@ def build_parser() -> argparse.ArgumentParser:
     sanitize.add_argument("--backup-expiry-days", type=int, default=90)
     sanitize.add_argument("--cache-days", type=int, default=30)
     sanitize.set_defaults(handler=run_sanitize)
+
+    seed = subparsers.add_parser(
+        "seed",
+        help=(
+            "Gravar a semente do briefing em arquivo (.prumo/state/local-panorama.json) "
+            "pra hosts sem runtime lerem (#216)"
+        ),
+    )
+    seed.add_argument("--workspace", required=True, help="Caminho do workspace")
+    seed.add_argument("--format", choices=["text", "json"], default="text")
+    seed.set_defaults(handler=run_seed)
 
     menu = subparsers.add_parser(
         "menu",
