@@ -102,6 +102,7 @@ import shlex
 import subprocess
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -154,15 +155,36 @@ def semver_tuple(value):
     return tuple(parts)
 
 
+def derive_version_probe_url(manifest_url: str):
+    # Deriva a URL do VERSION publicado ao lado do manifesto. Query/fragment
+    # caem fora; URL .git é git disfarçado de url — sem probe.
+    try:
+        parsed = urllib.parse.urlparse(manifest_url)
+    except ValueError:
+        return None
+    if not parsed.scheme or not parsed.path:
+        return None
+    path = parsed.path
+    if path.endswith(".git"):
+        return None
+    if path.endswith(".json"):
+        path = path.rsplit("/", 1)[0]
+    base_path = path.rstrip("/")
+    return urllib.parse.urlunparse((parsed.scheme, parsed.netloc, f"{base_path}/VERSION", "", "", ""))
+
+
 def fetch_url_version(url: str, timeout: float = 1.5):
     # Staleness pra marketplace com source "url" (#179 PR9): busca o VERSION
     # publicado ao lado do manifesto, com timeout curto — doctor não pode
     # pendurar num DNS morto. Qualquer falha → None (sem rede não é erro).
+    # Resposta que não parseia como semver também é None: comparar lixo
+    # marcaria stale falso.
     try:
         with urllib.request.urlopen(url, timeout=timeout) as resp:
-            return resp.read(256).decode("utf-8", errors="replace").strip() or None
+            value = resp.read(256).decode("utf-8", errors="replace").strip()
     except (urllib.error.URLError, OSError, ValueError):
         return None
+    return value if semver_tuple(value) else None
 
 
 def read_workspace_core_version(workspace: Path):
@@ -210,29 +232,59 @@ def dir_size_bytes(base: Path):
 def enumerate_caches(bases, protected_paths, protected_versions):
     # Enumera cache/<mkt>/<plugin>/<versão> nos stores (#179 PR9). Só REPORTA
     # e monta o comando de remoção pronto pra colar — nunca remove nada.
+    # Statuses:
+    #   em_uso        → installPath registrado aponta EXATAMENTE pra este path
+    #   stale         → nada referencia; comando de remoção emitido
+    #   indeterminado → mesma VERSÃO de uma instalação, mas nenhum installPath
+    #                   aponta pra cá (duplicata provável) — visível, sem comando
+    #   suspeito      → symlink na cadeia ou resolve fora do store — NUNCA
+    #                   ganha comando: rm através de symlink apontaria pra fora
     caches = []
     seen = set()
     for base in bases:
         cache_dir = base / "cache" / marketplace_name / plugin_name
         if not cache_dir.is_dir():
             continue
+        # Cadeia sem symlink (postura do sanitize, #179): cada componente
+        # abaixo do store precisa ser diretório físico.
+        chain_ok = True
+        probe = base
+        for part in ("cache", marketplace_name, plugin_name):
+            probe = probe / part
+            if probe.is_symlink():
+                chain_ok = False
+                break
+        base_resolved = base.resolve()
         for vdir in sorted(cache_dir.iterdir()):
             if not vdir.is_dir() or vdir.is_symlink():
                 continue
-            key = str(vdir.resolve())
+            resolved = vdir.resolve()
+            key = str(resolved)
             if key in seen:
                 continue
             seen.add(key)
-            in_use = key in protected_paths or vdir.name in protected_versions
-            entry = {
+            inside_store = chain_ok
+            if inside_store:
+                try:
+                    resolved.relative_to(base_resolved)
+                except ValueError:
+                    inside_store = False
+            if key in protected_paths:
+                status = "em_uso"
+            elif not inside_store:
+                status = "suspeito"
+            elif vdir.name in protected_versions:
+                status = "indeterminado"
+            else:
+                status = "stale"
+            caches.append({
                 "root": str(base),
                 "path": str(vdir),
                 "version": vdir.name,
                 "bytes": dir_size_bytes(vdir),
-                "status": "em_uso" if in_use else "stale",
-                "remove_command": None if in_use else f"rm -rf {shlex.quote(str(vdir))}",
-            }
-            caches.append(entry)
+                "status": status,
+                "remove_command": f"rm -rf {shlex.quote(str(vdir))}" if status == "stale" else None,
+            })
     return caches
 
 
@@ -291,7 +343,8 @@ def inspect_root(root: Path):
     checkout_head = None
     checkout_branch = None
     remote_head = None
-    remote_version_url = None
+    remote_version = None
+    remote_version_source = None
     checkout_stale = None
     checkout_divergence = None
 
@@ -326,12 +379,13 @@ def inspect_root(root: Path):
         elif source and source.get("source") == "url" and not offline:
             # Marketplace por URL não tem git — staleness compara o VERSION
             # publicado ao lado do manifesto com o VERSION do checkout.
-            src_url = source.get("url") or ""
-            if src_url:
-                base_url = src_url.rsplit("/", 1)[0] if src_url.endswith(".json") else src_url.rstrip("/")
-                remote_version_url = fetch_url_version(f"{base_url}/VERSION")
-            if remote_version_url and checkout_version:
-                checkout_stale = remote_version_url != checkout_version
+            probe_url = derive_version_probe_url(source.get("url") or "")
+            if probe_url:
+                remote_version = fetch_url_version(probe_url)
+                if remote_version:
+                    remote_version_source = "url"
+            if remote_version and semver_tuple(checkout_version):
+                checkout_stale = semver_tuple(remote_version) != semver_tuple(checkout_version)
         if checkout_head and remote_head:
             checkout_stale = checkout_head != remote_head
         if checkout_stale and remote_head:
@@ -463,7 +517,8 @@ def inspect_root(root: Path):
         "marketplace_checkout_version": checkout_version,
         "marketplace_declared_plugin_version": checkout_declared_version,
         "marketplace_remote_head": remote_head,
-        "marketplace_remote_version_url": remote_version_url,
+        "marketplace_remote_version": remote_version,
+        "marketplace_remote_version_source": remote_version_source,
         "marketplace_checkout_stale": checkout_stale,
         "marketplace_checkout_divergence": checkout_divergence,
         "plugin_installed": bool(installed_item),
@@ -539,7 +594,13 @@ if workspace_arg:
                 f"(mais novo: {newer})."
             )
             if newer == "plugin":
-                workspace_action = "Rode `prumo repair --workspace <path>` (ou o update do runtime) pra realinhar o core do workspace com o plugin."
+                # O repair grava o core DA VERSÃO DO RUNTIME instalado —
+                # runtime velho regravaria o mesmo core velho. Runtime
+                # primeiro, repair depois.
+                workspace_action = (
+                    f"Atualize o runtime local até ≥ {installed_now} (`prumo update` ou reinstalação) "
+                    "e SÓ ENTÃO rode `prumo repair --workspace <path>` — repair com runtime velho regrava o core velho."
+                )
             else:
                 workspace_action = "Atualize o plugin no host (marketplace → reinstalar) pra alcançar o core do workspace."
     else:

@@ -101,19 +101,20 @@ class DoctorDriftTests(unittest.TestCase):
         )
         return workspace
 
-    def _run_doctor(self, *args: str) -> dict:
+    def _run_doctor(self, *args: str, offline: bool = True) -> dict:
+        cmd = [
+            "bash",
+            str(SCRIPT),
+            "--sessions-root",
+            str(self.sessions),
+            "--extra-root",
+            str(self.store),
+            "--json",
+        ]
+        if offline:
+            cmd.append("--offline")
         completed = subprocess.run(
-            [
-                "bash",
-                str(SCRIPT),
-                "--sessions-root",
-                str(self.sessions),
-                "--extra-root",
-                str(self.store),
-                "--offline",
-                "--json",
-                *args,
-            ],
+            [*cmd, *args],
             capture_output=True,
             text=True,
             timeout=60,
@@ -184,6 +185,94 @@ class DoctorDriftTests(unittest.TestCase):
         target = next(r for r in result["roots"] if r["root"] == str(self.store))
         self.assertIs(target["skills_content_drift"], False)
         self.assertEqual(target["checkout_skills_hash"], target["installed_skills_hash"])
+
+    def test_symlink_ancestor_in_cache_chain_never_gets_remove_command(self) -> None:
+        # Review Codex (round 1): rm -rf sugerido através de symlink ancestral
+        # apontaria pra FORA do store. Cadeia com symlink → suspeito, sem comando.
+        self._build_store(installed_version="5.40.0")
+        outside = self.base / "fora-do-store"
+        (outside / "prumo-marketplace" / "prumo" / "5.20.0").mkdir(parents=True)
+        (outside / "prumo-marketplace" / "prumo" / "5.20.0" / "f.bin").write_bytes(b"x" * 128)
+        evil_store = self.base / "store-evil"
+        evil_store.mkdir()
+        _write_json(evil_store / "installed_plugins.json", {"version": 2, "plugins": {}})
+        (evil_store / "cache").symlink_to(outside)
+        result = self._run_doctor("--extra-root", str(evil_store))
+        via_evil = [c for c in result["caches"] if c["root"] == str(evil_store)]
+        self.assertTrue(via_evil, "cache atrás de symlink tem que aparecer, não sumir")
+        for entry in via_evil:
+            self.assertEqual(entry["status"], "suspeito")
+            self.assertIsNone(entry["remove_command"])
+        self.assertNotIn(str(evil_store), " ".join(c["root"] for c in result["stale_caches"]))
+
+    def test_same_version_without_matching_install_path_is_indeterminado(self) -> None:
+        # Review Codex (round 1): duplicata da versão instalada em OUTRO store
+        # não é "em uso" (nenhum installPath aponta pra lá), mas também não
+        # ganha rm às cegas — indeterminado, visível, sem comando.
+        self._build_store(installed_version="5.40.0")
+        twin_store = self.base / "store-twin"
+        dup = twin_store / "cache" / "prumo-marketplace" / "prumo" / "5.40.0"
+        dup.mkdir(parents=True)
+        (dup / "payload.bin").write_bytes(b"y" * 512)
+        _write_json(twin_store / "installed_plugins.json", {"version": 2, "plugins": {}})
+        result = self._run_doctor("--extra-root", str(twin_store))
+        twin_entries = [c for c in result["caches"] if c["root"] == str(twin_store)]
+        self.assertEqual(len(twin_entries), 1)
+        self.assertEqual(twin_entries[0]["status"], "indeterminado")
+        self.assertIsNone(twin_entries[0]["remove_command"])
+
+    def test_source_url_staleness_via_file_scheme(self) -> None:
+        # Review Codex (round 1): o caminho source:url testado de verdade,
+        # hermético via file:// (urllib resolve local, zero rede).
+        self._build_store(checkout_version="5.54.0")
+        pub = self.base / "pub"
+        pub.mkdir()
+        (pub / "VERSION").write_text("9.9.9\n", encoding="utf-8")
+        _write_json(
+            self.store / "known_marketplaces.json",
+            {
+                "prumo-marketplace": {
+                    "installLocation": str(self.checkout),
+                    "source": {"source": "url", "url": f"file://{pub}/marketplace.json"},
+                    "lastUpdated": "2026-07-01T10:00:00.000Z",
+                }
+            },
+        )
+        result = self._run_doctor(offline=False)
+        target = next(r for r in result["roots"] if r["root"] == str(self.store))
+        self.assertEqual(target["marketplace_remote_version"], "9.9.9")
+        self.assertEqual(target["marketplace_remote_version_source"], "url")
+        self.assertIs(target["marketplace_checkout_stale"], True)
+
+    def test_source_url_dot_git_is_not_probed(self) -> None:
+        # URL .git é git disfarçado — derivar VERSION ao lado não faz sentido.
+        self._build_store()
+        _write_json(
+            self.store / "known_marketplaces.json",
+            {
+                "prumo-marketplace": {
+                    "installLocation": str(self.checkout),
+                    "source": {"source": "url", "url": "file:///nao-existe/repo.git"},
+                    "lastUpdated": "2026-07-01T10:00:00.000Z",
+                }
+            },
+        )
+        result = self._run_doctor(offline=False)
+        target = next(r for r in result["roots"] if r["root"] == str(self.store))
+        self.assertIsNone(target["marketplace_remote_version"])
+        self.assertIsNone(target["marketplace_checkout_stale"])
+
+    def test_workspace_action_orders_runtime_before_repair_when_plugin_newer(self) -> None:
+        # Review Codex (round 1): repair com runtime velho regrava o core
+        # velho — a ação tem que mandar atualizar o runtime PRIMEIRO.
+        self._build_store(installed_version="5.54.0", checkout_version="5.54.0")
+        workspace = self._build_workspace("5.40.0")
+        result = self._run_doctor("--workspace", str(workspace))
+        self.assertIs(result["plugin_workspace_drift"], True)
+        action = result["workspace_action"]
+        self.assertIn("runtime", action)
+        self.assertIn("SÓ ENTÃO", action)
+        self.assertIn("5.54.0", action)
 
     def test_offline_skips_network_probe(self) -> None:
         # source github + --offline: nenhum ls-remote → remote_head fica None
