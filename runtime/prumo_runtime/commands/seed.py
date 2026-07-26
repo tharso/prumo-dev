@@ -71,19 +71,29 @@ def _inbox4mobile_manifest(inbox_dir: Path) -> list[dict]:
     """Manifesto RASO e determinístico do Inbox4Mobile: nome, tamanho e
     mtime de cada arquivo (índice do preview incluso; symlinks fora).
     Só o `mais novo` não basta — adicionar/remover/renomear um arquivo que
-    não é o mais novo passaria invisível."""
+    não é o mais novo passaria invisível. Falha de listagem ou de stat é
+    ERRO VISÍVEL — manifesto parcial com cara de íntegro mente."""
     if not inbox_dir.is_dir() or inbox_dir.is_symlink():
         return []
+    try:
+        children = sorted(inbox_dir.iterdir(), key=lambda p: p.name)
+    except OSError as exc:
+        raise SeedError(
+            f"listagem do Inbox4Mobile falhou ({exc}) — semente não gravada"
+        ) from exc
     entries: list[dict] = []
-    for entry in sorted(inbox_dir.iterdir(), key=lambda p: p.name):
+    for entry in children:
         if entry.is_symlink() or not entry.is_file():
             continue
         if entry.name in _OPERATIONAL_NAMES:
             continue
         try:
             st = entry.lstat()
-        except OSError:
-            continue
+        except OSError as exc:
+            raise SeedError(
+                f"stat falhou em Inbox4Mobile/{entry.name} ({exc}) — "
+                "manifesto parcial mentiria; semente não gravada"
+            ) from exc
         entries.append(
             {
                 "name": entry.name,
@@ -96,11 +106,14 @@ def _inbox4mobile_manifest(inbox_dir: Path) -> list[dict]:
 
 
 def _capture_sources(paths) -> dict:
+    """Retrato COMPLETO das fontes num instante — inclui o manifesto do
+    Inbox4Mobile: captura antes/depois só protege o que ela enxerga."""
     return {
         "pauta": _stat_entry(paths.pauta),
         "inbox": _stat_entry(paths.inbox),
         "registro": _stat_entry(paths.registro),
         "processed": _stat_entry(paths.inbox_processed),
+        "inbox4mobile": _inbox4mobile_manifest(paths.inbox4mobile_root),
     }
 
 
@@ -123,8 +136,6 @@ def _build_once(workspace: Path, paths, timezone_name: str) -> dict:
         "workspace_path": str(workspace),
         "local_panorama": panorama,
         "payload_completeness": completeness,
-        "source_mtimes": _capture_sources(paths),
-        "inbox4mobile_manifest": _inbox4mobile_manifest(paths.inbox4mobile_root),
     }
 
 
@@ -141,6 +152,7 @@ def build_seed_payload(workspace: Path) -> dict:
         payload = _build_once(workspace, paths, config.timezone_name)
         after = _capture_sources(paths)
         if before == after:
+            payload["inbox4mobile_manifest"] = after.pop("inbox4mobile")
             payload["source_mtimes"] = after
             return payload
         if attempt == 2:

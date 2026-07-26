@@ -121,6 +121,35 @@ class SeedPayloadTests(unittest.TestCase):
             with self.assertRaises(seed_mod.SeedError):
                 build_seed_payload(self.ws)
 
+    def test_inbox_mutation_mid_generation_aborts(self) -> None:
+        from prumo_runtime.commands import seed as seed_mod
+
+        real_build = seed_mod._build_once
+        inbox = self.ws / "Inbox4Mobile"
+
+        def mutating_build(workspace, paths, tz):
+            result = real_build(workspace, paths, tz)
+            (inbox / "chegou-no-meio.md").write_text("- x\n", encoding="utf-8")
+            return result
+
+        with mock.patch.object(seed_mod, "_build_once", side_effect=mutating_build):
+            with self.assertRaises(seed_mod.SeedError):
+                build_seed_payload(self.ws)
+
+    def test_inbox_listing_failure_is_visible_error(self) -> None:
+        from prumo_runtime.commands import seed as seed_mod
+
+        real_iterdir = Path.iterdir
+
+        def failing_iterdir(self_path):
+            if self_path.name == "Inbox4Mobile":
+                raise OSError("negado simulado")
+            return real_iterdir(self_path)
+
+        with mock.patch.object(Path, "iterdir", failing_iterdir):
+            with self.assertRaises(seed_mod.SeedError):
+                build_seed_payload(self.ws)
+
     def test_symlinked_state_refuses_write(self) -> None:
         import shutil as _sh
 
