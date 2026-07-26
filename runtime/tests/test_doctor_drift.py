@@ -524,6 +524,82 @@ class DoctorStoresSessionTests(unittest.TestCase):
         self.assertIn("SÓ está instalado na store legada", result["legacy_note"])
         self.assertIn("owner/repo", result["legacy_note"])
 
+    def test_rpm_symlink_and_traversal_id_never_followed(self) -> None:
+        # Review Codex (round 1, #190): rpm/ symlinkado não é atravessado nem
+        # pra ler manifest; id transversal ("../fora") nunca vira path.
+        self._build_store()
+        outside = self.base / "fora"
+        (outside / "plugin_EVIL").mkdir(parents=True)
+        (outside / "plugin_EVIL" / "VERSION").write_text("9.9.9\n", encoding="utf-8")
+        _write_json(
+            outside / "manifest.json",
+            {"plugins": [{"id": "plugin_EVIL", "name": "prumo", "updatedAt": "2026-07-01T00:00:00Z"}]},
+        )
+        sess = self.sessions / "s1" / "c1"
+        sess.mkdir(parents=True)
+        (sess / "rpm").symlink_to(outside)
+        result = self._run()
+        self.assertEqual(result["session_materializations"], [])
+        self.assertTrue(any("symlink" in e["error"] for e in result["session_scan_errors"]))
+
+        (sess / "rpm").unlink()
+        rpm = sess / "rpm"
+        rpm.mkdir()
+        (self.base / "fora2").mkdir()
+        (self.base / "fora2" / "VERSION").write_text("9.9.9\n", encoding="utf-8")
+        _write_json(
+            rpm / "manifest.json",
+            {"plugins": [{"id": "../fora2", "name": "prumo", "updatedAt": "2026-07-02T00:00:00Z"}]},
+        )
+        result = self._run()
+        latest = result["session_materializations"][0]
+        self.assertIsNone(latest["version"], "id transversal nunca pode virar leitura de VERSION")
+        self.assertTrue(any("suspeito" in e["error"] for e in result["session_scan_errors"]))
+
+    def test_invalid_manifest_schema_is_visible_not_silent(self) -> None:
+        # Review Codex (round 1, #190): schema quebrado não pode nem derrubar
+        # o doctor nem sumir como "nenhuma sessão".
+        self._build_store()
+        rpm = self.sessions / "s1" / "c1" / "rpm"
+        rpm.mkdir(parents=True)
+        (rpm / "manifest.json").write_text('["lista", "na", "raiz"]', encoding="utf-8")
+        rpm2 = self.sessions / "s2" / "c2" / "rpm"
+        rpm2.mkdir(parents=True)
+        (rpm2 / "manifest.json").write_text("{nem json", encoding="utf-8")
+        result = self._run()
+        self.assertEqual(result["session_materializations"], [])
+        errors = " ".join(e["error"] for e in result["session_scan_errors"])
+        self.assertIn("schema", errors)
+        self.assertIn("ilegível", errors)
+
+    def test_no_install_fallback_prefers_current_store_over_recent_legacy(self) -> None:
+        # Review Codex (round 1, #190): sem NENHUMA instalação, o fallback
+        # também respeita a classe — legada recém-tocada não volta a ser alvo.
+        _write_json(self.store / "installed_plugins.json", {"version": 2, "plugins": {}})
+        legacy = self.base / "cowork_plugins"
+        legacy.mkdir()
+        _write_json(legacy / "installed_plugins.json", {"version": 2, "plugins": {}})
+        completed = subprocess.run(
+            [
+                "bash",
+                str(SCRIPT),
+                "--sessions-root",
+                str(self.sessions),
+                "--extra-root",
+                str(legacy),
+                "--extra-root",
+                str(self.store),
+                "--offline",
+                "--json",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        result = json.loads(completed.stdout)
+        self.assertEqual(result["target_root"], str(self.store))
+
     def test_ancient_plugin_action_warns_frozen_registry_and_owner_repo(self) -> None:
         self._build_store(installed_version="4.1.0", checkout_version="5.33.0")
         result = self._run()

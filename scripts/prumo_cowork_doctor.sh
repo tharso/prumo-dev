@@ -124,11 +124,15 @@ repo_root = script_dir.parent
 plugin_name = plugin_id.split("@", 1)[0]
 
 
+def is_single_component(value):
+    return bool(value) and value not in {".", ".."} and not any(c in value for c in ("/", "\\", "\0"))
+
+
 def require_single_component(label, value):
     # Review Codex (round 3): nome com separador ou '..' construiria paths
     # FORA do store (root/marketplaces/<nome>, cache/<mkt>/<plugin>). Nome é
     # componente único ou nada.
-    if not value or value in {".", ".."} or "/" in value or "\\" in value or "\0" in value:
+    if not is_single_component(value):
         print(f"{label} inválido (tem que ser um único componente de path): {value!r}", file=sys.stderr)
         raise SystemExit(2)
 
@@ -242,48 +246,81 @@ def scan_session_materializations(base: Path):
     # Camada 5 da propagação (#190): sessões do Cowork NÃO leem store local —
     # materializam o plugin do REGISTRO SERVER-SIDE da conta em
     # <sessão>/<id>/rpm/plugin_<id>/, com um manifest.json índice em rpm/.
-    # Profundidade fixa (sem rglob) e symlink nunca atravessado.
+    # Profundidade fixa (sem rglob); symlink nunca atravessado — nem no rpm/,
+    # nem no plugin_dir, nem no VERSION; o `id` do manifesto é dado NÃO
+    # confiável e só entra no path como componente único revalidado por
+    # resolve(). Falha de leitura/schema NÃO some: vira session_scan_errors.
     found = []
+    errors = []
     if base.is_symlink() or not base.is_dir():
-        return found
+        return found, errors
     try:
         level1 = [d for d in base.iterdir() if d.is_dir() and not d.is_symlink()]
-    except OSError:
-        return found
+    except OSError as exc:
+        errors.append({"path": str(base), "error": f"listagem falhou: {exc.__class__.__name__}"})
+        return found, errors
     for outer in level1:
         try:
             level2 = [d for d in outer.iterdir() if d.is_dir() and not d.is_symlink()]
-        except OSError:
+        except OSError as exc:
+            errors.append({"path": str(outer), "error": f"listagem falhou: {exc.__class__.__name__}"})
             continue
         for inner in level2:
-            manifest_path = inner / "rpm" / "manifest.json"
-            if manifest_path.is_symlink() or not manifest_path.is_file():
+            rpm_dir = inner / "rpm"
+            if rpm_dir.is_symlink():
+                errors.append({"path": str(rpm_dir), "error": "rpm/ é symlink — não atravessado"})
+                continue
+            manifest_path = rpm_dir / "manifest.json"
+            if manifest_path.is_symlink():
+                errors.append({"path": str(manifest_path), "error": "manifest.json é symlink — não lido"})
+                continue
+            if not manifest_path.is_file():
                 continue
             try:
                 manifest = read_json(manifest_path)
-            except (OSError, json.JSONDecodeError):
+            except (OSError, json.JSONDecodeError) as exc:
+                errors.append({"path": str(manifest_path), "error": f"manifest ilegível: {exc.__class__.__name__}"})
                 continue
-            for entry in manifest.get("plugins", []):
-                if entry.get("name") != plugin_name:
+            plugins = manifest.get("plugins") if isinstance(manifest, dict) else None
+            if not isinstance(plugins, list):
+                errors.append({"path": str(manifest_path), "error": "schema inesperado: sem lista `plugins`"})
+                continue
+            for entry in plugins:
+                if not isinstance(entry, dict) or entry.get("name") != plugin_name:
                     continue
-                plugin_dir = inner / "rpm" / str(entry.get("id") or "")
+                entry_id = entry.get("id")
                 version = None
-                version_file = plugin_dir / "VERSION"
-                if plugin_dir.name and not plugin_dir.is_symlink() and version_file.is_file():
+                if isinstance(entry_id, str) and is_single_component(entry_id):
+                    plugin_dir = rpm_dir / entry_id
+                    version_file = plugin_dir / "VERSION"
                     try:
-                        version = read_text(version_file)
+                        inside = True
+                        try:
+                            plugin_dir.resolve().relative_to(rpm_dir.resolve())
+                        except ValueError:
+                            inside = False
+                        if (
+                            inside
+                            and not plugin_dir.is_symlink()
+                            and plugin_dir.is_dir()
+                            and not version_file.is_symlink()
+                            and version_file.is_file()
+                        ):
+                            version = read_text(version_file)
                     except OSError:
                         version = None
+                elif entry_id is not None:
+                    errors.append({"path": str(manifest_path), "error": f"id de plugin suspeito no manifesto: {entry_id!r}"})
                 found.append({
                     "session_path": str(inner),
-                    "plugin_id": entry.get("id"),
+                    "plugin_id": entry_id if isinstance(entry_id, str) else None,
                     "updated_at": entry.get("updatedAt"),
                     "updated_at_verified": entry.get("updatedAtVerified"),
                     "marketplace_name": entry.get("marketplaceName"),
                     "version": version,
                 })
     found.sort(key=lambda item: item.get("updated_at") or "", reverse=True)
-    return found
+    return found, errors
 
 
 def read_workspace_core_version(workspace: Path):
@@ -691,7 +728,11 @@ cache_anomalies = [c for c in caches if c["status"] in {"suspeito", "indetermina
 with_install = [i for i in inspections if i["plugin_installed"]]
 _KIND_ORDER = {"unified": 0, "other": 1, "codex": 2, "legacy_cowork": 3}
 with_install.sort(key=lambda i: _KIND_ORDER.get(i["store_kind"], 1))
-target = with_install[0] if with_install else (inspections[0] if inspections else None)
+# Fallback sem instalação TAMBÉM respeita a classe (review Codex): mtime só
+# desempata dentro da mesma classe (sort estável sobre a ordem de mtime do
+# collect_roots) — senão uma legada recém-tocada voltaria a ser alvo.
+no_install_sorted = sorted(inspections, key=lambda i: _KIND_ORDER.get(i["store_kind"], 1))
+target = with_install[0] if with_install else (no_install_sorted[0] if no_install_sorted else None)
 
 legacy_stores = [i["root"] for i in inspections if i["store_kind"] == "legacy_cowork"]
 legacy_note = None
@@ -711,7 +752,7 @@ if target is not None and target["store_kind"] == "legacy_cowork":
 # Camada de sessão (#190): o que a conta REALMENTE materializa nas sessões
 # do Cowork. Divergência da melhor referência local = o mecanismo do
 # incidente (registro server-side parado) — nomeada com o updatedAt.
-session_materializations = scan_session_materializations(sessions_root)
+session_materializations, session_scan_errors = scan_session_materializations(sessions_root)
 session_latest = session_materializations[0] if session_materializations else None
 session_divergence = None
 session_reference = None
@@ -795,6 +836,7 @@ result = {
     "legacy_stores": legacy_stores,
     "legacy_note": legacy_note,
     "session_materializations": session_materializations,
+    "session_scan_errors": session_scan_errors,
     "session_reference": session_reference,
     "session_divergence": session_divergence,
     "session_note": session_note,
@@ -872,16 +914,19 @@ if workspace_arg:
     if workspace_note:
         print(f"- nota: {workspace_note}")
 
-if session_latest:
+if session_latest or session_scan_errors:
     print()
     print("Sessão (registro da conta)")
-    print(f"- materializada: {session_latest.get('version') or 'n/d'} · updatedAt: {session_latest.get('updated_at') or 'n/d'}")
-    if session_reference:
-        print(f"- referência local mais fresca: {session_reference['version']} ({session_reference['label']})")
-    if session_divergence is None:
-        print("- divergência: n/d")
-    else:
-        print(f"- divergência: {'SIM' if session_divergence else 'não'}")
+    if session_latest:
+        print(f"- materializada: {session_latest.get('version') or 'n/d'} · updatedAt: {session_latest.get('updated_at') or 'n/d'}")
+        if session_reference:
+            print(f"- referência local mais fresca: {session_reference['version']} ({session_reference['label']})")
+        if session_divergence is None:
+            print("- divergência: n/d")
+        else:
+            print(f"- divergência: {'SIM' if session_divergence else 'não'}")
+    if session_scan_errors:
+        print(f"- varredura INCOMPLETA: {len(session_scan_errors)} erro(s) de leitura/schema — camada 5 indeterminada nesses pontos (detalhe no --json)")
 
 if caches:
     print()
