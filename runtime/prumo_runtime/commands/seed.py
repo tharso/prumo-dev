@@ -7,15 +7,23 @@ comando fecha o buraco: o runtime DA MÁQUINA LOCAL grava o `local_panorama`
 em `.prumo/state/local-panorama.json`, e o agente do Cowork LÊ o arquivo
 (~poucos KB) em vez de reler as fontes.
 
-Contrato de consumo (Passo 3 do briefing-procedure.md):
-- gate por CAPACIDADE (schema + `outras_secoes` presente), como na semente
-  viva;
-- frescor POR FONTE: `source_mtimes` carrega o mtime de cada fonte NO
-  MOMENTO da geração — o consumidor compara com os mtimes atuais (listagem
-  plana barata) e faz fallback direto SÓ da fonte que mudou;
-- o agente NUNCA escreve este arquivo (é estado do runtime, #214).
+Contrato de consumo (Passo 3 do briefing-procedure.md) — gate TRIPLO:
+1. capacidade (schema + `outras_secoes` presente), como na semente viva;
+2. DATA: `local_panorama.generated_for` == hoje no fuso do workspace —
+   `visible_today` e sinais de faxina dependem da data, não só dos
+   arquivos (virada do dia invalida);
+3. frescor POR FONTE: `source_mtimes` + `inbox4mobile_manifest` carregam o
+   retrato de cada fonte NO MOMENTO da geração — o consumidor compara com
+   o estado atual (listagem plana barata) e faz fallback direto SÓ da
+   fonte que mudou.
 
-Quem roda: o dono/agente local com runtime (manual, `/fim` sugerindo, ou
+Integridade do snapshot: os mtimes (em ns) são capturados ANTES da
+montagem e revalidados DEPOIS — fonte editada no meio da geração dispara
+um retry único; persistindo, o comando aborta em vez de gravar uma
+semente costurada de dois instantes.
+
+O agente NUNCA escreve este arquivo (é estado do runtime, #214). Quem
+roda: o dono/agente local com runtime (manual, `/fim` sugerindo, ou
 launchd — agendamento é operação da máquina, não deste comando).
 """
 
@@ -38,24 +46,66 @@ from prumo_runtime.workspace_paths import workspace_paths
 SEED_SCHEMA_VERSION = "prumo_local_panorama_file.v1"
 SEED_FILENAME = "local-panorama.json"
 
+_OPERATIONAL_NAMES = {"inbox-preview.html"}
 
-def _mtime_iso(path: Path) -> str | None:
+
+class SeedError(RuntimeError):
+    """Erro controlado do seed (vira exit 2 no CLI, sem traceback)."""
+
+
+def _mtime_iso(mtime_ns: int) -> str:
+    return datetime.fromtimestamp(mtime_ns / 1e9, tz=timezone.utc).isoformat(
+        timespec="seconds"
+    )
+
+
+def _stat_entry(path: Path) -> dict | None:
     try:
-        return datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc).isoformat(
-            timespec="seconds"
-        )
+        st = path.stat()
     except OSError:
         return None
+    return {"mtime": _mtime_iso(st.st_mtime_ns), "mtime_ns": st.st_mtime_ns}
 
 
-def build_seed_payload(workspace: Path) -> dict:
-    """Monta o payload do arquivo-semente. Leitura pura das fontes (a mesma
-    montagem do `local_panorama` do briefing, #197/#206) — a única escrita
-    deste comando é o próprio artefato."""
-    workspace = workspace.expanduser().resolve()
-    config = build_config_from_existing(workspace)
-    paths = workspace_paths(workspace)
-    today = datetime.now(ZoneInfo(config.timezone_name)).date()
+def _inbox4mobile_manifest(inbox_dir: Path) -> list[dict]:
+    """Manifesto RASO e determinístico do Inbox4Mobile: nome, tamanho e
+    mtime de cada arquivo (índice do preview incluso; symlinks fora).
+    Só o `mais novo` não basta — adicionar/remover/renomear um arquivo que
+    não é o mais novo passaria invisível."""
+    if not inbox_dir.is_dir() or inbox_dir.is_symlink():
+        return []
+    entries: list[dict] = []
+    for entry in sorted(inbox_dir.iterdir(), key=lambda p: p.name):
+        if entry.is_symlink() or not entry.is_file():
+            continue
+        if entry.name in _OPERATIONAL_NAMES:
+            continue
+        try:
+            st = entry.lstat()
+        except OSError:
+            continue
+        entries.append(
+            {
+                "name": entry.name,
+                "size": st.st_size,
+                "mtime": _mtime_iso(st.st_mtime_ns),
+                "mtime_ns": st.st_mtime_ns,
+            }
+        )
+    return entries
+
+
+def _capture_sources(paths) -> dict:
+    return {
+        "pauta": _stat_entry(paths.pauta),
+        "inbox": _stat_entry(paths.inbox),
+        "registro": _stat_entry(paths.registro),
+        "processed": _stat_entry(paths.inbox_processed),
+    }
+
+
+def _build_once(workspace: Path, paths, timezone_name: str) -> dict:
+    today = datetime.now(ZoneInfo(timezone_name)).date()
     preview = load_inbox_preview(
         workspace, repo_root_from(Path(__file__)), allow_regen=False
     )
@@ -73,30 +123,59 @@ def build_seed_payload(workspace: Path) -> dict:
         "workspace_path": str(workspace),
         "local_panorama": panorama,
         "payload_completeness": completeness,
-        # Frescor POR FONTE: o consumidor compara com os mtimes atuais
-        # (listagem plana) — fonte que mudou depois da geração cai no
-        # fallback direto; as demais seguem servidas pelo arquivo.
-        "source_mtimes": {
-            "pauta": _mtime_iso(paths.pauta),
-            "inbox": _mtime_iso(paths.inbox),
-            "registro": _mtime_iso(paths.registro),
-            "processed": _mtime_iso(paths.inbox_processed),
-            "inbox4mobile_newest": (preview.get("freshness") or {}).get(
-                "newest_inbox_mtime"
-            ),
-        },
+        "source_mtimes": _capture_sources(paths),
+        "inbox4mobile_manifest": _inbox4mobile_manifest(paths.inbox4mobile_root),
     }
+
+
+def build_seed_payload(workspace: Path) -> dict:
+    """Monta o payload com snapshot ÍNTEGRO: mtimes capturados antes e
+    revalidados depois da montagem; fonte editada no meio → retry único;
+    persistindo, aborta (semente costurada de dois instantes mente)."""
+    workspace = workspace.expanduser().resolve()
+    config = build_config_from_existing(workspace)
+    paths = workspace_paths(workspace)
+
+    for attempt in (1, 2):
+        before = _capture_sources(paths)
+        payload = _build_once(workspace, paths, config.timezone_name)
+        after = _capture_sources(paths)
+        if before == after:
+            payload["source_mtimes"] = after
+            return payload
+        if attempt == 2:
+            raise SeedError(
+                "fontes mudaram durante a geração da semente (duas tentativas) — "
+                "rode de novo num momento quieto; nada foi gravado"
+            )
+    raise AssertionError("unreachable")
 
 
 def seed_file_path(workspace: Path) -> Path:
     return workspace.expanduser().resolve() / ".prumo" / "state" / SEED_FILENAME
 
 
+def _require_clean_target(workspace: Path, target: Path) -> None:
+    """Cerca da escrita (#189, mesmo padrão do sanitize): nenhum componente
+    de workspace→target pode ser symlink — escrever "pra dentro" de um link
+    gravaria fora do território."""
+    probe = workspace
+    for part in target.relative_to(workspace).parts:
+        probe = probe / part
+        if probe.is_symlink():
+            raise SeedError(
+                f"`{probe.relative_to(workspace)}` é symlink — escrita recusada, "
+                "nada foi gravado"
+            )
+
+
 def write_seed(workspace: Path) -> Path:
     """Grava o artefato atomicamente (mkstemp + replace — sem meia-semente
-    visível nem `.tmp` previsível)."""
+    visível nem `.tmp` previsível), com cadeia de escrita sem symlink."""
+    workspace = workspace.expanduser().resolve()
     payload = build_seed_payload(workspace)
     target = seed_file_path(workspace)
+    _require_clean_target(workspace, target)
     target.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp = tempfile.mkstemp(
         dir=str(target.parent), prefix=SEED_FILENAME + ".", suffix=".tmp"
@@ -119,7 +198,11 @@ def run_seed(args: argparse.Namespace) -> int:
     if not (workspace / ".prumo").is_dir():
         print(f"workspace sem `.prumo/`: {workspace} — nada a semear aqui.")
         return 1
-    target = write_seed(workspace)
+    try:
+        target = write_seed(workspace)
+    except SeedError as exc:
+        print(f"[seed] {exc}")
+        return 2
     payload = json.loads(target.read_text(encoding="utf-8"))
     sections = payload["local_panorama"]["pauta"]["sections"]
     outras = payload["local_panorama"]["pauta"]["outras_secoes"]
@@ -130,6 +213,7 @@ def run_seed(args: argparse.Namespace) -> int:
         print(
             f"[seed] semente gravada em `{target.relative_to(workspace)}` — "
             f"{total} item(ns) da PAUTA ({len(sections)} seções canônicas + "
-            f"{len(outras)} autorais), gerada em {payload['generated_at']}."
+            f"{len(outras)} autorais), válida pra {payload['local_panorama']['generated_for']}, "
+            f"gerada em {payload['generated_at']}."
         )
     return 0

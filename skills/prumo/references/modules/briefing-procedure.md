@@ -79,10 +79,11 @@ Arquivo bruto abre em **dois casos apenas**:
 1. **Edição** — atualizar `PAUTA.md`/`REGISTRO.md` no fechamento (Passo 6) sempre relê o arquivo antes de escrever.
 2. **Sinalização** — `payload_completeness.<fonte>.complete == false`, ambiguidade real num item, ou a heurística de aprofundamento (`load-policy.md`) mandar abrir. O fallback é **por fonte**: pauta incompleta → ler `PAUTA.md`; `inbox4mobile` com status ≠ `gerado` (enum completo: `gerado|stale|ausente|invalido|indeterminado`) → regenerar com `prumo inbox preview` (operação explícita) ou listar direto; as demais fontes seguem servidas pela semente. Alerta técnico genérico (`degradation`) NÃO é motivo pra releitura integral.
 
-**Sem runtime no PATH mas COM o arquivo-semente `.prumo/state/local-panorama.json` (#216 — gravado pelo `prumo seed` de uma máquina com runtime):** usar como semente com gate DUPLO:
+**Sem runtime no PATH mas COM o arquivo-semente `.prumo/state/local-panorama.json` (#216 — gravado pelo `prumo seed` de uma máquina com runtime):** usar como semente com gate TRIPLO:
 
 1. **Capacidade**, como na semente viva: `local_panorama.schema_version == prumo_local_panorama.v1` E `pauta.outras_secoes` presente como lista — senão, fallback direto.
-2. **Frescor POR FONTE**: o arquivo carrega `source_mtimes` (o mtime de cada fonte no momento da geração). Comparar com os mtimes ATUAIS (listagem plana barata de `Prumo/`): fonte cujo mtime atual difere do gravado → **fallback direto daquela fonte** (o resto do arquivo segue valendo); tudo igual → semente inteira vale. Declarar a idade em uma linha quando usar (*"panorama da semente de HH:MM"*).
+2. **DATA**: `local_panorama.generated_for` == a data de HOJE no fuso do workspace — `visible_today` (filtro de cobrança) e sinais de faxina dependem da data, não só dos arquivos; **semente de ontem invalida no mínimo PAUTA e processados** (virada do dia), mesmo com arquivos intactos.
+3. **Frescor POR FONTE**: o arquivo carrega `source_mtimes` (mtime de cada fonte no momento da geração) e o `inbox4mobile_manifest` (nome+tamanho+mtime de CADA arquivo do inbox — só "o mais novo" deixaria remoção/renome invisível). Comparar com o estado ATUAL (listagem plana barata de `Prumo/`): fonte cujo retrato difere → **fallback direto daquela fonte** (o resto do arquivo segue valendo); tudo igual → semente inteira vale. Declarar a idade em uma linha quando usar (*"panorama da semente de HH:MM"*).
 
 O agente **NUNCA escreve** esse arquivo — é estado do runtime (#214); consumo é leitura pura.
 

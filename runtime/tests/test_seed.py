@@ -83,13 +83,63 @@ class SeedPayloadTests(unittest.TestCase):
             ("inbox", self.ws / "INBOX.md"),
             ("registro", self.ws / "REGISTRO.md"),
         ):
-            from datetime import timezone
-
-            expected = datetime.fromtimestamp(
-                path.stat().st_mtime, tz=timezone.utc
-            ).isoformat(timespec="seconds")
-            self.assertEqual(mtimes[key], expected, key)
+            self.assertEqual(
+                mtimes[key]["mtime_ns"], path.stat().st_mtime_ns, key
+            )
+            self.assertIn("mtime", mtimes[key], "ISO de segundos pro consumo do agente")
         self.assertIsNone(mtimes["processed"], "sem _processed.json → None")
+
+    def test_inbox4mobile_manifest_lists_every_content_file(self) -> None:
+        inbox = self.ws / "Inbox4Mobile"
+        (inbox / "captura-a.md").write_text("- a\n", encoding="utf-8")
+        (inbox / "captura-b.md").write_text("- b\n", encoding="utf-8")
+        (inbox / "inbox-preview.html").write_text("<html></html>", encoding="utf-8")
+        payload = build_seed_payload(self.ws)
+        manifest = payload["inbox4mobile_manifest"]
+        names = [e["name"] for e in manifest]
+        self.assertEqual(names, ["captura-a.md", "captura-b.md"])
+        for entry in manifest:
+            self.assertIn("size", entry)
+            self.assertIn("mtime", entry)
+            self.assertIn("mtime_ns", entry)
+
+    def test_source_changed_mid_generation_retries_then_aborts(self) -> None:
+        from prumo_runtime.commands import seed as seed_mod
+
+        real_build = seed_mod._build_once
+        pauta = self.ws / "PAUTA.md"
+
+        def mutating_build(workspace, paths, tz):
+            result = real_build(workspace, paths, tz)
+            pauta.write_text(
+                pauta.read_text(encoding="utf-8") + "\n- item novo\n",
+                encoding="utf-8",
+            )
+            return result
+
+        with mock.patch.object(seed_mod, "_build_once", side_effect=mutating_build):
+            with self.assertRaises(seed_mod.SeedError):
+                build_seed_payload(self.ws)
+
+    def test_symlinked_state_refuses_write(self) -> None:
+        import shutil as _sh
+
+        from prumo_runtime.commands.seed import SeedError
+
+        outside = Path(self._tmp.name) / "state-externo"
+        outside.mkdir()
+        state = self.ws / ".prumo" / "state"
+        if state.exists():
+            _sh.rmtree(state)
+        state.symlink_to(outside)
+        external_before = sorted(p.name for p in outside.iterdir())
+        with self.assertRaises(SeedError):
+            write_seed(self.ws)
+        self.assertEqual(
+            sorted(p.name for p in outside.iterdir()),
+            external_before,
+            "escrita atravessou o symlink",
+        )
 
     def test_seed_generation_is_read_only_over_sources(self) -> None:
         before = {
