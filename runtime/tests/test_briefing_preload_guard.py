@@ -125,6 +125,13 @@ CONFORMIDADE_SKILL_INVARIANTS = (
     "sem perguntar antes (#218)",
 )
 
+# #212: a poda do _processed.json é por idade COM salvaguarda — arquivo
+# presente nunca é movido nem podado pela faxina.
+FAXINA_INVARIANTS = (
+    "Salvaguarda (#212): nunca remover entrada cujo arquivo ainda existe",
+    "Arquivo ainda presente → não mover, não podar; apenas sinalizar",
+)
+
 
 def _section(text: str, header: str) -> str:
     match = re.search(rf"^## {re.escape(header)}.*?(?=^## )", text, re.MULTILINE | re.DOTALL)
@@ -236,6 +243,14 @@ class PreloadSingleEnumerationTests(unittest.TestCase):
         for invariant in CONFORMIDADE_SKILL_INVARIANTS:
             with self.subTest(invariant=invariant):
                 self.assertIn(invariant, skill_text)
+
+    def test_faxina_prune_safeguard_present(self) -> None:
+        faxina = (
+            REPO_ROOT / "skills" / "prumo" / "references" / "modules" / "faxina.md"
+        ).read_text(encoding="utf-8")
+        for invariant in FAXINA_INVARIANTS:
+            with self.subTest(invariant=invariant):
+                self.assertIn(invariant, faxina)
 
     def test_two_tempos_contracts_present(self) -> None:
         # #196: os contratos do briefing em dois tempos são invariantes —
