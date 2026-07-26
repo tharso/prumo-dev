@@ -150,6 +150,21 @@ class SeedPayloadTests(unittest.TestCase):
             with self.assertRaises(seed_mod.SeedError):
                 build_seed_payload(self.ws)
 
+    def test_lstat_failure_on_inbox_entry_is_visible_error(self) -> None:
+        from prumo_runtime.commands import seed as seed_mod
+
+        (self.ws / "Inbox4Mobile" / "captura.md").write_text("- x\n", encoding="utf-8")
+        real_lstat = Path.lstat
+
+        def failing_lstat(self_path):
+            if self_path.name == "captura.md":
+                raise OSError("stat negado simulado")
+            return real_lstat(self_path)
+
+        with mock.patch.object(Path, "lstat", failing_lstat):
+            with self.assertRaises(seed_mod.SeedError):
+                build_seed_payload(self.ws)
+
     def test_symlinked_state_refuses_write(self) -> None:
         import shutil as _sh
 

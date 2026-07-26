@@ -81,12 +81,14 @@ def _inbox4mobile_manifest(inbox_dir: Path) -> list[dict]:
         raise SeedError(
             f"listagem do Inbox4Mobile falhou ({exc}) — semente não gravada"
         ) from exc
+    import stat as stat_module
+
     entries: list[dict] = []
     for entry in children:
-        if entry.is_symlink() or not entry.is_file():
-            continue
         if entry.name in _OPERATIONAL_NAMES:
             continue
+        # Um único lstat protegido classifica E data — is_symlink/is_file
+        # separados poderiam falhar fora do try e virar exclusão silenciosa.
         try:
             st = entry.lstat()
         except OSError as exc:
@@ -94,6 +96,8 @@ def _inbox4mobile_manifest(inbox_dir: Path) -> list[dict]:
                 f"stat falhou em Inbox4Mobile/{entry.name} ({exc}) — "
                 "manifesto parcial mentiria; semente não gravada"
             ) from exc
+        if stat_module.S_ISLNK(st.st_mode) or not stat_module.S_ISREG(st.st_mode):
+            continue
         entries.append(
             {
                 "name": entry.name,
