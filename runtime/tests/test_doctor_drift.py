@@ -199,10 +199,12 @@ class DoctorDriftTests(unittest.TestCase):
         (evil_store / "cache").symlink_to(outside)
         result = self._run_doctor("--extra-root", str(evil_store))
         via_evil = [c for c in result["caches"] if c["root"] == str(evil_store)]
-        self.assertTrue(via_evil, "cache atrás de symlink tem que aparecer, não sumir")
-        for entry in via_evil:
-            self.assertEqual(entry["status"], "suspeito")
-            self.assertIsNone(entry["remove_command"])
+        self.assertEqual(len(via_evil), 1, "symlink → UM diagnóstico agregado, sem filhos")
+        entry = via_evil[0]
+        self.assertEqual(entry["status"], "suspeito")
+        self.assertIsNone(entry["remove_command"])
+        self.assertIsNone(entry["bytes"], "symlink não é atravessado nem pra contar bytes")
+        self.assertEqual(Path(entry["path"]), evil_store / "cache")
         self.assertNotIn(str(evil_store), " ".join(c["root"] for c in result["stale_caches"]))
 
     def test_same_version_without_matching_install_path_is_indeterminado(self) -> None:
@@ -220,6 +222,19 @@ class DoctorDriftTests(unittest.TestCase):
         self.assertEqual(len(twin_entries), 1)
         self.assertEqual(twin_entries[0]["status"], "indeterminado")
         self.assertIsNone(twin_entries[0]["remove_command"])
+
+    def test_non_semver_cache_dir_never_gets_remove_command(self) -> None:
+        # Review Codex (round 2): "tmp", "current", download parcial — sem
+        # semver no nome não há staleness afirmável; visível, sem comando.
+        self._build_store(installed_version="5.40.0")
+        weird = self.store / "cache" / "prumo-marketplace" / "prumo" / "tmp-download"
+        weird.mkdir(parents=True)
+        (weird / "partial.bin").write_bytes(b"z" * 64)
+        result = self._run_doctor()
+        entry = next(c for c in result["caches"] if c["version"] == "tmp-download")
+        self.assertEqual(entry["status"], "indeterminado")
+        self.assertIsNone(entry["remove_command"])
+        self.assertEqual(result["stale_caches"], [])
 
     def test_source_url_staleness_via_file_scheme(self) -> None:
         # Review Codex (round 1): o caminho source:url testado de verdade,
@@ -270,9 +285,13 @@ class DoctorDriftTests(unittest.TestCase):
         result = self._run_doctor("--workspace", str(workspace))
         self.assertIs(result["plugin_workspace_drift"], True)
         action = result["workspace_action"]
-        self.assertIn("runtime", action)
-        self.assertIn("SÓ ENTÃO", action)
-        self.assertIn("5.54.0", action)
+        self.assertIn("≥ 5.54.0", action)
+        self.assertLess(
+            action.index("runtime"),
+            action.index("repair"),
+            "a ação tem que mandar atualizar o runtime ANTES do repair",
+        )
+        self.assertIn("SÓ ENTÃO rode `prumo repair", action)
 
     def test_offline_skips_network_probe(self) -> None:
         # source github + --offline: nenhum ls-remote → remote_head fica None

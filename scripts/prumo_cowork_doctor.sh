@@ -242,38 +242,53 @@ def enumerate_caches(bases, protected_paths, protected_versions):
     caches = []
     seen = set()
     for base in bases:
+        # Cadeia sem symlink (postura do sanitize, #179), checada ANTES de
+        # qualquer listagem: symlink não é atravessado nem pra contar bytes.
+        # Um diagnóstico único "suspeito" e nada de filhos/comando.
+        symlinked = None
+        if base.is_symlink():
+            symlinked = base
+        else:
+            probe = base
+            for part in ("cache", marketplace_name, plugin_name):
+                probe = probe / part
+                if probe.is_symlink():
+                    symlinked = probe
+                    break
+        if symlinked is not None:
+            caches.append({
+                "root": str(base),
+                "path": str(symlinked),
+                "version": None,
+                "bytes": None,
+                "status": "suspeito",
+                "remove_command": None,
+            })
+            continue
         cache_dir = base / "cache" / marketplace_name / plugin_name
         if not cache_dir.is_dir():
             continue
-        # Cadeia sem symlink (postura do sanitize, #179): cada componente
-        # abaixo do store precisa ser diretório físico.
-        chain_ok = True
-        probe = base
-        for part in ("cache", marketplace_name, plugin_name):
-            probe = probe / part
-            if probe.is_symlink():
-                chain_ok = False
-                break
         base_resolved = base.resolve()
         for vdir in sorted(cache_dir.iterdir()):
-            if not vdir.is_dir() or vdir.is_symlink():
+            if vdir.is_symlink() or not vdir.is_dir():
                 continue
             resolved = vdir.resolve()
             key = str(resolved)
             if key in seen:
                 continue
             seen.add(key)
-            inside_store = chain_ok
-            if inside_store:
-                try:
-                    resolved.relative_to(base_resolved)
-                except ValueError:
-                    inside_store = False
-            if key in protected_paths:
-                status = "em_uso"
-            elif not inside_store:
+            inside_store = True
+            try:
+                resolved.relative_to(base_resolved)
+            except ValueError:
+                inside_store = False
+            if not inside_store:
                 status = "suspeito"
-            elif vdir.name in protected_versions:
+            elif key in protected_paths:
+                status = "em_uso"
+            elif vdir.name in protected_versions or not semver_tuple(vdir.name):
+                # Sem semver no nome (tmp, current, download parcial) não há
+                # como afirmar staleness — visível, sem comando às cegas.
                 status = "indeterminado"
             else:
                 status = "stale"
@@ -695,8 +710,9 @@ if caches:
     print()
     print("Caches")
     for entry in caches:
-        size_mb = entry["bytes"] / (1024 * 1024)
-        print(f"- {entry['version']} · {size_mb:.1f} MB · {entry['status']} · {entry['path']}")
+        size = f"{entry['bytes'] / (1024 * 1024):.1f} MB" if entry["bytes"] is not None else "n/d"
+        label = entry["version"] or "cadeia com symlink"
+        print(f"- {label} · {size} · {entry['status']} · {entry['path']}")
     if stale_caches:
         print("  Remoção (colar no terminal — o doctor NUNCA remove sozinho):")
         for entry in stale_caches:
