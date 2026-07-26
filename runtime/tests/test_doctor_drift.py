@@ -572,33 +572,85 @@ class DoctorStoresSessionTests(unittest.TestCase):
         self.assertIn("schema", errors)
         self.assertIn("ilegível", errors)
 
-    def test_no_install_fallback_prefers_current_store_over_recent_legacy(self) -> None:
-        # Review Codex (round 1, #190): sem NENHUMA instalação, o fallback
-        # também respeita a classe — legada recém-tocada não volta a ser alvo.
-        _write_json(self.store / "installed_plugins.json", {"version": 2, "plugins": {}})
-        legacy = self.base / "cowork_plugins"
-        legacy.mkdir()
-        _write_json(legacy / "installed_plugins.json", {"version": 2, "plugins": {}})
-        completed = subprocess.run(
-            [
-                "bash",
-                str(SCRIPT),
-                "--sessions-root",
-                str(self.sessions),
-                "--extra-root",
-                str(legacy),
-                "--extra-root",
-                str(self.store),
-                "--offline",
-                "--json",
-            ],
-            capture_output=True,
-            text=True,
-            timeout=60,
-        )
+    def _run_with_roots(self, *roots: Path) -> dict:
+        cmd = ["bash", str(SCRIPT), "--sessions-root", str(self.sessions)]
+        for root in roots:
+            cmd += ["--extra-root", str(root)]
+        cmd += ["--offline", "--json"]
+        completed = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
         self.assertEqual(completed.returncode, 0, completed.stderr)
-        result = json.loads(completed.stdout)
-        self.assertEqual(result["target_root"], str(self.store))
+        return json.loads(completed.stdout)
+
+    def test_no_install_fallback_prefers_unified_full_order(self) -> None:
+        # Review Codex (rounds 1-2, #190): fallback sem NENHUMA instalação
+        # respeita a ordem completa unified > other > codex > legacy — com
+        # uma unificada DE VERDADE (<home>/.claude/plugins), não um "other".
+        unified = self.base / ".claude" / "plugins"
+        other = self.base / "store-other"
+        codex = self.base / ".codex" / "plugins"
+        legacy = self.base / "cowork_plugins"
+        for root in (unified, other, codex, legacy):
+            root.mkdir(parents=True)
+            _write_json(root / "installed_plugins.json", {"version": 2, "plugins": {}})
+        result = self._run_with_roots(legacy, codex, other, unified)
+        kinds = {r["root"]: r["store_kind"] for r in result["roots"]}
+        self.assertEqual(kinds[str(unified)], "unified")
+        self.assertEqual(kinds[str(codex)], "codex")
+        self.assertEqual(kinds[str(legacy)], "legacy_cowork")
+        self.assertEqual(result["target_root"], str(unified))
+
+    def test_install_order_codex_beats_legacy(self) -> None:
+        # Com instalação só em codex e legacy, o alvo é codex (3 < 4 na régua).
+        def _install(root: Path, version: str) -> None:
+            root.mkdir(parents=True, exist_ok=True)
+            _write_json(
+                root / "installed_plugins.json",
+                {
+                    "version": 2,
+                    "plugins": {
+                        "prumo@prumo-marketplace": [
+                            {
+                                "scope": "user",
+                                "version": version,
+                                "installPath": str(root / "x"),
+                                "installedAt": "2026-07-01T00:00:00Z",
+                                "lastUpdated": "2026-07-01T00:00:00Z",
+                            }
+                        ]
+                    },
+                },
+            )
+
+        codex = self.base / ".codex" / "plugins"
+        legacy = self.base / "cowork_plugins"
+        _install(codex, "5.30.0")
+        _install(legacy, "4.1.0")
+        result = self._run_with_roots(legacy, codex)
+        self.assertEqual(result["target_root"], str(codex))
+
+    def test_manifest_hostile_shapes_are_visible(self) -> None:
+        # Review Codex (round 2, #190): bytes inválidos, entrada escalar e
+        # updatedAt não-string — nada derruba, nada some.
+        self._build_store()
+        rpm1 = self.sessions / "s1" / "c1" / "rpm"
+        rpm1.mkdir(parents=True)
+        (rpm1 / "manifest.json").write_bytes(b'\xff\xfe{"plugins": []}')
+        rpm2 = self.sessions / "s2" / "c2" / "rpm"
+        rpm2.mkdir(parents=True)
+        _write_json(
+            rpm2 / "manifest.json",
+            {"plugins": ["escalar", {"id": "plugin_X", "name": "prumo", "updatedAt": 12345}]},
+        )
+        (rpm2 / "plugin_X").mkdir()
+        (rpm2 / "plugin_X" / "VERSION").write_text("5.20.0\n", encoding="utf-8")
+        result = self._run()
+        errors = " ".join(e["error"] for e in result["session_scan_errors"])
+        self.assertIn("ilegível", errors)
+        self.assertIn("não-objeto", errors)
+        self.assertIn("updatedAt não-string", errors)
+        latest = result["session_materializations"][0]
+        self.assertIsNone(latest["updated_at"])
+        self.assertEqual(latest["version"], "5.20.0")
 
     def test_ancient_plugin_action_warns_frozen_registry_and_owner_repo(self) -> None:
         self._build_store(installed_version="4.1.0", checkout_version="5.33.0")

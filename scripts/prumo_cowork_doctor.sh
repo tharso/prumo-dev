@@ -278,7 +278,7 @@ def scan_session_materializations(base: Path):
                 continue
             try:
                 manifest = read_json(manifest_path)
-            except (OSError, json.JSONDecodeError) as exc:
+            except (OSError, UnicodeError, json.JSONDecodeError) as exc:
                 errors.append({"path": str(manifest_path), "error": f"manifest ilegível: {exc.__class__.__name__}"})
                 continue
             plugins = manifest.get("plugins") if isinstance(manifest, dict) else None
@@ -286,7 +286,10 @@ def scan_session_materializations(base: Path):
                 errors.append({"path": str(manifest_path), "error": "schema inesperado: sem lista `plugins`"})
                 continue
             for entry in plugins:
-                if not isinstance(entry, dict) or entry.get("name") != plugin_name:
+                if not isinstance(entry, dict):
+                    errors.append({"path": str(manifest_path), "error": f"entrada não-objeto na lista `plugins`: {type(entry).__name__}"})
+                    continue
+                if entry.get("name") != plugin_name:
                     continue
                 entry_id = entry.get("id")
                 version = None
@@ -311,10 +314,15 @@ def scan_session_materializations(base: Path):
                         version = None
                 elif entry_id is not None:
                     errors.append({"path": str(manifest_path), "error": f"id de plugin suspeito no manifesto: {entry_id!r}"})
+                updated_at = entry.get("updatedAt")
+                if updated_at is not None and not isinstance(updated_at, str):
+                    # Não-string quebraria o sort — normaliza e deixa rastro.
+                    errors.append({"path": str(manifest_path), "error": f"updatedAt não-string no manifesto: {updated_at!r}"})
+                    updated_at = None
                 found.append({
                     "session_path": str(inner),
                     "plugin_id": entry_id if isinstance(entry_id, str) else None,
-                    "updated_at": entry.get("updatedAt"),
+                    "updated_at": updated_at,
                     "updated_at_verified": entry.get("updatedAtVerified"),
                     "marketplace_name": entry.get("marketplaceName"),
                     "version": version,
