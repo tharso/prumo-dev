@@ -20,6 +20,11 @@ O que faz:
   4. Diz se o plugin instalado ainda ficou atrás da versão anunciada no catálogo
 
 Não tenta editar o cache do plugin instalado na marra.
+
+Escopo (#190): este script alcança só CHECKOUTS GIT LOCAIS (camada 3 da propagação).
+O Cowork atual materializa plugins do registro server-side da conta (camada 5) — se a
+sessão serve catálogo velho mesmo com checkout em dia, o reparo é outro: remover o
+marketplace na UI e re-adicionar como owner/repo (o doctor diagnostica e prescreve).
 Produto que remenda store por fora vira relojoeiro de granada.
 EOF
 }

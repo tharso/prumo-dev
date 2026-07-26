@@ -353,6 +353,187 @@ class DoctorDriftTests(unittest.TestCase):
         self.assertIsNone(target["marketplace_checkout_stale"])
 
 
+@unittest.skipUnless(__import__("os").name == "posix", "doctor é script bash (macOS/Linux)")
+class DoctorStoresSessionTests(unittest.TestCase):
+    """#190: store unificada como alvo, legado marcado, camada de sessão (rpm)
+    e prescrição validada (re-add como owner/repo)."""
+
+    def setUp(self) -> None:
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.base = Path(self._tmp.name)
+        self.sessions = self.base / "sessions"
+        self.sessions.mkdir()
+        self.store = self.base / "store"
+        self.checkout = self.base / "checkout"
+
+    def _build_store(self, *, installed_version: str = "5.33.0", checkout_version: str = "5.33.0") -> None:
+        install_path = self.store / "cache" / "prumo-marketplace" / "prumo" / installed_version
+        install_path.mkdir(parents=True, exist_ok=True)
+        _write_json(
+            self.store / "installed_plugins.json",
+            {
+                "version": 2,
+                "plugins": {
+                    "prumo@prumo-marketplace": [
+                        {
+                            "scope": "user",
+                            "installPath": str(install_path),
+                            "version": installed_version,
+                            "installedAt": "2026-07-01T10:00:00.000Z",
+                            "lastUpdated": "2026-07-01T10:00:00.000Z",
+                        }
+                    ]
+                },
+            },
+        )
+        _write_json(
+            self.store / "known_marketplaces.json",
+            {
+                "prumo-marketplace": {
+                    "installLocation": str(self.checkout),
+                    "source": {"source": "github", "repo": "tharso/prumo"},
+                    "lastUpdated": "2026-07-01T10:00:00.000Z",
+                }
+            },
+        )
+        self.checkout.mkdir(parents=True, exist_ok=True)
+        (self.checkout / "VERSION").write_text(checkout_version + "\n", encoding="utf-8")
+        _write_json(
+            self.checkout / "marketplace.json",
+            {"plugins": [{"name": "prumo", "version": checkout_version}]},
+        )
+
+    def _build_session(self, *, version: str, updated_at: str) -> None:
+        # Layout REAL medido na máquina de referência (26/07): um
+        # manifest.json índice em <sessão>/<id>/rpm/ + rpm/plugin_<id>/ com o
+        # bundle do espelho (VERSION na raiz).
+        rpm = self.sessions / "sess-1" / "conv-1" / "rpm"
+        plugin_dir = rpm / "plugin_TEST"
+        plugin_dir.mkdir(parents=True)
+        (plugin_dir / "VERSION").write_text(version + "\n", encoding="utf-8")
+        _write_json(
+            rpm / "manifest.json",
+            {
+                "lastUpdated": updated_at,
+                "plugins": [
+                    {
+                        "id": "plugin_TEST",
+                        "name": "prumo",
+                        "updatedAt": updated_at,
+                        "updatedAtVerified": True,
+                        "marketplaceName": "prumo",
+                    },
+                    {
+                        "id": "plugin_OTHER",
+                        "name": "outra-coisa",
+                        "updatedAt": "2026-07-01T00:00:00Z",
+                    },
+                ],
+            },
+        )
+
+    def _run(self, *args: str) -> dict:
+        completed = subprocess.run(
+            [
+                "bash",
+                str(SCRIPT),
+                "--sessions-root",
+                str(self.sessions),
+                "--extra-root",
+                str(self.store),
+                "--offline",
+                "--json",
+                *args,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        return json.loads(completed.stdout)
+
+    def test_session_materialization_behind_reference_is_named_with_updated_at(self) -> None:
+        self._build_store(checkout_version="5.33.0")
+        self._build_session(version="5.1.0", updated_at="2026-04-22T09:00:00.000000Z")
+        result = self._run()
+        self.assertIs(result["session_divergence"], True)
+        latest = result["session_materializations"][0]
+        self.assertEqual(latest["version"], "5.1.0")
+        self.assertEqual(latest["plugin_id"], "plugin_TEST")
+        self.assertIn("2026-04-22", result["session_note"])
+        self.assertIn("#190", result["session_note"])
+        self.assertIn("owner/repo", result["session_action"])
+        self.assertIn("SESSÃO NOVA", result["session_action"])
+
+    def test_session_up_to_date_has_no_divergence_nor_action(self) -> None:
+        self._build_store(checkout_version="5.33.0")
+        self._build_session(version="5.33.0", updated_at="2026-07-20T09:00:00.000000Z")
+        result = self._run()
+        self.assertIs(result["session_divergence"], False)
+        self.assertIsNone(result["session_note"])
+        self.assertIsNone(result["session_action"])
+
+    def test_no_sessions_keeps_happy_path_untouched(self) -> None:
+        self._build_store()
+        result = self._run()
+        self.assertEqual(result["session_materializations"], [])
+        self.assertIsNone(result["session_divergence"])
+        self.assertIsNone(result["legacy_note"])
+
+    def test_plugin_only_in_legacy_store_gets_readd_recipe(self) -> None:
+        legacy = self.base / "cowork_plugins"
+        install_path = legacy / "cache" / "prumo-marketplace" / "prumo" / "4.1.0"
+        install_path.mkdir(parents=True)
+        _write_json(
+            legacy / "installed_plugins.json",
+            {
+                "version": 2,
+                "plugins": {
+                    "prumo@prumo-marketplace": [
+                        {
+                            "scope": "user",
+                            "installPath": str(install_path),
+                            "version": "4.1.0",
+                            "installedAt": "2026-03-03T00:00:00Z",
+                            "lastUpdated": "2026-03-03T00:00:00Z",
+                        }
+                    ]
+                },
+            },
+        )
+        completed = subprocess.run(
+            [
+                "bash",
+                str(SCRIPT),
+                "--sessions-root",
+                str(self.sessions),
+                "--extra-root",
+                str(legacy),
+                "--offline",
+                "--json",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        result = json.loads(completed.stdout)
+        self.assertEqual(result["target_root"], str(legacy))
+        self.assertIn(str(legacy), result["legacy_stores"])
+        self.assertIn("SÓ está instalado na store legada", result["legacy_note"])
+        self.assertIn("owner/repo", result["legacy_note"])
+
+    def test_ancient_plugin_action_warns_frozen_registry_and_owner_repo(self) -> None:
+        self._build_store(installed_version="4.1.0", checkout_version="5.33.0")
+        result = self._run()
+        target = next(r for r in result["roots"] if r["root"] == str(self.store))
+        actions = " ".join(target["recommended_actions"])
+        self.assertIn("congelado", actions)
+        self.assertIn("owner/repo", actions)
+        self.assertIn("URL raw", actions)
+
+
 class DoctorScriptContractTests(unittest.TestCase):
     def test_doctor_script_never_imports_prumo_runtime(self) -> None:
         # O doctor diagnostica exatamente o cenário onde o runtime NÃO está
