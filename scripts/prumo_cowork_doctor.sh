@@ -11,26 +11,32 @@ OUTPUT_FORMAT="text"
 # Só varrer o sessions-root dava falso-negativo ("nada urgente") enquanto
 # um plugin de era antiga apodrecia no store global. Array (não string com
 # separador) pra path com ':' não quebrar o parse.
-EXTRA_ROOTS=("${HOME}/.claude/cowork_plugins" "${HOME}/.claude/plugins")
+EXTRA_ROOTS=("${HOME}/.claude/cowork_plugins" "${HOME}/.claude/plugins" "${HOME}/.codex/plugins")
 EXTRA_ROOTS_OVERRIDDEN=0
+WORKSPACE_PATH=""
+OFFLINE_FLAG="0"
 
 usage() {
   cat <<'EOF'
 Uso:
-  scripts/prumo_cowork_doctor.sh [--sessions-root PATH] [--extra-root PATH]... [--marketplace-name NAME] [--plugin-id ID] [--json]
+  scripts/prumo_cowork_doctor.sh [--sessions-root PATH] [--extra-root PATH]... [--marketplace-name NAME] [--plugin-id ID] [--workspace PATH] [--offline] [--json]
 
 O que faz:
-  1. Localiza os stores reais de plugins (sessões do Cowork + ~/.claude/cowork_plugins + ~/.claude/plugins)
+  1. Localiza os stores reais de plugins (sessões do Cowork + ~/.claude/cowork_plugins + ~/.claude/plugins + ~/.codex/plugins)
   2. Inspeciona o checkout do marketplace usado pelo Cowork
   3. Compara versão do plugin instalado, versão do checkout local e HEAD remoto do repositório
   4. Flagra plugin de era antiga (pré-5.x) e catálogo fresco com instalação defasada
+  5. Com --workspace: drift plugin↔workspace (prumo_version do core vs plugin instalado) (#179 PR9)
+  6. Enumera caches de plugin (cache/<mkt>/<plugin>/<versão>) com bytes e comando de remoção PRONTO — nunca executa
+  7. Hash agregado das árvores de skills (checkout vs instalado) — drift de conteúdo com versões iguais
 
-Nota: --extra-root é repetível e SUBSTITUI os defaults (~/.claude/*) na primeira ocorrência.
+Nota: --extra-root é repetível e SUBSTITUI os defaults na primeira ocorrência.
+      --offline pula TODA rede (ls-remote e staleness por URL) — pra diagnóstico hermético.
 
 Exemplos:
   scripts/prumo_cowork_doctor.sh
-  scripts/prumo_cowork_doctor.sh --json
-  scripts/prumo_cowork_doctor.sh --sessions-root "/tmp/fake-cowork" --extra-root "/tmp/fake-store"
+  scripts/prumo_cowork_doctor.sh --json --workspace ~/Documents/DailyLife
+  scripts/prumo_cowork_doctor.sh --sessions-root "/tmp/fake-cowork" --extra-root "/tmp/fake-store" --offline
 EOF
 }
 
@@ -56,6 +62,14 @@ while [ "$#" -gt 0 ]; do
       PLUGIN_ID="${2:-}"
       shift 2
       ;;
+    --workspace)
+      WORKSPACE_PATH="${2:-}"
+      shift 2
+      ;;
+    --offline)
+      OFFLINE_FLAG="1"
+      shift
+      ;;
     --json)
       OUTPUT_FORMAT="json"
       shift
@@ -79,20 +93,42 @@ fi
 
 export PRUMO_COWORK_DOCTOR_SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
-python3 - "$SESSIONS_ROOT" "$MARKETPLACE_NAME" "$PLUGIN_ID" "$OUTPUT_FORMAT" "${EXTRA_ROOTS[@]}" <<'PY'
+python3 - "$SESSIONS_ROOT" "$MARKETPLACE_NAME" "$PLUGIN_ID" "$OUTPUT_FORMAT" "$WORKSPACE_PATH" "$OFFLINE_FLAG" "${EXTRA_ROOTS[@]}" <<'PY'
+import hashlib
 import json
 import os
+import re
+import shlex
 import subprocess
 import sys
+import urllib.error
+import urllib.parse
+import urllib.request
 from pathlib import Path
 
 sessions_root = Path(sys.argv[1]).expanduser()
 marketplace_name = sys.argv[2]
 plugin_id = sys.argv[3]
 output_format = sys.argv[4]
-extra_roots = [Path(p).expanduser() for p in sys.argv[5:] if p]
+workspace_arg = sys.argv[5]
+offline = sys.argv[6] == "1"
+extra_roots = [Path(p).expanduser() for p in sys.argv[7:] if p]
 script_dir = Path(os.environ["PRUMO_COWORK_DOCTOR_SCRIPT_DIR"])
 repo_root = script_dir.parent
+plugin_name = plugin_id.split("@", 1)[0]
+
+
+def require_single_component(label, value):
+    # Review Codex (round 3): nome com separador ou '..' construiria paths
+    # FORA do store (root/marketplaces/<nome>, cache/<mkt>/<plugin>). Nome é
+    # componente único ou nada.
+    if not value or value in {".", ".."} or "/" in value or "\\" in value or "\0" in value:
+        print(f"{label} inválido (tem que ser um único componente de path): {value!r}", file=sys.stderr)
+        raise SystemExit(2)
+
+
+require_single_component("--marketplace-name", marketplace_name)
+require_single_component("--plugin-id (parte antes do @)", plugin_name)
 
 
 def read_json(path: Path):
@@ -130,6 +166,160 @@ def semver_tuple(value):
         except ValueError:
             return ()
     return tuple(parts)
+
+
+def derive_version_probe_url(manifest_url: str):
+    # Deriva a URL do VERSION publicado ao lado do manifesto. Query/fragment
+    # caem fora; URL .git é git disfarçado de url — sem probe.
+    try:
+        parsed = urllib.parse.urlparse(manifest_url)
+    except ValueError:
+        return None
+    if not parsed.scheme or not parsed.path:
+        return None
+    path = parsed.path
+    if path.endswith(".git"):
+        return None
+    if path.endswith(".json"):
+        path = path.rsplit("/", 1)[0]
+    base_path = path.rstrip("/")
+    return urllib.parse.urlunparse((parsed.scheme, parsed.netloc, f"{base_path}/VERSION", "", "", ""))
+
+
+def fetch_url_version(url: str, timeout: float = 1.5):
+    # Staleness pra marketplace com source "url" (#179 PR9): busca o VERSION
+    # publicado ao lado do manifesto, com timeout curto — doctor não pode
+    # pendurar num DNS morto. Qualquer falha → None (sem rede não é erro).
+    # Resposta que não parseia como semver também é None: comparar lixo
+    # marcaria stale falso.
+    try:
+        with urllib.request.urlopen(url, timeout=timeout) as resp:
+            value = resp.read(256).decode("utf-8", errors="replace").strip()
+    except (urllib.error.URLError, OSError, ValueError):
+        return None
+    return value if semver_tuple(value) else None
+
+
+def read_workspace_core_version(workspace: Path):
+    core = workspace / ".prumo" / "system" / "PRUMO-CORE.md"
+    try:
+        head = core.read_text(errors="replace")[:2000]
+    except OSError:
+        return None
+    match = re.search(r"prumo_version:\s*([0-9]+(?:\.[0-9]+)*)", head)
+    return match.group(1) if match else None
+
+
+def tree_hash(base: Path):
+    # Hash agregado de uma árvore de skills: caminho relativo + conteúdo,
+    # em ordem estável. Detecta drift de CONTEÚDO mesmo com versões iguais
+    # (checkout editado à mão, instalação corrompida). Symlinks ficam fora —
+    # mesma postura do sanitize (#179).
+    if not base.is_dir():
+        return None
+    digest = hashlib.sha256()
+    try:
+        for item in sorted(base.rglob("*"), key=lambda p: p.relative_to(base).as_posix()):
+            if item.is_symlink() or not item.is_file():
+                continue
+            digest.update(item.relative_to(base).as_posix().encode("utf-8"))
+            digest.update(b"\0")
+            digest.update(item.read_bytes())
+            digest.update(b"\0")
+    except OSError:
+        return None
+    return digest.hexdigest()
+
+
+def dir_size_bytes(base: Path):
+    total = 0
+    try:
+        for item in base.rglob("*"):
+            if not item.is_symlink() and item.is_file():
+                total += item.stat().st_size
+    except OSError:
+        pass
+    return total
+
+
+def enumerate_caches(bases, protected_paths, protected_versions):
+    # Enumera cache/<mkt>/<plugin>/<versão> nos stores (#179 PR9). Só REPORTA
+    # e monta o comando de remoção pronto pra colar — nunca remove nada.
+    # Statuses:
+    #   em_uso        → installPath registrado aponta EXATAMENTE pra este path
+    #   stale         → nada referencia; comando de remoção emitido
+    #   indeterminado → mesma VERSÃO de uma instalação, mas nenhum installPath
+    #                   aponta pra cá (duplicata provável) — visível, sem comando
+    #   suspeito      → symlink na cadeia ou resolve fora do store — NUNCA
+    #                   ganha comando: rm através de symlink apontaria pra fora
+    caches = []
+    seen = set()
+    for base in bases:
+        # Cadeia sem symlink (postura do sanitize, #179), checada ANTES de
+        # qualquer listagem: symlink não é atravessado nem pra contar bytes.
+        # Um diagnóstico único "suspeito" e nada de filhos/comando.
+        symlinked = None
+        if base.is_symlink():
+            symlinked = base
+        else:
+            probe = base
+            for part in ("cache", marketplace_name, plugin_name):
+                probe = probe / part
+                if probe.is_symlink():
+                    symlinked = probe
+                    break
+        if symlinked is not None:
+            caches.append({
+                "root": str(base),
+                "path": str(symlinked),
+                "version": None,
+                "bytes": None,
+                "status": "suspeito",
+                "remove_command": None,
+            })
+            continue
+        cache_dir = base / "cache" / marketplace_name / plugin_name
+        base_resolved = base.resolve()
+        # Defesa em profundidade: mesmo com nomes validados, só listar se o
+        # cache_dir resolvido continua DENTRO do store.
+        try:
+            cache_dir.resolve().relative_to(base_resolved)
+        except ValueError:
+            continue
+        if not cache_dir.is_dir():
+            continue
+        for vdir in sorted(cache_dir.iterdir()):
+            if vdir.is_symlink() or not vdir.is_dir():
+                continue
+            resolved = vdir.resolve()
+            key = str(resolved)
+            if key in seen:
+                continue
+            seen.add(key)
+            inside_store = True
+            try:
+                resolved.relative_to(base_resolved)
+            except ValueError:
+                inside_store = False
+            if not inside_store:
+                status = "suspeito"
+            elif key in protected_paths:
+                status = "em_uso"
+            elif vdir.name in protected_versions or not semver_tuple(vdir.name):
+                # Sem semver no nome (tmp, current, download parcial) não há
+                # como afirmar staleness — visível, sem comando às cegas.
+                status = "indeterminado"
+            else:
+                status = "stale"
+            caches.append({
+                "root": str(base),
+                "path": str(vdir),
+                "version": vdir.name,
+                "bytes": dir_size_bytes(vdir),
+                "status": status,
+                "remove_command": f"rm -rf {shlex.quote(str(vdir))}" if status == "stale" else None,
+            })
+    return caches
 
 
 def collect_roots(base: Path, extras: list):
@@ -187,6 +377,8 @@ def inspect_root(root: Path):
     checkout_head = None
     checkout_branch = None
     remote_head = None
+    remote_version = None
+    remote_version_source = None
     checkout_stale = None
     checkout_divergence = None
 
@@ -209,7 +401,7 @@ def inspect_root(root: Path):
         checkout_head = run_git(["rev-parse", "HEAD"], install_location)
         checkout_branch = run_git(["rev-parse", "--abbrev-ref", "HEAD"], install_location)
 
-        if source and source.get("source") in {"git", "github"}:
+        if source and source.get("source") in {"git", "github"} and not offline:
             if source["source"] == "git":
                 remote_url = source.get("url")
             else:
@@ -218,9 +410,19 @@ def inspect_root(root: Path):
             remote_head = run_git(["ls-remote", remote_url, f"refs/heads/{ref}"], install_location)
             if remote_head:
                 remote_head = remote_head.split()[0]
+        elif source and source.get("source") == "url" and not offline:
+            # Marketplace por URL não tem git — staleness compara o VERSION
+            # publicado ao lado do manifesto com o VERSION do checkout.
+            probe_url = derive_version_probe_url(source.get("url") or "")
+            if probe_url:
+                remote_version = fetch_url_version(probe_url)
+                if remote_version:
+                    remote_version_source = "url"
+            if remote_version and semver_tuple(checkout_version):
+                checkout_stale = semver_tuple(remote_version) != semver_tuple(checkout_version)
         if checkout_head and remote_head:
             checkout_stale = checkout_head != remote_head
-        if checkout_stale:
+        if checkout_stale and remote_head:
             # Classificar sem mutar o cache: só dá pra saber a natureza quando
             # o objeto remoto já existe localmente (fetch anterior). Sem ele,
             # fica indeterminado — o update resolve com segurança em qualquer
@@ -252,6 +454,33 @@ def inspect_root(root: Path):
     installed_version = installed_item.get("version") if installed_item else None
     installed_commit = installed_item.get("gitCommitSha") if installed_item else None
     install_path = installed_item.get("installPath") if installed_item else None
+
+    # Caches "em uso" (#179 PR9): TODO installPath listado protege o cache
+    # correspondente — não só o item mais novo. Remover cache referenciado
+    # por uma entrada instalada quebra a instalação.
+    all_install_paths = []
+    all_installed_versions = []
+    for item in installed_items:
+        path_value = item.get("installPath")
+        if path_value:
+            all_install_paths.append(str(Path(path_value).expanduser().resolve()))
+        if item.get("version"):
+            all_installed_versions.append(item["version"])
+
+    # Drift de conteúdo (#179 PR9): hash agregado das árvores de skills.
+    # Interessante quando as VERSÕES batem mas o conteúdo não (checkout
+    # editado à mão, instalação corrompida) — versão diferente já é drift
+    # trivial e não precisa de hash pra aparecer.
+    checkout_skills_hash = None
+    installed_skills_hash = None
+    skills_content_drift = None
+    if install_location and install_location.is_dir():
+        checkout_skills_hash = tree_hash(install_location / "skills")
+    if install_path:
+        installed_skills_hash = tree_hash(Path(install_path).expanduser() / "skills")
+    if checkout_skills_hash and installed_skills_hash and installed_version and checkout_version:
+        if installed_version == checkout_version:
+            skills_content_drift = checkout_skills_hash != installed_skills_hash
 
     local_market_version = checkout_declared_version or checkout_version
     plugin_update_recommended = False
@@ -287,6 +516,13 @@ def inspect_root(root: Path):
             notes.append("O plugin instalado está atrás da versão anunciada pelo marketplace local.")
             actions.append("Depois de atualizar o marketplace, remova só o plugin Prumo e reinstale pelo Cowork se o botão ainda não acordar.")
 
+        if skills_content_drift:
+            notes.append(
+                "As skills instaladas DIFEREM do checkout do marketplace apesar da versão ser a mesma "
+                f"({installed_version}) — conteúdo editado à mão ou instalação corrompida."
+            )
+            actions.append("Remova o plugin Prumo e reinstale pelo marketplace pra realinhar o conteúdo.")
+
     # Era pré-skills-first (#146): plugin < 5.x tem a estrutura antiga
     # (cowork-plugin/), sem as skills atuais — invocar qualquer comando novo
     # dá "Habilidade desconhecida".
@@ -315,6 +551,8 @@ def inspect_root(root: Path):
         "marketplace_checkout_version": checkout_version,
         "marketplace_declared_plugin_version": checkout_declared_version,
         "marketplace_remote_head": remote_head,
+        "marketplace_remote_version": remote_version,
+        "marketplace_remote_version_source": remote_version_source,
         "marketplace_checkout_stale": checkout_stale,
         "marketplace_checkout_divergence": checkout_divergence,
         "plugin_installed": bool(installed_item),
@@ -322,6 +560,11 @@ def inspect_root(root: Path):
         "plugin_git_commit": installed_commit,
         "plugin_install_path": install_path,
         "plugin_update_recommended": plugin_update_recommended,
+        "checkout_skills_hash": checkout_skills_hash,
+        "installed_skills_hash": installed_skills_hash,
+        "skills_content_drift": skills_content_drift,
+        "all_install_paths": all_install_paths,
+        "all_installed_versions": all_installed_versions,
         "expected_repo_version": expected_repo_version,
         "diagnosis": notes,
         "recommended_actions": actions,
@@ -330,6 +573,27 @@ def inspect_root(root: Path):
 
 roots = collect_roots(sessions_root, extra_roots)
 inspections = [inspect_root(root) for root in roots]
+
+# Caches (#179 PR9): varridos sobre TODOS os candidatos (roots com manifest +
+# extras crus) — cache órfão costuma viver justamente em store sem manifest.
+cache_bases = []
+cache_seen = set()
+for candidate in [*roots, *extra_roots]:
+    if not candidate.is_dir():
+        continue
+    key = str(candidate.resolve())
+    if key in cache_seen:
+        continue
+    cache_seen.add(key)
+    cache_bases.append(candidate)
+protected_paths = set()
+protected_versions = set()
+for inspection in inspections:
+    protected_paths.update(inspection["all_install_paths"])
+    protected_versions.update(inspection["all_installed_versions"])
+caches = enumerate_caches(cache_bases, protected_paths, protected_versions)
+stale_caches = [c for c in caches if c["status"] == "stale"]
+cache_anomalies = [c for c in caches if c["status"] in {"suspeito", "indeterminado"}]
 # Target = o store onde o plugin está INSTALADO (é lá que a invocação resolve).
 # Empate entre stores instalados: preferir o do COWORK (cowork_plugins) — este
 # doctor diagnostica o Cowork; o CLI aparece na lista de stores de todo jeito.
@@ -343,12 +607,55 @@ target = (
     else (with_install[0] if with_install else (inspections[0] if inspections else None))
 )
 
+# Drift plugin↔workspace (#179 PR9): o core do workspace declara a versão
+# que o usuário REALMENTE usa; plugin instalado ≠ core = as duas pontas da
+# experiência rodando produto diferente.
+workspace_core_version = None
+plugin_workspace_drift = None
+workspace_note = None
+workspace_action = None
+if workspace_arg:
+    workspace_path = Path(workspace_arg).expanduser()
+    workspace_core_version = read_workspace_core_version(workspace_path)
+    installed_now = target["plugin_version"] if target else None
+    if workspace_core_version is None:
+        workspace_note = "Workspace informado, mas o core (.prumo/system/PRUMO-CORE.md) não foi lido — sem drift calculável."
+    elif installed_now:
+        plugin_workspace_drift = installed_now != workspace_core_version
+        if plugin_workspace_drift:
+            newer = "plugin" if semver_tuple(installed_now) > semver_tuple(workspace_core_version) else "workspace"
+            workspace_note = (
+                f"Drift plugin↔workspace: plugin instalado {installed_now}, core do workspace {workspace_core_version} "
+                f"(mais novo: {newer})."
+            )
+            if newer == "plugin":
+                # O repair grava o core DA VERSÃO DO RUNTIME instalado —
+                # runtime velho regravaria o mesmo core velho. Runtime
+                # primeiro, repair depois.
+                workspace_action = (
+                    f"Atualize o runtime local até ≥ {installed_now} (`prumo update` ou reinstalação) "
+                    "e SÓ ENTÃO rode `prumo repair --workspace <path>` — repair com runtime velho regrava o core velho."
+                )
+            else:
+                workspace_action = "Atualize o plugin no host (marketplace → reinstalar) pra alcançar o core do workspace."
+    else:
+        workspace_note = "Workspace tem core, mas nenhum plugin instalado foi encontrado nos stores — sem drift calculável."
+
 result = {
     "sessions_root": str(sessions_root),
     "roots_found": len(roots),
     "target_root": target["root"] if target else None,
     "marketplace_name": marketplace_name,
     "plugin_id": plugin_id,
+    "offline": offline,
+    "workspace_path": str(Path(workspace_arg).expanduser()) if workspace_arg else None,
+    "workspace_core_version": workspace_core_version,
+    "plugin_workspace_drift": plugin_workspace_drift,
+    "workspace_note": workspace_note,
+    "workspace_action": workspace_action,
+    "caches": caches,
+    "stale_caches": stale_caches,
+    "cache_anomalies": cache_anomalies,
     "roots": inspections,
 }
 
@@ -405,20 +712,67 @@ print(f"- commit instalado: {(target['plugin_git_commit'] or 'n/d')[:7] if targe
 print(f"- installPath: {target['plugin_install_path'] or 'n/d'}")
 print(f"- repo local desta cópia do Prumo: {target['expected_repo_version'] or 'n/d'}")
 print(f"- update recomendado pelo catálogo local: {'sim' if target['plugin_update_recommended'] else 'não'}")
+if target["skills_content_drift"] is not None:
+    print(f"- skills instaladas == checkout (hash agregado): {'NÃO' if target['skills_content_drift'] else 'sim'}")
 
-if target["diagnosis"]:
+if workspace_arg:
+    print()
+    print("Workspace")
+    print(f"- caminho: {result['workspace_path']}")
+    print(f"- versão do core: {workspace_core_version or 'n/d'}")
+    if plugin_workspace_drift is None:
+        print("- drift plugin↔workspace: n/d")
+    else:
+        print(f"- drift plugin↔workspace: {'SIM' if plugin_workspace_drift else 'não'}")
+    if workspace_note:
+        print(f"- nota: {workspace_note}")
+
+if caches:
+    print()
+    print("Caches")
+    for entry in caches:
+        size = f"{entry['bytes'] / (1024 * 1024):.1f} MB" if entry["bytes"] is not None else "n/d"
+        label = entry["version"] or "cadeia com symlink"
+        print(f"- {label} · {size} · {entry['status']} · {entry['path']}")
+    if stale_caches:
+        print("  Remoção (colar no terminal — o doctor NUNCA remove sozinho):")
+        for entry in stale_caches:
+            print(f"    {entry['remove_command']}")
+
+if target["diagnosis"] or workspace_note:
     print()
     print("Diagnóstico")
     for item in target["diagnosis"]:
         print(f"- {item}")
+    if workspace_note:
+        print(f"- {workspace_note}")
 
-if target["recommended_actions"]:
-    print()
-    print("Próxima ação")
-    for index, item in enumerate(target["recommended_actions"], start=1):
+final_actions = list(target["recommended_actions"])
+if workspace_action:
+    final_actions.append(workspace_action)
+if stale_caches:
+    total_mb = sum(c["bytes"] for c in stale_caches) / (1024 * 1024)
+    final_actions.append(
+        f"Caches antigos somam {total_mb:.1f} MB — os comandos de remoção prontos estão na seção Caches acima."
+    )
+suspicious = [c for c in cache_anomalies if c["status"] == "suspeito"]
+undetermined = [c for c in cache_anomalies if c["status"] == "indeterminado"]
+if suspicious:
+    final_actions.append(
+        f"{len(suspicious)} entrada(s) de cache SUSPEITAS (symlink na cadeia ou path fora do store) — "
+        "inspecione à mão antes de qualquer coisa; o doctor não monta comando pra elas de propósito."
+    )
+if undetermined:
+    final_actions.append(
+        f"{len(undetermined)} entrada(s) de cache indeterminadas (duplicata da versão instalada ou nome fora do padrão) — "
+        "confira a origem à mão; sem certeza, nada de rm."
+    )
+
+print()
+print("Próxima ação")
+if final_actions:
+    for index, item in enumerate(final_actions, start=1):
         print(f"{index}. {item}")
 else:
-    print()
-    print("Próxima ação")
     print("1. Nada urgente. O runtime do Cowork e o catálogo local parecem alinhados.")
 PY

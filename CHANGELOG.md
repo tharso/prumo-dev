@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.54.0] - 2026-07-26
+
+### Added
+- **Doctor com drift plugin↔workspace, caches enumerados e `--offline` (#179 PR9)** — o doctor agora fecha os três buracos que a série #179 deixou mapeados: (1) **`--workspace PATH`** compara o plugin instalado com o `prumo_version` do core do workspace — as duas pontas da experiência rodando produto diferente viram `plugin_workspace_drift: true` com a ação certa já montada (no smoke real da máquina de referência: plugin 5.33.0 × core 5.49.0, drift que nenhum elo anterior enxergava); (2) **caches enumerados** — `cache/<mkt>/<plugin>/<versão>` varrido em todos os stores (Cowork, sessões, CLI, Codex), cada um com bytes, status (`em_uso` protegido por QUALQUER installPath registrado, não só o mais novo) e **comando de remoção pronto pra colar** — o doctor NUNCA remove (3,1 MB de caches órfãos achados no smoke real); (3) **hash agregado das árvores de skills** (checkout × instalado) — drift de CONTEÚDO com versões iguais (edição à mão, instalação corrompida) vira `skills_content_drift`; (4) **`--offline`** pula toda rede (ls-remote e URL) pra diagnóstico hermético, e marketplace com `source: url` ganha staleness via `VERSION` publicado (timeout 1,5s). `doctor.md` ganha os elos Workspace e Caches no semáforo. 8 testes novos (`test_doctor_drift.py`), incluindo o guard de que o script jamais importa `prumo_runtime` — o doctor diagnostica exatamente o cenário onde o runtime não existe.
+
 ## [5.53.0] - 2026-07-26
 
 ### Added

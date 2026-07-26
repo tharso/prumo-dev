@@ -15,11 +15,13 @@ Aqui é diagnóstico: checar se o runtime, o marketplace e o plugin estão no lu
 
 ## Fluxo
 
-1. Rodar `prumo_cowork_doctor.sh` resolvendo scripts pela ordem definida em `runtime-paths.md`.
-2. Responder em 4 blocos curtos numerados continuamente, **cada elo com semáforo** (`🟢 ok` / `🟡 defasado` / `🔴 quebrado`) na frente, pra a saúde saltar aos olhos:
+1. Rodar `prumo_cowork_doctor.sh` resolvendo scripts pela ordem definida em `runtime-paths.md`. Quando o workspace do usuário for conhecido, passar `--workspace <path>` — sem ele o elo Workspace fica cego. `--offline` existe pra diagnóstico sem rede (pula ls-remote e checagem por URL).
+2. Responder em blocos curtos numerados continuamente, **cada elo com semáforo** (`🟢 ok` / `🟡 defasado` / `🔴 quebrado`) na frente, pra a saúde saltar aos olhos:
    - `Runtime` — versão do CLI vs. core.
    - `Marketplace` — checkout: `🟢` em dia; `🟡` atrás (ff resolve); `🔴` divergente (história reescrita, #145) ou com commits locais.
-   - `Plugin` — instalado vs. catálogo; `🔴` se pré-5.x (era pré-skills-first, #146).
+   - `Plugin` — instalado vs. catálogo; `🔴` se pré-5.x (era pré-skills-first, #146); `🔴` também se `skills_content_drift` (mesma versão, conteúdo diferente — hash agregado das skills).
+   - `Workspace` — só com `--workspace`: `🟢` sem drift; `🔴` se `plugin_workspace_drift` (plugin instalado ≠ `prumo_version` do core — as duas pontas rodando produto diferente). A ação vem pronta em `workspace_action`.
+   - `Caches` — `🟢` sem cache velho nem anomalia; `🟡` se `stale_caches[]` não vazio (listar versão + tamanho e **entregar o comando de remoção pronto** que o script montou em `remove_command`) ou se houver `indeterminado` em `cache_anomalies[]` (duplicata/nome fora do padrão — conferir à mão); `🔴` se houver `suspeito` em `cache_anomalies[]` (symlink na cadeia ou path fora do store — inspecionar à mão, sem comando de propósito). O doctor NUNCA remove — quem cola o comando é o usuário.
    - `Próxima ação` — a ação exata do elo mais grave.
 3. Se o checkout do marketplace estiver congelado, explicar isso explicitamente.
 4. Se a versão instalada estiver atrás do catálogo local, dizer isso sem drama.
