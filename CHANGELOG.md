@@ -6,6 +6,12 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.52.0] - 2026-07-26
+
+### Changed
+- **Perímetro de leitura: backups do Prumo fora de qualquer listagem (#213)** — o briefing real de 25/07 listou ~290 entradas de `.prumo/` e a maioria absoluta era `backups/` (~24 KB de JSON inútil por briefing). A regra 2 do perímetro (#194) agora nomeia `.prumo/backups/` e `.prumo/backup/` como snapshots — nunca conteúdo de trabalho — e declara listagem de `.prumo/` rasa por default. Paridade md↔py preservada (invariantes novos em `perimeter_invariants.py`; templates de referência regenerados).
+- **Faxina: salvaguarda na poda de processados (#212)** — a poda do `_processed.json` é por IDADE (>14d, como o módulo já mandava); a salvaguarda nova proíbe remover entrada cujo arquivo ainda existe em `Inbox4Mobile/` (estado inconsistente → sinalizar, não podar). Dado real registrado: 0 de 43 entradas removíveis por orfandade — as "órfãs" aparentes estavam legitimamente no `Arquivo/`.
+
 ## [5.51.0] - 2026-07-25
 
 ### Changed

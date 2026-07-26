@@ -20,6 +20,10 @@ PERIMETER_INVARIANTS: tuple[str, ...] = (
     "node_modules",
     "`.git`",
     "caches e builds ficam fora de qualquer listagem",
+    # #213: snapshots do próprio Prumo fora de qualquer listagem; .prumo/
+    # raso por default (o briefing real listou ~290 entradas de backups).
+    "`.prumo/backups/` e `.prumo/backup/` são snapshots, nunca conteúdo de trabalho (#213)",
+    "listagem de `.prumo/` é rasa por default",
     # Escopo 2: autorizado pela tarefa — expansão dirigida e rasa.
     "Escopo autorizado pela tarefa",
     "dirigida e rasa",

@@ -88,6 +88,7 @@ de 14 dias são lixo residual.
 **Verificar:**
 - Ler `_processed.json`
 - Filtrar entradas com `processed_at` > 14 dias atrás
+- **Salvaguarda (#212): nunca remover entrada cujo arquivo ainda existe em `Inbox4Mobile/`** — `processed_at` velho com o arquivo ainda na pasta é estado inconsistente (o item talvez NÃO tenha sido processado de verdade): sinalizar ao usuário em vez de podar. A poda é por IDADE; a orfandade é só a trava de segurança — no dado real de 25/07, 0 das 43 entradas eram removíveis pelo critério de orfandade (as "órfãs" aparentes estavam legitimamente no `Arquivo/`).
 
 **Executar:**
 - Remover essas entradas do JSON
