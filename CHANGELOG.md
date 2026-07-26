@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.55.0] - 2026-07-26
+
+### Added
+- **`/fim` enxerga HANDOVERs legados e backups aninhados (#179 PR10)** — `accumulation_signals` ganha `handover_legacy` (HANDOVERs do formato aposentado #68, em `.prumo/state/**` e `_state/**` — contam em QUALQUER idade, diferente das famílias por prazo) e `nested_backups` (backup dentro de backup root), contados pelos iterators públicos da sanitize — read-only e symlink-safe por construção (cadeia limpa validada antes de qualquer travessia). Schema `1.0` → `1.1` **aditivo**. Qualquer um dos dois > 0 já sugere a sanitização. A recomendação do texto agora compõe só as famílias com contagem > 0 — nada de "limpar a poeira técnica (0 backups, 0 efêmeros)" quando o gatilho foi um HANDOVER; o painel (linha 3) mostra as quatro famílias com zeros visíveis. O `/fim` segue detector puro (#126): aponta e delega, nunca executa.
+
 ## [5.54.0] - 2026-07-26
 
 ### Added

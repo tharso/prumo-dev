@@ -100,9 +100,11 @@ determinísticos reusando os thresholds da faxina/sanitize:
 
 - `pauta_stalled` (itens parados > 14d) e `inbox_pending` → acúmulo de
   **conteúdo** (o *como*, depois do sim, é a revisão assistida — `/higiene`)
-- `backups_old` (> 90d) e `ephemeral_old` (artefatos efêmeros do decidir/acervo
-  — HTMLs e a fonte copiada — > 14d) → acúmulo **técnico** (o *como* é o
-  módulo `sanitize.md` do core)
+- `backups_old` (> 90d), `ephemeral_old` (artefatos efêmeros do decidir/acervo
+  — HTMLs e a fonte copiada — > 14d), `handover_legacy` (HANDOVERs do formato
+  aposentado, #68 — contam em qualquer idade) e `nested_backups` (backup
+  dentro de backup) → acúmulo **técnico** (o *como* é o módulo `sanitize.md`
+  do core; schema 1.1, #179)
 - `suggest.update` (o core do workspace — ou o runtime, na falta dele — atrás
   da versão pública em cache, #174) → **update pendente**
 
@@ -112,8 +114,13 @@ nunca como opção. **Nunca executar** limpeza que pede julgamento por conta
 própria. O `/fim` só aponta e delega; não duplica a detecção da higiene nem
 roda a sanitização.
 
-Se o runtime não estiver disponível, o agente faz a checagem lendo os arquivos
-direto (mesmos thresholds) — a skill é portável.
+Se o runtime não estiver disponível, o agente calcula **só os sinais de leitura
+pontual** (`pauta_stalled`, `inbox_pending`, `registro_rows` — arquivos nomeados,
+mesmos thresholds). As famílias técnicas (`backups_old`, `ephemeral_old`,
+`handover_legacy`, `nested_backups`) exigem travessia que o perímetro proíbe
+(#213: backups nunca são listados; `.prumo/` é rasa por default) — sem runtime
+elas ficam **indeterminadas**: declarar isso em uma linha ("poeira técnica: sem
+runtime, não checada") e **nunca** concluir "workspace limpo" sem elas.
 
 ## Cerca contra overlap com o briefing
 
