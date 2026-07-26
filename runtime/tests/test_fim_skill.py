@@ -59,14 +59,22 @@ class FimConservativeContractTests(unittest.TestCase):
             self.assertIn(ch, self.skill)
 
     def test_fallback_sem_runtime_respeita_perimetro(self):
-        # Review Codex (PR10, #179): sem runtime, as famílias técnicas exigem
-        # travessia que o perímetro proíbe (#213) — ficam indeterminadas e o
-        # /fim nunca conclui "workspace limpo" sem elas.
-        flat = " ".join(self.skill.lower().split())
+        # Review Codex (PR10, #179, rounds 1-2): sem runtime, as famílias
+        # técnicas exigem travessia que o perímetro proíbe (#213) — ficam
+        # indeterminadas e o /fim nunca conclui "workspace limpo" sem elas.
+        # As âncoras vivem NO PARÁGRAFO do fallback, não na skill inteira —
+        # guard global passaria com o parágrafo mutilado.
+        marker = "Se o runtime não estiver disponível"
+        self.assertIn(marker, self.skill)
+        paragraph = self.skill.split(marker, 1)[1].split("\n\n", 1)[0]
+        flat = " ".join((marker + paragraph).lower().split())
+        for family in ("backups_old", "ephemeral_old", "handover_legacy", "nested_backups"):
+            self.assertIn(family, flat)
+        self.assertIn("poeira técnica: sem runtime, não checada", flat)
         self.assertIn("sinais de leitura pontual", flat)
-        self.assertIn("indeterminada", flat)
+        self.assertIn("indeterminadas", flat)
         self.assertIn('nunca** concluir "workspace limpo"', flat)
-        self.assertIn("#213", self.skill)
+        self.assertIn("#213", flat)
 
 
 if __name__ == "__main__":
