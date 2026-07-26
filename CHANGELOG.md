@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.56.0] - 2026-07-26
+
+### Fixed
+- **Doctor conhece a store unificada e a camada de sessão da conta (#190)** — o incidente de 15-16/07 provou que o doctor mirava uma store morta e prescrevia reparo que devolvia o catálogo fóssil. Agora: (1) **precedência invertida** (revoga a régua do #146): a store atual é a unificada `~/.claude/plugins`; `~/.claude/cowork_plugins` e os `cowork_plugins` de sessão são marcados **LEGADO morto** e nunca viram alvo havendo alternativa instalada — plugin só no legado ganha diagnóstico próprio; (2) **camada 5 da propagação inspecionada**: o que o registro server-side da conta materializa nas sessões (`<sessão>/<id>/rpm/` + `manifest.json`, layout ancorado na máquina real) — materialização atrás do marketplace vira `session_divergence` nomeada com o `updatedAt` do registro; (3) **prescrição validada em todas as ações de re-add**: remover o marketplace INTEIRO na UI → re-adicionar como `owner/repo` (o formulário atual REJEITA URL raw) → reinstalar → **sessão nova**; com a CLI no PATH, oferece `claude plugin install`; (4) referência de divergência **por elo da cadeia** (sessão × marketplace; checkout × remoto; repo dev fica fora da régua); (5) docs: `cowork-runtime-maintenance.md` documenta as 5 camadas e o quarto modo de falha (registro congelado) onde o #145 documentou os três primeiros; `prumo_cowork_update.sh` declara o escopo (camada 3). 7 testes novos + flip do teste de precedência da era #146.
+
 ## [5.55.0] - 2026-07-26
 
 ### Added

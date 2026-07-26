@@ -287,9 +287,11 @@ class DoctorStoreDiscoveryTests(unittest.TestCase):
                 "o alvo tem que ser o store onde o plugin está INSTALADO",
             )
 
-    def test_two_installed_stores_prefer_cowork(self) -> None:
-        # Review Codex (#146): CLI moderno + Cowork antigo, ambos instalados —
-        # o doctor do COWORK tem que mirar o cowork_plugins, não o CLI.
+    def test_two_installed_stores_prefer_current_over_legacy(self) -> None:
+        # #190 INVERTE a regra do #146: o Cowork atual opera sobre a store
+        # unificada; cowork_plugins é legado morto e nunca vira alvo havendo
+        # alternativa instalada — mirar nele prescreveu reparo inútil no
+        # incidente real de 15-16/07.
         import subprocess
 
         with tempfile.TemporaryDirectory() as tmp:
@@ -323,8 +325,9 @@ class DoctorStoreDiscoveryTests(unittest.TestCase):
             )
             self.assertEqual(completed.returncode, 0, completed.stderr)
             result = json.loads(completed.stdout)
-            self.assertEqual(result["target_root"], str(cowork_store),
-                             "empate de instalados: o alvo é o store do Cowork")
+            self.assertEqual(result["target_root"], str(cli_store),
+                             "legado morto nunca é alvo havendo alternativa instalada (#190)")
+            self.assertIn(str(cowork_store), result["legacy_stores"])
 
     def test_marketplace_path_that_is_a_file_does_not_crash(self) -> None:
         # Regressão vista na máquina real: marketplaces/<nome> era um ARQUIVO;

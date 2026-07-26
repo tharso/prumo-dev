@@ -9,8 +9,8 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 | Tópico                | Entradas                                                                                  |
 |-----------------------|-------------------------------------------------------------------------------------------|
 | `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first), 2026-05-04 (#77), 2026-06-21 (#97 mapas), 2026-06-25 (#114 perfil modular), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#139 guarda-corpos), 2026-07-02 (#140 fichário), 2026-07-02 (#141 diário), 2026-07-03 (#147 ideias), 2026-07-03 (#148 conexões), 2026-07-24 (#194 perímetro de leitura), 2026-07-16 (#177 dívidas estruturais), 2026-07-24 (#201 índice de projetos) |
-| `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-04 (#158 detecção defasagem), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime), 2026-07-05 (#170 transporte de update local), 2026-07-12 (#172 taxonomia do picker), 2026-07-19 (#191 decidir mostra o item), 2026-07-24 (#195 dieta fase 1 — produtor do cache de versão), 2026-07-16 (#177 dívidas estruturais) |
-| `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first), 2026-05-06 (quality-gate), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#141 diário — emenda à #68), 2026-07-25 (baseline ruff 6 / 868), 2026-07-26 (baseline coverage 85) |
+| `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-04 (#158 detecção defasagem), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime), 2026-07-05 (#170 transporte de update local), 2026-07-12 (#172 taxonomia do picker), 2026-07-19 (#191 decidir mostra o item), 2026-07-24 (#195 dieta fase 1 — produtor do cache de versão), 2026-07-16 (#177 dívidas estruturais), 2026-07-26 (#190 store unificada + camada de sessão) |
+| `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first), 2026-05-06 (quality-gate), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#141 diário — emenda à #68), 2026-07-25 (baseline ruff 6 / 868), 2026-07-26 (baseline coverage 85), 2026-07-26 (#190 store unificada) |
 | `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist), 2026-06-24 (#110 não-bundle), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime), 2026-07-05 (#170 transporte de update local), 2026-07-16 (#177 dívidas estruturais) |
 | `dispatch-bootstrap`  | 2026-04-21 (#69 despacho), 2026-06-23 (#104 briefing rico), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-05 (#160 porta/instalação agnóstica), 2026-07-12 (#172 taxonomia do picker), 2026-07-24 (#194 perímetro de leitura), 2026-07-24 (#201 índice de projetos), 2026-07-25 (#197 semente substitui releitura), 2026-07-25 (#206 outras_secoes + gate por capacidade), 2026-07-25 (#196 briefing em dois tempos), 2026-07-26 (#216 seed em arquivo) |
 | `multiagent-coord`    | 2026-04-20 (#68 HANDOVER), 2026-07-24 (#194 perímetro de leitura — delegação)             |
@@ -60,6 +60,18 @@ Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões ant
 - `code-quality` — métricas de qualidade do codebase, quality gate, baseline.
 
 ---
+
+## 2026-07-26 — Doctor: store unificada é o alvo; camada de sessão (registro da conta) entra no diagnóstico (#190)
+
+**Tópicos:** skills-distribution, governance
+
+**Issues relacionadas:** [#190](https://github.com/tharso/prumo-dev/issues/190) (incidente real de 15-16/07 diagnosticado com o dono).
+
+**Relações com decisões anteriores:** **revoga** a precedência do #146 ("empate entre stores instalados prefere cowork_plugins") — aquela régua nasceu quando `~/.claude/cowork_plugins` era a store viva; o Cowork de jul/2026 opera sobre a store unificada `~/.claude/plugins` e a antiga está morta. **Estende** #145 (três naturezas de congelamento) com o quarto modo de falha: registro server-side da conta congelado. **Mantém** #159 (espelho preserva história).
+
+**Contexto:** no incidente, o doctor mirou a store morta e prescreveu "remova e re-adicione", que re-vinculou o registro congelado do servidor e devolveu o catálogo fóssil. A investigação revelou a 5ª camada da propagação (sessões materializam do registro da conta em `rpm/`, não do store local) e que a UI atual rejeita URL raw.
+
+**Decisão:** precedência de alvo `unified > other > codex > legacy_cowork` (legado marcado como entulho removível, nunca alvo com alternativa); camada de sessão inspecionada via `rpm/manifest.json` com divergência nomeada pelo `updatedAt`; toda ação de re-add usa a receita validada (`owner/repo`, aviso de URL raw, sessão nova, CLI quando presente); divergência medida **por elo da cadeia** (sessão×marketplace, checkout×remoto — repo dev fora da régua). Documentado em `cowork-runtime-maintenance.md` (5 camadas + 4º modo de falha) ao lado do que o #145 documentou.
 
 ## 2026-07-26 — Baseline: cobertura 82 → 85 (ruff 6 e 868 mantidos)
 

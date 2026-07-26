@@ -22,13 +22,18 @@ Uso:
   scripts/prumo_cowork_doctor.sh [--sessions-root PATH] [--extra-root PATH]... [--marketplace-name NAME] [--plugin-id ID] [--workspace PATH] [--offline] [--json]
 
 O que faz:
-  1. Localiza os stores reais de plugins (sessões do Cowork + ~/.claude/cowork_plugins + ~/.claude/plugins + ~/.codex/plugins)
+  1. Localiza os stores reais de plugins e os CLASSIFICA (#190): a store atual é a unificada
+     ~/.claude/plugins; ~/.claude/cowork_plugins e os cowork_plugins de sessão são LEGADO morto
+     (marcados, nunca alvo havendo alternativa instalada)
   2. Inspeciona o checkout do marketplace usado pelo Cowork
   3. Compara versão do plugin instalado, versão do checkout local e HEAD remoto do repositório
   4. Flagra plugin de era antiga (pré-5.x) e catálogo fresco com instalação defasada
   5. Com --workspace: drift plugin↔workspace (prumo_version do core vs plugin instalado) (#179 PR9)
   6. Enumera caches de plugin (cache/<mkt>/<plugin>/<versão>) com bytes e comando de remoção PRONTO — nunca executa
   7. Hash agregado das árvores de skills (checkout vs instalado) — drift de conteúdo com versões iguais
+  8. Inspeciona a CAMADA DE SESSÃO (#190): o que o registro server-side da conta materializa em
+     <sessão>/<id>/rpm/ — divergência do marketplace é nomeada com o updatedAt do registro, e a
+     prescrição é a validada: re-add como owner/repo (URL raw é rejeitada pela UI), sessão nova
 
 Nota: --extra-root é repetível e SUBSTITUI os defaults na primeira ocorrência.
       --offline pula TODA rede (ls-remote e staleness por URL) — pra diagnóstico hermético.
@@ -99,6 +104,7 @@ import json
 import os
 import re
 import shlex
+import shutil
 import subprocess
 import sys
 import urllib.error
@@ -118,11 +124,15 @@ repo_root = script_dir.parent
 plugin_name = plugin_id.split("@", 1)[0]
 
 
+def is_single_component(value):
+    return bool(value) and value not in {".", ".."} and not any(c in value for c in ("/", "\\", "\0"))
+
+
 def require_single_component(label, value):
     # Review Codex (round 3): nome com separador ou '..' construiria paths
     # FORA do store (root/marketplaces/<nome>, cache/<mkt>/<plugin>). Nome é
     # componente único ou nada.
-    if not value or value in {".", ".."} or "/" in value or "\\" in value or "\0" in value:
+    if not is_single_component(value):
         print(f"{label} inválido (tem que ser um único componente de path): {value!r}", file=sys.stderr)
         raise SystemExit(2)
 
@@ -198,6 +208,129 @@ def fetch_url_version(url: str, timeout: float = 1.5):
     except (urllib.error.URLError, OSError, ValueError):
         return None
     return value if semver_tuple(value) else None
+
+
+def readd_recipe(source):
+    # Receita VALIDADA no incidente de 2026-07-15/16 (#190): só identidade
+    # NOVA no servidor (fonte git owner/repo) força clone fresco; a UI atual
+    # rejeita URL raw ("Este host não é suportado").
+    repo = None
+    if isinstance(source, dict) and source.get("source") == "github":
+        repo = source.get("repo")
+    form = f"`{repo}`" if repo else "`owner/repo` (ex.: `tharso/prumo`)"
+    recipe = (
+        f"Remova o marketplace INTEIRO na UI, re-adicione como {form} "
+        "(formato owner/repo — o formulário atual REJEITA URL raw), reinstale o plugin e teste em SESSÃO NOVA."
+    )
+    if shutil.which("claude"):
+        recipe += f" Com a CLI no PATH, o reparo local é `claude plugin install {plugin_id}`."
+    return recipe
+
+
+def store_kind(root: Path):
+    # Classificação das stores (#190): o Cowork atual usa a store UNIFICADA
+    # (~/.claude/plugins, a mesma da CLI); ~/.claude/cowork_plugins e os
+    # cowork_plugins de sessão são da era ≤março/2026 — mortos, nada mais
+    # escreve neles. Legado NUNCA vira alvo se houver alternativa.
+    name = root.name
+    if "cowork_plugins" in root.as_posix():
+        return "legacy_cowork"
+    if name == "plugins" and root.parent.name == ".claude":
+        return "unified"
+    if name == "plugins" and root.parent.name == ".codex":
+        return "codex"
+    return "other"
+
+
+def scan_session_materializations(base: Path):
+    # Camada 5 da propagação (#190): sessões do Cowork NÃO leem store local —
+    # materializam o plugin do REGISTRO SERVER-SIDE da conta em
+    # <sessão>/<id>/rpm/plugin_<id>/, com um manifest.json índice em rpm/.
+    # Profundidade fixa (sem rglob); symlink nunca atravessado — nem no rpm/,
+    # nem no plugin_dir, nem no VERSION; o `id` do manifesto é dado NÃO
+    # confiável e só entra no path como componente único revalidado por
+    # resolve(). Falha de leitura/schema NÃO some: vira session_scan_errors.
+    found = []
+    errors = []
+    if base.is_symlink() or not base.is_dir():
+        return found, errors
+    try:
+        level1 = [d for d in base.iterdir() if d.is_dir() and not d.is_symlink()]
+    except OSError as exc:
+        errors.append({"path": str(base), "error": f"listagem falhou: {exc.__class__.__name__}"})
+        return found, errors
+    for outer in level1:
+        try:
+            level2 = [d for d in outer.iterdir() if d.is_dir() and not d.is_symlink()]
+        except OSError as exc:
+            errors.append({"path": str(outer), "error": f"listagem falhou: {exc.__class__.__name__}"})
+            continue
+        for inner in level2:
+            rpm_dir = inner / "rpm"
+            if rpm_dir.is_symlink():
+                errors.append({"path": str(rpm_dir), "error": "rpm/ é symlink — não atravessado"})
+                continue
+            manifest_path = rpm_dir / "manifest.json"
+            if manifest_path.is_symlink():
+                errors.append({"path": str(manifest_path), "error": "manifest.json é symlink — não lido"})
+                continue
+            if not manifest_path.is_file():
+                continue
+            try:
+                manifest = read_json(manifest_path)
+            except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+                errors.append({"path": str(manifest_path), "error": f"manifest ilegível: {exc.__class__.__name__}"})
+                continue
+            plugins = manifest.get("plugins") if isinstance(manifest, dict) else None
+            if not isinstance(plugins, list):
+                errors.append({"path": str(manifest_path), "error": "schema inesperado: sem lista `plugins`"})
+                continue
+            for entry in plugins:
+                if not isinstance(entry, dict):
+                    errors.append({"path": str(manifest_path), "error": f"entrada não-objeto na lista `plugins`: {type(entry).__name__}"})
+                    continue
+                if entry.get("name") != plugin_name:
+                    continue
+                entry_id = entry.get("id")
+                if not isinstance(entry_id, str) or not is_single_component(entry_id):
+                    # ID ausente/não-string/não-componente: entrada IGNORADA
+                    # com rastro — sem id não há materialização que valha.
+                    errors.append({"path": str(manifest_path), "error": f"id de plugin ausente ou suspeito no manifesto: {entry_id!r}"})
+                    continue
+                version = None
+                plugin_dir = rpm_dir / entry_id
+                version_file = plugin_dir / "VERSION"
+                try:
+                    inside = True
+                    try:
+                        plugin_dir.resolve().relative_to(rpm_dir.resolve())
+                    except ValueError:
+                        inside = False
+                    if (
+                        inside
+                        and not plugin_dir.is_symlink()
+                        and plugin_dir.is_dir()
+                        and not version_file.is_symlink()
+                        and version_file.is_file()
+                    ):
+                        version = read_text(version_file)
+                except OSError:
+                    version = None
+                updated_at = entry.get("updatedAt")
+                if updated_at is not None and not isinstance(updated_at, str):
+                    # Não-string quebraria o sort — normaliza e deixa rastro.
+                    errors.append({"path": str(manifest_path), "error": f"updatedAt não-string no manifesto: {updated_at!r}"})
+                    updated_at = None
+                found.append({
+                    "session_path": str(inner),
+                    "plugin_id": entry_id,
+                    "updated_at": updated_at,
+                    "updated_at_verified": entry.get("updatedAtVerified"),
+                    "marketplace_name": entry.get("marketplaceName"),
+                    "version": version,
+                })
+    found.sort(key=lambda item: item.get("updated_at") or "", reverse=True)
+    return found, errors
 
 
 def read_workspace_core_version(workspace: Path):
@@ -495,7 +628,7 @@ def inspect_root(root: Path):
         actions.append("Adicione o marketplace prumo-marketplace no Cowork antes de diagnosticar update.")
     elif not install_location or not install_location.is_dir():
         notes.append("O marketplace está registrado, mas o checkout local não existe mais (ou virou arquivo).")
-        actions.append("Remova e adicione o marketplace novamente no Cowork.")
+        actions.append(readd_recipe(source))
     else:
         if checkout_stale:
             if checkout_divergence == "divergente":
@@ -532,7 +665,8 @@ def inspect_root(root: Path):
             "Skills atuais (fim, acervo, menu...) não existem nele — é disso que nasce 'Habilidade desconhecida'."
         )
         actions.append(
-            "Remova o plugin Prumo no host e reinstale pelo marketplace atualizado; depois reinicie o app."
+            "Reinstalação simples pode devolver o MESMO catálogo fóssil (registro da conta congelado, #190). "
+            + readd_recipe(source)
         )
 
     expected_repo_version = None
@@ -542,6 +676,7 @@ def inspect_root(root: Path):
 
     return {
         "root": str(root),
+        "store_kind": store_kind(root),
         "marketplace_known": bool(marketplace_entry),
         "marketplace_source": source,
         "marketplace_last_updated": last_updated,
@@ -595,17 +730,69 @@ caches = enumerate_caches(cache_bases, protected_paths, protected_versions)
 stale_caches = [c for c in caches if c["status"] == "stale"]
 cache_anomalies = [c for c in caches if c["status"] in {"suspeito", "indeterminado"}]
 # Target = o store onde o plugin está INSTALADO (é lá que a invocação resolve).
-# Empate entre stores instalados: preferir o do COWORK (cowork_plugins) — este
-# doctor diagnostica o Cowork; o CLI aparece na lista de stores de todo jeito.
-# Sem instalação em nenhum, cai no mais recente. Antes o doctor pegava só o
-# 1º store e dizia "nada urgente" com um plugin de março instalado em outro.
+# Precedência (#190, INVERTE a regra do #146): o Cowork atual opera sobre a
+# store UNIFICADA (~/.claude/plugins); cowork_plugins é legado morto e NUNCA
+# vira alvo havendo alternativa instalada — mirar nele foi o que prescreveu
+# reparo inútil no incidente de 15-16/07. Sem instalação em nenhum, cai no
+# mais recente (comportamento de antes).
 with_install = [i for i in inspections if i["plugin_installed"]]
-cowork_installed = [i for i in with_install if "cowork_plugins" in i["root"]]
-target = (
-    cowork_installed[0]
-    if cowork_installed
-    else (with_install[0] if with_install else (inspections[0] if inspections else None))
-)
+_KIND_ORDER = {"unified": 0, "other": 1, "codex": 2, "legacy_cowork": 3}
+with_install.sort(key=lambda i: _KIND_ORDER.get(i["store_kind"], 1))
+# Fallback sem instalação TAMBÉM respeita a classe (review Codex): mtime só
+# desempata dentro da mesma classe (sort estável sobre a ordem de mtime do
+# collect_roots) — senão uma legada recém-tocada voltaria a ser alvo.
+no_install_sorted = sorted(inspections, key=lambda i: _KIND_ORDER.get(i["store_kind"], 1))
+target = with_install[0] if with_install else (no_install_sorted[0] if no_install_sorted else None)
+
+legacy_stores = [i["root"] for i in inspections if i["store_kind"] == "legacy_cowork"]
+legacy_note = None
+if legacy_stores:
+    legacy_note = (
+        "Store legada presente (era ≤março/2026, nada mais escreve nela): "
+        + "; ".join(legacy_stores)
+        + " — entulho removível; o Cowork atual usa a store unificada ~/.claude/plugins e o registro da conta (#190)."
+    )
+if target is not None and target["store_kind"] == "legacy_cowork":
+    legacy_note = (
+        (legacy_note + " ATENÇÃO: o plugin SÓ está instalado na store legada — instale pela store atual do host. ")
+        if legacy_note
+        else ""
+    ) + readd_recipe(target.get("marketplace_source"))
+
+# Camada de sessão (#190): o que a conta REALMENTE materializa nas sessões
+# do Cowork. Divergência da melhor referência local = o mecanismo do
+# incidente (registro server-side parado) — nomeada com o updatedAt.
+session_materializations, session_scan_errors = scan_session_materializations(sessions_root)
+session_latest = session_materializations[0] if session_materializations else None
+session_divergence = None
+session_reference = None
+session_note = None
+session_action = None
+if session_latest and session_latest.get("version") and target is not None:
+    # Referência por ELO da cadeia de distribuição: sessão compara com o
+    # marketplace (checkout/catálogo/remoto-url); o drift do checkout contra
+    # o remoto git tem elo próprio, e o repo dev desta cópia fica FORA — é
+    # outra camada (aparece no painel como informação, não como régua).
+    candidates = [
+        ("checkout do marketplace", target.get("marketplace_checkout_version")),
+        ("catálogo do marketplace", target.get("marketplace_declared_plugin_version")),
+        ("VERSION remoto (url)", target.get("marketplace_remote_version")),
+    ]
+    candidates = [(label, v) for label, v in candidates if v and semver_tuple(v)]
+    if candidates:
+        ref_label, ref_version = max(candidates, key=lambda pair: semver_tuple(pair[1]))
+        session_reference = {"label": ref_label, "version": ref_version}
+        if semver_tuple(session_latest["version"]) < semver_tuple(ref_version):
+            session_divergence = True
+            session_note = (
+                f"A sessão materializa {session_latest['version']} (registro da conta, "
+                f"updatedAt {session_latest.get('updated_at') or 'n/d'}), atrás de {ref_version} ({ref_label}). "
+                "Se o updatedAt está parado no passado, é o registro server-side congelado do #190 — "
+                "reinstalação simples re-vincula o registro velho."
+            )
+            session_action = readd_recipe(target.get("marketplace_source"))
+        else:
+            session_divergence = False
 
 # Drift plugin↔workspace (#179 PR9): o core do workspace declara a versão
 # que o usuário REALMENTE usa; plugin instalado ≠ core = as duas pontas da
@@ -656,6 +843,14 @@ result = {
     "caches": caches,
     "stale_caches": stale_caches,
     "cache_anomalies": cache_anomalies,
+    "legacy_stores": legacy_stores,
+    "legacy_note": legacy_note,
+    "session_materializations": session_materializations,
+    "session_scan_errors": session_scan_errors,
+    "session_reference": session_reference,
+    "session_divergence": session_divergence,
+    "session_note": session_note,
+    "session_action": session_action,
     "roots": inspections,
 }
 
@@ -677,10 +872,12 @@ print(f"Store alvo: {target['root']}")
 if len(inspections) > 1:
     print()
     print("Stores inspecionados")
+    _KIND_LABEL = {"unified": "store atual (unificada)", "legacy_cowork": "LEGADA (morta)", "codex": "codex", "other": "outra"}
     for item in inspections:
         marker = "← alvo" if item is target else ""
         installed_desc = item["plugin_version"] or ("—" if not item["plugin_installed"] else "?")
-        print(f"- {item['root']} · plugin instalado: {installed_desc} {marker}".rstrip())
+        kind = _KIND_LABEL.get(item["store_kind"], item["store_kind"])
+        print(f"- {item['root']} · {kind} · plugin instalado: {installed_desc} {marker}".rstrip())
 print()
 print("Marketplace")
 print(f"- conhecido: {'sim' if target['marketplace_known'] else 'não'}")
@@ -727,6 +924,20 @@ if workspace_arg:
     if workspace_note:
         print(f"- nota: {workspace_note}")
 
+if session_latest or session_scan_errors:
+    print()
+    print("Sessão (registro da conta)")
+    if session_latest:
+        print(f"- materializada: {session_latest.get('version') or 'n/d'} · updatedAt: {session_latest.get('updated_at') or 'n/d'}")
+        if session_reference:
+            print(f"- referência local mais fresca: {session_reference['version']} ({session_reference['label']})")
+        if session_divergence is None:
+            print("- divergência: n/d")
+        else:
+            print(f"- divergência: {'SIM' if session_divergence else 'não'}")
+    if session_scan_errors:
+        print(f"- varredura INCOMPLETA: {len(session_scan_errors)} erro(s) de leitura/schema — camada 5 indeterminada nesses pontos (detalhe no --json)")
+
 if caches:
     print()
     print("Caches")
@@ -739,17 +950,23 @@ if caches:
         for entry in stale_caches:
             print(f"    {entry['remove_command']}")
 
-if target["diagnosis"] or workspace_note:
+if target["diagnosis"] or workspace_note or legacy_note or session_note:
     print()
     print("Diagnóstico")
     for item in target["diagnosis"]:
         print(f"- {item}")
     if workspace_note:
         print(f"- {workspace_note}")
+    if legacy_note:
+        print(f"- {legacy_note}")
+    if session_note:
+        print(f"- {session_note}")
 
 final_actions = list(target["recommended_actions"])
 if workspace_action:
     final_actions.append(workspace_action)
+if session_action and session_action not in final_actions:
+    final_actions.append(session_action)
 if stale_caches:
     total_mb = sum(c["bytes"] for c in stale_caches) / (1024 * 1024)
     final_actions.append(
