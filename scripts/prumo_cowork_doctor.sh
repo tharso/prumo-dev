@@ -118,6 +118,19 @@ repo_root = script_dir.parent
 plugin_name = plugin_id.split("@", 1)[0]
 
 
+def require_single_component(label, value):
+    # Review Codex (round 3): nome com separador ou '..' construiria paths
+    # FORA do store (root/marketplaces/<nome>, cache/<mkt>/<plugin>). Nome é
+    # componente único ou nada.
+    if not value or value in {".", ".."} or "/" in value or "\\" in value or "\0" in value:
+        print(f"{label} inválido (tem que ser um único componente de path): {value!r}", file=sys.stderr)
+        raise SystemExit(2)
+
+
+require_single_component("--marketplace-name", marketplace_name)
+require_single_component("--plugin-id (parte antes do @)", plugin_name)
+
+
 def read_json(path: Path):
     return json.loads(path.read_text())
 
@@ -266,9 +279,15 @@ def enumerate_caches(bases, protected_paths, protected_versions):
             })
             continue
         cache_dir = base / "cache" / marketplace_name / plugin_name
+        base_resolved = base.resolve()
+        # Defesa em profundidade: mesmo com nomes validados, só listar se o
+        # cache_dir resolvido continua DENTRO do store.
+        try:
+            cache_dir.resolve().relative_to(base_resolved)
+        except ValueError:
+            continue
         if not cache_dir.is_dir():
             continue
-        base_resolved = base.resolve()
         for vdir in sorted(cache_dir.iterdir()):
             if vdir.is_symlink() or not vdir.is_dir():
                 continue
@@ -574,6 +593,7 @@ for inspection in inspections:
     protected_versions.update(inspection["all_installed_versions"])
 caches = enumerate_caches(cache_bases, protected_paths, protected_versions)
 stale_caches = [c for c in caches if c["status"] == "stale"]
+cache_anomalies = [c for c in caches if c["status"] in {"suspeito", "indeterminado"}]
 # Target = o store onde o plugin está INSTALADO (é lá que a invocação resolve).
 # Empate entre stores instalados: preferir o do COWORK (cowork_plugins) — este
 # doctor diagnostica o Cowork; o CLI aparece na lista de stores de todo jeito.
@@ -635,6 +655,7 @@ result = {
     "workspace_action": workspace_action,
     "caches": caches,
     "stale_caches": stale_caches,
+    "cache_anomalies": cache_anomalies,
     "roots": inspections,
 }
 
@@ -733,6 +754,18 @@ if stale_caches:
     total_mb = sum(c["bytes"] for c in stale_caches) / (1024 * 1024)
     final_actions.append(
         f"Caches antigos somam {total_mb:.1f} MB — os comandos de remoção prontos estão na seção Caches acima."
+    )
+suspicious = [c for c in cache_anomalies if c["status"] == "suspeito"]
+undetermined = [c for c in cache_anomalies if c["status"] == "indeterminado"]
+if suspicious:
+    final_actions.append(
+        f"{len(suspicious)} entrada(s) de cache SUSPEITAS (symlink na cadeia ou path fora do store) — "
+        "inspecione à mão antes de qualquer coisa; o doctor não monta comando pra elas de propósito."
+    )
+if undetermined:
+    final_actions.append(
+        f"{len(undetermined)} entrada(s) de cache indeterminadas (duplicata da versão instalada ou nome fora do padrão) — "
+        "confira a origem à mão; sem certeza, nada de rm."
     )
 
 print()

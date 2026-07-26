@@ -206,6 +206,54 @@ class DoctorDriftTests(unittest.TestCase):
         self.assertIsNone(entry["bytes"], "symlink não é atravessado nem pra contar bytes")
         self.assertEqual(Path(entry["path"]), evil_store / "cache")
         self.assertNotIn(str(evil_store), " ".join(c["root"] for c in result["stale_caches"]))
+        # Review Codex (round 3): anomalia não pode sumir do veredito — o
+        # payload expõe cache_anomalies e o modo texto produz ação sem rm.
+        self.assertIn(entry, result["cache_anomalies"])
+        completed = subprocess.run(
+            [
+                "bash",
+                str(SCRIPT),
+                "--sessions-root",
+                str(self.sessions),
+                "--extra-root",
+                str(self.store),
+                "--extra-root",
+                str(evil_store),
+                "--offline",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertIn("SUSPEITAS", completed.stdout)
+        self.assertIn("inspecione à mão", completed.stdout)
+
+    def test_marketplace_name_with_path_separator_is_rejected(self) -> None:
+        # Review Codex (round 3): nome com '/' ou '..' construiria paths fora
+        # do store (root/marketplaces/<nome>, cache/<mkt>/<plugin>).
+        self._build_store()
+        for evil in ("../fora", "a/b", ".."):
+            with self.subTest(name=evil):
+                completed = subprocess.run(
+                    [
+                        "bash",
+                        str(SCRIPT),
+                        "--sessions-root",
+                        str(self.sessions),
+                        "--extra-root",
+                        str(self.store),
+                        "--marketplace-name",
+                        evil,
+                        "--offline",
+                        "--json",
+                    ],
+                    capture_output=True,
+                    text=True,
+                    timeout=60,
+                )
+                self.assertEqual(completed.returncode, 2, completed.stdout)
+                self.assertIn("componente", completed.stderr)
 
     def test_same_version_without_matching_install_path_is_indeterminado(self) -> None:
         # Review Codex (round 1): duplicata da versão instalada em OUTRO store
@@ -235,6 +283,7 @@ class DoctorDriftTests(unittest.TestCase):
         self.assertEqual(entry["status"], "indeterminado")
         self.assertIsNone(entry["remove_command"])
         self.assertEqual(result["stale_caches"], [])
+        self.assertIn(entry, result["cache_anomalies"])
 
     def test_source_url_staleness_via_file_scheme(self) -> None:
         # Review Codex (round 1): o caminho source:url testado de verdade,
