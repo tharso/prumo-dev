@@ -101,6 +101,30 @@ TWO_TEMPOS_INVARIANTS = (
     "Abrir arquivo bruto do Inbox4Mobile (Estágio B — aprofundamento) só DEPOIS da primeira entrega",
 )
 
+# Conformidade do briefing (#214/#217/#218/#211 — lote B do relatório de
+# execução): proibições e obrigações que o briefing real de 25/07 provou
+# serem puláveis em silêncio.
+CONFORMIDADE_INVARIANTS = (
+    "proibido de escrever `last-briefing.json`",
+    "seguem permitidos** — a proibição é sobre fingir ser o runtime",
+    "Sem runtime aqui, o dia não fica marcado",
+    "A checagem de faxina declara o resultado SEMPRE (#217",
+    "só depois de olhar as CINCO famílias do `faxina.md`",
+    "PAUTA→REGISTRO de concluídos, `Referencias/INDICE.md` e rotação do `Diario/`",
+    "Briefing sem a linha de faxina é briefing **fora de conformidade**",
+    "GERAR o HTML interativo da skill `decidir` e entregá-lo linkado — automaticamente, sem pedir autorização prévia (#218)",
+    "Sinal de divergência agenda × email (#211)",
+    "comparar cada compromisso com a agenda da SUA data",
+    "consulta pontual à agenda de amanhã antes de declarar",
+    "só com confirmação do usuário; nunca criar sozinho",
+)
+
+# O resumo da SKILL não pode regredir pra ambiguidade que a #218 matou.
+CONFORMIDADE_SKILL_INVARIANTS = (
+    "**gerar automaticamente o despacho visual da skill `decidir`",
+    "sem perguntar antes (#218)",
+)
+
 
 def _section(text: str, header: str) -> str:
     match = re.search(rf"^## {re.escape(header)}.*?(?=^## )", text, re.MULTILINE | re.DOTALL)
@@ -199,6 +223,19 @@ class PreloadSingleEnumerationTests(unittest.TestCase):
         ):
             with self.subTest(anchor=anchor):
                 self.assertIn(anchor, text)
+
+    def test_conformidade_contracts_present(self) -> None:
+        # Lote B (#214/#217/#218/#211): o pulo silencioso vira violação
+        # detectável — marcação proibida sem runtime, faxina declarada,
+        # decidir automático, divergência sinalizada.
+        text = PROCEDURE.read_text(encoding="utf-8")
+        for invariant in CONFORMIDADE_INVARIANTS:
+            with self.subTest(invariant=invariant):
+                self.assertIn(invariant, text)
+        skill_text = SKILL.read_text(encoding="utf-8")
+        for invariant in CONFORMIDADE_SKILL_INVARIANTS:
+            with self.subTest(invariant=invariant):
+                self.assertIn(invariant, skill_text)
 
     def test_two_tempos_contracts_present(self) -> None:
         # #196: os contratos do briefing em dois tempos são invariantes —

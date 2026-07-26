@@ -1,6 +1,6 @@
 # Briefing Procedure
 
-> **module_version: 4.33.0**
+> **module_version: 4.34.0**
 >
 > Fonte canônica do procedimento de briefing do Prumo.
 > Se este módulo conflitar com um resumo em `SKILL.md`, este módulo vence.
@@ -39,6 +39,7 @@ O cartão do runtime (`prumo start` / `prumo briefing`) é a **prévia** — um 
 2. Conduzir a curadoria rica abaixo. `prumo briefing --workspace <path> --format json` pode ser lido como **painel local** (semente determinística da parte local), mas a resposta é sempre o panorama numerado rico.
 3. **Sem MCP de email/agenda:** entregar o panorama com o que há localmente (pauta, inbox) e **declarar em uma linha** que email e/ou agenda estão indisponíveis — e **orientar** a reestabelecer o acesso ou checar a agenda manualmente. Não mascarar: sem o calendário, compromissos com hora (incluindo rituais que viram evento) podem não estar refletidos, e o silêncio passaria por "agenda vazia" quando na verdade é "agenda não lida". Nunca cair de volta no cartão da prévia como "solução".
 4. Ao final do briefing **completo** — completo segundo a VARIANTE do host (tabela "Quando cada variante está COMPLETA" no Passo 5) —, registrar o dia: `prumo briefing --workspace <path> --mark-done` (quando há shell). Isso marca "briefing feito hoje" sem remontar o painel. **Escape do usuário NUNCA marca** — o briefing não aconteceu inteiro e a prévia pode voltar a recomendá-lo.
+5. **Sem runtime alcançável, NÃO HÁ marcação (#214):** o agente é **proibido de escrever `last-briefing.json`** — e qualquer outro **estado que pertence ao runtime** (arquivos que ele gera e gerencia em `.prumo/state/`) — à mão: no briefing real de 25/07 um agente gravou um timestamp INVENTADO fingindo ser o runtime. Artefatos de skill com contrato próprio de escrita (ex.: o HTML do `decidir` em `.prumo/state/decidir/`) **seguem permitidos** — a proibição é sobre fingir ser o runtime, não sobre as skills trabalharem. Aceitar a consequência e declará-la em uma linha: *"Sem runtime aqui, o dia não fica marcado — a prévia pode recomendar o briefing de novo."* O caminho portátil de marcação sem runtime, se um dia existir, nasce na #216 — nunca improvisado.
 
 ## Passo 1: configuração e data local
 
@@ -81,6 +82,8 @@ Arquivo bruto abre em **dois casos apenas**:
 **Sem runtime, sem `local_panorama` no JSON, ou JSON com erro:** fallback integral — ler `PAUTA.md` e `INBOX.md` como sempre. Nunca inventar dado a partir de JSON parcial (regras do AGENT.md: não fabricar JSON, não simular runtime).
 
 Checar faxina pendente (módulo `faxina.md`): se os sinais da semente (ou a checagem manual, no fallback) passaram dos thresholds, rodar a faxina antes de apresentar — ela age sozinha e o resultado entra no briefing em uma linha.
+
+**A checagem de faxina declara o resultado SEMPRE (#217 — verificável, não pulável):** o primeiro tempo contém uma linha de faxina, mesmo quando não há nada — *"Faxina: nada pendente"* ou *"Faxina: arquivei N itens do registro"* (elemento estrutural, sem número). **"Nada pendente" só depois de olhar as CINCO famílias do `faxina.md`** — os sinais da semente cobrem a rotação do REGISTRO (linhas da tabela) e os processados velhos do Inbox4Mobile; as outras três (**PAUTA→REGISTRO de concluídos, `Referencias/INDICE.md` e rotação do `Diario/`**) exigem a checagem local barata descrita no módulo; atestar limpeza olhando só uma parte é a mesma mentira com crachá novo. Briefing sem a linha de faxina é briefing **fora de conformidade** — no briefing real de 25/07 o passo foi pulado em silêncio e ninguém percebeu; a linha obrigatória torna o pulo detectável a olho nu.
 
 Filtro de cobrança (a regra é a mesma nos dois caminhos): itens com marker `| cobrar: DD/MM` só são elegíveis para o briefing quando a data é hoje, ontem (véspera) ou passada (atrasado). Itens com cobrança para daqui a 2+ dias ficam de fora do briefing — o objetivo é não cobrar antes da hora. Itens sem marker aparecem sempre. Marker ambíguo ou não-parseável: fail-open (mostrar o item). Na semente, `visible_today` já vem calculado por essa regra (e o teste de paridade do runtime trava a equivalência); em leitura direta, aplicar manualmente.
 
@@ -273,6 +276,7 @@ Componentes do segundo tempo (itens k+1..N, cada um com seu número):
 
 - Emails curados (Camadas 1, 2 e 3 aplicadas), com classificação Responder/Ver/Sem ação e prioridade P1/P2/P3 — **cada email é um item, continuando de k+1**.
 - Agenda do dia, consolidada por conta quando aplicável — **cada evento é um item, continuando após o último email** (é a ordem da REGRA DE NUMERAÇÃO e do Passo 4/Calendário).
+- **Sinal de divergência agenda × email (#211):** se a curadoria de email encontrou item com data e hora explícitas (hoje ou amanhã) e o calendário **daquela data** está vazio — comparar cada compromisso com a agenda da SUA data, nunca email de amanhã contra a agenda de hoje; **compromisso de amanhã dispara uma consulta pontual à agenda de amanhã antes de declarar** (uma query barata — nunca declarar divergência contra agenda que não foi consultada) —, emitir o sinal em linha própria (sem número): *"⚠ Agenda de {hoje|amanhã} vazia, mas o item N marca 19h — esse compromisso não está no calendário."* (a data no aviso é a DO COMPROMISSO) — e oferecer criar o evento (**só com confirmação do usuário; nunca criar sozinho**). No briefing real de 25/07 os 6 calendários voltaram vazios e o compromisso das 19h existia só no email — sem o sinal, uma falha na curadoria teria afirmado "dia livre" num dia com compromisso marcado. Não-bloqueante: sem caso, sem linha.
 
 Depois da lista numerada — **só no segundo tempo, porque precisa do quadro completo** — entregar a proposta do dia em uma linha curta (sem número) e oferecer opções respondíveis:
 
@@ -317,7 +321,7 @@ Junto à proposta do dia, **no máximo uma** sugestão associativa por briefing 
 
 ### Despacho visual (skill `decidir`)
 
-Quando o panorama tiver **6+ itens acionáveis** (conta só item que pede decisão — não evento puramente informativo), oferecer o despacho no formato visual além do chat: gerar o HTML interativo da skill `decidir` e linká-lo. Abaixo de 6, despachar em chat sai mais barato — não gerar.
+Quando o panorama tiver **6+ itens acionáveis** (conta só item que pede decisão — não evento puramente informativo), **GERAR o HTML interativo da skill `decidir` e entregá-lo linkado — automaticamente, sem pedir autorização prévia (#218)**. "Oferecer o despacho visual" significa DISPONIBILIZAR o link pronto junto do panorama, nunca perguntar "quer que eu gere?" — no briefing real de 25/07, 14 itens acionáveis viraram uma opção `c)` que o usuário precisaria pedir, exatamente o degrau que a regra existe pra eliminar. Abaixo de 6, despachar em chat sai mais barato — não gerar.
 
 - **Aditivo, não substitutivo.** O panorama numerado em chat continua sendo a camada base (regra 12 do core: dois tempos com numeração única — o HTML nunca substitui o chat). O HTML é a camada rica de despacho. Os cards **reusam os mesmos números** do panorama (o item `7` do chat vira o card `id: '7'`).
 - **Override do usuário, sempre.** "quero visual" / "gera o decidir" → gerar mesmo com poucos itens. "resolve no chat" / "sem HTML" → não gerar. Sinais conflitantes → perguntar "visual ou chat?".
