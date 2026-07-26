@@ -552,9 +552,22 @@ class DoctorStoresSessionTests(unittest.TestCase):
             {"plugins": [{"id": "../fora2", "name": "prumo", "updatedAt": "2026-07-02T00:00:00Z"}]},
         )
         result = self._run()
-        latest = result["session_materializations"][0]
-        self.assertIsNone(latest["version"], "id transversal nunca pode virar leitura de VERSION")
+        self.assertEqual(
+            result["session_materializations"], [],
+            "id transversal → entrada IGNORADA com rastro, nunca materialização",
+        )
         self.assertTrue(any("suspeito" in e["error"] for e in result["session_scan_errors"]))
+
+    def test_entry_without_id_is_ignored_with_error(self) -> None:
+        # Review Codex (round 3, #190): prumo sem campo id não vira
+        # materialização fantasma — ignorado com rastro.
+        self._build_store()
+        rpm = self.sessions / "s1" / "c1" / "rpm"
+        rpm.mkdir(parents=True)
+        _write_json(rpm / "manifest.json", {"plugins": [{"name": "prumo", "updatedAt": "2026-07-01T00:00:00Z"}]})
+        result = self._run()
+        self.assertEqual(result["session_materializations"], [])
+        self.assertTrue(any("ausente ou suspeito" in e["error"] for e in result["session_scan_errors"]))
 
     def test_invalid_manifest_schema_is_visible_not_silent(self) -> None:
         # Review Codex (round 1, #190): schema quebrado não pode nem derrubar

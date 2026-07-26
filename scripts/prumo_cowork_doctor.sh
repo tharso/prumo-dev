@@ -292,28 +292,30 @@ def scan_session_materializations(base: Path):
                 if entry.get("name") != plugin_name:
                     continue
                 entry_id = entry.get("id")
+                if not isinstance(entry_id, str) or not is_single_component(entry_id):
+                    # ID ausente/não-string/não-componente: entrada IGNORADA
+                    # com rastro — sem id não há materialização que valha.
+                    errors.append({"path": str(manifest_path), "error": f"id de plugin ausente ou suspeito no manifesto: {entry_id!r}"})
+                    continue
                 version = None
-                if isinstance(entry_id, str) and is_single_component(entry_id):
-                    plugin_dir = rpm_dir / entry_id
-                    version_file = plugin_dir / "VERSION"
+                plugin_dir = rpm_dir / entry_id
+                version_file = plugin_dir / "VERSION"
+                try:
+                    inside = True
                     try:
-                        inside = True
-                        try:
-                            plugin_dir.resolve().relative_to(rpm_dir.resolve())
-                        except ValueError:
-                            inside = False
-                        if (
-                            inside
-                            and not plugin_dir.is_symlink()
-                            and plugin_dir.is_dir()
-                            and not version_file.is_symlink()
-                            and version_file.is_file()
-                        ):
-                            version = read_text(version_file)
-                    except OSError:
-                        version = None
-                elif entry_id is not None:
-                    errors.append({"path": str(manifest_path), "error": f"id de plugin suspeito no manifesto: {entry_id!r}"})
+                        plugin_dir.resolve().relative_to(rpm_dir.resolve())
+                    except ValueError:
+                        inside = False
+                    if (
+                        inside
+                        and not plugin_dir.is_symlink()
+                        and plugin_dir.is_dir()
+                        and not version_file.is_symlink()
+                        and version_file.is_file()
+                    ):
+                        version = read_text(version_file)
+                except OSError:
+                    version = None
                 updated_at = entry.get("updatedAt")
                 if updated_at is not None and not isinstance(updated_at, str):
                     # Não-string quebraria o sort — normaliza e deixa rastro.
@@ -321,7 +323,7 @@ def scan_session_materializations(base: Path):
                     updated_at = None
                 found.append({
                     "session_path": str(inner),
-                    "plugin_id": entry_id if isinstance(entry_id, str) else None,
+                    "plugin_id": entry_id,
                     "updated_at": updated_at,
                     "updated_at_verified": entry.get("updatedAtVerified"),
                     "marketplace_name": entry.get("marketplaceName"),
