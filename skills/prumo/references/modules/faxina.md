@@ -88,13 +88,16 @@ de 14 dias são lixo residual.
 **Verificar:**
 - Ler `_processed.json`
 - Filtrar entradas com `processed_at` > 14 dias atrás
+- **Salvaguarda (#212): nunca remover entrada cujo arquivo ainda existe em `Inbox4Mobile/`** — `processed_at` velho com o arquivo ainda na pasta é estado inconsistente (o item talvez NÃO tenha sido processado de verdade): sinalizar ao usuário em vez de podar. A poda é por IDADE; a orfandade é só a trava de segurança — no dado real de 25/07, 0 das 43 entradas eram removíveis pelo critério de orfandade (as "órfãs" aparentes estavam legitimamente no `Arquivo/`).
 
 **Executar:**
-- Remover essas entradas do JSON
-- Se o arquivo original ainda existir e estiver como "processed": pode
-  mover pra `Prumo/Arquivo/` (sem deletar)
+- Remover do JSON apenas as entradas velhas cujo arquivo **não** está mais
+  em `Inbox4Mobile/` (já arquivado ou removido pelo fluxo normal).
+- **Arquivo ainda presente → não mover, não podar; apenas sinalizar** (a
+  salvaguarda da #212 acima): estado inconsistente é decisão do usuário,
+  nunca da faxina.
 
-**Reportar:** "Limpei X entrada(s) antiga(s) do inbox processado."
+**Reportar:** "Limpei X entrada(s) antiga(s) do inbox processado." — e, se houver, "Y entrada(s) inconsistente(s) sinalizadas (processadas no JSON, mas com arquivo ainda na pasta)."
 
 ### 5. Diario/ — rotação por data
 
