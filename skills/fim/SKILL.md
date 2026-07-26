@@ -100,9 +100,11 @@ determinísticos reusando os thresholds da faxina/sanitize:
 
 - `pauta_stalled` (itens parados > 14d) e `inbox_pending` → acúmulo de
   **conteúdo** (o *como*, depois do sim, é a revisão assistida — `/higiene`)
-- `backups_old` (> 90d) e `ephemeral_old` (artefatos efêmeros do decidir/acervo
-  — HTMLs e a fonte copiada — > 14d) → acúmulo **técnico** (o *como* é o
-  módulo `sanitize.md` do core)
+- `backups_old` (> 90d), `ephemeral_old` (artefatos efêmeros do decidir/acervo
+  — HTMLs e a fonte copiada — > 14d), `handover_legacy` (HANDOVERs do formato
+  aposentado, #68 — contam em qualquer idade) e `nested_backups` (backup
+  dentro de backup) → acúmulo **técnico** (o *como* é o módulo `sanitize.md`
+  do core; schema 1.1, #179)
 - `suggest.update` (o core do workspace — ou o runtime, na falta dele — atrás
   da versão pública em cache, #174) → **update pendente**
 

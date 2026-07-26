@@ -148,6 +148,103 @@ class FimDetectorTests(unittest.TestCase):
             self.assertEqual(lb.read_text(encoding="utf-8"), lb_before, "não pode tocar last-briefing.json")
 
 
+class FimSanitizeSignalsTests(unittest.TestCase):
+    """#179 PR10: `handover_legacy` e `nested_backups` — o /fim DETECTA o que a
+    sanitize trata, contando via os iterators públicos dela (read-only,
+    symlink-safe). Schema 1.0 → 1.1, aditivo."""
+
+    def _minimal_ws(self, root: Path) -> Path:
+        (root / "Prumo").mkdir(parents=True, exist_ok=True)
+        (root / ".prumo" / "state").mkdir(parents=True, exist_ok=True)
+        return root
+
+    def test_handover_and_nested_backups_counted_and_suggest_sanitize(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = self._minimal_ws(Path(tmp))
+            # HANDOVER é formato aposentado (#68): conta mesmo RECÉM-criado —
+            # idade não entra no critério, diferente de backups_old/ephemeral_old.
+            (ws / ".prumo" / "state" / "HANDOVER-2026-07-26.md").write_text("legado", encoding="utf-8")
+            nested = ws / ".prumo" / "backups" / "backups"
+            nested.mkdir(parents=True)
+            (nested / "dentro.tar").write_text("x", encoding="utf-8")
+            result = accumulation_signals(ws, today=TODAY)
+            self.assertEqual(result["schema_version"], "1.1")
+            self.assertEqual(result["signals"]["handover_legacy"], 1)
+            self.assertEqual(result["signals"]["nested_backups"], 1)
+            self.assertTrue(result["suggest"]["sanitize"])
+
+    def test_clean_workspace_has_zero_new_signals(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = self._minimal_ws(Path(tmp))
+            result = accumulation_signals(ws, today=TODAY)
+            self.assertEqual(result["signals"]["handover_legacy"], 0)
+            self.assertEqual(result["signals"]["nested_backups"], 0)
+            self.assertFalse(result["suggest"]["sanitize"])
+
+    def test_each_new_signal_alone_triggers_sanitize(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = self._minimal_ws(Path(tmp))
+            (ws / "_state").mkdir()
+            (ws / "_state" / "HANDOVER.md").write_text("legado", encoding="utf-8")
+            result = accumulation_signals(ws, today=TODAY)
+            self.assertEqual(result["signals"]["handover_legacy"], 1)
+            self.assertEqual(result["signals"]["nested_backups"], 0)
+            self.assertTrue(result["suggest"]["sanitize"])
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = self._minimal_ws(Path(tmp))
+            nested = ws / ".prumo" / "backup" / "backup"
+            nested.mkdir(parents=True)
+            result = accumulation_signals(ws, today=TODAY)
+            self.assertEqual(result["signals"]["handover_legacy"], 0)
+            self.assertEqual(result["signals"]["nested_backups"], 1)
+            self.assertTrue(result["suggest"]["sanitize"])
+
+    def test_symlinked_state_is_not_traversed(self) -> None:
+        # Postura da sanitize (#179): symlink nunca é atravessado — HANDOVER
+        # atrás de symlink não vira sinal (e não explode).
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            ws = base / "ws"
+            (ws / "Prumo").mkdir(parents=True)
+            (ws / ".prumo").mkdir(parents=True)
+            outside = base / "fora"
+            outside.mkdir()
+            (outside / "HANDOVER-x.md").write_text("fora", encoding="utf-8")
+            (ws / ".prumo" / "state").symlink_to(outside)
+            result = accumulation_signals(ws, today=TODAY)
+            self.assertEqual(result["signals"]["handover_legacy"], 0)
+
+    def test_render_text_never_cites_zero_families(self) -> None:
+        # Gatilho só por HANDOVER: a recomendação não pode citar "0 backups,
+        # 0 efêmeros" (contradição visível — família do fix do lote C).
+        from prumo_runtime.commands.fim import _render_text
+
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = self._minimal_ws(Path(tmp))
+            (ws / ".prumo" / "state" / "HANDOVER-1.md").write_text("legado", encoding="utf-8")
+            result = accumulation_signals(ws, today=TODAY)
+            text = _render_text(result)
+            rec = next(ln for ln in text.split("\n") if "Recomendação:" in ln)
+            self.assertIn("arquivos de sessão aposentados", rec)
+            self.assertNotIn("0 backups", rec)
+            self.assertNotIn("0 efêmeros", rec)
+            # O painel (linha 3) mostra TODAS as famílias, zeros inclusos.
+            painel = next(ln for ln in text.split("\n") if ln.startswith("3."))
+            self.assertIn("handovers legados: 1", painel)
+            self.assertIn("backups aninhados: 0", painel)
+
+    def test_new_signals_stay_read_only(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = self._minimal_ws(Path(tmp))
+            (ws / ".prumo" / "state" / "HANDOVER-1.md").write_text("legado", encoding="utf-8")
+            nested = ws / ".prumo" / "backups" / "backups"
+            nested.mkdir(parents=True)
+            (nested / "dentro.tar").write_text("x", encoding="utf-8")
+            before = _snapshot(ws)
+            accumulation_signals(ws, today=TODAY)
+            self.assertEqual(_snapshot(ws), before, "detector não pode escrever nada (#126)")
+
+
 class FimCliTests(unittest.TestCase):
     def test_cli_fim_json(self) -> None:
         import io
