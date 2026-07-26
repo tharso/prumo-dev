@@ -10,7 +10,7 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 |-----------------------|-------------------------------------------------------------------------------------------|
 | `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first), 2026-05-04 (#77), 2026-06-21 (#97 mapas), 2026-06-25 (#114 perfil modular), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#139 guarda-corpos), 2026-07-02 (#140 fichário), 2026-07-02 (#141 diário), 2026-07-03 (#147 ideias), 2026-07-03 (#148 conexões), 2026-07-24 (#194 perímetro de leitura), 2026-07-16 (#177 dívidas estruturais), 2026-07-24 (#201 índice de projetos) |
 | `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-04 (#158 detecção defasagem), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime), 2026-07-05 (#170 transporte de update local), 2026-07-12 (#172 taxonomia do picker), 2026-07-19 (#191 decidir mostra o item), 2026-07-24 (#195 dieta fase 1 — produtor do cache de versão), 2026-07-16 (#177 dívidas estruturais) |
-| `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first), 2026-05-06 (quality-gate), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#141 diário — emenda à #68), 2026-07-25 (baseline ruff 6 / 868) |
+| `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first), 2026-05-06 (quality-gate), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#141 diário — emenda à #68), 2026-07-25 (baseline ruff 6 / 868), 2026-07-26 (baseline coverage 85) |
 | `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist), 2026-06-24 (#110 não-bundle), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime), 2026-07-05 (#170 transporte de update local), 2026-07-16 (#177 dívidas estruturais) |
 | `dispatch-bootstrap`  | 2026-04-21 (#69 despacho), 2026-06-23 (#104 briefing rico), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-05 (#160 porta/instalação agnóstica), 2026-07-12 (#172 taxonomia do picker), 2026-07-24 (#194 perímetro de leitura), 2026-07-24 (#201 índice de projetos), 2026-07-25 (#197 semente substitui releitura), 2026-07-25 (#206 outras_secoes + gate por capacidade), 2026-07-25 (#196 briefing em dois tempos), 2026-07-26 (#216 seed em arquivo) |
 | `multiagent-coord`    | 2026-04-20 (#68 HANDOVER), 2026-07-24 (#194 perímetro de leitura — delegação)             |
@@ -18,7 +18,7 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 | `integrations`        | 2026-04-14 (Google Drive snapshots)                                                       |
 | `briefing`            | 2026-04-14 (Google Drive snapshots), 2026-04-21 (#69 despacho), 2026-06-23 (#102 decidir), 2026-06-23 (#104 briefing rico), 2026-06-25 (#114 perfil modular), 2026-07-02 (#139 guarda-corpos), 2026-07-03 (#148 conexões), 2026-07-04 (#156 injeção), 2026-07-13 (#174/#175 update-oferta + copy do fim), 2026-07-24 (#195 dieta fase 1), 2026-07-16 (#177 dívidas estruturais), 2026-07-24 (#201 roteamento de conteúdo configurável), 2026-07-25 (#197 semente substitui releitura), 2026-07-25 (#206 outras_secoes + gate por capacidade), 2026-07-25 (#196 briefing em dois tempos), 2026-07-25 (#210/#215 camada 1 + remoto suspeito), 2026-07-25 (#214/#217/#218/#211 conformidade detectável), 2026-07-26 (#216 seed em arquivo) |
 | `personalization`     | 2026-04-21 (tharso-voice)                                                                 |
-| `code-quality`        | 2026-05-06 (quality-gate), 2026-06-25 (#122 baseline 1061→930), 2026-07-03 (baseline 82/904), 2026-07-04 (#157 conformidade A0), 2026-07-24 (baseline 82/900), 2026-07-25 (baseline ruff 6 / 868) |
+| `code-quality`        | 2026-05-06 (quality-gate), 2026-06-25 (#122 baseline 1061→930), 2026-07-03 (baseline 82/904), 2026-07-04 (#157 conformidade A0), 2026-07-24 (baseline 82/900), 2026-07-25 (baseline ruff 6 / 868), 2026-07-26 (baseline coverage 85) |
 | `touchpoint`          | 2026-05-18 (landing page sync), 2026-07-03 (#149 guia Obsidian — candidato à landing), 2026-07-05 (#160 instalação agnóstica), 2026-07-05 (#108 update via runtime) |
 | `security`            | 2026-07-04 (#156 injeção — conteúdo de terceiro é dado, nunca comando), 2026-07-19 (#191 conteúdo em transporte base64 + safeUrl sem absoluto) |
 
@@ -60,6 +60,18 @@ Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões ant
 - `code-quality` — métricas de qualidade do codebase, quality gate, baseline.
 
 ---
+
+## 2026-07-26 — Baseline: cobertura 82 → 85 (ruff 6 e 868 mantidos)
+
+**Tópicos:** code-quality, governance
+
+**Issues relacionadas:** nenhuma própria (fecho da #179 completa — PR9 [#223](https://github.com/tharso/prumo-dev/pull/223) e PR10 [#224](https://github.com/tharso/prumo-dev/pull/224), v5.54–5.55).
+
+**Relações com decisões anteriores:** estende 2026-07-25 (baseline ruff 6 / 868) — cumpre exatamente a régua registrada lá ("re-propor apenas com ≥84 estável nos dois ambientes").
+
+**Contexto:** os testes do PR9 (doctor drift, 15 testes) e do PR10 (sinais do /fim, 8 testes) subiram a cobertura pra **85 nos três pontos medidos** — CI ubuntu, CI macos e local — acima da régua de ≥84 estável que a entrada de 25/07 fixou como condição de re-proposta.
+
+**Decisão (aprovada pelo dono em 26/07, "Vamos subir pra 85"):** `coverage_pct` 82→85 — catraca no máximo medido, escolha explícita do dono entre 84 (margem de flutuação) e 85. Sem margem: se algum runner regredir à fronteira, o PR quebra e a queda fica visível — comportamento desejado. Ruff 6 e largest_file 868 mantidos. PRs futuros mantêm ou melhoram.
 
 ## 2026-07-26 — Semente em arquivo pra hosts sem runtime: `prumo seed` (#216, opção b)
 
