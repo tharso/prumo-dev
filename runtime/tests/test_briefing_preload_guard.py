@@ -60,6 +60,7 @@ EXPECTED_MAP = frozenset(
         ("F1", "sempre", f"{_M}/briefing-estado.md", "(integral)", "estado operacional"),
         ("F1", "sempre", f"{_M}/version-preflight.md", "(integral)", "preflight de versão"),
         ("F1", "sempre", f"{_M}/faxina-thresholds.md", "(integral)", "números da faxina (defaults + overrides)"),
+        ("F1", "override do usuário existir", "Prumo/Custom/rules/faxina-thresholds.md", "(integral)", "thresholds customizados"),
         ("F1", "oferta/execução de update (warning/alert)", f"{_M}/version-update.md", "(integral)", "canônico do update"),
         ("F1", "scripts via shell", f"{_M}/runtime-paths.md", "(integral)", "resolução de scripts"),
         ("F1", "shell com runtime alcançável", f"{_M}/cowork-runtime-bridge.md", "(integral)", "ponte do runtime"),
@@ -150,6 +151,10 @@ GUARDRAIL_OWNERS: dict[str, Path] = {
     "**`Referencias/INDICE.md`**": ESTADO,
     "**Rotação do `Diario/`**": ESTADO,
     "carregar `faxina.md` e executar": ESTADO,
+    # Override × semente (round 4): threshold efetivo ≠ declarado pela
+    # semente → recalcular da fonte, nunca usar o pré-calculado.
+    "se o threshold EFETIVO (com override) diferir do declarado": ESTADO,
+    "**recalcular direto da fonte**": ESTADO,
     "Briefing sem a linha de faxina é briefing **fora de conformidade**": MONTAGEM,
     "GERAR o HTML interativo da skill `decidir` e entregá-lo linkado — automaticamente, sem pedir autorização prévia (#218)": MONTAGEM,
     # #211 (review Codex r1 do #180): DETECÇÃO nos canais (comparação +

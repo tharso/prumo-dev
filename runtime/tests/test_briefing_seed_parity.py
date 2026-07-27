@@ -221,6 +221,11 @@ class SeedParityTest(unittest.TestCase):
         self.assertEqual(self.panorama["faxina"]["registro_table_rows"], direct_rows)
         self.assertEqual(self.panorama["faxina"]["processed_entries"], 0)
         self.assertEqual(self.panorama["faxina"]["processed_stale_entries"], 0)
+        # #180 (round 4 do Codex): a semente DECLARA o threshold usado no
+        # pré-cálculo — é o que permite ao agente detectar override do
+        # usuário (Custom/rules) e recalcular da fonte em vez de confiar
+        # num número calculado com default diferente.
+        self.assertEqual(self.panorama["faxina"]["stale_days_threshold"], 14)
 
     def test_generated_for_uses_workspace_timezone(self) -> None:
         self.assertEqual(self.panorama["generated_for"], self.today.isoformat())
