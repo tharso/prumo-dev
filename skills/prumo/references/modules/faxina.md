@@ -70,7 +70,7 @@ pergunta "onde guardei aquele artigo?" e Prumo não sabe.
 - Comparar com a tabela em INDICE.md
 
 **Executar se houver diferença:**
-- Adicionar arquivos novos à tabela com: #, título (do cabeçalho), arquivo, data, descrição, keywords
+- Adicionar arquivos novos à tabela com: #, título (do cabeçalho), arquivo, data, descrição, keywords. **O `#` vem da alocação de ID do `ficha-de-fonte.md` (#244)** — rodapé `proximo-id` + sonda do candidato, sob lock atômico; nunca chutar pelo que a leitura parcial mostrou
 - Ficha de fonte (ver `ficha-de-fonte.md` nas references do core): título = cabeçalho da ficha; data = campo Entrada; descrição = "Por que guardei" resumido; keywords = campo Keywords
 - Se a tabela passar de `referencias_subcategorize_at` (default 30): agrupar por tema e criar seções
 

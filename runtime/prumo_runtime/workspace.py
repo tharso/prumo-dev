@@ -21,7 +21,7 @@ from prumo_runtime.constants import (
 )
 from prumo_runtime.capabilities import runtime_capabilities
 from prumo_runtime.backup import backup_path_for, copy_to_backup, move_with_backup
-from prumo_runtime import templates
+from prumo_runtime import canonical_diff, templates
 from prumo_runtime.workspace_paths import workspace_paths
 from prumo_runtime.identity import infer_user_name
 
@@ -675,6 +675,7 @@ def repair_workspace(workspace: Path) -> dict:
     drift = detect_version_drift(workspace)
     backup_root: Path | None = None
     if drift is not None:
+        map_watch = canonical_diff.watch(workspace_paths(workspace).canonical_agent)  # #247
         backup_root = bump_system_canonicals_for_repair(workspace, drift)
 
     rendered = render_files(config)
@@ -737,6 +738,8 @@ def repair_workspace(workspace: Path) -> dict:
             "to": drift[1],
             "backup_root": str(backup_root) if backup_root else None,
         }
+        result["canonical_map_dropped"] = map_watch.dropped()  # #247: aviso nominal
+        result["autoral_map_path"] = paths.relative(paths.agente_root / "MAPA-AUTORAL.md")
     return result
 
 

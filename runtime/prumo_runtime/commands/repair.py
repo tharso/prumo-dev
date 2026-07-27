@@ -28,6 +28,21 @@ def run_repair(args) -> int:
         )
         if drift.get("backup_root"):
             print(f"Backup em: {drift['backup_root']}")
+        # #247: perda no mapa vira aviso nominal — backup silencioso não avisa.
+        dropped = result.get("canonical_map_dropped") or []
+        if dropped:
+            print("")
+            print(
+                f"{len(dropped)} caminho(s) do mapa do AGENT.md anterior não aparecem "
+                "no mapa regenerado:"
+            )
+            for path in dropped:
+                print(f"- {path}")
+            autoral = result.get("autoral_map_path") or "Prumo/Agente/MAPA-AUTORAL.md"
+            print(
+                f"Caminhos autorais declaram-se em {autoral} — "
+                "esse arquivo sobrevive ao repair."
+            )
 
     if result["recreated"]:
         print("Arquivos recriados:")

@@ -78,9 +78,18 @@ EXPECTED_MAP = frozenset(
             "(integral)",
             "executor da faxina",
         ),
+        # #245: a gramática dos marcadores (dona: load-policy) carrega ANTES do
+        # gate de "caixa declarada" — senão o reconhecimento seria circular.
         (
             "F2",
-            "antes da triagem local do Inbox4Mobile OU de abrir email/agenda",
+            "`MAPA-AUTORAL.md` com nota (gramática dos marcadores)",
+            f"{_M}/load-policy.md",
+            "## Listagem de diretórios (perímetro de leitura, #194)",
+            "marcadores reservados (#245)",
+        ),
+        (
+            "F2",
+            "antes da triagem local do Inbox4Mobile, de caixa declarada OU de abrir email/agenda",
             f"{_M}/briefing-canais.md",
             "(integral)",
             "canais + defesas",
