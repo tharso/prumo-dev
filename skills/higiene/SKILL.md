@@ -92,11 +92,18 @@ Exemplo (voz Equilibrada — não é script): "Não tô dizendo que tá errado. 
 **Verificar:**
 - INBOX.md com itens há mais de 7 dias
 - Inbox4Mobile com arquivos não processados
+- Inbox4Mobile com **processados inconsistentes**: entrada no `_processed.json`
+  além do threshold com o arquivo ainda na pasta (a faxina sinaliza e para —
+  #212; a resolução é daqui)
 
 **Propor:**
 - "Tem coisa no inbox há X dias. Quer processar agora ou deixar pra depois?"
 - Se "agora": entrar no fluxo de inbox processing
 - Se "depois": deixar, sem insistir
+- Pros processados inconsistentes: "Tem N arquivo(s) marcados como processados
+  que continuam na pasta. Movo pra quarentena `_to_delete/` pra você esvaziar
+  quando quiser?" — só com confirmação explícita; mover segue a máquina de
+  remoção do `inbox-processing.md` (escopo `higiene`, com trilha no REGISTRO)
 
 **Intenção:** alertar o custo de fila parada e entregar a escolha (agora ou depois) sem insistir.
 Exemplo (voz Equilibrada — não é script): "Fila encostada tende a apodrecer. Mas a decisão é sua."
@@ -190,7 +197,7 @@ pergunta leve, sem acusar.
 
 1. **Higiene nunca resolve sozinha.** Sempre propõe, sempre espera.
 2. **Uma decisão por vez.** Não empilhar 7 perguntas numa mensagem.
-3. **Backup antes de mudar.** Se vai editar PERFIL.md ou mover arquivo, backup primeiro.
+3. **Backup antes de mudar.** Se vai editar PERFIL.md ou mover arquivo, backup primeiro. **Exceção (#242):** mover pra quarentena `_to_delete/` é, por si, a operação recuperável — não recebe backup duplicado.
 4. **Registrar em REGISTRO.md.** Toda mudança aplicada vira linha no registro.
 5. **Nunca reescrever preferências subjetivas.** Se o usuário escreveu de um jeito, é de um jeito.
 6. **Custom/ é sagrado.** Não propor mudanças em Custom/ — só avisar incompatibilidade.

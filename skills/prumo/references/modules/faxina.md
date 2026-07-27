@@ -95,7 +95,8 @@ Itens que já foram processados e estão no `_processed.json` além de
   em `Inbox4Mobile/` (já arquivado ou removido pelo fluxo normal).
 - **Arquivo ainda presente → não mover, não podar; apenas sinalizar** (a
   salvaguarda da #212 acima): estado inconsistente é decisão do usuário,
-  nunca da faxina.
+  nunca da faxina. A resolução assistida — oferecer mover esses arquivos pra
+  quarentena `_to_delete/`, com confirmação — mora na `higiene` (#242).
 
 **Reportar:** "Limpei X entrada(s) antiga(s) do inbox processado." — e, se houver, "Y entrada(s) inconsistente(s) sinalizadas (processadas no JSON, mas com arquivo ainda na pasta)."
 

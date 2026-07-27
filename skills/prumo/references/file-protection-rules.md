@@ -18,6 +18,7 @@ Antes de gerar QUALQUER arquivo, verificar se ele já existe na pasta do usuári
 | Prumo/Agente/INDEX.md (legado) | **NÃO sobrescrever.** Aposentado (#97): não é mais gerado, mas workspaces antigos têm um tombstone aqui — preservar. |
 | [Area]/README.md | **NÃO sobrescrever.** Informar: "A pasta [Area] já tem um README com contexto. Mantendo." |
 | Pastas (.prumo/logs/, .prumo/state/, Prumo/Inbox4Mobile/, Prumo/Referencias/) | **Criar apenas se não existirem.** |
+| `_to_delete/` (raiz do workspace) | **Quarentena do USUÁRIO (#242).** Não é gerada no setup: nasce quando a máquina de remoção move o primeiro item. O Prumo escreve lá APENAS movendo itens em commit confirmado — nunca lista, indexa, conta, apresenta em briefing/faxina/acervo, nem esvazia. Quem esvazia é o usuário, à mão. |
 
 ## Resumo pós-geração
 

@@ -1,6 +1,6 @@
 # Briefing — Montagem e fechamento (F3)
 
-> **module_version: 1.0.0**
+> **module_version: 5.63.0**
 >
 > Fase F3 da rota fásica do briefing (#180). Carregar **ao montar o
 > panorama** (o primeiro tempo já pode ser emitido a partir daqui; a
@@ -93,7 +93,7 @@ Depois do briefing:
 
 1. Atualizar `PAUTA.md` se algo mudou.
 2. Registrar ações no `REGISTRO.md`.
-3. Manter `Inbox4Mobile/_processed.json` sincronizado quando houver fallback sem deleção física.
+3. Manter `Inbox4Mobile/_processed.json` sincronizado com as remoções — remover é mover pra quarentena ou destino durável (`inbox-processing.md`, #242), nunca deletar.
 4. Registrar o briefing do dia: `prumo briefing --workspace <path> --mark-done` (quando há shell) — **somente se a variante do host se completou** (tabela acima; escape nunca marca). "Completo" é definido pela VARIANTE. Marca "briefing feito hoje" — sem isso, a prévia segue recomendando o briefing como se não tivesse acontecido.
 5. **Sem runtime alcançável, NÃO HÁ marcação (#214):** o agente é **proibido de escrever `last-briefing.json`** — e qualquer outro **estado que pertence ao runtime** (arquivos que ele gera e gerencia em `.prumo/state/`) — à mão: no briefing real de 25/07 um agente gravou um timestamp INVENTADO fingindo ser o runtime. Artefatos de skill com contrato próprio de escrita (ex.: o HTML do `decidir` em `.prumo/state/decidir/`) **seguem permitidos** — a proibição é sobre fingir ser o runtime, não sobre as skills trabalharem. Aceitar a consequência e declará-la em uma linha: *"Sem runtime aqui, o dia não fica marcado — a prévia pode recomendar o briefing de novo."* O caminho portátil de marcação sem runtime, se um dia existir, nasce na #216 — nunca improvisado.
 
