@@ -1,7 +1,6 @@
 # Thresholds da Faxina
 
-Esses limites podem ser ajustados em `Prumo/Custom/rules/` se o
-usuário quiser valores diferentes.
+Limites ajustáveis em `Prumo/Custom/rules/` (ver "Customização").
 
 ## Registro
 
@@ -15,13 +14,14 @@ usuário quiser valores diferentes.
 | Parâmetro | Valor padrão | O que significa |
 |-----------|-------------|----------------|
 | processed_expiry_days | 14 | Entradas processadas há mais de 14 dias são limpas |
+| declared_inbox_stale_days | 14 | Caixa declarada no mapa autoral com item mais velho: higiene sinaliza (#245) |
 
 ## Cache e backups
 
 | Parâmetro | Valor padrão | O que significa |
 |-----------|-------------|----------------|
 | backup_expiry_days | 90 | Backups mais velhos que 90 dias são removidos |
-| cache_expiry_days | 30 | Cache com mais de 30 dias é limpo |
+| cache_expiry_days | 30 | Cache além de 30 dias é limpo |
 
 ## Índices
 
@@ -37,9 +37,8 @@ usuário quiser valores diferentes.
 
 ## Customização
 
-Se o usuário quiser ajustar, criar em `Prumo/Custom/rules/faxina-thresholds.md`
-usando **os MESMOS nomes de parâmetro das tabelas acima** (vocabulário único —
-apelido novo não é override, é dialeto):
+Pra ajustar, criar `Prumo/Custom/rules/faxina-thresholds.md` com **os MESMOS
+nomes das tabelas acima** (apelido novo não é override, é dialeto):
 
 ```markdown
 # Thresholds customizados da faxina

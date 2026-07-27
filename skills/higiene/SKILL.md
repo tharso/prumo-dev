@@ -96,9 +96,10 @@ Exemplo (voz Equilibrada — não é script): "Não tô dizendo que tá errado. 
   além do threshold com o arquivo ainda na pasta (a faxina sinaliza e para —
   #212; a resolução é daqui)
 - **Caixa declarada envelhecida (#245)**: pasta marcada `(caixa de entrada)` no
-  mapa autoral com item mais velho que **14 dias** (mtime — metadata rasa
-  autorizada pelo contrato do marcador; conteúdo, nunca). Threshold
-  sobrescrevível em `Prumo/Custom/rules/`
+  mapa autoral com item mais velho que `declared_inbox_stale_days` (default 14
+  — `faxina-thresholds.md`; overrides em `Prumo/Custom/rules/`). A idade vem do
+  **mtime** (metadata rasa autorizada pelo contrato do marcador; conteúdo,
+  nunca)
 
 **Propor:**
 - "Tem coisa no inbox há X dias. Quer processar agora ou deixar pra depois?"

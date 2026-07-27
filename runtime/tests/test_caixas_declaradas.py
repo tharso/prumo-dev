@@ -35,14 +35,37 @@ class CaixasDeclaradasTest(unittest.TestCase):
         self.assertIn("antiga caixa de entrada", flat, "falta o exemplo de match exato")
 
     def test_gramatica_carrega_antes_do_gate(self) -> None:
-        """[P5-3]: bootstrap circular quebrado — a linha F2 da gramática vem
-        ANTES da linha do briefing-canais no mapa fásico."""
-        text = BRIEFING_SKILL.read_text(encoding="utf-8")
-        gramatica = text.find("gramática dos marcadores")
-        canais = text.find("briefing-canais.md")
-        self.assertNotEqual(gramatica, -1, "linha F2 da gramática ausente do manifesto")
-        self.assertLess(gramatica, canais, "gramática tem de carregar antes do gate")
-        self.assertIn("de caixa declarada OU de abrir email/agenda", text)
+        """[P5-3]: bootstrap circular quebrado — a linha da gramática precede a
+        do gate no MANIFESTO.
+
+        Ordem verificada na SEQUÊNCIA devolvida pelo `parse_manifest` (Codex,
+        diff r1: `EXPECTED_MAP` é frozenset — não trava ordem; e `str.find`
+        global seria enganado por menção em prosa ou comentário).
+        """
+        from test_briefing_preload_guard import _audit  # parser já carregado
+        parsed = _audit.parse_manifest(BRIEFING_SKILL.read_text(encoding="utf-8"))
+        self.assertIsNotNone(parsed, "manifesto ausente do briefing/SKILL.md")
+        rows, invalid = parsed
+        self.assertEqual(invalid, [], f"linhas malformadas no manifesto: {invalid}")
+        files = [(row["file"], row["trigger"]) for row in rows]
+        gramatica = [
+            i
+            for i, (f, t) in enumerate(files)
+            if f.endswith("load-policy.md") and "gramática dos marcadores" in t
+        ]
+        gate = [i for i, (f, _t) in enumerate(files) if f.endswith("briefing-canais.md")]
+        self.assertTrue(gramatica, "linha da gramática ausente do manifesto")
+        self.assertTrue(gate, "linha do gate (briefing-canais) ausente do manifesto")
+        self.assertLess(
+            min(gramatica),
+            min(gate),
+            "a gramática tem de vir ANTES do gate na sequência do manifesto",
+        )
+        self.assertIn(
+            "caixa declarada",
+            files[min(gate)][1],
+            "o gatilho do gate não cobre caixa declarada",
+        )
 
     def test_gramatica_declarada_uma_vez_so(self) -> None:
         """Dona única: nenhum outro módulo repete a lista de marcadores."""
@@ -74,8 +97,16 @@ class CaixasDeclaradasTest(unittest.TestCase):
     def test_higiene_sinaliza_caixa_envelhecida(self) -> None:
         flat = _flat(HIGIENE)
         self.assertIn("Caixa declarada envelhecida (#245)", flat)
-        self.assertIn("14 dias", flat)
+        self.assertIn("`declared_inbox_stale_days`", flat)
         self.assertIn("sinalizar, nunca reorganizar", flat)
+
+    def test_threshold_do_override_existe_de_verdade(self) -> None:
+        """[P5-2]: a promessa de override precisa de chave canônica declarada —
+        vocabulário inventado não é sobrescrevível."""
+        thresholds = REPO_ROOT / "skills" / "prumo" / "references" / "modules" / "faxina-thresholds.md"
+        flat = _flat(thresholds)
+        self.assertIn("declared_inbox_stale_days", flat)
+        self.assertRegex(flat, r"declared_inbox_stale_days \| 14 \|")
 
 
 if __name__ == "__main__":
