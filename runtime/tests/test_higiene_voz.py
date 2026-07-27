@@ -32,11 +32,13 @@ class HigieneVozTests(unittest.TestCase):
         self.assertEqual(self.text.count(EXAMPLE_LABEL), 6)
 
     def test_voice_section_points_to_perfil(self) -> None:
+        # Âncoras DENTRO da seção (round 2 do Codex): menção solta em outro
+        # lugar não conta como contrato da voz.
         self.assertIn("## Voz das propostas", self.text)
-        self.assertIn("Prumo/Agente/PERFIL.md", self.text)
-        self.assertIn("nunca script pra repetir", self.text)
-        # Todos os presets que o setup oferece (review Codex do PR12).
-        self.assertIn("Direto, Equilibrado, Gentil ou o dele próprio", self.text)
+        section = self.text.split("## Voz das propostas", 1)[1].split("\n## ", 1)[0]
+        self.assertIn("Prumo/Agente/PERFIL.md", section)
+        self.assertIn("nunca script pra repetir", section)
+        self.assertIn("Direto, Equilibrado, Gentil ou o dele próprio", section)
 
     def test_every_example_follows_an_intencao(self) -> None:
         # O exemplo vem IMEDIATAMENTE após a Intenção (próxima linha não
