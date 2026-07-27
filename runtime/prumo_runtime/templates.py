@@ -213,19 +213,13 @@ def render_agent_md(
         )
     reading_order = "\n".join(opening_reads)
 
-    on_demand_items = ["- `Agente/PERFIL.md`, `Agente/PESSOAS.md`, `Agente/ROTINA.md` e demais módulos do `Agente/` quando o playbook precisar de contexto pessoal."]
-    if skills_path:
-        on_demand_items.append(
-            "- `PAUTA.md` integral, `INBOX.md`, `REGISTRO.md` quando a intenção exigir (briefing, curadoria de email, revisão semanal, etc.)."
-        )
-        on_demand_items.append(
-            f"- `{core_path}` — Parte 2 (playbooks operacionais) e demais módulos da tabela em `{core_path}`."
-        )
-    else:
-        on_demand_items.append(
-            "- `PAUTA.md` integral, `INBOX.md`, `REGISTRO.md` quando a intenção exigir."
-        )
-        on_demand_items.append(f"- `{core_path}` — Parte 2 e módulos operacionais conforme necessidade.")
+    # Enxuto (#228 C5): sem repetir qualificadores por item — a frase de
+    # abertura da seção já diz "conforme a intenção".
+    on_demand_items = [
+        "- Módulos do `Agente/` (PERFIL, PESSOAS, ROTINA...) quando o playbook precisar de contexto pessoal.",
+        "- `PAUTA.md` integral, `INBOX.md`, `REGISTRO.md`.",
+        f"- `{core_path}` — Parte 2 (playbooks) e módulos da tabela de lá.",
+    ]
     on_demand_section = "\n".join(on_demand_items)
 
     logs_path = state_path.replace("state", "logs")

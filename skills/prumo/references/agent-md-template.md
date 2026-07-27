@@ -70,9 +70,9 @@ Fora disso, abertura não abre mais nada. A saudação vem proativa, com 2-4 op�
 
 ## Leitura sob demanda (conforme a intenção)
 
-- `Agente/PERFIL.md`, `Agente/PESSOAS.md`, `Agente/ROTINA.md` e demais módulos do `Agente/` quando o playbook precisar de contexto pessoal.
-- `PAUTA.md` integral, `INBOX.md`, `REGISTRO.md` quando a intenção exigir (briefing, curadoria de email, revisão semanal, etc.).
-- `.prumo/system/PRUMO-CORE.md` — Parte 2 (playbooks operacionais) e demais módulos da tabela em `.prumo/system/PRUMO-CORE.md`.
+- Módulos do `Agente/` (PERFIL, PESSOAS, ROTINA...) quando o playbook precisar de contexto pessoal.
+- `PAUTA.md` integral, `INBOX.md`, `REGISTRO.md`.
+- `.prumo/system/PRUMO-CORE.md` — Parte 2 (playbooks) e módulos da tabela de lá.
 
 ## Mapa do workspace
 
@@ -108,17 +108,11 @@ O workspace pode conter outros projetos com centenas de milhares de arquivos (`n
 4. Se o usuário chamar "Prumo" cru, "ei prumo" ou equivalente curto, consulte a tabela de skills disponíveis e leia o SKILL.md da skill `abrir`. Quando shell e runtime estiverem disponíveis, rodar `prumo` no diretório do workspace é atalho equivalente.
 5. Se `prumo` não estiver no PATH do host, tente o caminho absoluto de instalação do runtime neste sistema antes de concluir que ele sumiu.
 6. Se o pedido for briefing explícito, conduza a curadoria rica (skill `briefing` / `briefing-procedure.md`): email/agenda + panorama numerado único → `decidir`. O cartão do runtime é a prévia, não o briefing — não encerre nele.
-7. Para o painel local estruturado (semente/backcompat), `prumo briefing --workspace . --format json`.
-8. Se o host conseguir renderizar ações próprias, preferir `prumo start --format json` em vez de reinventar onboarding na unha.
-9. Ao consumir JSON estruturado, o host deve ler `adapter_contract_version`, `workspace_resolution` e `adapter_hints` antes de bancar o esperto.
-10. Antes de olhar `message`, leia `state_flags`, `degradation`, `next_move` e `selection_contract`. A prosa vem depois.
-11. Se `degradation.status` vier `error` ou `partial`, preserve o que ainda presta, mostre o tropeço em uma linha curta e, se houver `action_id` útil, priorize essa recuperação antes de inventar novo ritual.
-12. Não leia arquivo para simular `prumo`, `briefing` ou `start`. Primeiro execute o comando real.
-13. Não escreva `.prumo/state/` fingindo ser o runtime.
-14. Não fabrique JSON de `prumo start --format json` ou `prumo briefing --workspace . --format json`. Ou retorna a saída real, ou assume que falhou.
-15. Não rode comando extra só porque ficou curioso. Execute o que foi pedido ou o que o runtime sugeriu.
-16. Se um comando falhar por uso ou argumento inválido, não repita a mesma linha como disco riscado.
-17. Em falha parcial, preserve o que ainda presta e explique o tropeço em uma linha curta, sem vazar stack trace nem jargão técnico.
-18. Se `next_move.id == kickoff`, não abra cardápio de aeroporto. Faça uma segue curta e convide ao despejo inicial.
-19. Na invocação curta, não anuncie que vai rodar comando, ler JSON ou abrir arquivo. Execute primeiro e fale depois.
-20. Quando houver escolha, prefira uma pergunta por vez e opções curtas. Produto não é formulário com perfume.
+7. Antes de invocar `prumo start` ou `prumo briefing --workspace . --format json`, carregue `.prumo/skills/prumo/references/modules/runtime-consumo.md` — escolha de formato e contrato de consumo moram lá (#228).
+8. Não leia arquivo para simular `prumo`, `briefing` ou `start`. Primeiro execute o comando real.
+9. Não escreva `.prumo/state/` fingindo ser o runtime.
+10. Não rode comando extra só porque ficou curioso. Execute o que foi pedido ou o que o runtime sugeriu.
+11. Se um comando falhar por uso ou argumento inválido, não repita a mesma linha como disco riscado.
+12. Em falha parcial, preserve o que ainda presta e explique o tropeço em uma linha curta, sem vazar stack trace nem jargão técnico.
+13. Na invocação curta, não anuncie que vai rodar comando, ler JSON ou abrir arquivo. Execute primeiro e fale depois.
+14. Quando houver escolha, prefira uma pergunta por vez e opções curtas. Produto não é formulário com perfume.

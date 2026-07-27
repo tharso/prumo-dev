@@ -414,9 +414,9 @@ def build_skills_dispatch_block(workspace: Path) -> str:
         "|---|---|---|",
     ]
     for name, desc, path in entries:
-        # Truncar descrição longa pra caber na tabela
-        short_desc = desc[:120].rstrip()
-        if len(desc) > 120:
+        # Gancho-resumo (#228 C6): a descrição completa mora no SKILL.md.
+        short_desc = desc[:60].rstrip()
+        if len(desc) > 60:
             short_desc += "…"
         # Escapar pipe pra não quebrar a tabela Markdown
         safe_name = name.replace("|", "\\|")

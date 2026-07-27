@@ -80,54 +80,18 @@ RULES: tuple[WrapperRule, ...] = (
         _ALL_PROFILES,
     ),
     WrapperRule(
-        "painel-local-semente",
-        "Para o painel local estruturado (semente/backcompat), "
-        "`prumo briefing --workspace . --format json`.",
-        _BOTH,
-    ),
-    # Par 8/5 NÃO unificado de propósito: os predicados diferem em substância
-    # ("renderizar ações próprias" ⊂ "saber trabalhar com JSON") — unificar
-    # mudaria comportamento silenciosamente. Decisão de texto é do dono.
-    WrapperRule(
-        "start-json-preferido",
-        "Se o host souber trabalhar com JSON, prefira `prumo start --format json`.",
-        _WRAPPER,
-    ),
-    WrapperRule(
-        "start-json-renderizador",
-        "Se o host conseguir renderizar ações próprias, preferir `prumo start --format json` "
-        "em vez de reinventar onboarding na unha.",
-        _WORKSPACE,
-    ),
-    WrapperRule(
-        "adapter-hints-do-json",
-        "Se usar JSON, leia `adapter_hints` e respeite `kind`, `shell_command` e `host_prompt`.",
-        _WRAPPER,
-    ),
-    WrapperRule(
-        "contrato-antes-do-esperto",
-        "Ao consumir JSON estruturado, o host deve ler `adapter_contract_version`, "
-        "`workspace_resolution` e `adapter_hints` antes de bancar o esperto.",
-        _WORKSPACE,
-    ),
-    WrapperRule(
-        "flags-antes-da-prosa",
-        "Antes de olhar `message`, leia `state_flags`, `degradation`, `next_move` e "
-        "`selection_contract`. A prosa vem depois.",
-        _BOTH,
-    ),
-    WrapperRule(
-        "degradacao-preserva-e-recupera",
-        "Se `degradation.status` vier `error` ou `partial`, preserve o que ainda presta, "
-        "mostre o tropeço em uma linha curta e, se houver `action_id` útil, priorize essa "
-        "recuperação antes de inventar novo ritual.",
-        _BOTH,
-    ),
-    WrapperRule(
         "nao-reinvente-runtime",
         "Não reinvente `setup`, `migrate`, `repair` ou `auth`. Deixe o runtime tomar a "
         "primeira decisão.",
         _WRAPPER,
+    ),
+    WrapperRule(
+        "consumo-json-no-modulo",
+        "Antes de invocar `prumo start` ou `prumo briefing --workspace . --format json`, "
+        "carregue `.prumo/skills/prumo/references/modules/runtime-consumo.md` — escolha de "
+        "formato e contrato de consumo moram lá (#228).",
+        _BOTH,
+        _ALL_PROFILES,
     ),
     WrapperRule(
         "nao-simule-comando",
@@ -141,13 +105,6 @@ RULES: tuple[WrapperRule, ...] = (
         "Não escreva `{state_path}` fingindo ser o runtime.",
         _BOTH,
         _ALL_PROFILES,
-    ),
-    WrapperRule(
-        "nao-fabrique-json",
-        "Não fabrique JSON de `prumo start --format json` ou "
-        "`prumo briefing --workspace . --format json`. Ou retorna a saída real, ou assume "
-        "que falhou.",
-        _WORKSPACE,
     ),
     WrapperRule(
         "sem-comando-por-curiosidade",
@@ -165,12 +122,6 @@ RULES: tuple[WrapperRule, ...] = (
         "falha-parcial-preserva",
         "Em falha parcial, preserve o que ainda presta e explique o tropeço em uma linha "
         "curta, sem vazar stack trace nem jargão técnico.",
-        _BOTH,
-    ),
-    WrapperRule(
-        "kickoff-sem-cardapio",
-        "Se `next_move.id == kickoff`, não abra cardápio de aeroporto. Faça uma segue curta "
-        "e convide ao despejo inicial.",
         _BOTH,
     ),
     WrapperRule(

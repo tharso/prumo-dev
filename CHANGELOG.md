@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.61.0] - 2026-07-27
+
+### Changed
+- **Fase 2 da dieta: cortes C1–C6 aprovados pelo dono — rota do briefing 6.788 → 6.401 no pior perfil (#228)** — (C1) as **9 regras de consumo do JSON do runtime** (`state_flags`, `degradation`, `selection_contract`, fabricação proibida, kickoff...) saem das "Regras rápidas" da porta e dos wrappers — que pesavam na abertura de TODA sessão — e ganham dono único: **`runtime-consumo.md`**, carregado quando um comando do runtime realmente roda; porta e wrappers apontam (o par "start-json" segue não-unificado, decisão do dono na #179). (C2) A árvore ASCII do core encolhe pra top-level + ponteiro — o próprio core já declarava o `## Mapa do workspace` da porta como fonte de navegação; eram dois desenhos do mesmo workspace em F0. (C3) Descrições da tabela de comandos enxutas (estrutura intacta — é a fonte do parser). (C4) Prosa da seção de intenções compacta. (C5) "Leitura sob demanda" da porta sem qualificadores repetidos. (C6) Dispatch dos wrappers com gancho de 60 chars (a descrição completa mora no SKILL.md). **Catraca desceu: `briefing_f0f1_words` 6.788 → 6.401.** Alvo 4.999 segue na #228 — o restante mora nas regras transversais do core (reescrever contrato é decisão do dono).
+
 ## [5.60.0] - 2026-07-27
 
 ### Fixed

@@ -10,9 +10,9 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 |-----------------------|-------------------------------------------------------------------------------------------|
 | `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first), 2026-05-04 (#77), 2026-06-21 (#97 mapas), 2026-06-25 (#114 perfil modular), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#139 guarda-corpos), 2026-07-02 (#140 fichário), 2026-07-02 (#141 diário), 2026-07-03 (#147 ideias), 2026-07-03 (#148 conexões), 2026-07-24 (#194 perímetro de leitura), 2026-07-16 (#177 dívidas estruturais), 2026-07-24 (#201 índice de projetos) |
 | `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-04 (#158 detecção defasagem), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime), 2026-07-05 (#170 transporte de update local), 2026-07-12 (#172 taxonomia do picker), 2026-07-19 (#191 decidir mostra o item), 2026-07-24 (#195 dieta fase 1 — produtor do cache de versão), 2026-07-16 (#177 dívidas estruturais), 2026-07-26 (#190 store unificada + camada de sessão), 2026-07-27 (#181 PACKAGING.md), 2026-07-27 (#232 tarball universal) |
-| `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first), 2026-05-06 (quality-gate), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#141 diário — emenda à #68), 2026-07-25 (baseline ruff 6 / 868), 2026-07-26 (baseline coverage 85), 2026-07-26 (#190 store unificada), 2026-07-26 (#180 rota fásica — emenda à #195), 2026-07-27 (#180 gate da rota, teto 6788), 2026-07-27 (#181 PACKAGING.md), 2026-07-27 (#232 tarball universal) |
+| `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first), 2026-05-06 (quality-gate), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#141 diário — emenda à #68), 2026-07-25 (baseline ruff 6 / 868), 2026-07-26 (baseline coverage 85), 2026-07-26 (#190 store unificada), 2026-07-26 (#180 rota fásica — emenda à #195), 2026-07-27 (#180 gate da rota, teto 6788), 2026-07-27 (#181 PACKAGING.md), 2026-07-27 (#232 tarball universal), 2026-07-27 (#228 catraca 6401) |
 | `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist), 2026-06-24 (#110 não-bundle), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime), 2026-07-05 (#170 transporte de update local), 2026-07-16 (#177 dívidas estruturais), 2026-07-27 (#181 PACKAGING.md), 2026-07-27 (#232 tarball universal) |
-| `dispatch-bootstrap`  | 2026-04-21 (#69 despacho), 2026-06-23 (#104 briefing rico), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-05 (#160 porta/instalação agnóstica), 2026-07-12 (#172 taxonomia do picker), 2026-07-24 (#194 perímetro de leitura), 2026-07-24 (#201 índice de projetos), 2026-07-25 (#197 semente substitui releitura), 2026-07-25 (#206 outras_secoes + gate por capacidade), 2026-07-25 (#196 briefing em dois tempos), 2026-07-26 (#216 seed em arquivo), 2026-07-26 (#180 rota fásica — emenda à #195) |
+| `dispatch-bootstrap`  | 2026-04-21 (#69 despacho), 2026-06-23 (#104 briefing rico), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-05 (#160 porta/instalação agnóstica), 2026-07-12 (#172 taxonomia do picker), 2026-07-24 (#194 perímetro de leitura), 2026-07-24 (#201 índice de projetos), 2026-07-25 (#197 semente substitui releitura), 2026-07-25 (#206 outras_secoes + gate por capacidade), 2026-07-25 (#196 briefing em dois tempos), 2026-07-26 (#216 seed em arquivo), 2026-07-26 (#180 rota fásica — emenda à #195), 2026-07-27 (#228 C1-C6 — runtime-consumo.md) |
 | `multiagent-coord`    | 2026-04-20 (#68 HANDOVER), 2026-07-24 (#194 perímetro de leitura — delegação)             |
 | `documentation`       | 2026-04-14 (CLAUDE.md), 2026-06-21 (#97 mapas), 2026-07-03 (#149 guia Obsidian)           |
 | `integrations`        | 2026-04-14 (Google Drive snapshots)                                                       |
@@ -60,6 +60,20 @@ Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões ant
 - `code-quality` — métricas de qualidade do codebase, quality gate, baseline.
 
 ---
+
+## 2026-07-27 — Contrato de consumo do runtime tem dono próprio; catraca da rota desce pra 6.401 (#228, C1–C6)
+
+**Tópicos:** briefing, dispatch-bootstrap, code-quality, governance
+
+**Issues relacionadas:** [#228](https://github.com/tharso/prumo-dev/issues/228) (fase 2; cortes C1–C6 aprovados pelo dono: "C1 a C6, go!").
+
+**Relações com decisões anteriores:** estende 2026-07-26 (#180 rota fásica — mesmo princípio: material carrega no uso) e 2026-07-27 (#180 gate — catraca desce pelo mecanismo combinado); **emenda** a decisão de wrappers da #179 (as regras de consumo de JSON deixam de ser regra de superfície — o conjunto de superfícies encolhe de 17/20 pra 12/14 com ponteiro em todos os perfis); mantém a decisão do dono sobre o par start-json não-unificado (preservado no módulo novo).
+
+**Contexto:** das 403 palavras de "Regras rápidas" da porta, ~135 eram contrato de consumo do JSON — pago na abertura de TODA sessão, usado só quando um comando do runtime roda.
+
+**Decisão:** `runtime-consumo.md` é o dono único das 9 regras de consumo (fonte única MUDOU de lugar: saíram de `wrapper_rules.py`); porta e wrappers (todos os perfis) apontam pra ele; linha F1 condicional no mapa fásico ("antes de invocar comando do runtime — escolha de formato inclusa"; gatilho não-circular: as regras 1–3 do módulo governam a própria escolha). Cortes C2–C6 de dedup/prosa sem remoção de regra. `briefing_f0f1_words` **6.788 → 6.401**. O caminho até 4.999 exigiria reescrever as regras transversais do core — segue na #228 como decisão futura do dono.
+
+**Alternativas consideradas:** gerar o módulo a partir de `wrapper_rules.py` → rejeitado (duas fontes sincronizadas é o bug da #195 em outra roupa; as regras SAÍRAM do python); manter o contrato só no `AGENTS.md` full → rejeitado (o pior perfil é a régua do gate — não melhoraria nada); cortar as regras transversais do core já → rejeitado nesta fase (reescrever contrato de produto exige o dono corte a corte).
 
 ## 2026-07-27 — Update: tarball do espelho é o transporte universal; registry nunca (#232)
 

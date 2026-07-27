@@ -13,6 +13,22 @@ except ImportError:  # execução como runtime.tests.test_templates
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
+# As 9 regras do runtime-consumo.md, uma âncora DISTINTIVA por regra (#228
+# C1, r1-r2 do Codex) — incluindo os DOIS predicados start-json
+# (não-unificados por decisão do dono). Fonte única do guard.
+RUNTIME_CONSUMO_ANCHORS = (
+    "painel local estruturado (semente/backcompat)",
+    "Se o host souber trabalhar com JSON",
+    "Se o host conseguir renderizar ações próprias",
+    "leia `adapter_hints` e respeite `kind`, `shell_command` e `host_prompt`",
+    "`adapter_contract_version`, `workspace_resolution` e `adapter_hints` antes de bancar o esperto",
+    "Antes de olhar `message`, leia `state_flags`, `degradation`, `next_move` e `selection_contract`",
+    "Se `degradation.status` vier `error` ou `partial`",
+    "Não fabrique JSON de `prumo start --format json`",
+    "Se `next_move.id == kickoff`, não abra cardápio de aeroporto",
+)
+
+
 class TemplateAdapterTests(unittest.TestCase):
     def test_agents_wrapper_includes_short_invocation_contract(self) -> None:
         rendered = templates.render_agents_wrapper("Batata", "Prumo")
@@ -21,18 +37,20 @@ class TemplateAdapterTests(unittest.TestCase):
         self.assertIn('Se o usuário chamar "Prumo"', rendered)
         self.assertIn("skill `abrir`", rendered)
         self.assertIn("atalho equivalente", rendered)
-        self.assertIn("prumo briefing --workspace .", rendered)
-        self.assertIn("prumo start --format json", rendered)
         self.assertIn("prumo briefing --workspace . --format json", rendered)
-        self.assertIn("adapter_hints", rendered)
-        self.assertIn("state_flags", rendered)
-        self.assertIn("degradation", rendered)
-        self.assertIn("selection_contract", rendered)
         self.assertIn("Não leia arquivo para simular", rendered)
         self.assertIn("Não escreva `_state/`", rendered)
         self.assertIn("Não rode comando extra só porque ficou curioso", rendered)
-        self.assertIn("next_move.id == kickoff", rendered)
         self.assertIn("Execute primeiro e fale depois", rendered)
+        # #228 C1: o contrato de consumo do JSON mudou de dono — as âncoras
+        # vivem em runtime-consumo.md; a superfície aponta pra lá.
+        self.assertIn("runtime-consumo.md", rendered)
+        module = (
+            Path(__file__).resolve().parents[2]
+            / "skills" / "prumo" / "references" / "modules" / "runtime-consumo.md"
+        ).read_text(encoding="utf-8")
+        for anchor in RUNTIME_CONSUMO_ANCHORS:
+            self.assertIn(anchor, module)
 
     def test_nested_wrapper_points_to_real_core_and_state_paths(self) -> None:
         # Perfil FULL: contrato completo segue derivando os paths reais.
@@ -48,7 +66,9 @@ class TemplateAdapterTests(unittest.TestCase):
         self.assertIn("Leia `Prumo/AGENT.md`", rendered)
         self.assertIn("Use `.prumo/system/PRUMO-CORE.md`", rendered)
         self.assertIn("Não escreva `.prumo/state/`", rendered)
-        self.assertIn("next_move.id == kickoff", rendered)
+        # #228 C1: kickoff é regra do runtime-consumo.md agora; o wrapper
+        # full mantém o ponteiro.
+        self.assertIn("runtime-consumo.md", rendered)
         self.assertIn("Execute primeiro e fale depois", rendered)
 
     def test_claude_wrapper_default_is_minimal_with_door_and_perimeter(self) -> None:
@@ -83,16 +103,20 @@ class TemplateAdapterTests(unittest.TestCase):
         self.assertIn('Se o usuário chamar "Prumo"', rendered)
         self.assertIn("skill `abrir`", rendered)
         self.assertIn("atalho equivalente", rendered)
-        self.assertIn("prumo briefing --workspace .", rendered)
         self.assertIn("prumo briefing --workspace . --format json", rendered)
-        self.assertIn("adapter_hints", rendered)
-        self.assertIn("state_flags", rendered)
-        self.assertIn("degradation", rendered)
-        self.assertIn("selection_contract", rendered)
         self.assertIn("Não leia arquivo para simular", rendered)
         self.assertIn("Não escreva `_state/`", rendered)
         self.assertIn("Não rode comando extra só porque ficou curioso", rendered)
         self.assertIn("Execute primeiro e fale depois", rendered)
+        # #228 C1: o contrato de consumo do JSON mudou de dono — as âncoras
+        # vivem em runtime-consumo.md; a superfície aponta pra lá.
+        self.assertIn("runtime-consumo.md", rendered)
+        module = (
+            Path(__file__).resolve().parents[2]
+            / "skills" / "prumo" / "references" / "modules" / "runtime-consumo.md"
+        ).read_text(encoding="utf-8")
+        for anchor in RUNTIME_CONSUMO_ANCHORS:
+            self.assertIn(anchor, module)
 
     def test_workflows_template_exposes_structure_only_phase(self) -> None:
         rendered = templates.render_workflows_md("22/03/2026")

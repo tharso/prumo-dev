@@ -1,6 +1,6 @@
 # Prumo Core — Motor do sistema
 
-> **prumo_version: 5.60.0**
+> **prumo_version: 5.61.0**
 >
 > Núcleo estável do Prumo. Define regras, guardrails e localização dos módulos canônicos.
 > Procedimento detalhado não mora aqui.
@@ -24,32 +24,14 @@
 
 ```text
 [Workspace]/
-├── CLAUDE.md              ← ponteiro → Prumo/AGENT.md
-├── AGENT.md               ← ponteiro → Prumo/AGENT.md
-├── AGENTS.md              ← ponteiro → Prumo/AGENT.md
-├── Prumo/
-│   ├── AGENT.md           ← fonte canônica (navegação, fallback, regras)
-│   ├── PAUTA.md
-│   ├── INBOX.md
-│   ├── REGISTRO.md
-│   ├── IDEIAS.md
-│   ├── Agente/
-│   │   ├── PERFIL.md     ← identidade, áreas de vida, tom
-│   │   ├── PESSOAS.md    ← pessoas-chave e relacionamentos
-│   │   ├── ROTINA.md     ← rituais, hábitos, cadências sem hora
-│   │   ├── SAUDE.md      ← saúde, exames, médicos
-│   │   ├── INFRA.md      ← contas, domínios, ferramentas
-│   │   ├── PROJETOS.md   ← projetos e frentes de trabalho
-│   │   └── RELACOES.md   ← família, amigos, dinâmicas
-│   ├── Referencias/
-│   └── Inbox4Mobile/
-└── .prumo/
-    ├── skills/            ← cópia das skills do repo (fallback quando o CLI não existe; o core aqui é stub → system/)
-    ├── state/
-    ├── system/
-    │   └── PRUMO-CORE.md  ← este arquivo
-    └── logs/
+├── CLAUDE.md / AGENT.md / AGENTS.md  ← ponteiros → Prumo/AGENT.md
+├── Prumo/            ← fonte canônica: AGENT.md, PAUTA, INBOX, REGISTRO,
+│                       IDEIAS, Agente/ (perfil modular), Referencias/, Inbox4Mobile/
+└── .prumo/           ← infra: skills/ (fallback; core aqui é stub → system/),
+                        state/, system/PRUMO-CORE.md (este arquivo), logs/
 ```
+
+A árvore completa, arquivo a arquivo, mora no `## Mapa do workspace` do `Prumo/AGENT.md` (#228).
 
 Arquivos de estado esperados em `.prumo/state/`:
 
@@ -62,15 +44,15 @@ Arquivos de estado esperados em `.prumo/state/`:
 | Comando | Função |
 |---|---|
 | `/briefing` | Briefing diário |
-| `/acervo` | Navegar e revisitar o limbo (ideias soltas, pauta hibernando, referências) |
-| `/menu` | Manual de instruções: lista os comandos e tira dúvidas sobre o funcionamento |
-| `/fim` | Encerrar a sessão (documenta deltas, roda faxina, propõe limpeza) |
-| `/setup` | Onboarding e configuração (wizard ou rápido); também reconfigura |
-| `/higiene` | Higiene assistida do workspace: pauta parada, contradições, órfãos e referências quebradas, PERFIL pesado — propõe, você decide |
+| `/acervo` | Navegar o limbo: ideias soltas, pauta hibernando, referências |
+| `/menu` | Manual: comandos e dúvidas de funcionamento |
+| `/fim` | Encerrar a sessão: deltas, faxina, propostas de limpeza |
+| `/setup` | Onboarding e (re)configuração |
+| `/higiene` | Higiene assistida: propõe, você decide |
 
 ### Manutenção sem comando próprio (#172)
 
-Atendem por **linguagem natural** (tabela de intenções do `dispatch.md`), sem slash command ou skill própria — a sanitização tem executor no runtime (`prumo sanitize`, guiado pelo módulo); faxina e doctor seguem 100% módulo:
+Atendem por **linguagem natural** (tabela do `dispatch.md`), sem slash command — a sanitização tem executor (`prumo sanitize`); faxina e doctor são 100% módulo:
 
 | Intenção | Módulo |
 |---|---|
@@ -350,8 +332,8 @@ Histórico completo de versão vive em `CHANGELOG.md`.
 
 Versão atual deste core:
 
-- `5.60.0`
+- `5.61.0`
 
 ---
 
-*Prumo Core v5.60.0 — https://github.com/tharso/prumo*
+*Prumo Core v5.61.0 — https://github.com/tharso/prumo*
