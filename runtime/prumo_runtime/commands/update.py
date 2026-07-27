@@ -601,12 +601,32 @@ def _execute_plan(plan: dict, method: str) -> tuple[int, str | None]:
         return subprocess.run(["uv", "tool", "install", "--force", target]).returncode, plan.get("remote_version")
 
     if method == "install-script":
-        script_path = _download_install_script()
-        try:
-            print(f"Executando install script de: {CURL_INSTALL_URL}")
-            return subprocess.run(["bash", script_path]).returncode, plan.get("remote_version")
-        finally:
-            os.unlink(script_path)
+        # O script instala "latest em main" — sem contrato, é o mesmo bypass
+        # do registry em outra roupa (review Codex r4): a versão instalada
+        # poderia divergir da anunciada. Staging PRIMEIRO (mesmo preflight e
+        # contrato estrito do archive); o script então consome o tarball JÁ
+        # VALIDADO via PRUMO_INSTALL_ARCHIVE_URL (env que ele suporta),
+        # preservando marker e launcher.
+        remote_version = plan.get("remote_version") or ""
+        with tempfile.TemporaryDirectory(prefix="prumo-update-") as tmp:
+            staged_dir, staged_version, error = stage_archive_source(
+                remote_version, Path(tmp)
+            )
+            if staged_dir is None:
+                print(f"Update abortado: {error}")
+                return 1, None
+            validated_tarball = (Path(tmp) / "prumo-main.tar.gz").resolve()
+            script_path = _download_install_script()
+            try:
+                print(
+                    f"Executando install script de: {CURL_INSTALL_URL} "
+                    f"(fonte: tarball validado {staged_version})"
+                )
+                env = {**os.environ, "PRUMO_INSTALL_ARCHIVE_URL": validated_tarball.as_uri()}
+                rc = subprocess.run(["bash", script_path], env=env).returncode
+                return rc, staged_version
+            finally:
+                os.unlink(script_path)
 
     return 1, None
 
