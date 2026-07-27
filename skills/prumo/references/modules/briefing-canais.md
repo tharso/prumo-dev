@@ -31,6 +31,16 @@ Se `Inbox4Mobile/` existir no workspace:
 
 Não pular este passo. Não tratar `_preview-index.json` como substituto da checagem real. O index pode estar stale — a verdade está no filesystem comparado com `_processed.json`.
 
+## Caixas de entrada declaradas (#245)
+
+Caixa de entrada não é biblioteca: item processado SAI dela. Além do `Inbox4Mobile/`, o usuário pode marcar pastas como caixa no `Prumo/Agente/MAPA-AUTORAL.md` — `(caixa de entrada)`, marcador da lista fechada do `load-policy.md` (carregado antes deste gate; a gramática mora lá e não se repete aqui).
+
+**Estágio LOCAL, junto do inventário do Inbox4Mobile:** para cada caixa declarada, **listagem plana** da própria pasta e **contagem dos itens presentes** (não "novos": sem ledger não há como distinguir novidade de sobra antiga). Metadata rasa (nome, mtime) é permitida — conteúdo, não.
+
+**Escopo:** inventário e cobrança. **Nenhum processamento automático** de caixa declarada: `_processed.json` é contrato exclusivo do `Inbox4Mobile/`, e caixa de terceiros (ex.: pasta de um clipper) nunca é reorganizada por iniciativa própria. Quando o usuário mandar processar um item de lá, vale a máquina de remoção do `inbox-processing.md` (confirmar → registrar → mover pro destino durável ou quarentena → verificar), **sem baixa em ledger**.
+
+O que apodrece não é a pasta existir; é ninguém contar.
+
 ## Email e calendário via MCP direto
 
 Usar integração nativa de Gmail MCP e Calendar MCP como fonte primária.
