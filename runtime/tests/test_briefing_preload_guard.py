@@ -366,6 +366,33 @@ class MovedGuardrailsRegistryTests(unittest.TestCase):
             with self.subTest(invariant=invariant):
                 self.assertIn(invariant, faxina)
 
+    def test_override_mismatch_contract_is_coherent(self) -> None:
+        # Round 5 do Codex (#180): o contrato de override é executável de
+        # ponta a ponta — o runtime DECLARA 14 (constante travada), o dono
+        # dos números exemplifica um override diferente (7), e a regra que
+        # os liga (efetivo ≠ declarado → recalcular da fonte) está no dono
+        # certo. Se qualquer ponta mudar sem as outras, quebra aqui.
+        sys.path.insert(0, str(REPO_ROOT / "runtime"))
+        from prumo_runtime.local_panorama import _PROCESSED_STALE_DAYS
+
+        self.assertEqual(_PROCESSED_STALE_DAYS, 14)
+        thresholds = (MODULES / "faxina-thresholds.md").read_text(encoding="utf-8")
+        self.assertIn("- processed_expiry_days: 7", thresholds)
+        self.assertIn("stale_days_threshold", thresholds)
+        estado = ESTADO.read_text(encoding="utf-8")
+        self.assertIn("threshold efetivo ≠ declarado pela semente", estado)
+        # E o executor não guarda mais literal nenhum dos 5 números.
+        faxina = FAXINA.read_text(encoding="utf-8")
+        for param in (
+            "max_items",
+            "archive_age_days",
+            "processed_expiry_days",
+            "diario_expiry_days",
+            "referencias_subcategorize_at",
+        ):
+            with self.subTest(param=param):
+                self.assertIn(param, faxina)
+
 
 if __name__ == "__main__":
     unittest.main()

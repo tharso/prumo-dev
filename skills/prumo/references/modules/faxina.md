@@ -72,7 +72,7 @@ pergunta "onde guardei aquele artigo?" e Prumo não sabe.
 **Executar se houver diferença:**
 - Adicionar arquivos novos à tabela com: #, título (do cabeçalho), arquivo, data, descrição, keywords
 - Ficha de fonte (ver `ficha-de-fonte.md` nas references do core): título = cabeçalho da ficha; data = campo Entrada; descrição = "Por que guardei" resumido; keywords = campo Keywords
-- Se > 30 itens na tabela: agrupar por tema e criar seções
+- Se a tabela passar de `referencias_subcategorize_at` (default 30): agrupar por tema e criar seções
 
 **Não fazer:**
 - Não remover entradas cujo arquivo sumiu (pode ter sido movido)
