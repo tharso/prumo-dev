@@ -50,8 +50,7 @@ O `agent-lock.json` acima é **cooperativo**: bom pra evitar atropelo, insuficie
 
 0. **Garantir os pais** (o setup cria `.prumo/state/`, não as subpastas do lock): `mkdir -p .prumo/state/locks/released` — idempotente, não é a trava.
 1. **Com shell:** `mkdir '.prumo/state/locks/referencias-indice.d'` — a folha, **sem `-p`**: falha se já existe, e é isso que dá a exclusão sem janela.
-2. **Com runtime alcançável:** equivalente via `O_CREAT|O_EXCL`.
-3. **Sem nenhuma das duas:** **não escrever**. Dizer em uma linha que a alocação fica pra uma sessão com shell — ID adivinhado é o bug que a #244 corrigiu.
+2. **Sem shell:** **não escrever**. Dizer em uma linha que a alocação fica pra uma sessão com shell — ID adivinhado é o bug que a #244 corrigiu. (Um comando de runtime com `O_CREAT|O_EXCL` daria a mesma garantia, mas **não existe hoje** — prometer caminho inexistente é pior que não ter caminho.)
 
 **Liberação: mover, nunca deletar** — `mv .prumo/state/locks/referencias-indice.d .prumo/state/locks/released/<AAAA-MM-DDTHH-MM-SS>`. Deleção não é operação do produto (#242) e, no host que a proíbe, liberar por `rmdir` deixaria o índice travado **pra sempre**. Destino existente nunca é sobrescrito: checar o path candidato direto (sem listar) e, se ocupado, sufixo determinístico (`-2`, `-3`, …), a mesma regra da quarentena.
 

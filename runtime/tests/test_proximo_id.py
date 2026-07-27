@@ -111,7 +111,7 @@ class ProximoIdTest(unittest.TestCase):
             "`Prumo/Referencias/INDICE.md`",
             "mkdir -p .prumo/state/locks/released",
             "sem `-p`",
-            "O_CREAT|O_EXCL",
+            "não existe hoje",
             "**não escrever**",
             "Liberação: mover, nunca deletar",
             "sufixo determinístico",
@@ -154,6 +154,22 @@ class ProximoIdTest(unittest.TestCase):
             self.assertFalse(lock.exists(), "lock não foi liberado")
             self.assertTrue((released / "2026-07-27T23-00-00").is_dir())
             # e o path volta a ser adquirível
+            self.assertEqual(sh("mkdir .prumo/state/locks/referencias-indice.d"), 0)
+
+            # [254-2] COLISÃO na liberação: destino-base ocupado → sufixo
+            # determinístico, sem aninhar dentro do que já existe.
+            destino = ".prumo/state/locks/released/2026-07-27T23-00-00"
+            self.assertTrue((ws / destino).is_dir(), "destino-base deveria estar ocupado")
+            self.assertNotEqual(
+                sh(f"test -e {destino}-2"), 0, "sufixo -2 não deveria existir ainda"
+            )
+            self.assertEqual(sh(f"mv .prumo/state/locks/referencias-indice.d {destino}-2"), 0)
+            self.assertTrue((ws / f"{destino}-2").is_dir())
+            self.assertFalse(
+                (ws / destino / "referencias-indice.d").exists(),
+                "liberação aninhou dentro do destino ocupado — lock preso",
+            )
+            self.assertFalse(lock.exists())
             self.assertEqual(sh("mkdir .prumo/state/locks/referencias-indice.d"), 0)
 
     def test_faxina_aponta_para_a_alocacao(self) -> None:
