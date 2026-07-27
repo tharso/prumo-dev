@@ -459,6 +459,10 @@ def detect_missing(workspace: Path) -> dict[str, list[str]]:
         "authorial": list(authorial_files_for(workspace)),
         "derived": list(derived_files_for(workspace)),
     }
+    # Autorais NOVOS do runtime (ex.: MAPA-AUTORAL.md, #241) entram mesmo com
+    # schema legado — senão o 1º repair pós-upgrade não reporta (só o 2º).
+    files = {**files, "authorial": list(dict.fromkeys(
+        [*files.get("authorial", []), *authorial_files_for(workspace)]))}
     # O Agente/INDEX.md foi aposentado (Fase 2 #97). Schemas antigos ainda
     # podem listá-lo como autoral; sua ausência não é "missing".
     paths = workspace_paths(workspace)
@@ -772,17 +776,10 @@ def bump_system_canonicals_for_repair(
     workspace: Path,
     drift: tuple[str, str],
 ) -> Path:
-    """
-    Move arquivos do sistema (`.prumo/system/PRUMO-CORE.md`) e canonical do
-    Prumo (`Prumo/AGENT.md` em nested) pra backup pra que `repair_workspace`
-    os regenere com versão atual.
-
-    NÃO move wrappers de raiz (`AGENT.md`, `CLAUDE.md`, `AGENTS.md`). Esses
-    podem conter conteúdo autoral do usuário fora do bloco gerenciado e são
-    atualizados via merge no `repair_workspace`, não regenerados do zero.
-
-    Retorna o path do backup criado.
-    """
+    """Move sistema (`PRUMO-CORE.md`) e canonical (`Prumo/AGENT.md` em nested)
+    pra backup, pro `repair_workspace` regenerá-los na versão atual. NÃO move
+    wrappers de raiz: podem ter conteúdo autoral fora do bloco gerenciado e são
+    atualizados via merge, não regenerados. Retorna o path do backup criado."""
     workspace_version, runtime_version = drift
     workspace_resolved = workspace.resolve()
     timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")

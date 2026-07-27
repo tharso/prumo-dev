@@ -14,6 +14,18 @@ from zoneinfo import ZoneInfo
 from prumo_runtime import __version__
 from prumo_runtime.commands.start import run_start
 from prumo_runtime.platform_support import platform_label
+from prumo_runtime.workspace_paths import workspace_paths
+
+
+def _touch_current_authorial(workspace: Path) -> None:
+    """#241: `detect_missing` soma os autorais do runtime ao schema — fixture
+    que representa instalação ÍNTEGRA precisa tê-los no disco (stub basta);
+    só cria os ausentes, nunca sobrescreve o que o teste montou."""
+    for rel in workspace_paths(workspace).authorial_relative_paths():
+        target = workspace / rel
+        if not target.exists():
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text("# stub\n", encoding="utf-8")
 
 
 class StartCommandTests(unittest.TestCase):
@@ -144,6 +156,7 @@ class StartCommandTests(unittest.TestCase):
                 encoding="utf-8",
             )
             (state_dir / "last-briefing.json").write_text('{"at": ""}', encoding="utf-8")
+            _touch_current_authorial(workspace)
             args = Namespace(workspace=str(workspace), format="text")
             buffer = io.StringIO()
             with redirect_stdout(buffer):
@@ -256,6 +269,7 @@ class StartCommandTests(unittest.TestCase):
                 encoding="utf-8",
             )
             (workspace / ".prumo" / "state" / "last-briefing.json").write_text('{"at": ""}', encoding="utf-8")
+            _touch_current_authorial(workspace)
             args = Namespace(workspace=str(workspace), format="text")
             buffer = io.StringIO()
             with redirect_stdout(buffer):

@@ -88,6 +88,27 @@ class MapaAutoralTests(unittest.TestCase):
                 "repair tocou o MAPA-AUTORAL — a declaração do usuário tem de sobreviver",
             )
 
+    def test_primeiro_repair_com_schema_legado_ja_reporta(self) -> None:
+        """[P1 da r1 do gate]: workspace vindo de versão sem o mapa (schema
+        legado não o lista) tem de REPORTAR a ausência já no PRIMEIRO repair —
+        não na segunda rodada, depois de o schema atualizar. E nunca recriar."""
+        import json
+        with tempfile.TemporaryDirectory() as tmpdir:
+            ws = _make_test_workspace(Path(tmpdir))
+            rel = "Prumo/Agente/MAPA-AUTORAL.md"
+            (ws / rel).unlink()
+            schema_path = ws / ".prumo" / "state" / "workspace-schema.json"
+            schema = json.loads(schema_path.read_text(encoding="utf-8"))
+            schema["files"]["authorial"] = [
+                f for f in schema["files"]["authorial"] if f != rel
+            ]
+            schema_path.write_text(
+                json.dumps(schema, ensure_ascii=False, indent=2), encoding="utf-8"
+            )
+            result = repair_workspace(ws)
+            self.assertIn(rel, result["missing_authorial"])
+            self.assertFalse((ws / rel).exists(), "repair recriou autoral de schema legado")
+
     def test_repair_reporta_ausencia_sem_recriar(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             ws = _make_test_workspace(Path(tmpdir))

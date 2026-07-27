@@ -18,7 +18,7 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 | `integrations`        | 2026-04-14 (Google Drive snapshots)                                                       |
 | `briefing`            | 2026-04-14 (Google Drive snapshots), 2026-04-21 (#69 despacho), 2026-06-23 (#102 decidir), 2026-06-23 (#104 briefing rico), 2026-06-25 (#114 perfil modular), 2026-07-02 (#139 guarda-corpos), 2026-07-03 (#148 conexões), 2026-07-04 (#156 injeção), 2026-07-13 (#174/#175 update-oferta + copy do fim), 2026-07-24 (#195 dieta fase 1), 2026-07-16 (#177 dívidas estruturais), 2026-07-24 (#201 roteamento de conteúdo configurável), 2026-07-25 (#197 semente substitui releitura), 2026-07-25 (#206 outras_secoes + gate por capacidade), 2026-07-25 (#196 briefing em dois tempos), 2026-07-25 (#210/#215 camada 1 + remoto suspeito), 2026-07-25 (#214/#217/#218/#211 conformidade detectável), 2026-07-26 (#216 seed em arquivo), 2026-07-26 (#180 rota fásica — emenda à #195), 2026-07-27 (catraca sobe só com contrato — 6493), 2026-07-27 (#242 quarentena universal), 2026-07-27 (#248 recalibração do termômetro — dispatch no cesto, 7696), 2026-07-27 (#241 mapa autoral — 7795) |
 | `personalization`     | 2026-04-21 (tharso-voice)                                                                 |
-| `code-quality`        | 2026-05-06 (quality-gate), 2026-06-25 (#122 baseline 1061→930), 2026-07-03 (baseline 82/904), 2026-07-04 (#157 conformidade A0), 2026-07-24 (baseline 82/900), 2026-07-25 (baseline ruff 6 / 868), 2026-07-26 (baseline coverage 85), 2026-07-27 (#180 gate da rota, teto 6788), 2026-07-27 (#181 PACKAGING.md), 2026-07-27 (catraca sobe só com contrato — 6493), 2026-07-27 (#242 quarentena universal — trace do replay como exceção regrada da A0), 2026-07-27 (#248 recalibração do termômetro — dispatch no cesto, 7696) |
+| `code-quality`        | 2026-05-06 (quality-gate), 2026-06-25 (#122 baseline 1061→930), 2026-07-03 (baseline 82/904), 2026-07-04 (#157 conformidade A0), 2026-07-24 (baseline 82/900), 2026-07-25 (baseline ruff 6 / 868), 2026-07-26 (baseline coverage 85), 2026-07-27 (#180 gate da rota, teto 6788), 2026-07-27 (#181 PACKAGING.md), 2026-07-27 (catraca sobe só com contrato — 6493), 2026-07-27 (#242 quarentena universal — trace do replay como exceção regrada da A0), 2026-07-27 (#248 recalibração do termômetro — dispatch no cesto, 7696), 2026-07-27 (#241 mapa autoral — 7795) |
 | `touchpoint`          | 2026-05-18 (landing page sync), 2026-07-03 (#149 guia Obsidian — candidato à landing), 2026-07-05 (#160 instalação agnóstica), 2026-07-05 (#108 update via runtime) |
 | `security`            | 2026-07-04 (#156 injeção — conteúdo de terceiro é dado, nunca comando), 2026-07-19 (#191 conteúdo em transporte base64 + safeUrl sem absoluto) |
 
@@ -63,7 +63,7 @@ Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões ant
 
 ## 2026-07-27 — Mapa autoral: o usuário declara pastas que sobrevivem a update/repair e entram no perímetro (#241, 7.696 → 7.795)
 
-**Tópicos:** workspace-layout, dispatch-bootstrap, multiagent-coord, briefing, governance
+**Tópicos:** workspace-layout, dispatch-bootstrap, multiagent-coord, briefing, governance, code-quality
 
 **Issues relacionadas:** [#241](https://github.com/tharso/prumo-dev/issues/241) (executa; P1 do épico [#240](https://github.com/tharso/prumo-dev/issues/240) — a garantia pedida no relatório de 27/07: "evitar que uma atualização do Prumo desfaça a arrumação"); #248 (pré-requisito — o teto contou sobre a régua recalibrada).
 
