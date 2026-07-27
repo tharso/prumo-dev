@@ -5,7 +5,7 @@ O hook operacional da regra 17 vive em dois lugares: o garimpo associativo
 da revisão semanal (varredura pesada, escrita nos próprios itens com
 confirmação verificável) e a ponte única do briefing (fonte restrita ao
 já-carregado — zero leitura nova). Este teste trava as três pontas:
-weekly-review tem o garimpo, briefing-procedure tem a ponte com teto, e a
+weekly-review tem o garimpo, briefing-montagem tem a ponte com teto (#180), e a
 regra 17 do core aponta o hook ativo (não diz mais "fica pra depois").
 """
 from __future__ import annotations
@@ -20,7 +20,7 @@ WEEKLY = (
     REPO_ROOT / "skills" / "prumo" / "references" / "modules" / "weekly-review.md"
 )
 BRIEFING = (
-    REPO_ROOT / "skills" / "prumo" / "references" / "modules" / "briefing-procedure.md"
+    REPO_ROOT / "skills" / "prumo" / "references" / "modules" / "briefing-montagem.md"
 )
 CORE = REPO_ROOT / "skills" / "prumo" / "references" / "prumo-core.md"
 
@@ -50,7 +50,9 @@ class ConexoesRessurgenciaTests(unittest.TestCase):
         self.assertIn("regra 17", text.lower())
         self.assertIn("ponte", text.lower())
         # Fonte barata: o Hibernando da PAUTA é o limbo já carregado.
-        self.assertIn("Hibernando", text)
+        # #180: a ponte mora na montagem e cita o CAMPO da semente
+        # (`hibernando`, minúsculo — a seção Hibernando integral vem dele).
+        self.assertIn("hibernando", text)
         # Zero leitura nova por causa da ponte.
         self.assertIn("leitura nova", text.lower())
 
@@ -58,7 +60,7 @@ class ConexoesRessurgenciaTests(unittest.TestCase):
         """A regra 17 não diz mais que o hook 'fica pra depois' — aponta onde ele vive."""
         section = _rule_17_section(CORE.read_text(encoding="utf-8"))
         self.assertIn("weekly-review", section)
-        self.assertIn("briefing-procedure", section)
+        self.assertIn("briefing-montagem", section)
         self.assertNotIn(
             "até lá",
             section,

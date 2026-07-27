@@ -12,75 +12,65 @@ description: >
 
 # Briefing do Prumo
 
-Você está rodando o morning briefing do Prumo.
+Você está rodando o morning briefing do Prumo. A rota é **fásica** (#180): cada material carrega **na fase que o usa**.
 
-O procedimento completo está nos módulos. Aqui só tem o mapa de onde cada coisa mora e as regras que não podem ser puladas.
+## Mapa de carregamento por fase
+
+A **lista canônica ÚNICA** de carregamento do briefing (#195, emendada pela #180: a Pré-carga virou este mapa). Nenhum outro arquivo mantém segunda enumeração — duas listas, uma é drift. Gatilho `sempre` carrega na abertura da fase; os demais, **no primeiro uso real** (deferred-load ≠ deferred-run: a obrigação RODA na fase dela; o texto só abre quando tem trabalho).
+
+| Fase | Gatilho | Arquivo | Seção | Tipo |
+|---|---|---|---|---|
+| F0 | sempre | `CLAUDE.md` | (integral) | wrapper da raiz |
+| F0 | sempre | `Prumo/AGENT.md` | (integral) | porta canônica |
+| F0 | sempre | `.prumo/system/PRUMO-CORE.md` | até: `# Parte 2 — Playbooks operacionais` | core (Parte 1) |
+| F1 | sempre | `.prumo/skills/briefing/SKILL.md` | (integral) | esta skill |
+| F1 | sempre | `.prumo/skills/prumo/references/modules/briefing-procedure.md` | (integral) | espinha |
+| F1 | sempre | `.prumo/system/PRUMO-CORE.md` | `## Guardrails` | core (seção) |
+| F1 | sempre | `Prumo/Agente/PERFIL.md` | (integral) | config do usuário |
+| F1 | sempre | `Prumo/Agente/ROTINA.md` | (integral) | config do usuário |
+| F1 | sempre | `Prumo/Agente/PESSOAS.md` | (integral) | predicado de remetente |
+| F1 | sempre | `.prumo/skills/prumo/references/modules/briefing-estado.md` | (integral) | estado operacional |
+| F1 | sempre | `.prumo/skills/prumo/references/modules/version-preflight.md` | (integral) | preflight de versão |
+| F1 | oferta/execução de update (warning/alert) | `.prumo/skills/prumo/references/modules/version-update.md` | (integral) | canônico do update |
+| F1 | scripts via shell | `.prumo/skills/prumo/references/modules/runtime-paths.md` | (integral) | resolução de scripts |
+| F1 | shell com runtime alcançável | `.prumo/skills/prumo/references/modules/cowork-runtime-bridge.md` | (integral) | ponte do runtime |
+| F1 | sempre | `.prumo/skills/prumo/references/modules/faxina-thresholds.md` | (integral) | números da faxina (defaults + overrides) |
+| F1 | override do usuário existir | `Prumo/Custom/rules/faxina-thresholds.md` | (integral) | thresholds customizados |
+| F1 | família de faxina pendente (execução — a checagem mínima mora no estado) | `.prumo/skills/prumo/references/modules/faxina.md` | (integral) | executor da faxina |
+| F2 | antes da triagem local do Inbox4Mobile OU de abrir email/agenda | `.prumo/skills/prumo/references/modules/briefing-canais.md` | (integral) | canais + defesas |
+| F2 | Inbox4Mobile com itens novos | `.prumo/skills/prumo/references/modules/inbox-processing.md` | (integral) | triagem do inbox |
+| F2 | antes de filtrar email (se existir) | `Prumo/Referencias/EMAIL-CURADORIA.md` | (integral) | regras aprendidas |
+| F2 | canal de email disponível E EMAIL-CURADORIA.md ausente (criação) | `.prumo/skills/prumo/references/file-templates.md` | `## Prumo/Referencias/EMAIL-CURADORIA.md` | template canônico |
+| F2 | aprofundamento (predicado g / fallback por fonte) | `.prumo/skills/prumo/references/modules/load-policy.md` | (integral) | política de leitura |
+| F3 | ao montar o panorama | `.prumo/skills/prumo/references/modules/briefing-montagem.md` | (integral) | dois tempos + fechamento |
+| F3 | ao montar o panorama | `.prumo/skills/prumo/references/modules/interaction-format.md` | (integral) | dono da numeração |
+| F3 | 6+ itens acionáveis (#218) | `.prumo/skills/decidir/SKILL.md` | (integral) | despacho visual |
+
+**F4 (fechamento)** não carrega material novo: executa a seção `## Escrita e fechamento` de `briefing-montagem.md` (já em contexto desde F3) — escrita nos canais, `_processed.json` e a marcação do dia. F4 existe como FASE do contrato (#177/#180); ausência de linha na tabela é design, não omissão.
+
+Cada item lido **uma vez**; se já está no contexto, não reler. Repo `Prumo/` inacessível → usar o bundle instalado; atalho inventado não é interpretação.
 
 ## Carregamento obrigatório
 
-1. Leia o módulo canônico: `skills/prumo/references/modules/briefing-procedure.md`.
-2. Siga a **"Pré-carga obrigatória"** de lá — é a lista canônica **única** do briefing (#195). Este arquivo não mantém segunda enumeração: se você encontrar duas listas, uma delas é drift.
-
-Se o repo `Prumo/` não estiver acessível, use o bundle instalado. O que não vale é inventar atalho e chamar de interpretação.
+O mapa acima é a única lista deste briefing. A **espinha** (`briefing-procedure.md`) manda na ordem dos passos; em conflito com este resumo, a espinha vence; `ASSERT:` do core vence tudo.
 
 ## O runtime é a prévia, não o briefing
 
-O cartão do runtime (`prumo start` / `prumo briefing`) é a **prévia** — retrato rápido e local (pauta, inbox, próximo movimento). O **briefing** é a curadoria rica deste fluxo, entregue em **dois tempos na mesma resposta** (#196): panorama local imediato (1..k) → curadoria de email/agenda na sequência (k+1..N) → `decidir`.
-
-1. Pedir "briefing" dispara a **curadoria rica** (`briefing-procedure.md`). **Nunca** entregar o cartão do runtime como briefing final — entregar a prévia e parar é o beco sem saída que esta refatoração corrige.
-2. `prumo briefing --workspace <path> --format json` pode ser lido como **painel local** (semente da parte determinística), mas a resposta é o panorama numerado rico. Com runtime no trilho novo, o bloco `local_panorama` desse JSON **substitui a releitura de `PAUTA.md`/`INBOX.md` pra exibição** (#197) — os dois únicos casos de abrir arquivo bruto e o fallback por fonte estão no Passo 3 do `briefing-procedure.md`.
-3. **Dois tempos, numeração única** (Passo 5): primeiro tempo local IMEDIATO (antes de esperar email/agenda), aviso de uma linha, segundo tempo automático na sequência — sem pergunta no meio; escape do usuário é best-effort e não marca o dia. Host sem a capacidade (matriz do Passo 5): resposta única como antes.
-4. Ao final do briefing **completo**, registrar o dia: `prumo briefing --workspace <path> --mark-done` (escape antes do segundo tempo NÃO marca).
-5. A regra "entregar a saída do runtime como veio e encerrar" vale para a **prévia** (`prumo start` / `prumo:abrir`), **não** para o briefing.
+Pedir "briefing" dispara a curadoria rica (espinha + fases). **Nunca** entregar o cartão do runtime (`prumo start`) como briefing final — o briefing é curadoria em **dois tempos na mesma resposta** (#196), numeração única que nunca reinicia. Variante completa marca o dia (`--mark-done` — regras na montagem).
 
 ## Quando o briefing roda
 
-1. Briefing roda apenas com pedido explícito ("briefing", "painel do dia", "o que tem pra hoje", "começar o dia"). Saudação curta tipo "prumo" cru ou "ei prumo" não dispara briefing — vai para `prumo:abrir`, que decide o caminho a partir do scan.
-2. Se pedir briefing explicitamente, ir direto pro briefing.
-3. Não inventar onboarding ou repair por conta própria — o runtime sabe fazer isso.
+Apenas com pedido explícito ("briefing", "painel do dia", "o que tem pra hoje", "começar o dia"). Saudação curta ("prumo" cru) vai para `prumo:abrir`. Não inventar onboarding ou repair por conta própria — o runtime sabe fazer isso.
 
-## Quem manda em caso de conflito
+## Regras que não podem ser puladas (resumo — o dono de cada uma está no mapa)
 
-1. `ASSERT:` do `.prumo/system/PRUMO-CORE.md`
-2. O módulo do briefing
-3. Este arquivo
-
-## Módulos operacionais do briefing
-
-- briefing detalhado:
-  - `skills/prumo/references/modules/briefing-procedure.md`
-- inbox e preview:
-  - `skills/prumo/references/modules/inbox-processing.md`
-- update seguro:
-  - `skills/prumo/references/modules/version-update.md`
-- multiagente:
-  - `skills/prumo/references/modules/multiagent.md`
-- runtime paths:
-  - `skills/prumo/references/modules/runtime-paths.md`
-- contrato de interface:
-  - `skills/prumo/references/modules/interaction-format.md`
-
-## Regras que não podem ser puladas
-
-- **Numeração sequencial obrigatória**: todo item acionável (email, evento, pendência, item de inbox) recebe número sequencial único do 1 ao N, sem reiniciar entre seções. Se o panorama tem 5 emails (1-5), a agenda continua do 6. Isso permite ao usuário despachar vários itens de uma vez ("3, 7, 12").
-- Usar Gmail MCP e Calendar MCP como fonte primária de email e calendário **quando disponíveis**. Seguir o pipeline de curadoria em camadas definido em `briefing-procedure.md` (camada 1: canais prioritários, camada 2: emails diretos com filtragem pessoa/sistema, camada 3: roteamento de conteúdo). **Sem MCP**: entregar o panorama local (pauta, inbox) e declarar em uma linha que email/agenda estão indisponíveis, **orientando** reestabelecer o acesso ou checar a agenda manualmente — não mascarar (compromisso com hora não lido não é agenda vazia). Nunca cair de volta no cartão da prévia.
-- Antes de curar emails, ler `Prumo/Referencias/EMAIL-CURADORIA.md` (se existir) para carregar regras aprendidas. Quando o usuário corrigir a curadoria, registrar a regra nesse arquivo.
-- Se existir `_preview-index.json`, linkar `inbox-preview.html` antes de abrir bruto.
-- Se o panorama tiver 6+ itens acionáveis, **gerar automaticamente o despacho visual da skill `decidir` (HTML interativo offline) e entregar o link pronto** junto do panorama — sem perguntar antes (#218); os cards reusam os números do panorama. Override do usuário sempre respeitado nos dois sentidos; se a geração falhar, cair no chat. Ver `briefing-procedure.md` → "Despacho visual" e `skills/decidir/SKILL.md`.
-- Update que não consegue se aplicar sozinho não trava o briefing.
-- Se houver versão nova detectável, seguir o **gatilho graduado** do `version-update.md` (#174): `info` → avisar antes do panorama e seguir; `warning`/`alert` → **oferta no topo** com o briefing na mesma resposta (Passo 2, item 4 do procedure). **"Detectável" inclui o `VERSION` remoto** (`raw.githubusercontent.com/tharso/prumo/main/VERSION`): no fluxo manual sem runtime, buscar via WebFetch/`curl` é o caminho — comparar só o core local **não** é a checagem. Se não der pra buscar de jeito nenhum, avisar que não checou; nunca dizer "versão em dia" sem ter comparado.
-- Se o `.prumo/system/PRUMO-CORE.md` do workspace estiver atrás do `Prumo/VERSION` local, isso deve ser tratado como core defasado do workspace, não como detalhe invisível.
-- Se tiver `prumo` no PATH e o workspace estiver no formato novo, o runtime pode dar a **prévia** rápida (`prumo start`) — mas o briefing é a curadoria rica, não o cartão. Não encerrar na prévia.
+- **Numeração sequencial única** 1..N entre seções e tempos (dono: `interaction-format.md`).
+- Gmail/Calendar MCP como fonte primária **quando disponíveis**; sem MCP, panorama local + declaração em uma linha (espinha, Passo 0).
+- Defesas de terceiros e pós-filtro exato (#210): **`briefing-canais.md` antes de abrir o Gmail** (F2). `EMAIL-CURADORIA.md` lido antes de filtrar; correções viram regra lá.
+- Linha de faxina obrigatória no primeiro tempo (#217, montagem).
+- Se o panorama tiver 6+ itens acionáveis, **gerar automaticamente o despacho visual da skill `decidir` e entregar o link pronto** — sem perguntar antes (#218); cards reusam os números; falhou, cai no chat (montagem).
+- Update detectável segue o gatilho graduado do preflight (#174); nunca "em dia" sem comparar; update que não se aplica sozinho não trava o briefing.
 
 ## Resultado esperado
 
-O briefing entrega:
-
-- panorama numerado único em dois tempos: pendências e inbox no primeiro tempo (1..k), emails curados e depois a agenda no segundo (k+1..N) — numeração sequencial que nunca reinicia;
-- proposta do dia em seguida, com opções curtas para responder;
-- curadoria de email: classificação em `Responder` / `Ver` / `Sem ação` com prioridade P1 (ação hoje) / P2 (ação esta semana) / P3 (informativo);
-- email e calendário via Gmail/Calendar MCP direto.
-
-## Aviso
-
-Se pular a leitura do módulo do briefing pra “economizar”, só repete o bug que causou essa refatoração. A economia aí é de palito de fósforo.
+Panorama numerado único em dois tempos (local 1..k → emails e agenda k+1..N), proposta do dia com opções curtas, curadoria `Responder`/`Ver`/`Sem ação` com P1/P2/P3, fechamento com escrita nos canais.

@@ -26,12 +26,12 @@ lama, não pavimento.
 
 **Verificar:**
 - Contar linhas na tabela de `REGISTRO.md`
-- Se > 50 itens: hora de arquivar
+- Se acima de `max_items` (default 50 — `faxina-thresholds.md`; overrides em `Prumo/Custom/rules/`): hora de arquivar
 
 **Executar:**
-- Agrupar itens com mais de 30 dias por mês
+- Agrupar itens além de `archive_age_days` (default 30) por mês
 - Mover pra `Prumo/Arquivo/REGISTRO-{yyyy-mm}.md`
-- Manter os 50 mais recentes no arquivo principal
+- Manter os `max_items` mais recentes no arquivo principal
 - Adicionar nota no cabeçalho: "Itens anteriores em `Arquivo/`"
 
 **Não fazer:**
@@ -72,7 +72,7 @@ pergunta "onde guardei aquele artigo?" e Prumo não sabe.
 **Executar se houver diferença:**
 - Adicionar arquivos novos à tabela com: #, título (do cabeçalho), arquivo, data, descrição, keywords
 - Ficha de fonte (ver `ficha-de-fonte.md` nas references do core): título = cabeçalho da ficha; data = campo Entrada; descrição = "Por que guardei" resumido; keywords = campo Keywords
-- Se > 30 itens na tabela: agrupar por tema e criar seções
+- Se a tabela passar de `referencias_subcategorize_at` (default 30): agrupar por tema e criar seções
 
 **Não fazer:**
 - Não remover entradas cujo arquivo sumiu (pode ter sido movido)
@@ -82,12 +82,12 @@ pergunta "onde guardei aquele artigo?" e Prumo não sabe.
 
 ### 4. Inbox4Mobile — limpeza de processados
 
-Itens que já foram processados e estão no `_processed.json` há mais
-de 14 dias são lixo residual.
+Itens que já foram processados e estão no `_processed.json` além de
+`processed_expiry_days` (default 14) são lixo residual.
 
 **Verificar:**
 - Ler `_processed.json`
-- Filtrar entradas com `processed_at` > 14 dias atrás
+- Filtrar entradas com `processed_at` além de `processed_expiry_days`
 - **Salvaguarda (#212): nunca remover entrada cujo arquivo ainda existe em `Inbox4Mobile/`** — `processed_at` velho com o arquivo ainda na pasta é estado inconsistente (o item talvez NÃO tenha sido processado de verdade): sinalizar ao usuário em vez de podar. A poda é por IDADE; a orfandade é só a trava de segurança — no dado real de 25/07, 0 das 43 entradas eram removíveis pelo critério de orfandade (as "órfãs" aparentes estavam legitimamente no `Arquivo/`).
 
 **Executar:**
@@ -107,7 +107,7 @@ vira entulho na mesa.
 
 **Verificar:**
 - Listar `Prumo/Diario/*.md` cuja data no **nome** do arquivo (AAAA-MM-DD)
-  seja de mais de 90 dias atrás
+  passe de `diario_expiry_days` (default 90)
 
 **Executar:**
 - Mover pra `Prumo/Arquivo/Diario/` (mover, nunca apagar)
@@ -117,7 +117,7 @@ vira entulho na mesa.
   (faxina nunca decide o que é importante)
 - Não tocar no diário de hoje
 
-**Reportar:** "Arquivei X diário(s) com mais de 90 dias."
+**Reportar:** "Arquivei X diário(s) além do prazo de rotação."
 
 ## Relatório da faxina
 

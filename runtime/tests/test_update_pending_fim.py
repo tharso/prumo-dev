@@ -2,7 +2,7 @@
 
 Report do dono: o briefing detectou versão nova e "deixou pra depois"; o /fim
 ignorou. Travas: (a) o detector do /fim ganha o sinal `update_pending` (cache,
-sem rede nova); (b) o briefing-procedure manda ABRIR com a oferta (escolha
+sem rede nova); (b) o version-preflight (#180; era o briefing-procedure) manda ABRIR com a oferta (escolha
 curta, não-bloqueante, anti-nag); (c) o /fim cobra na saída.
 """
 from __future__ import annotations
@@ -17,7 +17,9 @@ from unittest import mock
 from prumo_runtime.fim import accumulation_signals
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-BRIEFING_PROC = REPO_ROOT / "skills" / "prumo" / "references" / "modules" / "briefing-procedure.md"
+# #180: a rota da oferta atravessa o preflight (gatilho + formato) e o
+# canônico (semântica/anti-nag) — o guard lê os dois concatenados.
+VERSION_PREFLIGHT = REPO_ROOT / "skills" / "prumo" / "references" / "modules" / "version-preflight.md"
 FIM_SKILL = REPO_ROOT / "skills" / "fim" / "SKILL.md"
 VERSION_UPDATE = REPO_ROOT / "skills" / "prumo" / "references" / "modules" / "version-update.md"
 
@@ -87,7 +89,7 @@ class SkillContractGuards(unittest.TestCase):
         return " ".join(path.read_text(encoding="utf-8").lower().split())
 
     def test_briefing_abre_com_oferta_executavel(self) -> None:
-        text = self._flat(BRIEFING_PROC)
+        text = self._flat(VERSION_PREFLIGHT) + " " + self._flat(VERSION_UPDATE)
         # A oferta explícita, com ORDEM executável: abre a resposta e o
         # briefing segue na MESMA resposta (não espera → não-bloqueante real).
         self.assertIn("atualizar agora", text)
@@ -97,7 +99,9 @@ class SkillContractGuards(unittest.TestCase):
         # não pode engolir a cobrança do /fim — que acontece NA sessão. O
         # contrato certo distingue os dois momentos:
         self.assertIn("não repetir a oferta antes do `/fim`", text)
-        self.assertIn("no `/fim`, cobrar uma vez", text)
+        # #180: o resumo do procedure saiu; a âncora vive na forma canônica
+        # do version-update.md (com o bold do módulo).
+        self.assertIn("no `/fim`, cobrar **uma vez**", text)
         self.assertIn("recusa explícita", text)
         self.assertIn("suggest.update", text)
         # r3: a oferta-modelo expõe as TRÊS opções do canônico (um agente que

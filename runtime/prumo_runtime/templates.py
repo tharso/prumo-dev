@@ -78,6 +78,12 @@ def render_root_wrapper(
     }
     blurb = flavor["blurb"].format(**fields)
     primary = "\n".join(line.format(**fields) for line in flavor["primary"])
+    # Perfil minimal (#180): no CLAUDE.md o bloco dinâmico de dispatch é
+    # redundante — o host tem as skills pelo plugin registry, e a porta
+    # canônica aponta o protocolo. AGENTS.md/AGENT.md MANTÊM o bloco mesmo
+    # em minimal: são a descoberta de skills dos hosts SEM registry (#90).
+    if profile == "minimal" and surface == "claude":
+        skills_dispatch = ""
     dispatch_section = f"\n{skills_dispatch}\n" if skills_dispatch else ""
     return f"""# Prumo Adapter — {user_name}
 
@@ -285,7 +291,10 @@ def render_agent_root_wrapper(
     canonical_target: str = "AGENT.md",
     system_root: str = "_state/",
     skills_dispatch: str = "",
+    profile: str = "full",
 ) -> str:
+    # AGENT.md da raiz serve hosts SEM plugin registry — segue full por
+    # default (#180): contrato de invocação e dispatch moram aqui pra eles.
     return render_root_wrapper(
         "agent",
         user_name,
@@ -293,6 +302,7 @@ def render_agent_root_wrapper(
         canonical_target=canonical_target,
         state_path=system_root,
         skills_dispatch=skills_dispatch,
+        profile=profile,
     )
 
 
@@ -305,7 +315,11 @@ def render_claude_wrapper(
     core_path: str = "PRUMO-CORE.md",
     state_path: str = "_state/",
     skills_dispatch: str = "",
+    profile: str = "minimal",
 ) -> str:
+    # Default MINIMAL (#180, decisão do dono em 16/07): o CLAUDE.md serve
+    # host COM plugin registry — é porta, não manual; regras completas na
+    # porta canônica e no core. É o único wrapper no cesto F0 do briefing.
     return render_root_wrapper(
         "claude",
         user_name,
@@ -315,6 +329,7 @@ def render_claude_wrapper(
         core_path=core_path,
         state_path=state_path,
         skills_dispatch=skills_dispatch,
+        profile=profile,
     )
 
 
@@ -327,7 +342,9 @@ def render_agents_wrapper(
     core_path: str = "PRUMO-CORE.md",
     state_path: str = "_state/",
     skills_dispatch: str = "",
+    profile: str = "full",
 ) -> str:
+    # AGENTS.md (Codex CLI e afins) = host sem registry — full por default.
     return render_root_wrapper(
         "agents",
         user_name,
@@ -337,6 +354,7 @@ def render_agents_wrapper(
         core_path=core_path,
         state_path=state_path,
         skills_dispatch=skills_dispatch,
+        profile=profile,
     )
 
 

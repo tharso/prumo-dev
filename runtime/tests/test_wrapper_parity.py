@@ -31,7 +31,10 @@ def _porta_curta(rendered: str) -> str:
 
 class WrapperParityTest(unittest.TestCase):
     def _render_three(self) -> list[str]:
-        claude = templates.render_claude_wrapper("Teste", "Prumo", **COMMON)
+        # Paridade da fonte única é medida no MESMO perfil (full): os
+        # defaults por superfície divergem desde a #180 (CLAUDE.md minimal —
+        # host com registry; AGENT/AGENTS full — hosts crus).
+        claude = templates.render_claude_wrapper("Teste", "Prumo", profile="full", **COMMON)
         agents = templates.render_agents_wrapper("Teste", "Prumo", **COMMON)
         agent = templates.render_agent_root_wrapper(
             "Teste", "Prumo", canonical_target="Prumo/AGENT.md", system_root=STATE
@@ -46,6 +49,16 @@ class WrapperParityTest(unittest.TestCase):
             "Porta curta divergiu entre CLAUDE.md e AGENT.md — fonte única quebrada",
         )
         self.assertEqual(blocks[0], blocks[2])
+
+    def test_claude_default_is_minimal_subset_from_same_source(self) -> None:
+        # #180: o default do CLAUDE.md é minimal — e as regras minimal vêm da
+        # MESMA fonte única (render_rules com profile), nunca de texto avulso.
+        claude_default = templates.render_claude_wrapper("Teste", "Prumo", **COMMON)
+        self.assertIn(render_rules("wrapper", state_path=STATE, profile="minimal"), claude_default)
+        minimal_rules = set(rules_for("wrapper", profile="minimal"))
+        full_rules = set(rules_for("wrapper", profile="full"))
+        self.assertTrue(minimal_rules <= full_rules, "minimal tem regra fora do full")
+        self.assertLess(len(minimal_rules), len(full_rules))
 
     def test_wrappers_derive_from_single_source(self) -> None:
         expected = render_rules("wrapper", state_path=STATE)

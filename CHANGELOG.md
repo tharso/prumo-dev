@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.57.0] - 2026-07-26
+
+### Changed
+- **Briefing: rota FÁSICA — cada material carrega na fase que o usa (#180, M3 do épico #177)** — a rota real tinha chegado a **15.336 palavras** antes do 1º dado do usuário (cada fix textual de 5.34→5.56 somou peso). Agora: o `briefing-procedure.md` vira **espinha** (identidade, ordem, gates) e o detalhe mora em módulos de fase — `briefing-estado.md` (F1: 3 transportes da semente, faxina #217, filtro de cobrança), `briefing-canais.md` (F2, carregado ANTES de abrir Gmail/Calendar: DAG, Camada 1 #210 com oráculo, defesas #156, Inbox4Mobile A/B, predicados), `briefing-montagem.md` (F3: dois tempos #196, escape, variantes, divergência #211, decidir automático #218, fechamento e marcação #214) e `version-preflight.md` (F1 enxuto: transporte+comparação+severidade+#215; o `version-update.md` de 1.797w só carrega quando a oferta aciona). A **Pré-carga da #195 é EMENDADA**: a lista canônica única virou o **`## Mapa de carregamento por fase`** do `briefing/SKILL.md` (tabela parseável que o `briefing_route_audit` lê em modo manifest). Core em F0 **até `# Parte 2`** + seção `## Guardrails` em F1 (staging por marcador, arquivo intacto). **Wrappers:** `CLAUDE.md` vira perfil **minimal** sem bloco de dispatch (host com plugin registry; decisão do dono de 16/07) — `AGENT.md`/`AGENTS.md` seguem full (hosts sem registry dependem do contrato e do dispatch); transição via repair testada (autoral byte-idêntico, porta completa, idempotente). Template EMAIL-CURADORIA embutido deletado (dono único: `file-templates.md`). Guards migrados com **registro origem→destino** (`GUARDRAIL_OWNERS`). **Rota medida: 15.336 → 6.334 palavras no perfil Claude Code (−58,7%)** — o perfil Codex CLI (AGENTS.md full) soma ~450w e o PR11b medirá o pior perfil no gate; o teto histórico de 4.999 fica pendente de decisão do dono (o restante mora na porta canônica e no core Parte 1).
+
 ## [5.56.0] - 2026-07-26
 
 ### Fixed
