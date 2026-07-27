@@ -88,9 +88,11 @@ Este módulo define **como abrir sessão**. A Parte 1 do `prumo-core.md` define 
 
 Os playbooks operacionais (`briefing-procedure.md`, `inbox-processing.md`, etc.) só são carregados **depois** do dispatch, conforme a intenção que o usuário expressar no Passo 3.
 
-## Tabela de intenções
+## Roteamento por intenção
 
-> **Fase (#228):** consultada **ao resolver a intenção do usuário** — depois que ele fala, nunca na abertura. Por isso não pesa na rota do briefing.
+> **Fase (#228):** esta seção inteira — tabela e fallback — é consultada **ao resolver a intenção do usuário**, depois que ele fala. A abertura carrega o arquivo só até aqui.
+
+### Tabela de gatilhos
 
 Mapeamento de gatilhos do usuário para intenção e ação. Primeiro filtro do dispatch.
 
@@ -115,9 +117,9 @@ Mapeamento de gatilhos do usuário para intenção e ação. Primeiro filtro do 
 | doctor, diagnóstico do runtime, plugin saudável, catálogo defasado | diagnóstico do runtime | executar o módulo `doctor.md` (roda o script e responde com semáforo) |
 | Obsidian, vault, grafo, backlinks, abrir no Obsidian | usar com Obsidian | ler e servir `references/guia-obsidian.md` (bônus opcional; o Obsidian nunca é requisito) |
 
-## Fallback de dispatch
+### Fallback de dispatch
 
-### Zero match
+#### Zero match
 
 Quando a resposta do usuário não casa com nenhum gatilho da tabela, perguntar com opções curtas:
 
@@ -127,13 +129,13 @@ Quando a resposta do usuário não casa com nenhum gatilho da tabela, perguntar 
 > c) continuar um projeto
 > d) outra coisa (me diz o que)
 
-### Dois matches
+#### Dois matches
 
 Quando a resposta casa com mais de uma intenção (ex: "brainstorm pro artigo"), confirmar qual é o principal:
 
 > Isso é mais um brainstorm (pensar junto, sem rascunhar ainda) ou você já quer começar a escrever?
 
-### Proibido
+#### Proibido
 
 Assumir silenciosamente e seguir. Em qualquer ambiguidade, preferir pergunta curta a palpite.
 

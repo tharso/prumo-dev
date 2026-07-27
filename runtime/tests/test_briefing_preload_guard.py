@@ -56,8 +56,8 @@ EXPECTED_MAP = frozenset(
         # #228 fase 2: a porta carrega o dispatch ATÉ a tabela de intenções; a
         # tabela é consultada DEPOIS que o usuário fala — por construção, fora
         # do "antes do primeiro dado".
-        ("F0", "sempre", ".prumo/skills/prumo/references/modules/dispatch.md", "até: ## Tabela de intenções", "abertura (#248)"),
-        ("F1", "ao resolver a intenção do usuário (nunca na abertura)", ".prumo/skills/prumo/references/modules/dispatch.md", "## Tabela de intenções", "roteamento (#228)"),
+        ("F0", "sempre", ".prumo/skills/prumo/references/modules/dispatch.md", "até: ## Roteamento por intenção", "abertura (#248)"),
+        ("F1", "ao resolver a intenção do usuário (nunca na abertura)", ".prumo/skills/prumo/references/modules/dispatch.md", "## Roteamento por intenção", "roteamento (#228)"),
         # #241: mapa autoral lido na abertura quando existir — conta no cesto
         # quando presente; ausência tolerada (gatilho `sempre (autoral)`).
         ("F0", "sempre (autoral)", "Prumo/Agente/MAPA-AUTORAL.md", "(integral)", "caminhos autorais (#241)"),
@@ -69,7 +69,7 @@ EXPECTED_MAP = frozenset(
         ("F1", "sempre", "Prumo/Agente/PESSOAS.md", "(integral)", "remetentes"),
         ("F1", "sempre", f"{_M}/briefing-estado.md", "(integral)", "estado"),
         ("F1", "sempre", f"{_M}/version-preflight.md", "(integral)", "preflight"),
-        ("F1", "sem semente OU override do usuário existir", f"{_M}/faxina-thresholds.md", "(integral)", "números da faxina"),
+        ("F1", "sempre", f"{_M}/faxina-thresholds.md", "(integral)", "números da faxina"),
         ("F1", "override do usuário existir", "Prumo/Custom/rules/faxina-thresholds.md", "(integral)", "overrides"),
         ("F1", "oferta/execução de update (warning/alert)", f"{_M}/version-update.md", "(integral)", "canônico do update"),
         ("F1", "scripts via shell", f"{_M}/runtime-paths.md", "(integral)", "scripts"),

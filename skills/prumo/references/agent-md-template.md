@@ -64,7 +64,7 @@ Manutenção sem comando próprio (#172) — atende por linguagem natural:
 
 1. Este `AGENT.md` (você já está lendo).
 2. `.prumo/system/PRUMO-CORE.md` — Parte 1 (identidade e interação).
-3. `.prumo/skills/prumo/references/modules/dispatch.md` — protocolo de abertura por intenção (scan leve de PAUTA + REGISTRO e saudação proativa com opções).
+3. `.prumo/skills/prumo/references/modules/dispatch.md` — **até `## Roteamento por intenção`**: protocolo de abertura (scan leve de PAUTA + REGISTRO e saudação proativa). A seção de roteamento carrega quando o usuário falar.
 
 Fora disso, abertura não abre mais nada. A saudação vem proativa, com 2-4 opções concretas ancoradas no scan + uma fuga explícita (`outra coisa`). Briefing não é default: só entra se o usuário expressar intenção de briefing.
 

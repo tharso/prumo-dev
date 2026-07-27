@@ -216,7 +216,7 @@ def render_agent_md(
     ]
     if skills_path:
         opening_reads.append(
-            f"3. `{skills_path}prumo/references/modules/dispatch.md` — protocolo de abertura por intenção (scan leve de PAUTA + REGISTRO e saudação proativa com opções)."
+            f"3. `{skills_path}prumo/references/modules/dispatch.md` — **até `## Roteamento por intenção`**: protocolo de abertura (scan leve de PAUTA + REGISTRO e saudação proativa). A seção de roteamento carrega quando o usuário falar."
         )
     else:
         opening_reads.append(

@@ -460,3 +460,31 @@ class FailClosedTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PortaVersusManifestoTest(unittest.TestCase):
+    """#228 fase 2 (Codex, diff r1): se a porta manda ler o arquivo INTEIRO e o
+    manifesto conta só uma fatia, a balança pesa menos do que o agente paga —
+    isso é maquiar o instrumento. As duas declarações têm de bater."""
+
+    def test_limite_do_dispatch_bate_entre_porta_e_manifesto(self) -> None:
+        import tempfile
+        from pathlib import Path as _P
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = audit.build_sandbox(_P(tmp))
+            porta = (ws / "Prumo" / "AGENT.md").read_text(encoding="utf-8")
+            skill = (ws / ".prumo" / "skills" / "briefing" / "SKILL.md").read_text(encoding="utf-8")
+        rows, _ = audit.parse_manifest(skill)
+        f0 = [r for r in rows if r["file"].endswith("dispatch.md") and r["trigger"].lower() == "sempre"]
+        self.assertEqual(len(f0), 1, "dispatch deveria ter UMA linha F0 no manifesto")
+        secao = f0[0]["section"]
+        self.assertTrue(secao.startswith("até: "), f"F0 do dispatch não é parcial: {secao!r}")
+        marcador = secao[len("até: "):].strip()
+        # a porta tem de declarar o MESMO limite pro agente
+        linha = [ln for ln in porta.splitlines() if "dispatch.md" in ln]
+        self.assertTrue(linha, "a porta não cita o dispatch na abertura")
+        self.assertIn(
+            marcador,
+            linha[0],
+            "a porta manda ler o dispatch sem o limite que o manifesto contabiliza",
+        )

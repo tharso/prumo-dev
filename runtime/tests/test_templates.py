@@ -29,11 +29,14 @@ RUNTIME_CONSUMO_ANCHORS = (
 )
 
 
+# #228 fase 2 — os QUATRO contratos INTEGRAIS que mudaram de dono. Fragmento
+# ("disco riscado") aceitaria paráfrase: o texto tem de chegar inteiro no dono
+# novo (Codex, diff r1).
 RULES_MOVED_TO_RUNTIME_CONSUMO = (
-    "Não leia arquivo para simular",
-    "fingindo ser o runtime",
-    "Não rode comando extra só porque ficou curioso",
-    "disco riscado",
+    "Não leia arquivo para simular `prumo`, `briefing` ou `start`",
+    "Não escreva `.prumo/state/` fingindo ser o runtime",
+    "Não rode comando extra só porque ficou curioso: execute o que foi pedido ou o que o runtime sugeriu.",
+    "Se um comando falhar por uso ou argumento inválido, não repita a mesma linha como disco riscado.",
 )
 
 
@@ -227,13 +230,27 @@ class RegrasMovidasTest(unittest.TestCase):
             Path(__file__).resolve().parents[2]
             / "skills" / "prumo" / "references" / "modules" / "runtime-consumo.md"
         ).read_text(encoding="utf-8")
-        porta = templates.render_agent_md(
-            user_name="Batata",
-            agent_name="Prumo",
-            timezone_name="America/Sao_Paulo",
-            briefing_time="09:00",
-        )
+        # TODAS as superfícies de porta, nos dois layouts — ausência numa só
+        # renderização não prova mudança de dono (Codex, diff r1).
+        superficies = {
+            "AGENT.md (nested)": templates.render_agent_md(
+                user_name="Batata", agent_name="Prumo",
+                timezone_name="America/Sao_Paulo", briefing_time="09:00",
+                core_path=".prumo/system/PRUMO-CORE.md", state_path=".prumo/state/",
+                skills_path=".prumo/skills/",
+            ),
+            "AGENT.md (flat)": templates.render_agent_md(
+                user_name="Batata", agent_name="Prumo",
+                timezone_name="America/Sao_Paulo", briefing_time="09:00",
+            ),
+            "CLAUDE.md": templates.render_claude_wrapper("Batata", "Prumo"),
+            "AGENTS.md": templates.render_agents_wrapper("Batata", "Prumo"),
+            "AGENT.md raiz": templates.render_agent_root_wrapper("Batata", "Prumo"),
+        }
         for regra in RULES_MOVED_TO_RUNTIME_CONSUMO:
-            with self.subTest(regra=regra):
+            with self.subTest(regra=regra[:40]):
                 self.assertIn(regra, modulo, "regra sumiu do dono novo — isso é DELETAR")
-                self.assertNotIn(regra, porta, "regra continua na porta — não foi movida")
+                for nome, texto in superficies.items():
+                    self.assertNotIn(
+                        regra, texto, f"regra ainda na porta {nome} — não foi movida"
+                    )
