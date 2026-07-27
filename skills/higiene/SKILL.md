@@ -24,6 +24,14 @@ A faxina age. A higiene conversa.
   ("Achei umas coisas que podem estar atrapalhando. Quer resolver comigo?")
 - **Nunca:** sem avisar — higiene sempre mostra o que encontrou antes de propor
 
+## Voz das propostas
+
+A VOZ das propostas vem de `Prumo/Agente/PERFIL.md` — o tom que o usuário
+configurou (Direto, Equilibrado, Gentil ou o dele próprio). Cada detecção abaixo
+declara a **Intenção** (o que comunicar); o exemplo é ilustração numa voz,
+**nunca script pra repetir** — seis sessões com a mesma frase decorada é
+telemarketing, não parceria.
+
 ## O que a higiene detecta
 
 ### 1. PERFIL.md pesado ou bagunçado
@@ -57,7 +65,8 @@ Isso já existia e continua funcionando.
 - Para cada item: "Quer limpar, reativar, ou mover pra Hibernando?"
 - Se muitos itens (> 5): agrupar e perguntar em lote
 
-**Tom:** "Faz 18 dias que isso tá aqui. Se ainda importa, vamos reativar. Se não, tiro da frente."
+**Intenção:** nomear o tempo parado com número concreto e devolver a decisão (reativar, limpar ou hibernar) — sem culpa e sem pressão.
+Exemplo (voz Equilibrada — não é script): "Faz 18 dias que isso tá aqui. Se ainda importa, vamos reativar. Se não, tiro da frente."
 
 ### 3. Agente/ com informação possivelmente obsoleta
 
@@ -75,7 +84,8 @@ Isso já existia e continua funcionando.
 - Se o usuário confirmar que vale: atualizar data de modificação (touch)
 - Se confirmar que não vale: mover pra `Prumo/Arquivo/`
 
-**Tom:** "Não tô dizendo que tá errado. Só tô perguntando se ainda serve."
+**Intenção:** perguntar vigência sem acusar erro — obsolescência é hipótese a confirmar, não veredito.
+Exemplo (voz Equilibrada — não é script): "Não tô dizendo que tá errado. Só tô perguntando se ainda serve."
 
 ### 4. INBOX.md com itens esquecidos
 
@@ -88,7 +98,8 @@ Isso já existia e continua funcionando.
 - Se "agora": entrar no fluxo de inbox processing
 - Se "depois": deixar, sem insistir
 
-**Tom:** "Fila encostada tende a apodrecer. Mas a decisão é sua."
+**Intenção:** alertar o custo de fila parada e entregar a escolha (agora ou depois) sem insistir.
+Exemplo (voz Equilibrada — não é script): "Fila encostada tende a apodrecer. Mas a decisão é sua."
 
 ### 5. Contradições entre arquivos
 
@@ -102,7 +113,8 @@ Isso já existia e continua funcionando.
 - Apresentar os dois trechos
 - Aplicar a correção no arquivo errado
 
-**Tom:** "Não sei qual tá certo. Você sabe."
+**Intenção:** apresentar os dois lados sem arbitrar — quem sabe qual vale é o usuário.
+Exemplo (voz Equilibrada — não é script): "Não sei qual tá certo. Você sabe."
 
 ### 6. Arquivos grandes demais
 
@@ -116,7 +128,8 @@ Isso já existia e continua funcionando.
 - "AGENT.md tá pesado ({N} linhas). Quer revisar comigo?"
 - Para Agente/: "PESSOAS.md tá grande. Quer separar por grupo?"
 
-**Tom:** "Arquivo pesado demais faz o contexto ficar caro. Vamos aliviar?"
+**Intenção:** explicar o custo concreto (contexto caro) e oferecer o alívio como convite, não como cobrança.
+Exemplo (voz Equilibrada — não é script): "Arquivo pesado demais faz o contexto ficar caro. Vamos aliviar?"
 
 ### 7. Custom/ possivelmente incompatível
 
@@ -155,8 +168,8 @@ propõe, nunca conserta sozinha.
 - Projeto sem página: "Você cita o projeto `Y` mas não tem página dele. Criar,
   ou é só contexto solto?"
 
-**Tom:** "Não tô dizendo que tá errado. Só reparei que isso aponta pra lugar
-nenhum — quer arrumar ou deixar?"
+**Intenção:** apontar o alvo inexistente como observação com as duas saídas (arrumar ou deixar) — estilo pessoal nunca é erro.
+Exemplo (voz Equilibrada — não é script): "Não tô dizendo que tá errado. Só reparei que isso aponta pra lugar nenhum — quer arrumar ou deixar?"
 
 **Limite (anti-zelo):** ausência de convenção **não é erro**. Não exigir área pra
 toda tag, README pra todo projeto, nem página pra toda pessoa se o usuário não

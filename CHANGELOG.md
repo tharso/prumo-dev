@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.58.0] - 2026-07-27
+
+### Changed
+- **Higiene: a voz vem do PERFIL, não de script (#180 PR12, opção B do dono)** — as 6 linhas `**Tom:**` com fala roteirizada viraram `**Intenção:**` (o que comunicar: tempo parado com número, vigência sem acusação, custo de fila, dois lados sem arbitrar, custo de contexto, alvo inexistente sem culpar estilo) + **1 exemplo por detecção rotulado** `Exemplo (voz Equilibrada — não é script):` — a voz real vem de `Prumo/Agente/PERFIL.md` (Direto, Equilibrado, Gentil ou o do usuário); seis sessões com a mesma frase decorada é telemarketing, não parceria. Grep-guard trava o rótulo e proíbe a volta do `**Tom:**` (`test_higiene_voz.py`).
+
 ## [5.57.0] - 2026-07-26
 
 ### Changed
