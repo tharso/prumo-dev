@@ -46,6 +46,19 @@ _NEG_NEAR = re.compile(
     r"(?:nunca|não|nao|jamais|deixa\s+de|em\s+vez\s+de|falha)[^,\s]*\s+(?:[^,\s]+\s+){0,2}$",
     re.IGNORECASE,
 )
+# Inciso parentético — PAR de vírgulas cercando expressão curta (", portanto,",
+# ", por exemplo,") — é transparente pra negação ([r8]: "não deve, portanto,
+# deletar…" é prosa técnica negada; vírgula SOLTA continua separando ações).
+# Aplicado só ao prefixo inspecionado, nunca ao texto onde se buscam ofensas.
+_INCISO = re.compile(r",\s*[^,.!?;:]{1,30},")
+
+
+def _sem_incisos(prefix: str) -> str:
+    prev = None
+    while prev != prefix:
+        prev = prefix
+        prefix = _INCISO.sub(" ", prefix)
+    return prefix
 
 
 def _deletion_offenses(flat: str) -> list[str]:
@@ -57,14 +70,14 @@ def _deletion_offenses(flat: str) -> list[str]:
     for clause in _CLAUSE_SPLIT.split(flat):
         # Verbo PT: a negação é a que precede o próprio verbo, na oração.
         for m in _VERB_FORBIDDEN.finditer(clause):
-            if _NEG_NEAR.search(clause[: m.start()]):
+            if _NEG_NEAR.search(_sem_incisos(clause[: m.start()])):
                 continue
             out.append(clause[max(0, m.start() - 40): m.end() + 20].strip())
         # Operação literal: ofende quando divide a oração com original/inbox e
         # NÃO está ela mesma negada (a negação de outra ação não absolve).
         if _OBJ_RE.search(clause):
             for m in _OPS_RE.finditer(clause):
-                if _NEG_NEAR.search(clause[: m.start()]):
+                if _NEG_NEAR.search(_sem_incisos(clause[: m.start()])):
                     continue
                 out.append(clause[max(0, m.start() - 40): m.end() + 20].strip())
     return out
@@ -222,6 +235,8 @@ class QuarentenaContractsTest(unittest.TestCase):
             # [r6]: negação amarrada também vale pros tokens com ponto.
             "nunca chame os.remove no original do inbox",
             "jamais use shutil.rmtree no inbox",
+            # [r8]: inciso parentético (par de vírgulas) é transparente.
+            "O agente não deve, portanto, deletar o original do inbox.",
         )
         for texto in permitidos:
             with self.subTest(texto=texto):
