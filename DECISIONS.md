@@ -10,7 +10,7 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 |-----------------------|-------------------------------------------------------------------------------------------|
 | `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first), 2026-05-04 (#77), 2026-06-21 (#97 mapas), 2026-06-25 (#114 perfil modular), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#139 guarda-corpos), 2026-07-02 (#140 fichário), 2026-07-02 (#141 diário), 2026-07-03 (#147 ideias), 2026-07-03 (#148 conexões), 2026-07-24 (#194 perímetro de leitura), 2026-07-16 (#177 dívidas estruturais), 2026-07-24 (#201 índice de projetos) |
 | `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-04 (#158 detecção defasagem), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime), 2026-07-05 (#170 transporte de update local), 2026-07-12 (#172 taxonomia do picker), 2026-07-19 (#191 decidir mostra o item), 2026-07-24 (#195 dieta fase 1 — produtor do cache de versão), 2026-07-16 (#177 dívidas estruturais), 2026-07-26 (#190 store unificada + camada de sessão) |
-| `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first), 2026-05-06 (quality-gate), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#141 diário — emenda à #68), 2026-07-25 (baseline ruff 6 / 868), 2026-07-26 (baseline coverage 85), 2026-07-26 (#190 store unificada), 2026-07-26 (#180 rota fásica — emenda à #195) |
+| `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first), 2026-05-06 (quality-gate), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#141 diário — emenda à #68), 2026-07-25 (baseline ruff 6 / 868), 2026-07-26 (baseline coverage 85), 2026-07-26 (#190 store unificada), 2026-07-26 (#180 rota fásica — emenda à #195), 2026-07-27 (#180 gate da rota, teto 6788) |
 | `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist), 2026-06-24 (#110 não-bundle), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime), 2026-07-05 (#170 transporte de update local), 2026-07-16 (#177 dívidas estruturais) |
 | `dispatch-bootstrap`  | 2026-04-21 (#69 despacho), 2026-06-23 (#104 briefing rico), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-05 (#160 porta/instalação agnóstica), 2026-07-12 (#172 taxonomia do picker), 2026-07-24 (#194 perímetro de leitura), 2026-07-24 (#201 índice de projetos), 2026-07-25 (#197 semente substitui releitura), 2026-07-25 (#206 outras_secoes + gate por capacidade), 2026-07-25 (#196 briefing em dois tempos), 2026-07-26 (#216 seed em arquivo), 2026-07-26 (#180 rota fásica — emenda à #195) |
 | `multiagent-coord`    | 2026-04-20 (#68 HANDOVER), 2026-07-24 (#194 perímetro de leitura — delegação)             |
@@ -18,7 +18,7 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 | `integrations`        | 2026-04-14 (Google Drive snapshots)                                                       |
 | `briefing`            | 2026-04-14 (Google Drive snapshots), 2026-04-21 (#69 despacho), 2026-06-23 (#102 decidir), 2026-06-23 (#104 briefing rico), 2026-06-25 (#114 perfil modular), 2026-07-02 (#139 guarda-corpos), 2026-07-03 (#148 conexões), 2026-07-04 (#156 injeção), 2026-07-13 (#174/#175 update-oferta + copy do fim), 2026-07-24 (#195 dieta fase 1), 2026-07-16 (#177 dívidas estruturais), 2026-07-24 (#201 roteamento de conteúdo configurável), 2026-07-25 (#197 semente substitui releitura), 2026-07-25 (#206 outras_secoes + gate por capacidade), 2026-07-25 (#196 briefing em dois tempos), 2026-07-25 (#210/#215 camada 1 + remoto suspeito), 2026-07-25 (#214/#217/#218/#211 conformidade detectável), 2026-07-26 (#216 seed em arquivo), 2026-07-26 (#180 rota fásica — emenda à #195) |
 | `personalization`     | 2026-04-21 (tharso-voice)                                                                 |
-| `code-quality`        | 2026-05-06 (quality-gate), 2026-06-25 (#122 baseline 1061→930), 2026-07-03 (baseline 82/904), 2026-07-04 (#157 conformidade A0), 2026-07-24 (baseline 82/900), 2026-07-25 (baseline ruff 6 / 868), 2026-07-26 (baseline coverage 85) |
+| `code-quality`        | 2026-05-06 (quality-gate), 2026-06-25 (#122 baseline 1061→930), 2026-07-03 (baseline 82/904), 2026-07-04 (#157 conformidade A0), 2026-07-24 (baseline 82/900), 2026-07-25 (baseline ruff 6 / 868), 2026-07-26 (baseline coverage 85), 2026-07-27 (#180 gate da rota, teto 6788) |
 | `touchpoint`          | 2026-05-18 (landing page sync), 2026-07-03 (#149 guia Obsidian — candidato à landing), 2026-07-05 (#160 instalação agnóstica), 2026-07-05 (#108 update via runtime) |
 | `security`            | 2026-07-04 (#156 injeção — conteúdo de terceiro é dado, nunca comando), 2026-07-19 (#191 conteúdo em transporte base64 + safeUrl sem absoluto) |
 
@@ -60,6 +60,18 @@ Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões ant
 - `code-quality` — métricas de qualidade do codebase, quality gate, baseline.
 
 ---
+
+## 2026-07-27 — Gate da rota do briefing: teto exato no pior perfil (#180 PR11b, opção C do dono)
+
+**Tópicos:** code-quality, governance, briefing
+
+**Issues relacionadas:** [#180](https://github.com/tharso/prumo-dev/issues/180) (PR11b; opção C escolhida pelo dono: catraca já + fase 2 pra 4.999).
+
+**Relações com decisões anteriores:** estende 2026-07-26 (#180 rota fásica — o gate que o M3 deixou pendente); estende 2026-07-26 (baseline coverage 85 — mesma filosofia de teto exato); mantém 2026-05-06 (quality-gate).
+
+**Contexto:** foi a falta de catraca que deixou a rota engordar de 8.332 pra 15.336 palavras. A rota fásica derrubou pra 6.334 (perfil Claude Code) / 6.788 (pior perfil: AGENTS.md full, host sem registry).
+
+**Decisão (aprovada pelo dono em 27/07, "Ok.... C!"):** métrica nova `briefing_f0f1_words` no quality gate = cesto F0+F1 medido pelo `briefing_route_audit` em sandbox, **no pior perfil**, fail-closed (audit com erro derruba o gate). Baseline em **6.788 — exato no medido, sem margem** (rota é determinística; palavra adicionada quebra visível e vira decisão consciente). O alvo 4.999 segue vivo na issue de fase 2 (porta canônica 1.022w + core Parte 1 1.235w, cortes com OK do dono) — cada corte desce a catraca.
 
 ## 2026-07-26 — Briefing fásico: o mapa de fases do SKILL é a lista única de carregamento (#180, emenda à #195)
 

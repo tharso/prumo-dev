@@ -261,6 +261,22 @@ def measure(workspace: Path) -> dict:
     total = sum(item.words for item in items)
     if total == 0 and not errors:
         errors.append("rota mediu zero palavras — termômetro quebrado")
+
+    # Pior perfil (#180 PR11b, emenda A4 do Codex): o cesto acima usa o
+    # wrapper do mapa (CLAUDE.md, minimal). O host SEM plugin registry entra
+    # por AGENTS.md (full, com dispatch) — o teto do gate mede ESSE perfil,
+    # senão a folga do wrapper minimal mascara regressão nos módulos.
+    worst_total = None
+    worst_wrapper_words = None
+    if mode == "manifest" and any(item.file == "CLAUDE.md" for item in items):
+        agents_path = workspace / "AGENTS.md"
+        if not agents_path.exists():
+            errors.append("AGENTS.md ausente — pior perfil não mensurável (fail-closed)")
+        else:
+            claude_words = sum(i.words for i in items if i.file == "CLAUDE.md")
+            worst_wrapper_words = count_words(agents_path.read_text(encoding="utf-8"))
+            worst_total = total - claude_words + worst_wrapper_words
+
     reduction_pct = round(100 * (1 - total / REFERENCE_WORDS), 1)
     return {
         "schema_version": SCHEMA_VERSION,
@@ -269,6 +285,8 @@ def measure(workspace: Path) -> dict:
         "items": [asdict(item) for item in items],
         "errors": errors,
         "total_before_first_user_data": total,
+        "worst_profile_total": worst_total,
+        "worst_profile_wrapper_words": worst_wrapper_words,
         "reference_words": REFERENCE_WORDS,
         "reduction_pct_vs_reference": reduction_pct,
     }
@@ -301,13 +319,19 @@ def _print_report(report: dict, ceiling: int | None) -> None:
         )
     total = report["total_before_first_user_data"]
     print(f"[audit] total antes do 1º dado do usuário: {total} palavras")
+    if report.get("worst_profile_total") is not None:
+        print(
+            f"[audit] pior perfil (AGENTS.md full, {report['worst_profile_wrapper_words']}w "
+            f"no lugar do CLAUDE.md): {report['worst_profile_total']} palavras"
+        )
     print(
         f"[audit] vs referência da auditoria ({report['reference_words']}): "
         f"{report['reduction_pct_vs_reference']}% de redução"
     )
     if ceiling is not None:
-        status = "OK" if total <= ceiling else "ESTOURO"
-        print(f"[audit] teto {ceiling}: {status}")
+        gated = report.get("worst_profile_total") or total
+        status = "OK" if gated <= ceiling else "ESTOURO"
+        print(f"[audit] teto {ceiling} (sobre o pior perfil): {status}")
     for error in report.get("errors", []):
         print(f"[audit] ERRO: {error}")
 
@@ -333,7 +357,8 @@ def main(argv: list[str] | None = None) -> int:
     if report.get("errors"):
         # Fail-closed: rota quebrada nunca "passa" — nem sem --ceiling.
         return 2
-    if args.ceiling is not None and report["total_before_first_user_data"] > args.ceiling:
+    gated = report.get("worst_profile_total") or report["total_before_first_user_data"]
+    if args.ceiling is not None and gated > args.ceiling:
         return 1
     return 0
 

@@ -105,6 +105,34 @@ def collect_coverage() -> float:
     return 0.0
 
 
+def collect_briefing_route_worst() -> int:
+    """Cesto F0+F1 da rota do briefing no PIOR perfil (AGENTS.md full), em
+    palavras — medido pelo briefing_route_audit em sandbox (#180 PR11b).
+
+    Fail-closed: audit com erro ou sem o campo → -1 (o gate falha). A rota
+    é determinística (palavras em markdown), então o teto é exato: qualquer
+    palavra adicionada quebra visível e vira decisão consciente."""
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "scripts" / "briefing_route_audit.py"), "--json"],
+        capture_output=True,
+        text=True,
+        cwd=str(REPO_ROOT),
+    )
+    if result.returncode != 0:
+        print(f"[qg]   route audit falhou (rc={result.returncode}): {result.stderr[:300]}")
+        return -1
+    try:
+        report = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        print(f"[qg]   route audit sem JSON válido: {result.stdout[:200]}")
+        return -1
+    worst = report.get("worst_profile_total")
+    if report.get("errors") or not isinstance(worst, int):
+        print(f"[qg]   route audit com erros/sem pior perfil: {report.get('errors')}")
+        return -1
+    return worst
+
+
 def collect_largest_file() -> tuple[int, str]:
     """Retorna (linhas, caminho relativo) do maior arquivo Python no runtime."""
     py_files = list(RUNTIME_SRC.rglob("*.py"))
@@ -195,6 +223,12 @@ def main() -> int:
     largest_lines, largest_file = collect_largest_file()
     print(f"[qg]   largest_file     : {largest_lines} linhas ({largest_file})")
 
+    route_worst = collect_briefing_route_worst()
+    if route_worst < 0:
+        print("[qg] ERRO: auditoria da rota do briefing falhou (fail-closed).", file=sys.stderr)
+        return 1
+    print(f"[qg]   briefing_route   : {route_worst} palavras (pior perfil)")
+
     results = [
         check_metric(
             "ruff_violations", "Violações ruff",
@@ -209,6 +243,11 @@ def main() -> int:
         check_metric(
             "largest_file_lines", "Maior arquivo (linhas)",
             largest_lines, baseline["largest_file_lines"],
+            lower_is_better=True,
+        ),
+        check_metric(
+            "briefing_f0f1_words", "Rota do briefing F0+F1 (palavras, pior perfil)",
+            route_worst, baseline["briefing_f0f1_words"],
             lower_is_better=True,
         ),
     ]

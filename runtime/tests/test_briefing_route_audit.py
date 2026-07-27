@@ -167,6 +167,41 @@ class SandboxMeasurementTest(unittest.TestCase):
         self.assertTrue(any(s.startswith("até:") for s in sections), sections)
         self.assertNotIn("(integral)", sections)
 
+    def test_worst_profile_swaps_wrapper_for_agents_full(self) -> None:
+        # #180 PR11b: o teto do gate mede o pior perfil (host sem registry
+        # entra por AGENTS.md full) — a folga do CLAUDE.md minimal não pode
+        # mascarar regressão nos módulos.
+        report = self.report
+        self.assertIsInstance(report["worst_profile_total"], int)
+        claude_words = sum(i["words"] for i in report["items"] if i["file"] == "CLAUDE.md")
+        agents_words = report["worst_profile_wrapper_words"]
+        self.assertGreater(agents_words, claude_words, "AGENTS full tem que pesar mais que o minimal")
+        self.assertEqual(
+            report["worst_profile_total"],
+            report["total_before_first_user_data"] - claude_words + agents_words,
+        )
+
+    def test_worst_profile_fails_closed_without_agents(self) -> None:
+        agents = self.ws / "AGENTS.md"
+        backup = agents.read_text(encoding="utf-8")
+        try:
+            agents.unlink()
+            report = audit.measure(self.ws)
+            self.assertIsNone(report["worst_profile_total"])
+            self.assertTrue(any("AGENTS.md ausente" in e for e in report["errors"]))
+        finally:
+            agents.write_text(backup, encoding="utf-8")
+
+    def test_ceiling_gates_on_worst_profile(self) -> None:
+        # Teto entre o perfil comum e o pior → tem que ESTOURAR (rc=1).
+        common = self.report["total_before_first_user_data"]
+        worst = self.report["worst_profile_total"]
+        between = (common + worst) // 2
+        rc = audit.main(["--workspace", str(self.ws), "--ceiling", str(between), "--json"])
+        self.assertEqual(rc, 1)
+        rc_ok = audit.main(["--workspace", str(self.ws), "--ceiling", str(worst), "--json"])
+        self.assertEqual(rc_ok, 0)
+
     def test_legacy_mode_still_works_without_manifest(self) -> None:
         # Compat: SKILL sem o heading do mapa → modo legacy com a rota fixa.
         skill_path = self.ws / ".prumo" / "skills" / "briefing" / "SKILL.md"
