@@ -22,13 +22,25 @@ FAXINA = SKILLS / "prumo" / "references" / "modules" / "faxina.md"
 HIGIENE = SKILLS / "higiene" / "SKILL.md"
 ALLOWLIST = SKILLS / "decidir" / "references" / "acoes-allowlist.md"
 
-# Afirmações de deleção do ORIGINAL de inbox são proibidas em qualquer skill.
+# Afirmações de deleção do ORIGINAL de inbox são proibidas em qualquer skill —
+# em qualquer formulação: verbo em PT ("deletar/apagar/excluir [o|um] [arquivo]
+# original") ou operação literal (rm/unlink/os.remove perto de original/inbox).
 # Contexto negativo ("nunca", "não é", "jamais", "deixa de ser") é permitido —
 # é assim que o contrato se enuncia. O acervo (--permanent) tem contrato
-# próprio e não usa esse fraseado.
-_FORBIDDEN = re.compile(r"(?:deletar|apagar|excluir)\s+o\s+original", re.IGNORECASE)
+# próprio e não usa esse fraseado. ([D9], rodadas 1 e 2 do Codex)
+_FORBIDDEN_PATTERNS = (
+    re.compile(
+        r"(?:deletar|apagar|excluir|remover\s+fisicamente)\s+(?:o\s+|um\s+)?(?:arquivo\s+)?origina(?:l|is)",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\b(?:rm|rmdir|unlink|os\.remove|shutil\.rmtree)\b[^.!?]{0,60}(?:original|inbox)",
+        re.IGNORECASE,
+    ),
+)
 _NEGATION_BEFORE = re.compile(
-    r"(?:nunca|não|jamais|deixa\s+de|em\s+vez\s+de)[^.!?]{0,60}$", re.IGNORECASE
+    r"(?:nunca|não|jamais|deixa\s+de|em\s+vez\s+de|falha[^.!?]{0,20})[^.!?]{0,60}$",
+    re.IGNORECASE,
 )
 
 
@@ -129,28 +141,35 @@ class QuarentenaContractsTest(unittest.TestCase):
 
     def test_quarentena_e_termo_exclusivo_do_to_delete(self) -> None:
         """[D8]: 'quarentena' nas skills refere `_to_delete/` — o acervo/arquivo
-        é retenção. Uma linha que chame `Prumo/Arquivo/` de quarentena confunde
-        pré-lixo com retenção."""
-        offenders = []
-        for md in sorted(SKILLS.rglob("*.md")):
-            for line in _read(md).splitlines():
-                if "quarentena" in line.lower() and "Prumo/Arquivo" in line:
-                    offenders.append(f"{md.relative_to(REPO_ROOT)}: {line.strip()[:80]}")
-        self.assertEqual(offenders, [], f"'quarentena' aplicado a retenção: {offenders}")
-
-    def test_nenhuma_skill_afirma_delecao_do_original(self) -> None:
-        """Varredura com contexto ([D9]): afirmação de deletar/apagar/excluir o
-        original é proibida; enunciado negativo ('nunca deletar…') é permitido."""
+        é retenção. Janela de contexto (não linha-a-linha, [D9] r2): chamar
+        `Prumo/Arquivo/` de quarentena na mesma frase confunde pré-lixo com
+        retenção, mesmo cruzando quebra de linha."""
+        pattern = re.compile(
+            r"quarenten\w*[^.!?]{0,80}Prumo/Arquivo|Prumo/Arquivo[^.!?]{0,80}quarenten\w*",
+            re.IGNORECASE,
+        )
         offenders = []
         for md in sorted(SKILLS.rglob("*.md")):
             flat = _flat(_read(md))
-            for m in _FORBIDDEN.finditer(flat):
-                before = flat[: m.start()]
-                if _NEGATION_BEFORE.search(before):
-                    continue
-                offenders.append(
-                    f"{md.relative_to(REPO_ROOT)}: …{flat[max(0, m.start() - 40): m.end() + 20]}…"
-                )
+            for m in pattern.finditer(flat):
+                offenders.append(f"{md.relative_to(REPO_ROOT)}: …{m.group(0)[:80]}…")
+        self.assertEqual(offenders, [], f"'quarentena' aplicado a retenção: {offenders}")
+
+    def test_nenhuma_skill_afirma_delecao_do_original(self) -> None:
+        """Varredura com contexto ([D9]): afirmação de deleção do original — em
+        qualquer formulação, inclusive rm/unlink — é proibida; enunciado
+        negativo ('nunca deletar…', 'falha com…') é permitido."""
+        offenders = []
+        for md in sorted(SKILLS.rglob("*.md")):
+            flat = _flat(_read(md))
+            for pattern in _FORBIDDEN_PATTERNS:
+                for m in pattern.finditer(flat):
+                    before = flat[: m.start()]
+                    if _NEGATION_BEFORE.search(before):
+                        continue
+                    offenders.append(
+                        f"{md.relative_to(REPO_ROOT)}: …{flat[max(0, m.start() - 40): m.end() + 20]}…"
+                    )
         self.assertEqual(offenders, [], f"afirmação de deleção do original: {offenders}")
 
 

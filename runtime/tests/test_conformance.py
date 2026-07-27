@@ -186,11 +186,57 @@ class ConformanceHarnessTests(unittest.TestCase):
         c5 = scenarios.by_id("c5_inbox_removal")
         variants = {c.variant for c in c5.cases}
         self.assertLessEqual(
-            {"neg", "neg_copia", "neg_marcacao", "pos", "pos_delete_recria",
-             "pos_sem_destino", "pos_sem_processed", "pos_move_destino_errado",
-             "pos_delete_no_destino", "pos_colisao"},
+            {"neg", "neg_copia", "neg_marcacao", "neg_delete_processed", "pos",
+             "pos_delete_recria", "pos_sem_destino", "pos_sem_processed",
+             "pos_move_destino_errado", "pos_delete_no_destino", "pos_colisao",
+             "pos_colisao_sufixo_errado"},
             variants,
         )
+
+    def test_oracle_reprova_symlink_como_candidato(self) -> None:
+        """[r2]: link com alvo de bytes iguais no lugar do item não é o item
+        movido — com contrato de bytes, candidato symlink reprova (fecha o
+        falso PASS de `trace=None` no host real)."""
+        import tempfile
+        c5 = scenarios.by_id("c5_inbox_removal")
+        pos = next(c for c in c5.cases if c.variant == "pos")
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp)
+            run._setup_workspace(c5, ws)
+            item_rel = pos.oracle_params["item_rel"]
+            alvo = ws / "alvo-externo-simulado.txt"
+            (ws / item_rel).rename(alvo)
+            hosts.apply_replay(
+                ws, [op for op in pos.compliant_ops if op["op"] != "move"]
+            )
+            qdir = ws / "_to_delete" / "2026-03-20_inbox"
+            qdir.mkdir(parents=True, exist_ok=True)
+            (qdir / "captura-exemplo.txt").symlink_to(alvo)
+            verdict = c5.oracle(ws, **pos.oracle_params)
+        self.assertFalse(verdict.ok)
+        self.assertIn("symlink no lugar do item", verdict.reason)
+
+    def test_oracle_reprova_trilha_por_substituicao(self) -> None:
+        """[D2 r2]: reescrever o REGISTRO trocando linha antiga pela linha-trilha
+        não é adição — o baseline tem de estar preservado inteiro."""
+        import tempfile
+        c5 = scenarios.by_id("c5_inbox_removal")
+        pos = next(c for c in c5.cases if c.variant == "pos")
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp)
+            run._setup_workspace(c5, ws)
+            baseline = pos.oracle_params["registro_baseline_text"]
+            substituted = baseline.replace(
+                "| 19/03 | Inbox  | captura-exemplo chegou | Visto      | Inbox     |",
+                "| 20/03 | Inbox | captura-exemplo | Removido (quarentena) | _to_delete/2026-03-20_inbox |",
+            )
+            self.assertNotEqual(substituted, baseline, "fixture mudou; atualizar o teste")
+            (ws / "Prumo" / "REGISTRO.md").write_text(substituted, encoding="utf-8")
+            ops = [op for op in pos.compliant_ops if op["op"] != "append"]
+            trace = hosts.apply_replay(ws, ops)
+            verdict = c5.oracle(ws, **{**pos.oracle_params, "trace": trace})
+        self.assertFalse(verdict.ok)
+        self.assertIn("perdeu linha", verdict.reason)
 
     def test_oracle_positivo_reprova_symlink_pendurado_na_origem(self) -> None:
         """[D5]: link pendurado restante no inbox conta como PRESENTE — `exists()`
@@ -226,7 +272,9 @@ class ConformanceHarnessTests(unittest.TestCase):
             (qdir / "captura-exemplo.txt").symlink_to(ws / "sumiu.txt")
             verdict = c5.oracle(ws, **pos.oracle_params)
         self.assertFalse(verdict.ok)
-        self.assertIn("ilegível", verdict.reason)
+        # A checagem de symlink-candidato pega antes da leitura ([r2]) — link
+        # pendurado reprova pela mesma porta, sem traceback.
+        self.assertIn("symlink no lugar do item", verdict.reason)
 
     def test_safe_parent_recusa_pai_symlink_pra_fora(self) -> None:
         """[D6]: origem OU destino cujo pai é symlink pra fora do workspace →

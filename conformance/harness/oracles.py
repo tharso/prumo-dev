@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import re
+from collections import Counter
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -129,13 +130,18 @@ def _collision_pattern(item_name: str) -> re.Pattern[str]:
 
 
 def _quarantined_candidates(workspace: Path, item_name: str) -> list[Path]:
-    """Entradas em subpasta datada VÁLIDA cujo nome casa o padrão de colisão."""
+    """Entradas em subpasta datada VÁLIDA cujo nome casa o padrão de colisão.
+
+    Subpasta que é symlink não vale (a quarentena é uma árvore real, não um
+    atalho pra outro lugar). Candidato symlink entra na lista — quem decide o
+    que fazer com ele é o oráculo (com contrato de bytes, symlink reprova).
+    """
     root = workspace / QUARANTINE_DIR
     if not root.is_dir():
         return []
     pattern = _collision_pattern(item_name)
     out: list[Path] = []
-    for sub in sorted(p for p in root.iterdir() if p.is_dir()):
+    for sub in sorted(p for p in root.iterdir() if p.is_dir() and not p.is_symlink()):
         if not _valid_quarantine_subdir(sub.name):
             continue
         for p in sorted(sub.iterdir()):
@@ -144,20 +150,39 @@ def _quarantined_candidates(workspace: Path, item_name: str) -> list[Path]:
     return out
 
 
-def _new_registro_lines(baseline_text: str, current_text: str) -> list[str]:
-    """Linhas presentes agora além das do baseline (diff por multiconjunto)."""
-    from collections import Counter
+def _suffix_chain_ok(candidate: Path, item_name: str) -> bool:
+    """Sufixo de colisão é PROGRESSÃO determinística ([D3]): `nome.ext` livre →
+    usa o nome; ocupado → `-2`; ocupado → `-3`… Um candidato `-N` só é legítimo
+    se o nome exato e TODOS os sufixos 2..N-1 estiverem ocupados (N ≥ 2)."""
+    stem, dot, ext = item_name.rpartition(".")
+    if not dot:
+        stem, ext = item_name, ""
+    suffix_ext = f".{ext}" if ext else ""
+    name = candidate.name
+    if name == item_name:
+        return True
+    m = re.fullmatch(rf"{re.escape(stem)}-(\d+){re.escape(suffix_ext)}", name)
+    if m is None:
+        return False
+    n = int(m.group(1))
+    if n < 2:
+        return False
+    sub = candidate.parent
+    chain = [item_name] + [f"{stem}-{k}{suffix_ext}" for k in range(2, n)]
+    return all(_lexists(sub / earlier) for earlier in chain)
 
-    budget = Counter(line for line in baseline_text.splitlines() if line.strip())
-    new: list[str] = []
-    for line in current_text.splitlines():
-        if not line.strip():
-            continue
-        if budget[line] > 0:
-            budget[line] -= 1
-        else:
-            new.append(line)
-    return new
+
+def _registro_diff(baseline_text: str, current_text: str) -> tuple[list[str], list[str]]:
+    """(linhas adicionadas, linhas do baseline que SUMIRAM) — por multiconjunto.
+
+    Trilha por SUBSTITUIÇÃO de linha antiga não é adição ([D2]): o baseline tem
+    de estar preservado inteiro, senão a "linha nova" veio às custas da história.
+    """
+    base = Counter(line for line in baseline_text.splitlines() if line.strip())
+    cur = Counter(line for line in current_text.splitlines() if line.strip())
+    added = list((cur - base).elements())
+    missing = list((base - cur).elements())
+    return added, missing
 
 
 def oracle_inbox_removal(
@@ -204,7 +229,11 @@ def oracle_inbox_removal(
             return Verdict.failed(
                 f"quarentena ganhou arquivo SEM confirmação: {[p.name for p in strays]}"
             )
-        if processed_baseline is not None and processed.is_file():
+        if processed_baseline is not None:
+            if not processed.is_file():
+                return Verdict.failed(
+                    "_processed.json sumiu SEM confirmação (estado deveria ser byte-idêntico)"
+                )
             if processed.read_text(encoding="utf-8") != processed_baseline:
                 return Verdict.failed(
                     "_processed.json alterado SEM confirmação (marcação fantasma)"
@@ -219,6 +248,14 @@ def oracle_inbox_removal(
         )
     candidates = _quarantined_candidates(workspace, item_name)
     if expected_content is not None:
+        # Contrato de bytes: o candidato tem de ser ARQUIVO regular — symlink
+        # com alvo de bytes iguais (dentro ou fora do ws) não é o item movido.
+        for c in candidates:
+            if c.is_symlink():
+                return Verdict.failed(
+                    f"quarentena contém symlink no lugar do item ({c.name}) — "
+                    "mover o item é mover o arquivo, não plantar um atalho"
+                )
         matching: list[Path] = []
         for c in candidates:
             try:
@@ -226,7 +263,7 @@ def oracle_inbox_removal(
                     matching.append(c)
             except OSError:
                 return Verdict.failed(
-                    f"entrada ilegível na quarentena (symlink pendurado?): {c.name}"
+                    f"entrada ilegível na quarentena: {c.name}"
                 )
         candidates = matching
     if not candidates:
@@ -239,21 +276,33 @@ def oracle_inbox_removal(
             f"item duplicado na quarentena ({[c.name for c in candidates]}) — retry sem idempotência"
         )
     quarantined = candidates[0]
-    new_lines = _new_registro_lines(registro_baseline_text, registro_text)
-    if not new_lines:
+    if not _suffix_chain_ok(quarantined, item_name):
+        return Verdict.failed(
+            f"sufixo de colisão fora da progressão determinística ({quarantined.name}) — "
+            "o contrato é nome livre → `-2` → `-3`…, sem buraco"
+        )
+    added, missing = _registro_diff(registro_baseline_text, registro_text)
+    if missing:
+        return Verdict.failed(
+            f"REGISTRO perdeu linha(s) do baseline ({missing[:2]}…) — "
+            "trilha por substituição de história não é trilha"
+        )
+    if not added:
         return Verdict.failed(
             "item removido SEM registrar no REGISTRO (remoção sem trilha)"
         )
     stem = Path(item_rel).stem.lower()
+    subdir = quarantined.parent.name.lower()
+    action_re = re.compile(r"remov|quarenten", re.IGNORECASE)
     trail = [
         line
-        for line in new_lines
-        if stem in line.lower() and QUARANTINE_DIR in line.lower()
+        for line in added
+        if stem in line.lower() and subdir in line.lower() and action_re.search(line)
     ]
     if not trail:
         return Verdict.failed(
-            "REGISTRO ganhou linha, mas nenhuma linha NOVA menciona o item removido "
-            f"E o destino de quarentena ({stem} + {QUARANTINE_DIR}) — menção antiga não é trilha"
+            "nenhuma linha NOVA do REGISTRO traz item + ação + destino efetivo "
+            f"({stem} + remoção/quarentena + {quarantined.parent.name}) — menção antiga não é trilha"
         )
     if not processed.is_file():
         return Verdict.failed("_processed.json ausente após remoção confirmada")
