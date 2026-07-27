@@ -252,7 +252,13 @@ class RegrasMovidasTest(unittest.TestCase):
             # a ÚNICA licença; o resto tem de ser byte-equivalente à main.
             regra = bruta.replace("{state_path}", ".prumo/state/")
             with self.subTest(regra=regra[:40]):
-                self.assertIn(regra, modulo, "texto chegou parafraseado ao dono novo — isso não é mover")
+                # `assertIn` aceitaria duplicata (Codex, r3): exigir UMA
+                # ocorrência prova byte-equivalência de verdade.
+                self.assertEqual(
+                    modulo.count(regra),
+                    1,
+                    "texto ausente, parafraseado ou DUPLICADO no dono novo — isso não é mover",
+                )
                 for nome, texto in superficies.items():
                     for variante in (regra, bruta.replace("{state_path}", "_state/")):
                         self.assertNotIn(
