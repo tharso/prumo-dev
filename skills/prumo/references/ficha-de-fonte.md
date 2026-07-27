@@ -73,7 +73,33 @@ Uma ficha = um arquivo em `Prumo/Referencias/`.
 4. **Indexação (faxina):** a ficha vira linha no `Referencias/INDICE.md` com o
    mapeamento — Título = cabeçalho da ficha; Arquivo = nome do arquivo; Data =
    campo Entrada; Descrição = "Por que guardei" (resumido); Keywords = campo
-   Keywords.
+   Keywords. O **ID** sai da alocação abaixo.
+
+## Alocação de ID no `INDICE.md` (#244)
+
+Ler o índice em pedaços e apendar numa sequência global se contradizem: em
+27/07 um agente leu 32 linhas, viu ID 24, assumiu 25 — o índice já ia a 34, e
+dez fichas nasceram colidindo. O procedimento agora **não confia em leitura
+parcial** nem no próprio rodapé:
+
+1. **Adquirir o lock** do escopo `Prumo/Referencias/INDICE.md` (contrato em
+   `multiagent.md` → "Escopo com aquisição atômica"). Sem lock adquirido,
+   **não escrever** — a ficha fica pronta e o índice entra na próxima sessão.
+2. Ler **a última linha** do `INDICE.md` (nunca o arquivo inteiro). Rodapé
+   `<!-- proximo-id: N -->` presente → N é **sugestão**.
+3. **Sondar o candidato**: buscar `| N |` no índice. Ocupado → incrementar e
+   sondar de novo, até achar livre. Vale em TODO caminho — rodapé stale não é
+   oráculo.
+4. **Sem rodapé (ou malformado):** ler o **fim** do arquivo como *semente*
+   (nunca como máximo global — a faxina pode ter agrupado o índice por temas),
+   tomar o maior ID visível ali e sondar candidatos até liberar. Repor o
+   rodapé na mesma edição.
+5. **Escrever numa edição só**: linha da tabela + rodapé atualizado pra N+1.
+6. **Liberar o lock** (mover, nunca deletar — `multiagent.md`).
+
+Escolher a **seção temática** certa pra linha nova é leitura curatorial: outra
+finalidade, outra régua — não conta contra a promessa de "não ler o índice
+inteiro pra alocar ID".
 5. **Arquivos operacionais nunca viram ficha** nem entram no índice:
    `INDICE.md`, `WORKFLOWS.md`, `EMAIL-CURADORIA.md` são infraestrutura de
    `Referencias/`, não referência catalogável (mesma lista de exclusão do

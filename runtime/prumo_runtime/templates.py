@@ -554,6 +554,9 @@ _Nenhuma ideia registrada ainda._
 
 
 def render_referencias_md(setup_date: str) -> str:
+    # Rodapé `proximo-id` (#244): o agente lê UMA linha em vez do índice
+    # inteiro pra alocar ID. É sugestão, nunca oráculo — o procedimento
+    # (`ficha-de-fonte.md`) sonda o candidato antes de escrever.
     return f"""# Índice de referências
 
 > Material de referência salvo.
@@ -562,6 +565,8 @@ def render_referencias_md(setup_date: str) -> str:
 |---|--------|---------|------|-----------|----------|
 
 _Última atualização: {setup_date}_
+
+<!-- proximo-id: 1 -->
 """
 
 
