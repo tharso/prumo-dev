@@ -165,6 +165,14 @@ GUARDRAIL_OWNERS: dict[str, Path] = {
     "consulta pontual à agenda de amanhã antes de declarar": CANAIS,
     "Sinal de divergência agenda × email (#211)": MONTAGEM,
     "só com confirmação do usuário; nunca criar sozinho": MONTAGEM,
+    # Relatório de 27/07 (B1/B2/B3 — decisões do dono nas perguntas didáticas):
+    "FORMATO da leitura de corpo (relatório de 27/07, achado 5.1)": CANAIS,
+    "escalar pra `FULL_CONTENT` **só** se o texto puro não bastar": CANAIS,
+    "Política de cobertura (FIXA — decisão do dono em 27/07": CANAIS,
+    "Respostas ao que o usuário enviou** desde o último briefing": CANAIS,
+    "Declarar a cobertura em uma linha": CANAIS,
+    "em Cowork/host containerizado, **WebFetch PRIMEIRO**": PREFLIGHT,
+    '"não consegui checar" só depois de esgotar os dois': PREFLIGHT,
     # Preflight de versão (#174/#195/#215) → mini-módulo novo. O protocolo
     # MÍNIMO do #215 mora aqui (review Codex r1 do #180: remoto-menor pode
     # nunca acionar a oferta — o dono grande pode nunca carregar).

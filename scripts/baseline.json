@@ -1,7 +1,7 @@
 {
-  "_note": "Atualizado em 2026-07-27 (fase 2 da #228, cortes C1-C6 aprovados pelo dono 'C1 a C6, go!'): briefing_f0f1_words 6788->6401 (valor final pós-review: ponteiro portátil do C1) — catraca desce a cada corte mergeado, mecanismo da opcao C. Cortes: contrato de consumo do JSON vira runtime-consumo.md (C1), arvore do core enxuta com ponteiro pro Mapa da porta (C2), descricoes da tabela de comandos (C3), prosa de intencoes (C4), dedup da porta (C5), dispatch com gancho de 60 chars (C6). Alvo 4.999 segue na #228 (decisao de teto final e do dono). Demais metricas mantidas (coverage 85, ruff 6, largest 868). PRs so podem manter ou melhorar.",
+  "_note": "Atualizado em 2026-07-27 (2a rodada): 6401 -> 6493 (+92) por CONTEUDO NOVO aprovado pelo dono nas perguntas didaticas do relatorio de 27/07 — descoberta-sem-raiz no perimetro dos wrappers (B4) e ordem de transporte WebFetch-primeiro no preflight (B3); B1 (formato de corpo) e B2 (politica de cobertura em 3 bracos, incl. respostas a enviados) moram em briefing-canais.md (F2, fora do cesto). A catraca desce por corte e so sobe com aprovacao explicita de contrato novo — este e o caso. Historico: 6788 (M3) -> 6401 (C1-C6) -> 6493 (contratos do relatorio). Alvo 4.999 segue na #228. Demais metricas mantidas.",
   "ruff_violations": 6,
   "coverage_pct": 85,
   "largest_file_lines": 868,
-  "briefing_f0f1_words": 6401
+  "briefing_f0f1_words": 6493
 }
