@@ -24,24 +24,38 @@ ALLOWLIST = SKILLS / "decidir" / "references" / "acoes-allowlist.md"
 
 # Afirmações de deleção do ORIGINAL de inbox são proibidas em qualquer skill —
 # em qualquer formulação: verbo em PT ("deletar/apagar/excluir [o|um] [arquivo]
-# original") ou operação literal (rm/unlink/os.remove perto de original/inbox).
-# Contexto negativo ("nunca", "não é", "jamais", "deixa de ser") é permitido —
-# é assim que o contrato se enuncia. O acervo (--permanent) tem contrato
-# próprio e não usa esse fraseado. ([D9], rodadas 1 e 2 do Codex)
+# original") ou operação literal (rm/unlink/os.remove) perto de original/inbox,
+# em QUALQUER ordem ([D9] r3: "no original do inbox, execute unlink" também é
+# ofensa). Contexto negativo ("nunca", "não é", "jamais") é permitido — é assim
+# que o contrato se enuncia — mas a negação só vale DENTRO da mesma oração
+# ([D9] r3: "Nunca mover; deletar o original" não está negado). O acervo
+# (--permanent) tem contrato próprio e não usa esse fraseado.
+_OPS = r"(?:rm|rmdir|unlink|os\.remove|shutil\.rmtree)"
 _FORBIDDEN_PATTERNS = (
     re.compile(
         r"(?:deletar|apagar|excluir|remover\s+fisicamente)\s+(?:o\s+|um\s+)?(?:arquivo\s+)?origina(?:l|is)",
         re.IGNORECASE,
     ),
-    re.compile(
-        r"\b(?:rm|rmdir|unlink|os\.remove|shutil\.rmtree)\b[^.!?]{0,60}(?:original|inbox)",
-        re.IGNORECASE,
-    ),
+    re.compile(rf"\b{_OPS}\b[^.!?;:]{{0,60}}(?:original|inbox)", re.IGNORECASE),
+    re.compile(rf"(?:original|inbox)[^.!?;:]{{0,60}}\b{_OPS}\b", re.IGNORECASE),
 )
+# Lookback preso à oração: não atravessa . ! ? ; : — a negação de outra frase
+# não absolve a operação proibida desta.
 _NEGATION_BEFORE = re.compile(
-    r"(?:nunca|não|jamais|deixa\s+de|em\s+vez\s+de|falha[^.!?]{0,20})[^.!?]{0,60}$",
+    r"(?:nunca|não|nao|jamais|deixa\s+de|em\s+vez\s+de|falha[^.!?;:—]{0,20})[^.!?;:—]{0,60}$",
     re.IGNORECASE,
 )
+
+
+def _deletion_offenses(flat: str) -> list[str]:
+    """Trechos que AFIRMAM deleção do original — lógica única, testável."""
+    out: list[str] = []
+    for pattern in _FORBIDDEN_PATTERNS:
+        for m in pattern.finditer(flat):
+            if _NEGATION_BEFORE.search(flat[: m.start()]):
+                continue
+            out.append(flat[max(0, m.start() - 40): m.end() + 20])
+    return out
 
 
 def _read(path: Path) -> str:
@@ -157,20 +171,36 @@ class QuarentenaContractsTest(unittest.TestCase):
 
     def test_nenhuma_skill_afirma_delecao_do_original(self) -> None:
         """Varredura com contexto ([D9]): afirmação de deleção do original — em
-        qualquer formulação, inclusive rm/unlink — é proibida; enunciado
-        negativo ('nunca deletar…', 'falha com…') é permitido."""
+        qualquer formulação, inclusive rm/unlink, em qualquer ordem — é
+        proibida; enunciado negativo ('nunca deletar…') é permitido."""
         offenders = []
         for md in sorted(SKILLS.rglob("*.md")):
-            flat = _flat(_read(md))
-            for pattern in _FORBIDDEN_PATTERNS:
-                for m in pattern.finditer(flat):
-                    before = flat[: m.start()]
-                    if _NEGATION_BEFORE.search(before):
-                        continue
-                    offenders.append(
-                        f"{md.relative_to(REPO_ROOT)}: …{flat[max(0, m.start() - 40): m.end() + 20]}…"
-                    )
+            for snippet in _deletion_offenses(_flat(_read(md))):
+                offenders.append(f"{md.relative_to(REPO_ROOT)}: …{snippet}…")
         self.assertEqual(offenders, [], f"afirmação de deleção do original: {offenders}")
+
+    def test_padroes_do_guard_pegam_formulacoes_adversariais(self) -> None:
+        """[D9] r3 — a lógica do guard, provada nos dois sentidos com os
+        exemplos adversariais do review."""
+        ofensas = (
+            "deletar o original do inbox com ação real",
+            "apagar o arquivo original depois de processar",
+            "No original do inbox, execute unlink em seguida",
+            "Nunca mover; deletar o original",  # negação de OUTRA oração não absolve
+            "use rm no diretório do inbox",
+        )
+        for texto in ofensas:
+            with self.subTest(texto=texto):
+                self.assertTrue(_deletion_offenses(texto), f"deveria acusar: {texto!r}")
+        permitidos = (
+            "nunca deletar o original — mover é o contrato",
+            "a deleção falha com Operation not permitted no host",
+            "remover o original do inbox movendo-o pra quarentena",
+            "rode rm -rf no diretório de build do seu projeto",
+        )
+        for texto in permitidos:
+            with self.subTest(texto=texto):
+                self.assertEqual(_deletion_offenses(texto), [], f"falso positivo: {texto!r}")
 
 
 if __name__ == "__main__":

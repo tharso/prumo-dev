@@ -172,6 +172,20 @@ def _suffix_chain_ok(candidate: Path, item_name: str) -> bool:
     return all(_lexists(sub / earlier) for earlier in chain)
 
 
+_ACTION_RE = re.compile(r"remov\w*|quarenten\w*", re.IGNORECASE)
+_ACTION_NEG_RE = re.compile(r"(?:não|nao|nunca|jamais|sem)\s+[^.!?;:]{0,24}$", re.IGNORECASE)
+
+
+def _affirms_action(line: str) -> bool:
+    """A trilha exige ação AFIRMATIVA ([D2] r3): "Removido (quarentena)" vale;
+    "não removido" / "não … (quarentena)" não valem — pelo menos um match de
+    ação sem negação na janela imediatamente anterior, dentro da mesma oração."""
+    for m in _ACTION_RE.finditer(line):
+        if not _ACTION_NEG_RE.search(line[: m.start()]):
+            return True
+    return False
+
+
 def _registro_diff(baseline_text: str, current_text: str) -> tuple[list[str], list[str]]:
     """(linhas adicionadas, linhas do baseline que SUMIRAM) — por multiconjunto.
 
@@ -293,16 +307,16 @@ def oracle_inbox_removal(
         )
     stem = Path(item_rel).stem.lower()
     subdir = quarantined.parent.name.lower()
-    action_re = re.compile(r"remov|quarenten", re.IGNORECASE)
     trail = [
         line
         for line in added
-        if stem in line.lower() and subdir in line.lower() and action_re.search(line)
+        if stem in line.lower() and subdir in line.lower() and _affirms_action(line)
     ]
     if not trail:
         return Verdict.failed(
-            "nenhuma linha NOVA do REGISTRO traz item + ação + destino efetivo "
-            f"({stem} + remoção/quarentena + {quarantined.parent.name}) — menção antiga não é trilha"
+            "nenhuma linha NOVA do REGISTRO traz item + ação AFIRMATIVA + destino efetivo "
+            f"({stem} + remoção/quarentena sem negação + {quarantined.parent.name}) — "
+            "menção antiga ou negada não é trilha"
         )
     if not processed.is_file():
         return Verdict.failed("_processed.json ausente após remoção confirmada")

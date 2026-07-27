@@ -121,7 +121,7 @@ class ConformanceHarnessTests(unittest.TestCase):
         # A violation_ops do pos é exatamente 'move + linha de fachada'.
         v = run.run_case_replay(c5, pos, "violation")
         self.assertFalse(v.verdict.ok)
-        self.assertIn("menção antiga não é trilha", v.verdict.reason)
+        self.assertIn("não é trilha", v.verdict.reason)
 
     def test_c5_compliant_roda_em_host_sem_delecao(self) -> None:
         """O fluxo feliz do #242 não depende de deleção: as compliant_ops do pos
@@ -215,6 +215,28 @@ class ConformanceHarnessTests(unittest.TestCase):
             verdict = c5.oracle(ws, **pos.oracle_params)
         self.assertFalse(verdict.ok)
         self.assertIn("symlink no lugar do item", verdict.reason)
+
+    def test_oracle_reprova_trilha_negada(self) -> None:
+        """[D2] r3: linha nova com o item e o destino mas ação NEGADA
+        ("não removido") não é trilha — exige afirmação."""
+        import tempfile
+        c5 = scenarios.by_id("c5_inbox_removal")
+        pos = next(c for c in c5.cases if c.variant == "pos")
+        adversarial = (
+            "| 20/03 | Inbox | captura-exemplo não removido; destino planejado "
+            "_to_delete/2026-03-20_inbox | — | — |\n"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp)
+            run._setup_workspace(c5, ws)
+            ops = [
+                {"op": "append", "path": "Prumo/REGISTRO.md", "content": adversarial},
+                *[op for op in pos.compliant_ops if op["op"] != "append"],
+            ]
+            trace = hosts.apply_replay(ws, ops)
+            verdict = c5.oracle(ws, **{**pos.oracle_params, "trace": trace})
+        self.assertFalse(verdict.ok)
+        self.assertIn("AFIRMATIVA", verdict.reason)
 
     def test_oracle_reprova_trilha_por_substituicao(self) -> None:
         """[D2 r2]: reescrever o REGISTRO trocando linha antiga pela linha-trilha
