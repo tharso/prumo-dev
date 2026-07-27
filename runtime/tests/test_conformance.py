@@ -118,10 +118,78 @@ class ConformanceHarnessTests(unittest.TestCase):
         mencionar o item removido (o furo que o Codex apontou)."""
         c5 = scenarios.by_id("c5_inbox_removal")
         pos = next(c for c in c5.cases if c.variant == "pos")
-        # A violation_ops do pos é exatamente 'remove + linha de fachada'.
+        # A violation_ops do pos é exatamente 'move + linha de fachada'.
         v = run.run_case_replay(c5, pos, "violation")
         self.assertFalse(v.verdict.ok)
         self.assertIn("não menciona o item", v.verdict.reason)
+
+    def test_c5_compliant_roda_em_host_sem_delecao(self) -> None:
+        """O fluxo feliz do #242 não depende de deleção: as compliant_ops do pos
+        rodam com `allow_delete=False` (a ponte do Cowork) e o oráculo PASSA."""
+        import tempfile
+        c5 = scenarios.by_id("c5_inbox_removal")
+        pos = next(c for c in c5.cases if c.variant == "pos")
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp)
+            run._setup_workspace(c5, ws)
+            trace = hosts.apply_replay(ws, pos.compliant_ops, allow_delete=False)
+            verdict = c5.oracle(ws, **{**pos.oracle_params, "trace": trace})
+        self.assertTrue(verdict.ok, verdict.reason)
+
+    def test_host_sem_delecao_bloqueia_delete(self) -> None:
+        """`allow_delete=False` levanta PermissionError na op delete — o mesmo
+        sintoma da ponte real do Cowork (Operation not permitted)."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp)
+            (ws / "x.txt").write_text("x", encoding="utf-8")
+            with self.assertRaises(PermissionError):
+                hosts.apply_replay(ws, [{"op": "delete", "path": "x.txt"}], allow_delete=False)
+
+    def test_c5_delete_recriacao_cai_pelo_trace(self) -> None:
+        """Estado final idêntico ao move, mas o trace acusa a deleção — o caso
+        que oráculo só-de-estado não pega (achado [P2-3] do Codex)."""
+        c5 = scenarios.by_id("c5_inbox_removal")
+        caso = next(c for c in c5.cases if c.variant == "pos_delete_recria")
+        v = run.run_case_replay(c5, caso, "violation")
+        self.assertFalse(v.verdict.ok)
+        self.assertIn("DELEÇÃO", v.verdict.reason)
+
+    def test_apply_replay_move_preserva_symlink(self) -> None:
+        """Mover um symlink move o LINK, nunca o alvo (achado [P2-6])."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp)
+            alvo = ws / "alvo.txt"
+            alvo.write_text("conteúdo do alvo", encoding="utf-8")
+            link = ws / "link.txt"
+            link.symlink_to(alvo)
+            hosts.apply_replay(ws, [{"op": "move", "path": "link.txt", "dest": "q/link.txt"}])
+            dest = ws / "q" / "link.txt"
+            self.assertTrue(dest.is_symlink(), "destino deveria ser o próprio link")
+            self.assertTrue(alvo.is_file(), "o alvo do link não pode ser tocado")
+            self.assertFalse(link.is_symlink() or link.exists())
+
+    def test_apply_replay_move_nunca_sobrescreve(self) -> None:
+        """Destino de move já existente é erro — colisão nunca é silenciosa."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp)
+            (ws / "a.txt").write_text("a", encoding="utf-8")
+            (ws / "q").mkdir()
+            (ws / "q" / "a.txt").write_text("já existe", encoding="utf-8")
+            with self.assertRaises(ValueError):
+                hosts.apply_replay(ws, [{"op": "move", "path": "a.txt", "dest": "q/a.txt"}])
+
+    def test_c5_cobre_variantes_do_242(self) -> None:
+        """As direções de segurança novas do #242 existem como casos pareados."""
+        c5 = scenarios.by_id("c5_inbox_removal")
+        variants = {c.variant for c in c5.cases}
+        self.assertLessEqual(
+            {"neg", "neg_copia", "neg_marcacao", "pos", "pos_delete_recria",
+             "pos_sem_destino", "pos_sem_processed"},
+            variants,
+        )
 
 
 if __name__ == "__main__":
