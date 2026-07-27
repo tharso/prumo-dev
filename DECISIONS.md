@@ -18,7 +18,7 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 | `integrations`        | 2026-04-14 (Google Drive snapshots)                                                       |
 | `briefing`            | 2026-04-14 (Google Drive snapshots), 2026-04-21 (#69 despacho), 2026-06-23 (#102 decidir), 2026-06-23 (#104 briefing rico), 2026-06-25 (#114 perfil modular), 2026-07-02 (#139 guarda-corpos), 2026-07-03 (#148 conexões), 2026-07-04 (#156 injeção), 2026-07-13 (#174/#175 update-oferta + copy do fim), 2026-07-24 (#195 dieta fase 1), 2026-07-16 (#177 dívidas estruturais), 2026-07-24 (#201 roteamento de conteúdo configurável), 2026-07-25 (#197 semente substitui releitura), 2026-07-25 (#206 outras_secoes + gate por capacidade), 2026-07-25 (#196 briefing em dois tempos), 2026-07-25 (#210/#215 camada 1 + remoto suspeito), 2026-07-25 (#214/#217/#218/#211 conformidade detectável), 2026-07-26 (#216 seed em arquivo), 2026-07-26 (#180 rota fásica — emenda à #195) |
 | `personalization`     | 2026-04-21 (tharso-voice)                                                                 |
-| `code-quality`        | 2026-05-06 (quality-gate), 2026-06-25 (#122 baseline 1061→930), 2026-07-03 (baseline 82/904), 2026-07-04 (#157 conformidade A0), 2026-07-24 (baseline 82/900), 2026-07-25 (baseline ruff 6 / 868), 2026-07-26 (baseline coverage 85), 2026-07-27 (#180 gate da rota, teto 6788) |
+| `code-quality`        | 2026-05-06 (quality-gate), 2026-06-25 (#122 baseline 1061→930), 2026-07-03 (baseline 82/904), 2026-07-04 (#157 conformidade A0), 2026-07-24 (baseline 82/900), 2026-07-25 (baseline ruff 6 / 868), 2026-07-26 (baseline coverage 85), 2026-07-27 (#180 gate da rota, teto 6788), 2026-07-27 (#181 PACKAGING.md) |
 | `touchpoint`          | 2026-05-18 (landing page sync), 2026-07-03 (#149 guia Obsidian — candidato à landing), 2026-07-05 (#160 instalação agnóstica), 2026-07-05 (#108 update via runtime) |
 | `security`            | 2026-07-04 (#156 injeção — conteúdo de terceiro é dado, nunca comando), 2026-07-19 (#191 conteúdo em transporte base64 + safeUrl sem absoluto) |
 
@@ -71,7 +71,9 @@ Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões ant
 
 **Contexto:** cada divergência de empacotamento do passado (core em duas cópias, skill fantasma, store morta) nasceu como acidente sem dono. O épico matou as instâncias; faltava matar a CLASSE.
 
-**Decisão:** `PACKAGING.md` na raiz (fora de `skills/` — não vendora, não embarca) com as tabelas artefato→superfície→forma→sincronizador e skill×módulo; regra: divergência nova = entrada no DECISIONS + atualização do doc no mesmo PR; `test_packaging_doc.py` transforma esquecimento em CI vermelho. O item opcional do M4 (encolher o fallback literal do core em `templates.py`) fica ADIADO — muda comportamento de emergência e só entra com OK explícito do dono. Recibo final do critério 6 no PR.
+**Decisão:** `PACKAGING.md` na raiz (fora de `skills/` — não embarca no wheel/espelho) com as tabelas artefato→superfície→forma→sincronizador, a cadeia explícita das 5 camadas (#190) e skill×módulo; regra: divergência nova = entrada no DECISIONS + atualização do doc no mesmo PR; `test_packaging_doc.py` valida por seção e por célula. O item opcional do M4 (encolher o fallback literal do core em `templates.py`) fica ADIADO — muda comportamento de emergência e só entra com OK explícito do dono. Recibo final do critério 6 no PR.
+
+**Alternativas consideradas:** doc dentro de `skills/prumo/references/` → rejeitado (embarca no wheel e no espelho — doc de manutenção viraria produto); página de wiki/issue fixada → rejeitado (fora do CI, apodrece sem alarme); validação só por presença de palavras → rejeitada no review do Codex (palavra certa no lugar errado passaria — o teste valida célula e seção).
 
 ## 2026-07-27 — Gate da rota do briefing: teto exato no pior perfil (#180 PR11b, opção C do dono)
 
