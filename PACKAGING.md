@@ -16,7 +16,7 @@
 |---|---|---|---|
 | 1 | **Source** (`tharso/prumo-dev` → `skills/`) | Fonte canônica única (skills-first) | Desenvolvimento (PRs) |
 | 2 | **Espelho público** (`tharso/prumo`) | Subset distribuível, história preservada (#159) | Workflow `mirror-to-prumo.yml` — NUNCA commit direto |
-| 3 | **Store do host** | As camadas 3–5 da propagação (subtabela abaixo) | Host (UI/CLI de plugins) |
+| 3 | **Store do host + conta** | As camadas 3–5 da propagação (subtabela abaixo — a 5ª é o registro server-side da conta, não o disco do host) | Host (UI/CLI de plugins) e servidor |
 | 4 | **Wheel** (`prumo_runtime/_bundled/`) | `skills/` + `plugin.json` + `VERSION` embarcados no pacote Python | hatchling (`force-include` no `pyproject.toml`) — gerado em build |
 | 5 | **Workspace** (`.prumo/skills/` e `.prumo/system/`) | Cópia local das skills (fallback sem CLI) + o CORE REAL | Runtime: `install_skills` (setup) e `repair` |
 
@@ -30,7 +30,7 @@
 | 4. Plugin instalado | store unificada `~/.claude/plugins` (`cowork_plugins` é legado morto) | era pré-5.x; caches órfãos (#146/#190) |
 | 5. Registro da conta → sessão | server-side → `<sessão>/<id>/rpm/` | registro congelado re-vinculado pela reinstalação (#190) |
 
-O doctor diagnostica os elos 3–5; o drift plugin↔workspace fecha o circuito com o elo 5→workspace.
+O doctor diagnostica os elos 3–5; o drift plugin↔workspace fecha o circuito no elo **4→workspace** (o plugin INSTALADO contra o `prumo_version` do core).
 
 ## Artefato → superfície → forma → sincronizador
 

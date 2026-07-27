@@ -20,21 +20,35 @@ CORE = SKILLS / "prumo" / "references" / "prumo-core.md"
 
 
 def _intent_modules_from_core() -> set[str]:
-    """A lista canônica dos módulos de intenção é a tabela do CORE
-    ('Manutenção sem comando próprio', #172) — o teste deriva de lá em vez
-    de duplicar (review Codex do M4)."""
-    text = CORE.read_text(encoding="utf-8")
-    section = text.split("### Manutenção sem comando próprio", 1)[1].split("##", 1)[0]
-    return set(re.findall(r"modules/([a-z-]+)\.md", section))
+    """A lista canônica dos módulos de intenção vem do PARSER canônico do
+    runtime (`parse_intent_modules`, #183) sobre o core real — sem regex
+    paralela nem lista duplicada (review Codex do M4, r2)."""
+    import sys
+
+    sys.path.insert(0, str(REPO_ROOT / "runtime"))
+    from prumo_runtime.command_table import parse_intent_modules
+
+    entries = parse_intent_modules(CORE.read_text(encoding="utf-8"))
+    return {Path(entry["module"]).stem for entry in entries}
 
 
-def _table_row(text: str, cell_contains: str) -> str:
-    """Linha de tabela cujo needle está numa das DUAS primeiras células —
-    cobre a tabela de superfícies (|#|Nome|...) e a de artefatos (|Nome|...)."""
-    for line in text.splitlines():
-        if line.strip().startswith("|") and cell_contains in "|".join(line.split("|")[1:3]):
-            return line
-    raise AssertionError(f"linha de tabela com {cell_contains!r} não encontrada")
+def _artifact_cells(text: str, artifact_contains: str) -> dict[str, str]:
+    """Células NOMEADAS da linha da tabela de artefatos — asserção por
+    coluna: valor certo na coluna errada não passa (review Codex, r2)."""
+    lines = text.split("## Artefato → superfície → forma → sincronizador", 1)[1].splitlines()
+    header = next(l for l in lines if l.strip().startswith("|"))
+    columns = [
+        c.strip().replace("**", "").replace("`", "")
+        for c in header.strip().strip("|").split("|")
+    ]
+    for line in lines:
+        s = line.strip()
+        if not s.startswith("|"):
+            continue
+        cells = [c.strip() for c in s.strip("|").split("|")]
+        if len(cells) == len(columns) and artifact_contains in cells[0]:
+            return dict(zip(columns, cells))
+    raise AssertionError(f"linha de artefato com {artifact_contains!r} não encontrada")
 
 
 class PackagingDocTests(unittest.TestCase):
@@ -68,40 +82,57 @@ class PackagingDocTests(unittest.TestCase):
         self.assertEqual(listed, self.plugin_skills, "lista do doc ≠ plugin.json")
         self.assertEqual(count, len(self.plugin_skills))
 
-    def test_intent_modules_derived_from_core(self) -> None:
+    def test_intent_modules_exact_nominal_list(self) -> None:
         canonical = _intent_modules_from_core()
         self.assertTrue(canonical, "tabela de intenções do core vazia?")
-        section = self.text.split("**Módulos de intenção", 1)[1].split("**Nota", 1)[0]
-        listed = set(re.findall(r"`([a-z-]+)`", section)) & (canonical | self.tree_skills)
-        self.assertEqual(listed, canonical, "módulos do doc ≠ tabela do core (#172)")
+        # A lista NOMINAL da frase do doc (entre o rótulo e "atendem"),
+        # comparada como conjunto EXATO — módulo inventado no doc quebra
+        # (interseção deixava `limpeza` passar; review Codex r2).
+        match = re.search(
+            r"\*\*Módulos de intenção \(não são skills — #172\):\*\*\s*(.+?)\s+atendem",
+            self.text,
+            re.DOTALL,
+        )
+        self.assertIsNotNone(match, "frase dos módulos de intenção mudou de formato")
+        listed = set(re.findall(r"`([a-z-]+)`", match.group(1)))
+        self.assertEqual(listed, canonical, "lista nominal do doc ≠ parser canônico do core")
         for name in canonical:
             with self.subTest(module=name):
                 self.assertTrue((MODULES / f"{name}.md").exists())
                 self.assertNotIn(name, self.tree_skills, f"{name} virou skill top-level")
 
-    def test_core_row_declares_stub_in_the_cell(self) -> None:
-        row = _table_row(self.text, "prumo-core.md")
-        self.assertIn("stub-ponteiro", row, "a CÉLULA do core não declara o stub")
-        self.assertIn(".prumo/system/PRUMO-CORE.md", row)
+    def test_core_row_declares_stub_in_workspace_column(self) -> None:
+        cells = _artifact_cells(self.text, "prumo-core.md")
+        self.assertIn("stub-ponteiro", cells["Workspace"], "stub fora da coluna Workspace")
+        self.assertIn(".prumo/system/PRUMO-CORE.md", cells["Workspace"])
+        for surface in ("Source", "Espelho", "Store do host", "Wheel _bundled"):
+            self.assertIn("completo", cells[surface], f"core não é completo em {surface}")
         import sys
 
         sys.path.insert(0, str(REPO_ROOT / "runtime"))
         from prumo_runtime.templates import CORE_STUB_MARKER
 
-        self.assertIn(CORE_STUB_MARKER, row, "marker da célula divergiu do código")
+        self.assertIn(CORE_STUB_MARKER, cells["Workspace"], "marker divergiu do código")
 
-    def test_skills_row_and_wrappers_row_cells(self) -> None:
-        skills_row = _table_row(self.text, "Skills top-level")
-        self.assertIn(".prumo/skills/", skills_row)
-        self.assertIn("install_skills", skills_row)
-        wrappers_row = _table_row(self.text, "Wrappers da raiz")
-        self.assertIn("minimal", wrappers_row)
-        self.assertIn("blocos autorais preservados", wrappers_row)
+    def test_skills_and_wrappers_cells_by_column(self) -> None:
+        skills = _artifact_cells(self.text, "Skills top-level")
+        self.assertIn(".prumo/skills/", skills["Workspace"])
+        self.assertIn("install_skills", skills["Workspace"])
+        self.assertIn("hatchling", skills["Wheel _bundled"])
+        wrappers = _artifact_cells(self.text, "Wrappers da raiz")
+        self.assertIn("minimal", wrappers["Workspace"], "perfil minimal fora da coluna Workspace")
+        self.assertIn("blocos autorais preservados", wrappers["Workspace"])
+        self.assertEqual(wrappers["Espelho"], "—")
 
-    def test_five_layer_chain_is_explicit(self) -> None:
+    def test_five_layer_chain_is_explicit_and_exact(self) -> None:
         # #190: as 5 camadas nomeadas uma a uma — colapsá-las apaga o drift
-        # entre elos (review Codex do M4).
+        # entre elos (review Codex do M4). Exatamente 1..5, nada além.
         section = self.text.split("cadeia de propagação em 5 camadas", 1)[1].split("##", 1)[0]
+        numbered = [
+            l for l in section.splitlines()
+            if re.match(r"\|\s*\d\.", l.strip())
+        ]
+        self.assertEqual(len(numbered), 5, "a subtabela tem que ter exatamente 5 camadas")
         for layer, anchor in (
             ("1.", "prumo-dev"),
             ("2.", "mirror"),
@@ -110,12 +141,11 @@ class PackagingDocTests(unittest.TestCase):
             ("5.", "rpm/"),
         ):
             with self.subTest(layer=layer):
-                row = next(
-                    (l for l in section.splitlines() if l.strip().startswith(f"| {layer}")),
-                    None,
-                )
+                row = next((l for l in numbered if l.strip().startswith(f"| {layer}")), None)
                 self.assertIsNotNone(row, f"camada {layer} sumiu da subtabela")
                 self.assertIn(anchor, row)
+        # O circuito com o workspace fecha no elo 4 (plugin instalado), não 5.
+        self.assertIn("**4→workspace**", section)
 
     def test_start_note_present_and_skill_really_absent(self) -> None:
         self.assertIn("`prumo start`", self.text)
@@ -125,9 +155,11 @@ class PackagingDocTests(unittest.TestCase):
     def test_wheel_bundle_mechanism_matches_pyproject(self) -> None:
         pyproject = (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
         self.assertIn("prumo_runtime/_bundled/skills", pyproject)
-        row = _table_row(self.text, "Wheel")
-        self.assertIn("force-include", row)
-        self.assertIn("hatchling", row)
+        surface_row = next(
+            l for l in self.text.splitlines() if l.strip().startswith("| 4 |") and "Wheel" in l
+        )
+        self.assertIn("force-include", surface_row)
+        self.assertIn("hatchling", surface_row)
 
     def test_next_divergence_is_a_decision(self) -> None:
         rule = self.text.split("## A regra", 1)[1]
