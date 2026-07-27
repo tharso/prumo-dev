@@ -739,6 +739,7 @@ def repair_workspace(workspace: Path) -> dict:
             "backup_root": str(backup_root) if backup_root else None,
         }
         result["canonical_map_dropped"] = map_watch.dropped()  # #247: aviso nominal
+        result["autoral_map_path"] = paths.relative(paths.agente_root / "MAPA-AUTORAL.md")
     return result
 
 

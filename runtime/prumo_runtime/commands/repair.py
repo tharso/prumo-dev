@@ -38,8 +38,9 @@ def run_repair(args) -> int:
             )
             for path in dropped:
                 print(f"- {path}")
+            autoral = result.get("autoral_map_path") or "Prumo/Agente/MAPA-AUTORAL.md"
             print(
-                "Caminhos autorais declaram-se em Prumo/Agente/MAPA-AUTORAL.md — "
+                f"Caminhos autorais declaram-se em {autoral} — "
                 "esse arquivo sobrevive ao repair."
             )
 

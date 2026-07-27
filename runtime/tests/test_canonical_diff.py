@@ -73,7 +73,7 @@ def _force_core_version(workspace: Path, version: str) -> None:
 class MapExtractionTest(unittest.TestCase):
     def test_paths_do_mapa_param_no_proximo_heading(self) -> None:
         paths = canonical_diff.map_paths(_MAP)
-        self.assertEqual(paths, ["Agente/", "PAUTA.md", "Escrita/"])
+        self.assertEqual(paths, ["Agente", "PAUTA.md", "Escrita"])
 
     def test_descricao_alterada_nao_e_perda(self) -> None:
         """[P7-1]: identidade é o PATH — release que muda a prosa não alarma."""
@@ -82,14 +82,24 @@ class MapExtractionTest(unittest.TestCase):
 
     def test_path_removido_aparece(self) -> None:
         novo = _MAP.replace("- `Escrita/`: meu trabalho autoral\n", "")
-        self.assertEqual(canonical_diff.dropped_paths(_MAP, novo), ["Escrita/"])
+        self.assertEqual(canonical_diff.dropped_paths(_MAP, novo), ["Escrita"])
 
     def test_sem_secao_no_antigo_nao_inventa_alarme(self) -> None:
         self.assertEqual(canonical_diff.dropped_paths("# AGENT\n\nsem mapa\n", _MAP), [])
 
-    def test_heading_duplicado_e_fail_safe(self) -> None:
-        duplicado = _MAP + "\n## Mapa do workspace\n\n- `Outro.md`: duplicado\n"
-        self.assertEqual(canonical_diff.map_paths(duplicado), ["Agente/", "PAUTA.md", "Escrita/"])
+    def test_heading_duplicado_une_as_secoes(self) -> None:
+        """[r1]: ignorar a 2ª seção esconderia justamente o caminho perdido."""
+        duplicado = _MAP + "\n## Mapa do workspace\n\n- `SoNaSegunda/`: exclusivo\n"
+        self.assertEqual(
+            canonical_diff.map_paths(duplicado),
+            ["Agente", "PAUTA.md", "Escrita", "SoNaSegunda"],
+        )
+
+    def test_barra_final_nao_e_identidade_diferente(self) -> None:
+        """[r1]: `Escrita/` e `Escrita` são o mesmo caminho — formatação nova
+        do template não pode afirmar perda que não houve."""
+        novo = _MAP.replace("`Escrita/`", "`Escrita`").replace("`Agente/`", "`./Agente`")
+        self.assertEqual(canonical_diff.dropped_paths(_MAP, novo), [])
 
 
 class RepairAvisoTest(unittest.TestCase):
@@ -110,7 +120,7 @@ class RepairAvisoTest(unittest.TestCase):
 
     def test_caminho_autoral_no_mapa_vira_aviso(self) -> None:
         result = self._repair_com_drift("- `Escrita/`: meu trabalho autoral")
-        self.assertIn("Escrita/", result.get("canonical_map_dropped", []))
+        self.assertIn("Escrita", result.get("canonical_map_dropped", []))
 
     def test_mapa_de_template_puro_nao_avisa(self) -> None:
         result = self._repair_com_drift(None)
@@ -121,6 +131,35 @@ class RepairAvisoTest(unittest.TestCase):
             ws = _make_ws(Path(tmp))
             result = repair_workspace(ws)
         self.assertNotIn("canonical_map_dropped", result)
+
+    def test_heading_duplicado_no_fluxo_completo_reporta(self) -> None:
+        """[r1]: path exclusivo do 2º heading TEM de ser reportado pelo repair."""
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = _make_ws(Path(tmp))
+            canonical = ws / "Prumo" / "AGENT.md"
+            canonical.write_text(
+                canonical.read_text(encoding="utf-8")
+                + "\n## Mapa do workspace\n\n- `SoNaSegunda/`: exclusivo do 2º heading\n",
+                encoding="utf-8",
+            )
+            _force_core_version(ws, "1.0.0")
+            result = repair_workspace(ws)
+        self.assertIn("SoNaSegunda", result.get("canonical_map_dropped", []))
+
+    def test_destino_do_aviso_segue_o_layout(self) -> None:
+        """[r1]: em flat o mapa autoral é `Agente/MAPA-AUTORAL.md`."""
+        from prumo_runtime.workspace_paths import workspace_paths
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = _make_ws(Path(tmp))
+            _force_core_version(ws, "1.0.0")
+            result = repair_workspace(ws)
+        self.assertEqual(result.get("autoral_map_path"), "Prumo/Agente/MAPA-AUTORAL.md")
+        flat_paths = workspace_paths(Path("/tmp/x"), layout_mode="flat")
+        self.assertEqual(
+            flat_paths.relative(flat_paths.agente_root / "MAPA-AUTORAL.md"),
+            "Agente/MAPA-AUTORAL.md",
+            "no flat o destino do aviso tem de ser Agente/MAPA-AUTORAL.md",
+        )
 
     def test_saida_humana_traz_o_aviso_e_o_destino_certo(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -139,7 +178,7 @@ class RepairAvisoTest(unittest.TestCase):
             out = buffer.getvalue()
         self.assertEqual(rc, 0)
         self.assertIn("não aparecem no mapa regenerado", out)
-        self.assertIn("- Escrita/", out)
+        self.assertIn("- Escrita", out)
         self.assertIn("MAPA-AUTORAL.md", out)
 
 

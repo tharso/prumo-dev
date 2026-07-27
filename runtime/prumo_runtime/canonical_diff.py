@@ -31,46 +31,53 @@ def _heading_level(line: str) -> int:
     return len(stripped) - len(stripped.lstrip("#"))
 
 
-def extract_map_section(text: str, heading: str = MAP_HEADING) -> str | None:
-    """Do heading exato até o próximo heading de nível igual ou superior.
+def extract_map_sections(text: str, heading: str = MAP_HEADING) -> list[str]:
+    """TODAS as seções com esse heading, cada uma até o próximo heading de
+    nível igual ou superior.
 
-    `None` quando o heading não existe. Heading duplicado: vale a PRIMEIRA
-    ocorrência (fail-safe — nunca levanta).
+    Heading duplicado devolve as duas: ignorar a segunda esconderia justamente
+    o caminho que sumiu — airbag que escolhe não abrir (Codex, diff r1).
+    Nunca levanta: texto sem o heading devolve lista vazia.
     """
     lines = text.splitlines()
     level = _heading_level(heading)
-    start = None
-    for i, line in enumerate(lines):
-        if line.strip() == heading:
-            start = i
-            break
-    if start is None:
-        return None
-    for j in range(start + 1, len(lines)):
-        if lines[j].lstrip().startswith("#") and _heading_level(lines[j]) <= level:
-            return "\n".join(lines[start:j])
-    return "\n".join(lines[start:])
+    out: list[str] = []
+    starts = [i for i, line in enumerate(lines) if line.strip() == heading]
+    for start in starts:
+        end = len(lines)
+        for j in range(start + 1, len(lines)):
+            if lines[j].lstrip().startswith("#") and _heading_level(lines[j]) <= level:
+                end = j
+                break
+        out.append("\n".join(lines[start:end]))
+    return out
+
+
+def _normalize(raw: str) -> str:
+    """Identidade real do path: sem `./`, sem barra final, separador único.
+
+    `Escrita/` e `Escrita` são o mesmo caminho — tratá-los como identidades
+    diferentes faria uma mudança de formatação do template afirmar perda que
+    não houve (Codex, diff r1).
+    """
+    path = raw.strip().replace("\\", "/")
+    while path.startswith("./"):
+        path = path[2:]
+    return path.rstrip("/")
 
 
 def map_paths(text: str, heading: str = MAP_HEADING) -> list[str]:
-    """Paths (identidade dos bullets) do mapa, na ordem, sem duplicatas.
-
-    Normalização: `./x` → `x`; barra final preservada (`Agente/` é como o mapa
-    escreve, e a comparação é entre dois mapas do mesmo formato).
-    """
-    section = extract_map_section(text, heading)
-    if section is None:
-        return []
+    """Paths (identidade dos bullets) do mapa, na ordem, sem duplicatas —
+    unindo TODAS as seções homônimas."""
     out: list[str] = []
-    for line in section.splitlines():
-        m = _BULLET_PATH.match(line)
-        if m is None:
-            continue
-        path = m.group(1).strip()
-        if path.startswith("./"):
-            path = path[2:]
-        if path and path not in out:
-            out.append(path)
+    for section in extract_map_sections(text, heading):
+        for line in section.splitlines():
+            m = _BULLET_PATH.match(line)
+            if m is None:
+                continue
+            path = _normalize(m.group(1))
+            if path and path not in out:
+                out.append(path)
     return out
 
 
