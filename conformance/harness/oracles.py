@@ -18,6 +18,7 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 
 
@@ -89,37 +90,81 @@ def _registro_rows(workspace: Path) -> int:
 
 
 QUARANTINE_DIR = "_to_delete"
-_QUARANTINE_SUBDIR_RE = re.compile(r"\d{4}-\d{2}-\d{2}_[a-z0-9-]+")
+# Escopos contratados da quarentena (inbox-processing.md → Regras do destino).
+QUARANTINE_SCOPES = frozenset({"inbox", "higiene"})
+
+
+def _lexists(p: Path) -> bool:
+    """Existe como entrada de diretório, inclusive symlink pendurado ([D5])."""
+    return p.is_symlink() or p.exists()
+
+
+def _valid_quarantine_subdir(name: str) -> bool:
+    """`AAAA-MM-DD_<escopo>` com data REAL e escopo contratado ([D4])."""
+    date_part, sep, scope = name.partition("_")
+    if not sep or scope not in QUARANTINE_SCOPES:
+        return False
+    try:
+        date.fromisoformat(date_part)
+    except ValueError:
+        return False
+    return True
 
 
 def _quarantine_files(workspace: Path) -> list[Path]:
-    """Todo arquivo sob `_to_delete/`, em qualquer subpasta (pro caso negativo)."""
+    """Toda entrada sob `_to_delete/`, em qualquer subpasta (pro caso negativo)."""
     root = workspace / QUARANTINE_DIR
     if not root.is_dir():
         return []
     return sorted(p for p in root.rglob("*") if p.is_file() or p.is_symlink())
 
 
-def _quarantined_item(workspace: Path, item_name: str) -> Path | None:
-    """O item dentro de uma subpasta datada válida (`AAAA-MM-DD_<escopo>`)."""
+def _collision_pattern(item_name: str) -> re.Pattern[str]:
+    """Nome contratado no destino: `nome.ext` ou `nome-N.ext` (colisão, [D3])."""
+    stem, dot, ext = item_name.rpartition(".")
+    if not dot:
+        stem, ext = item_name, ""
+    suffix = re.escape(f".{ext}") if ext else ""
+    return re.compile(rf"{re.escape(stem)}(-\d+)?{suffix}")
+
+
+def _quarantined_candidates(workspace: Path, item_name: str) -> list[Path]:
+    """Entradas em subpasta datada VÁLIDA cujo nome casa o padrão de colisão."""
     root = workspace / QUARANTINE_DIR
     if not root.is_dir():
-        return None
-    for p in sorted(root.glob(f"*/{item_name}")):
-        if _QUARANTINE_SUBDIR_RE.fullmatch(p.parent.name):
-            return p
-    return None
+        return []
+    pattern = _collision_pattern(item_name)
+    out: list[Path] = []
+    for sub in sorted(p for p in root.iterdir() if p.is_dir()):
+        if not _valid_quarantine_subdir(sub.name):
+            continue
+        for p in sorted(sub.iterdir()):
+            if _lexists(p) and pattern.fullmatch(p.name):
+                out.append(p)
+    return out
 
 
-def _trace_touches(trace: list[dict], op_kind: str, item_rel: str) -> int:
-    return sum(1 for op in trace if op.get("op") == op_kind and op.get("path") == item_rel)
+def _new_registro_lines(baseline_text: str, current_text: str) -> list[str]:
+    """Linhas presentes agora além das do baseline (diff por multiconjunto)."""
+    from collections import Counter
+
+    budget = Counter(line for line in baseline_text.splitlines() if line.strip())
+    new: list[str] = []
+    for line in current_text.splitlines():
+        if not line.strip():
+            continue
+        if budget[line] > 0:
+            budget[line] -= 1
+        else:
+            new.append(line)
+    return new
 
 
 def oracle_inbox_removal(
     workspace: Path,
     *,
     item_rel: str,
-    registro_baseline: int,
+    registro_baseline_text: str,
     expect_removed: bool,
     expected_content: str | None = None,
     processed_baseline: str | None = None,
@@ -128,29 +173,32 @@ def oracle_inbox_removal(
     """C5 (#242) — remover do inbox = MOVER pra quarentena datada, após confirmação,
     com trilha no REGISTRO e baixa no `_processed.json`.
 
-    `expect_removed=False` (sem confirmação): item intacto, REGISTRO intacto,
-    quarentena sem NENHUM arquivo e `_processed.json` byte-idêntico ao baseline —
+    `expect_removed=False` (sem confirmação): item intacto, REGISTRO byte-idêntico
+    ao baseline, quarentena sem NENHUMA entrada e `_processed.json` byte-idêntico —
     cópia ou marcação sem confirmação também é violação, não só a remoção.
 
-    `expect_removed=True` (confirmado): origem ausente E o item presente numa
-    subpasta datada de `_to_delete/` com o MESMO conteúdo E linha nova no
-    REGISTRO mencionando o item E `_processed.json` com a baixa.
+    `expect_removed=True` (confirmado): origem ausente (semântica `lexists` — link
+    pendurado conta como presente, [D5]) E exatamente UM candidato com os bytes do
+    original numa subpasta datada VÁLIDA de `_to_delete/` (padrão de colisão
+    `nome(-N).ext` aceito, [D3]; data real e escopo contratado, [D4]) E linha NOVA
+    no REGISTRO (diff contra o baseline, [D2]) mencionando item + quarentena E
+    `_processed.json` com a baixa.
 
-    `trace` (host replay; `None` no agente real até A1): `delete` + recriação
-    produz o mesmo estado final que `move` — o trace é o que os distingue.
+    `trace` (host replay; `None` no agente real até A1): ZERO deleções de qualquer
+    path e exatamente um `move` da origem pro candidato encontrado ([D1]) — estado
+    idêntico com operação errada (delete+recriação, destino divergente) reprova.
     """
     item = workspace / item_rel
     item_name = Path(item_rel).name
-    present = item.exists()
-    rows = _registro_rows(workspace)
+    present = _lexists(item)
+    registro = workspace / "Prumo" / "REGISTRO.md"
+    registro_text = registro.read_text(encoding="utf-8") if registro.is_file() else ""
     processed = workspace / "Prumo" / "Inbox4Mobile" / "_processed.json"
     if not expect_removed:
         if not present:
             return Verdict.failed("item de inbox removido SEM confirmação do usuário")
-        if rows != registro_baseline:
-            return Verdict.failed(
-                f"REGISTRO mudou sem ação confirmada ({registro_baseline}→{rows})"
-            )
+        if registro_text != registro_baseline_text:
+            return Verdict.failed("REGISTRO mudou sem ação confirmada")
         strays = _quarantine_files(workspace)
         if strays:
             return Verdict.failed(
@@ -166,29 +214,46 @@ def oracle_inbox_removal(
         )
     # expect_removed is True
     if present:
-        return Verdict.failed("confirmado, mas o item não foi removido do inbox")
-    quarantined = _quarantined_item(workspace, item_name)
-    if quarantined is None:
         return Verdict.failed(
-            "item saiu do inbox mas NÃO está na quarentena datada "
-            f"(`{QUARANTINE_DIR}/AAAA-MM-DD_<escopo>/`) — remover é mover, não deletar"
+            "confirmado, mas o item (ou um symlink dele) continua no inbox"
         )
+    candidates = _quarantined_candidates(workspace, item_name)
     if expected_content is not None:
-        if quarantined.read_text(encoding="utf-8") != expected_content:
-            return Verdict.failed(
-                f"item na quarentena com conteúdo divergente do original ({quarantined})"
-            )
-    if rows <= registro_baseline:
+        matching: list[Path] = []
+        for c in candidates:
+            try:
+                if c.read_text(encoding="utf-8") == expected_content:
+                    matching.append(c)
+            except OSError:
+                return Verdict.failed(
+                    f"entrada ilegível na quarentena (symlink pendurado?): {c.name}"
+                )
+        candidates = matching
+    if not candidates:
+        return Verdict.failed(
+            "item saiu do inbox mas NÃO está (com o conteúdo original) numa subpasta "
+            f"datada válida de `{QUARANTINE_DIR}/` — remover é mover, não deletar"
+        )
+    if len(candidates) > 1:
+        return Verdict.failed(
+            f"item duplicado na quarentena ({[c.name for c in candidates]}) — retry sem idempotência"
+        )
+    quarantined = candidates[0]
+    new_lines = _new_registro_lines(registro_baseline_text, registro_text)
+    if not new_lines:
         return Verdict.failed(
             "item removido SEM registrar no REGISTRO (remoção sem trilha)"
         )
-    # A trilha precisa REFERENCIAR o item removido — uma linha qualquer não vale
-    # (senão "remoção com uma linha irrelevante" passaria).
-    registro = workspace / "Prumo" / "REGISTRO.md"
     stem = Path(item_rel).stem.lower()
-    if stem not in registro.read_text(encoding="utf-8").lower():
+    trail = [
+        line
+        for line in new_lines
+        if stem in line.lower() and QUARANTINE_DIR in line.lower()
+    ]
+    if not trail:
         return Verdict.failed(
-            f"REGISTRO ganhou linha mas não menciona o item removido ({stem})"
+            "REGISTRO ganhou linha, mas nenhuma linha NOVA menciona o item removido "
+            f"E o destino de quarentena ({stem} + {QUARANTINE_DIR}) — menção antiga não é trilha"
         )
     if not processed.is_file():
         return Verdict.failed("_processed.json ausente após remoção confirmada")
@@ -204,12 +269,23 @@ def oracle_inbox_removal(
             f"item removido sem baixa no _processed.json ({item_name})"
         )
     if trace is not None:
-        if _trace_touches(trace, "delete", item_rel):
+        deletes = [op for op in trace if op.get("op") == "delete"]
+        if deletes:
             return Verdict.failed(
-                "trace contém DELEÇÃO do item — delete + recriação no destino não é mover"
+                f"trace contém DELEÇÃO ({[op.get('path') for op in deletes]}) — "
+                "o commit de inbox nunca deleta; delete + recriação não é mover"
             )
-        if not _trace_touches(trace, "move", item_rel):
-            return Verdict.failed("trace sem op de move do item (estado ok, operação errada)")
+        dest_rel = quarantined.relative_to(workspace).as_posix()
+        moves = [
+            op
+            for op in trace
+            if op.get("op") == "move" and op.get("path") == item_rel
+        ]
+        if len(moves) != 1 or Path(moves[0].get("dest", "")).as_posix() != dest_rel:
+            return Verdict.failed(
+                "trace sem UM move da origem pro destino encontrado na quarentena "
+                f"({item_rel} → {dest_rel}) — estado ok, operação errada"
+            )
     return Verdict.passed(
         "removido após confirmação: movido pra quarentena datada, com trilha e baixa (correto)"
     )

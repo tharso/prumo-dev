@@ -68,7 +68,7 @@ Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões ant
 **Issues relacionadas:** [#242](https://github.com/tharso/prumo-dev/issues/242) (executa; P2 do épico [#240](https://github.com/tharso/prumo-dev/issues/240)); #248 (irmã na sequência de PRs — recalibração do termômetro); #212 (mantém — salvaguarda da faxina).
 
 **Relações com decisões anteriores:**
-- **Estende** o contrato do inbox (`inbox-processing.md`): "remover" passa a significar **mover** — retenção durável ou quarentena; deleção real deixa de ser operação do produto em qualquer host.
+- **Estende** o contrato do inbox (`inbox-processing.md`): "remover" passa a significar **mover** — retenção durável ou quarentena; deleção real deixa de ser operação do **fluxo de inbox** em qualquer host. (O `acervo` mantém o contrato próprio: `--permanent` só sob pedido explícito — fora do escopo desta decisão.)
 - **Mantém** a salvaguarda #212: a faxina segue apenas sinalizando processados-inconsistentes ("faxina não conversa"); a oferta confirmável de mover pra quarentena nasce na `higiene`, que é a superfície que conversa — com exceção explícita de backup (mover pra quarentena JÁ é a operação recuperável; não duplica).
 - **Estende** 2026-07-04 (#157 conformidade A0) com exceção regrada: o **trace do replay** entra como oráculo auxiliar DO HARNESS (discrimina `move` de `delete`+recriação, que produzem o mesmo estado); a prova sobre o agente real continua sendo A1.
 - **Mantém** o contrato do archive (`ARCHIVE-INDEX`): quarentena não é archive e não participa do índice.

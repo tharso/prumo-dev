@@ -121,7 +121,7 @@ class ConformanceHarnessTests(unittest.TestCase):
         # A violation_ops do pos é exatamente 'move + linha de fachada'.
         v = run.run_case_replay(c5, pos, "violation")
         self.assertFalse(v.verdict.ok)
-        self.assertIn("não menciona o item", v.verdict.reason)
+        self.assertIn("menção antiga não é trilha", v.verdict.reason)
 
     def test_c5_compliant_roda_em_host_sem_delecao(self) -> None:
         """O fluxo feliz do #242 não depende de deleção: as compliant_ops do pos
@@ -187,9 +187,81 @@ class ConformanceHarnessTests(unittest.TestCase):
         variants = {c.variant for c in c5.cases}
         self.assertLessEqual(
             {"neg", "neg_copia", "neg_marcacao", "pos", "pos_delete_recria",
-             "pos_sem_destino", "pos_sem_processed"},
+             "pos_sem_destino", "pos_sem_processed", "pos_move_destino_errado",
+             "pos_delete_no_destino", "pos_colisao"},
             variants,
         )
+
+    def test_oracle_positivo_reprova_symlink_pendurado_na_origem(self) -> None:
+        """[D5]: link pendurado restante no inbox conta como PRESENTE — `exists()`
+        puro diria 'removido' e o positivo passaria com lixo pra trás."""
+        import tempfile
+        from conformance.harness import oracles
+        c5 = scenarios.by_id("c5_inbox_removal")
+        pos = next(c for c in c5.cases if c.variant == "pos")
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp)
+            run._setup_workspace(c5, ws)
+            hosts.apply_replay(ws, pos.compliant_ops)
+            item = ws / pos.oracle_params["item_rel"]
+            item.symlink_to(ws / "alvo-que-nao-existe.txt")  # link pendurado
+            verdict = c5.oracle(ws, **pos.oracle_params)
+        self.assertFalse(verdict.ok)
+        self.assertIn("symlink", verdict.reason)
+
+    def test_oracle_destino_symlink_pendurado_da_fail_limpo(self) -> None:
+        """[D5]: entrada ilegível na quarentena vira FAIL explícito, não traceback."""
+        import tempfile
+        from conformance.harness import oracles as _o
+        c5 = scenarios.by_id("c5_inbox_removal")
+        pos = next(c for c in c5.cases if c.variant == "pos")
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp)
+            run._setup_workspace(c5, ws)
+            # Remoção "completa" mas o destino é um link pendurado com o nome certo.
+            hosts.apply_replay(ws, [op for op in pos.compliant_ops if op["op"] != "move"])
+            (ws / pos.oracle_params["item_rel"]).unlink()
+            qdir = ws / _o.QUARANTINE_DIR / "2026-03-20_inbox"
+            qdir.mkdir(parents=True)
+            (qdir / "captura-exemplo.txt").symlink_to(ws / "sumiu.txt")
+            verdict = c5.oracle(ws, **pos.oracle_params)
+        self.assertFalse(verdict.ok)
+        self.assertIn("ilegível", verdict.reason)
+
+    def test_safe_parent_recusa_pai_symlink_pra_fora(self) -> None:
+        """[D6]: origem OU destino cujo pai é symlink pra fora do workspace →
+        ValueError antes de qualquer efeito (inclusive com subpasta inexistente)."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp, tempfile.TemporaryDirectory() as fora:
+            ws = Path(tmp)
+            (ws / "escape").symlink_to(Path(fora))
+            (ws / "a.txt").write_text("a", encoding="utf-8")
+            with self.assertRaises(ValueError):
+                hosts.apply_replay(
+                    ws, [{"op": "move", "path": "a.txt", "dest": "escape/a.txt"}]
+                )
+            with self.assertRaises(ValueError):
+                hosts.apply_replay(
+                    ws, [{"op": "move", "path": "a.txt", "dest": "escape/sub-nova/a.txt"}]
+                )
+            (Path(fora) / "b.txt").write_text("b", encoding="utf-8")
+            with self.assertRaises(ValueError):
+                hosts.apply_replay(
+                    ws, [{"op": "move", "path": "escape/b.txt", "dest": "q/b.txt"}]
+                )
+            self.assertTrue((Path(fora) / "b.txt").is_file(), "efeito vazou pra fora do ws")
+
+    def test_safe_parent_aceita_pai_symlink_interno(self) -> None:
+        """[D6]: pai symlink que resolve DENTRO do workspace é permitido —
+        comportamento documentado, não brecha."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp)
+            (ws / "real").mkdir()
+            (ws / "alias").symlink_to(ws / "real")
+            (ws / "a.txt").write_text("a", encoding="utf-8")
+            hosts.apply_replay(ws, [{"op": "move", "path": "a.txt", "dest": "alias/a.txt"}])
+            self.assertTrue((ws / "real" / "a.txt").is_file())
 
 
 if __name__ == "__main__":

@@ -17,7 +17,7 @@ CORE = REPO_ROOT / "skills" / "prumo" / "references" / "prumo-core.md"
 
 _ASSERT_LINE = re.compile(r"^`(ASSERT:.*)`\s*$", re.MULTILINE)
 
-# Registro canônico — texto exato dos 12 ASSERTs (v5.33.x). Mudança aqui é
+# Registro canônico — texto exato dos ASSERTs do core. Mudança aqui é
 # decisão, não acidente: atualize junto com o core e explique no PR.
 EXPECTED_ASSERTS = {
     "ASSERT: Usar Gmail MCP e Calendar MCP como fonte primária de email e calendário.",

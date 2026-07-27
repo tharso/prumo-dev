@@ -1,13 +1,15 @@
 """Guards textuais do contrato de quarentena (#242).
 
 Remover do inbox = MOVER (quarentena `_to_delete/` ou destino durável), nunca
-deletar. Estes guards congelam as frases que carregam o contrato nos módulos —
-se alguém reintroduzir deleção real como via, ou apagar a máquina de remoção,
-o CI acusa antes do drift virar comportamento.
+deletar. Estes guards congelam o que carrega o contrato nos módulos — inclusive
+a ORDEM da máquina de remoção — e varrem skills/ contra reintrodução de deleção
+como via. Comparações rodam sobre texto com whitespace normalizado, pra reflow
+de Markdown não quebrar guard legítimo ([D9] do review do Codex).
 """
 
 from __future__ import annotations
 
+import re
 import unittest
 from pathlib import Path
 
@@ -20,36 +22,78 @@ FAXINA = SKILLS / "prumo" / "references" / "modules" / "faxina.md"
 HIGIENE = SKILLS / "higiene" / "SKILL.md"
 ALLOWLIST = SKILLS / "decidir" / "references" / "acoes-allowlist.md"
 
+# Afirmações de deleção do ORIGINAL de inbox são proibidas em qualquer skill.
+# Contexto negativo ("nunca", "não é", "jamais", "deixa de ser") é permitido —
+# é assim que o contrato se enuncia. O acervo (--permanent) tem contrato
+# próprio e não usa esse fraseado.
+_FORBIDDEN = re.compile(r"(?:deletar|apagar|excluir)\s+o\s+original", re.IGNORECASE)
+_NEGATION_BEFORE = re.compile(
+    r"(?:nunca|não|jamais|deixa\s+de|em\s+vez\s+de)[^.!?]{0,60}$", re.IGNORECASE
+)
+
 
 def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
+def _flat(text: str) -> str:
+    """Whitespace normalizado — imune a reflow de Markdown."""
+    return re.sub(r"\s+", " ", text)
+
+
+def _section(text: str, heading: str) -> str:
+    """Do heading até o próximo heading de nível igual/superior."""
+    lines = text.splitlines()
+    level = len(heading) - len(heading.lstrip("#"))
+    start = None
+    for i, line in enumerate(lines):
+        if line.strip() == heading:
+            start = i
+            break
+    if start is None:
+        return ""
+    for j in range(start + 1, len(lines)):
+        stripped = lines[j].lstrip()
+        if stripped.startswith("#") and len(stripped) - len(stripped.lstrip("#")) <= level:
+            return "\n".join(lines[start:j])
+    return "\n".join(lines[start:])
+
+
 class QuarentenaContractsTest(unittest.TestCase):
     def test_inbox_processing_nao_tem_delecao_como_via(self) -> None:
-        text = _read(INBOX)
+        flat = _flat(_read(INBOX))
         self.assertNotIn(
             "deletar o original do inbox com ação real de filesystem",
-            text,
+            flat,
             "deleção real voltou como operação válida (#242 revertida)",
         )
         self.assertNotIn(
             "solicitar a permissão do runtime",
-            text,
+            flat,
             "o degrau beco-sem-saída do fallback voltou (#242)",
         )
 
-    def test_inbox_processing_tem_maquina_de_remocao(self) -> None:
-        text = _read(INBOX)
+    def test_maquina_de_remocao_tem_os_passos_na_ordem(self) -> None:
+        """Confirmar → registrar → mover → verificar → marcar — a ORDEM é o
+        contrato (o REGISTRO vem ANTES do move; ASSERT do core)."""
+        section = _flat(_section(_read(INBOX), "### Máquina de remoção (por item, nesta ordem)"))
+        self.assertTrue(section, "seção da máquina de remoção sumiu do inbox-processing.md")
+        steps = ["**Confirmar**", "**Registrar**", "**Mover**", "**Verificar**", "**Marcar**"]
+        positions = [section.find(s) for s in steps]
+        for step, pos in zip(steps, positions):
+            self.assertNotEqual(pos, -1, f"máquina de remoção sem o passo {step}")
+        self.assertEqual(positions, sorted(positions), "passos da máquina fora de ordem")
+        self.assertIn("REMOCAO_FALHOU", section)
+
+    def test_inbox_processing_tem_contrato_de_destino(self) -> None:
+        flat = _flat(_read(INBOX))
         for marker in (
-            "### Máquina de remoção (por item, nesta ordem)",
             "_to_delete/<AAAA-MM-DD>_<escopo>/",
-            "REMOCAO_FALHOU",
             "mover, nunca deletar",
             "Retenção durável",
             "### Sequência de arquivamento (retenção)",
         ):
-            self.assertIn(marker, text, f"contrato da máquina de remoção sem: {marker!r}")
+            self.assertIn(_flat(marker), flat, f"contrato de destino sem: {marker!r}")
 
     def test_core_assert_usa_remover_nao_deletar(self) -> None:
         text = _read(CORE)
@@ -61,35 +105,53 @@ class QuarentenaContractsTest(unittest.TestCase):
 
     def test_quarentena_e_do_usuario(self) -> None:
         """`_to_delete/` fora de listagem/índice/contagem — e o Prumo nunca esvazia."""
-        protection = _read(PROTECTION)
+        protection = _flat(_read(PROTECTION))
         self.assertIn("`_to_delete/` (raiz do workspace)", protection)
         self.assertIn("Quarentena do USUÁRIO (#242)", protection)
         self.assertIn("nem esvazia", protection)
-        inbox = _read(INBOX)
-        self.assertIn("nunca lista, indexa,\n   conta ou esvazia", inbox)
+        inbox = _flat(_read(INBOX))
+        self.assertIn("nunca lista, indexa, conta ou esvazia", inbox)
 
     def test_faxina_sinaliza_e_higiene_resolve(self) -> None:
         """#212 mantida: faxina só sinaliza; a oferta confirmável mora na higiene."""
-        faxina = _read(FAXINA)
+        faxina = _flat(_read(FAXINA))
         self.assertIn("apenas sinalizar", faxina)
         self.assertIn("mora na `higiene` (#242)", faxina)
-        higiene = _read(HIGIENE)
+        higiene = _flat(_read(HIGIENE))
         self.assertIn("processados inconsistentes", higiene)
         self.assertIn("Movo pra quarentena `_to_delete/`", higiene)
         self.assertIn("não recebe backup duplicado", higiene)
 
     def test_allowlist_separa_quarentena_de_retencao(self) -> None:
-        text = _read(ALLOWLIST)
-        self.assertIn("Remover nunca é deletar (#242)", text)
-        self.assertIn("movem o próprio arquivo pro destino durável", text)
+        flat = _flat(_read(ALLOWLIST))
+        self.assertIn("Remover nunca é deletar (#242)", flat)
+        self.assertIn("movem o próprio arquivo pro destino durável", flat)
 
-    def test_nenhuma_skill_recomenda_delecao_real_do_inbox(self) -> None:
-        """Varredura: nenhum contrato em skills/ traz deleção real do inbox como via."""
+    def test_quarentena_e_termo_exclusivo_do_to_delete(self) -> None:
+        """[D8]: 'quarentena' nas skills refere `_to_delete/` — o acervo/arquivo
+        é retenção. Uma linha que chame `Prumo/Arquivo/` de quarentena confunde
+        pré-lixo com retenção."""
         offenders = []
-        for md in SKILLS.rglob("*.md"):
-            if "deletar o original do inbox" in _read(md):
-                offenders.append(str(md.relative_to(REPO_ROOT)))
-        self.assertEqual(offenders, [], f"deleção real do inbox reapareceu em: {offenders}")
+        for md in sorted(SKILLS.rglob("*.md")):
+            for line in _read(md).splitlines():
+                if "quarentena" in line.lower() and "Prumo/Arquivo" in line:
+                    offenders.append(f"{md.relative_to(REPO_ROOT)}: {line.strip()[:80]}")
+        self.assertEqual(offenders, [], f"'quarentena' aplicado a retenção: {offenders}")
+
+    def test_nenhuma_skill_afirma_delecao_do_original(self) -> None:
+        """Varredura com contexto ([D9]): afirmação de deletar/apagar/excluir o
+        original é proibida; enunciado negativo ('nunca deletar…') é permitido."""
+        offenders = []
+        for md in sorted(SKILLS.rglob("*.md")):
+            flat = _flat(_read(md))
+            for m in _FORBIDDEN.finditer(flat):
+                before = flat[: m.start()]
+                if _NEGATION_BEFORE.search(before):
+                    continue
+                offenders.append(
+                    f"{md.relative_to(REPO_ROOT)}: …{flat[max(0, m.start() - 40): m.end() + 20]}…"
+                )
+        self.assertEqual(offenders, [], f"afirmação de deleção do original: {offenders}")
 
 
 if __name__ == "__main__":

@@ -64,9 +64,10 @@ Depois da triagem:
 
 ## Remoção: mover, nunca deletar (#242)
 
-Deleção real não é operação do Prumo — há host em que ela nem existe (a ponte
-do Cowork falha com `Operation not permitted`), e o que o produto promete é
-reversibilidade. O destino do original depende da ação:
+Deleção real não é operação do **fluxo de inbox** — há host em que ela nem
+existe (a ponte do Cowork falha com `Operation not permitted`), e o que este
+fluxo promete é reversibilidade. (O `acervo` mantém o contrato próprio dele:
+`--permanent` só sob pedido explícito.) O destino do original depende da ação:
 
 - **Retenção durável** — o item vira referência com o próprio arquivo movido
   pra `Referencias/`, ou é arquivado com destino explícito: o arquivo move
