@@ -5,6 +5,13 @@ deletar. Estes guards congelam o que carrega o contrato nos módulos — inclusi
 a ORDEM da máquina de remoção — e varrem skills/ contra reintrodução de deleção
 como via. Comparações rodam sobre texto com whitespace normalizado, pra reflow
 de Markdown não quebrar guard legítimo ([D9] do review do Codex).
+
+LIMITAÇÃO DOCUMENTADA (r10 do gate, aceita como calibrada): a análise de
+negação/inciso é heurística sobre PT-BR — a lista fechada de conectivos não
+cobre todos os incisos, grafias e pontuações possíveis. Este guard é defesa
+SECUNDÁRIA (anti-drift de documentação); a barreira de comportamento do
+contrato é o C5 da conformidade (filesystem + trace). Arranjo adversarial novo
+da mesma classe = caso pro teste, não furo de contrato.
 """
 
 from __future__ import annotations
