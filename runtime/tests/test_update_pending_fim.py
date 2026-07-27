@@ -2,7 +2,7 @@
 
 Report do dono: o briefing detectou versão nova e "deixou pra depois"; o /fim
 ignorou. Travas: (a) o detector do /fim ganha o sinal `update_pending` (cache,
-sem rede nova); (b) o briefing-procedure manda ABRIR com a oferta (escolha
+sem rede nova); (b) o version-preflight (#180; era o briefing-procedure) manda ABRIR com a oferta (escolha
 curta, não-bloqueante, anti-nag); (c) o /fim cobra na saída.
 """
 from __future__ import annotations

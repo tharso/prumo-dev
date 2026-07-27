@@ -34,12 +34,17 @@ A **lista canônica ÚNICA** de carregamento do briefing (#195, emendada pela #1
 | F1 | oferta/execução de update (warning/alert) | `.prumo/skills/prumo/references/modules/version-update.md` | (integral) | canônico do update |
 | F1 | scripts via shell | `.prumo/skills/prumo/references/modules/runtime-paths.md` | (integral) | resolução de scripts |
 | F1 | shell com runtime alcançável | `.prumo/skills/prumo/references/modules/cowork-runtime-bridge.md` | (integral) | ponte do runtime |
-| F2 | antes de abrir email/agenda | `.prumo/skills/prumo/references/modules/briefing-canais.md` | (integral) | canais + defesas |
+| F1 | sinais de faxina nos thresholds | `.prumo/skills/prumo/references/modules/faxina.md` | (integral) | executor da faxina |
+| F2 | antes da triagem local do Inbox4Mobile OU de abrir email/agenda | `.prumo/skills/prumo/references/modules/briefing-canais.md` | (integral) | canais + defesas |
 | F2 | Inbox4Mobile com itens novos | `.prumo/skills/prumo/references/modules/inbox-processing.md` | (integral) | triagem do inbox |
+| F2 | antes de filtrar email (se existir) | `Prumo/Referencias/EMAIL-CURADORIA.md` | (integral) | regras aprendidas |
+| F2 | EMAIL-CURADORIA.md ausente (criação) | `.prumo/skills/prumo/references/file-templates.md` | `## Prumo/Referencias/EMAIL-CURADORIA.md` | template canônico |
 | F2 | aprofundamento (predicado g / fallback por fonte) | `.prumo/skills/prumo/references/modules/load-policy.md` | (integral) | política de leitura |
 | F3 | ao montar o panorama | `.prumo/skills/prumo/references/modules/briefing-montagem.md` | (integral) | dois tempos + fechamento |
 | F3 | ao montar o panorama | `.prumo/skills/prumo/references/modules/interaction-format.md` | (integral) | dono da numeração |
 | F3 | 6+ itens acionáveis (#218) | `.prumo/skills/decidir/SKILL.md` | (integral) | despacho visual |
+
+**F4 (fechamento)** não carrega material novo: executa a seção `## Escrita e fechamento` de `briefing-montagem.md` (já em contexto desde F3) — escrita nos canais, `_processed.json` e a marcação do dia. F4 existe como FASE do contrato (#177/#180); ausência de linha na tabela é design, não omissão.
 
 Cada item lido **uma vez**; se já está no contexto, não reler. Repo `Prumo/` inacessível → usar o bundle instalado; atalho inventado não é interpretação.
 

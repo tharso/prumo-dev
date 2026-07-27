@@ -47,8 +47,8 @@ A checagem de faxina (cinco famílias, linha SEMPRE declarada — #217) e o filt
 
 ## Fase F2: canais de entrada
 
-**Antes de abrir qualquer canal externo (Gmail/Calendar MCP), carregar `briefing-canais.md`** — defesas de terceiros (#156) e pós-filtro exato (#210) no MESMO arquivo das queries. O estágio LOCAL do Inbox4Mobile (inventário + triagem leve, sem abrir bruto) roda antes do primeiro tempo; com itens novos, `inbox-processing.md` carrega junto.
+**Carregar `briefing-canais.md` antes da triagem local do Inbox4Mobile OU de abrir qualquer canal externo (Gmail/Calendar MCP)** — o que vier primeiro; sem MCP nenhum, o estágio local do inbox ainda é F2 e exige o módulo. Defesas de terceiros (#156) e pós-filtro exato (#210) moram no MESMO arquivo das queries. O estágio LOCAL do Inbox4Mobile (inventário + triagem leve, sem abrir bruto) roda antes do primeiro tempo; com itens novos, `inbox-processing.md` carrega junto; a detecção de divergência agenda×email (#211) também é daqui.
 
-## Fase F3: montagem e fechamento
+## Fases F3 e F4: montagem e fechamento
 
-**Ao montar o panorama, carregar `briefing-montagem.md` e `interaction-format.md`**: dois tempos (#196), escape, variantes, linha de faxina (#217), divergência agenda×email (#211), despacho visual automático 6+ (#218), proposta do dia, fechamento e marcação (#214). Pauta vazia → brain dump obrigatório (lá).
+**Ao montar o panorama (F3), carregar `briefing-montagem.md` e `interaction-format.md`**: dois tempos (#196), escape, variantes, linha de faxina (#217), apresentação da divergência (#211), despacho visual automático 6+ (#218), proposta do dia. **F4 (fechamento)** não carrega material novo — executa a seção `## Escrita e fechamento` da montagem (escrita nos canais, `_processed.json`, marcação do dia #214). Pauta vazia → brain dump obrigatório (lá).

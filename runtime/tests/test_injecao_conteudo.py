@@ -6,7 +6,7 @@ O briefing lê o corpo de emails/convites de terceiros e age sobre eles
 (rascunho de resposta, priorização, roteamento). Sem contrato explícito,
 um email malicioso pode instruir o agente. Este teste trava as quatro
 pontas do contrato: a regra 18 no core; a seção "Conteúdo de terceiros"
-no briefing-procedure com as defesas específicas; a regra do
+no briefing-canais (#180; era o briefing-procedure) com as defesas específicas; a regra do
 remetente-original onde nascem rascunhos (decidir); e o "Padrões
 suspeitos" do template do EMAIL-CURADORIA alimentado só por feedback do
 usuário — nunca automaticamente a partir de um email.
@@ -50,7 +50,7 @@ class InjecaoConteudoTests(unittest.TestCase):
         self.assertIn("sinaliz", low)
 
     def test_briefing_tem_secao_conteudo_de_terceiros(self) -> None:
-        """A seção com as defesas específicas mora no briefing-procedure."""
+        """A seção com as defesas específicas mora no briefing-canais (#180)."""
         text = BRIEFING.read_text(encoding="utf-8")
         low = text.lower()
         self.assertIn("conteúdo de terceiros", low)

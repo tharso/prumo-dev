@@ -5,7 +5,7 @@ O hook operacional da regra 17 vive em dois lugares: o garimpo associativo
 da revisão semanal (varredura pesada, escrita nos próprios itens com
 confirmação verificável) e a ponte única do briefing (fonte restrita ao
 já-carregado — zero leitura nova). Este teste trava as três pontas:
-weekly-review tem o garimpo, briefing-procedure tem a ponte com teto, e a
+weekly-review tem o garimpo, briefing-montagem tem a ponte com teto (#180), e a
 regra 17 do core aponta o hook ativo (não diz mais "fica pra depois").
 """
 from __future__ import annotations

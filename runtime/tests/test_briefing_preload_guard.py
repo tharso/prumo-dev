@@ -26,32 +26,58 @@ VERSION_UPDATE = MODULES / "version-update.md"
 FAXINA = MODULES / "faxina.md"
 
 MANIFEST_HEADING = "## Mapa de carregamento por fase"
-VALID_PHASES = {"F0", "F1", "F2", "F3"}
+# F4 existe como fase do contrato (#177): fechamento — não carrega material
+# novo (a seção mora em briefing-montagem.md, já em contexto desde F3).
+VALID_PHASES = {"F0", "F1", "F2", "F3", "F4"}
 
-# União canônica da era #195 — TODO arquivo daquela lista precisa seguir
-# presente no mapa (o fatiamento move, nunca corta), mais os módulos novos
-# da #180. Comparação por NOME de arquivo (o mapa usa paths de workspace).
-CANONICAL_FILES_IN_MAP = frozenset(
+# Vocabulário FECHADO de gatilhos (review Codex r1 do #180): gatilho novo no
+# mapa só entra atualizando este conjunto conscientemente — texto livre
+# viraria carregamento não-auditável.
+VALID_TRIGGERS = frozenset(
     {
-        "PERFIL.md",
-        "ROTINA.md",
-        "PESSOAS.md",
-        "PRUMO-CORE.md",
-        "briefing-procedure.md",
-        "load-policy.md",
-        "version-update.md",
-        "interaction-format.md",
-        "runtime-paths.md",
-        "cowork-runtime-bridge.md",
-        "inbox-processing.md",
-        # Novos donos da rota fásica (#180):
-        "SKILL.md",
+        "sempre",
+        "oferta/execução de update (warning/alert)",
+        "scripts via shell",
+        "shell com runtime alcançável",
+        "sinais de faxina nos thresholds",
+        "antes da triagem local do Inbox4Mobile OU de abrir email/agenda",
+        "Inbox4Mobile com itens novos",
+        "antes de filtrar email (se existir)",
+        "EMAIL-CURADORIA.md ausente (criação)",
+        "aprofundamento (predicado g / fallback por fonte)",
+        "ao montar o panorama",
+        "6+ itens acionáveis (#218)",
+    }
+)
+
+# União canônica da era #195 por PATH COMPLETO de workspace (review Codex r1
+# do #180: basename deixaria um path errado passar) — TODO arquivo daquela
+# lista segue no mapa (mover ≠ cortar), mais os donos novos da rota fásica.
+_M = ".prumo/skills/prumo/references/modules"
+CANONICAL_PATHS_IN_MAP = frozenset(
+    {
         "CLAUDE.md",
-        "AGENT.md",
-        "briefing-estado.md",
-        "briefing-canais.md",
-        "briefing-montagem.md",
-        "version-preflight.md",
+        "Prumo/AGENT.md",
+        ".prumo/system/PRUMO-CORE.md",
+        ".prumo/skills/briefing/SKILL.md",
+        f"{_M}/briefing-procedure.md",
+        "Prumo/Agente/PERFIL.md",
+        "Prumo/Agente/ROTINA.md",
+        "Prumo/Agente/PESSOAS.md",
+        f"{_M}/load-policy.md",
+        f"{_M}/version-update.md",
+        f"{_M}/interaction-format.md",
+        f"{_M}/runtime-paths.md",
+        f"{_M}/cowork-runtime-bridge.md",
+        f"{_M}/inbox-processing.md",
+        f"{_M}/briefing-estado.md",
+        f"{_M}/briefing-canais.md",
+        f"{_M}/briefing-montagem.md",
+        f"{_M}/version-preflight.md",
+        f"{_M}/faxina.md",
+        "Prumo/Referencias/EMAIL-CURADORIA.md",
+        ".prumo/skills/prumo/references/file-templates.md",
+        ".prumo/skills/decidir/SKILL.md",
     }
 )
 
@@ -109,14 +135,33 @@ GUARDRAIL_OWNERS: dict[str, Path] = {
     "PAUTA→REGISTRO de concluídos, `Referencias/INDICE.md` e rotação do `Diario/`": ESTADO,
     "Briefing sem a linha de faxina é briefing **fora de conformidade**": MONTAGEM,
     "GERAR o HTML interativo da skill `decidir` e entregá-lo linkado — automaticamente, sem pedir autorização prévia (#218)": MONTAGEM,
+    # #211 (review Codex r1 do #180): DETECÇÃO nos canais (comparação +
+    # consulta pontual); APRESENTAÇÃO/oferta na montagem.
+    "Detecção de divergência agenda × email (#211": CANAIS,
+    "comparar cada compromisso com a agenda da SUA data": CANAIS,
+    "consulta pontual à agenda de amanhã antes de declarar": CANAIS,
     "Sinal de divergência agenda × email (#211)": MONTAGEM,
-    "comparar cada compromisso com a agenda da SUA data": MONTAGEM,
-    "consulta pontual à agenda de amanhã antes de declarar": MONTAGEM,
     "só com confirmação do usuário; nunca criar sozinho": MONTAGEM,
-    # Preflight de versão (#174/#195/#215) → mini-módulo novo
+    # Preflight de versão (#174/#195/#215) → mini-módulo novo. O protocolo
+    # MÍNIMO do #215 mora aqui (review Codex r1 do #180: remoto-menor pode
+    # nunca acionar a oferta — o dono grande pode nunca carregar).
     "prumo version-check --ensure-fresh": PREFLIGHT,
     "Nunca dizer \"versão em dia\" sem ter comparado": PREFLIGHT,
+    "re-tentar UMA vez com **cache-busting**": PREFLIGHT,
+    "**declarar status desconhecido** em uma linha": PREFLIGHT,
 }
+
+# Âncoras com RESUMO legítimo em outro arquivo (a espinha resume os gates;
+# exclusividade estrita quebraria resumos declarados como tal).
+EXCLUSIVITY_EXEMPT = frozenset(
+    {
+        "gate TRIPLO",
+        "prumo version-check --ensure-fresh",
+        "`inbox4mobile_manifest`",  # resumo do gate 2 na espinha é declarado
+    }
+)
+
+_PHASE_FILES = (ESPINHA, ESTADO, CANAIS, MONTAGEM, PREFLIGHT)
 
 # Predicados de leitura de corpo — verificados DENTRO do bloco do Estágio 2
 # (busca global deixaria remoção passar batida; Codex, diff r2 da #195).
@@ -191,18 +236,29 @@ class PhaseMapTests(unittest.TestCase):
         for row in self.rows:
             with self.subTest(file=row["file"], section=row["section"]):
                 self.assertIn(row["phase"], VALID_PHASES, f"fase inválida: {row['phase']}")
-                self.assertTrue(row["trigger"], "gatilho vazio")
+                self.assertIn(
+                    row["trigger"],
+                    VALID_TRIGGERS,
+                    f"gatilho fora do vocabulário fechado: {row['trigger']!r}",
+                )
                 key = (row["file"], row["section"])
                 self.assertNotIn(key, seen, f"duplicata no mapa: {key}")
                 seen.add(key)
 
-    def test_map_covers_canonical_union(self) -> None:
-        names = {Path(row["file"]).name for row in self.rows}
-        missing = CANONICAL_FILES_IN_MAP - names
+    def test_map_covers_canonical_union_by_full_path(self) -> None:
+        paths = {row["file"] for row in self.rows}
+        missing = CANONICAL_PATHS_IN_MAP - paths
         self.assertFalse(
             missing,
-            f"arquivos da união canônica sumiram do mapa (mover ≠ cortar): {sorted(missing)}",
+            f"paths da união canônica sumiram do mapa (mover ≠ cortar): {sorted(missing)}",
         )
+
+    def test_f4_declared_as_phase_without_new_material(self) -> None:
+        # F4 é fase do contrato (#177): fechamento sem carregamento novo —
+        # declarada em prosa, nunca linha fantasma na tabela.
+        self.assertIn("F4", self.skill_text)
+        self.assertIn("não carrega material novo", self.skill_text)
+        self.assertIn("## Escrita e fechamento", self.skill_text)
 
     def test_map_declared_repo_files_exist(self) -> None:
         # Arquivos de skill/módulo declarados no mapa têm que existir no repo
@@ -230,14 +286,30 @@ class MovedGuardrailsRegistryTests(unittest.TestCase):
 
     def test_moved_guardrails_registry(self) -> None:
         cache: dict[Path, str] = {}
+
+        def _text(path: Path) -> str:
+            return cache.setdefault(path, path.read_text(encoding="utf-8"))
+
         for invariant, owner in GUARDRAIL_OWNERS.items():
             with self.subTest(invariant=invariant[:60], owner=owner.name):
-                text = cache.setdefault(owner, owner.read_text(encoding="utf-8"))
                 self.assertIn(
                     invariant,
-                    text,
+                    _text(owner),
                     f"invariante sumiu do dono {owner.name}: {invariant!r}",
                 )
+                if invariant in EXCLUSIVITY_EXEMPT:
+                    continue
+                # Exclusividade (review Codex r1 do #180): dono ÚNICO — a
+                # mesma âncora reaparecendo noutro módulo de fase é a cópia
+                # divergente que a regra "um dono por regra" mata.
+                for other in _PHASE_FILES:
+                    if other == owner:
+                        continue
+                    self.assertNotIn(
+                        invariant,
+                        _text(other),
+                        f"invariante duplicada fora do dono: {invariant!r} em {other.name}",
+                    )
 
     def test_body_read_predicates_present_in_canais(self) -> None:
         text = CANAIS.read_text(encoding="utf-8")
