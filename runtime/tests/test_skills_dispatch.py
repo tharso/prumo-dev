@@ -299,6 +299,51 @@ class RepairPreIssue90WrapperTests(unittest.TestCase):
             self.assertEqual(content.count("# Prumo Adapter"), 1)
 
 
+class MinimalWrapperTransitionTests(unittest.TestCase):
+    """#180 (emenda A5 do design): a transição de workspaces legados pro
+    CLAUDE.md minimal via repair — sem perder autoral, perímetro, porta
+    nem idempotência."""
+
+    def test_repair_transitions_legacy_full_claude_to_minimal(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = _make_test_workspace(Path(tmpdir))
+            claude_md = workspace / "CLAUDE.md"
+
+            # Cenário REAL de transição: workspace legado com o wrapper
+            # MESCLADO (marcadores prumo:begin/end, era full com dispatch) e
+            # conteúdo AUTORAL do usuário fora dos marcadores.
+            authored_top = "## Contexto do meu monorepo\n\n- regra minha acima do bloco\n\n"
+            authored_bottom = "\n## Minhas notas pessoais\n\n- não tocar nisto\n"
+            legacy_block = (
+                "<!-- prumo:begin -->\n"
+                "Prumo detectado neste workspace. Para o canon, leia `Prumo/AGENT.md`.\n"
+                "# Prumo Adapter — Test User (era full)\n\n"
+                "| abrir | .prumo/skills/abrir/SKILL.md |\n"
+                "<!-- prumo:end -->\n"
+            )
+            claude_md.write_text(authored_top + legacy_block + authored_bottom, encoding="utf-8")
+
+            repair_workspace(workspace)
+            after_first = claude_md.read_text(encoding="utf-8")
+
+            # Wrapper mínimo aplicado dentro dos marcadores: sem dispatch,
+            # com porta e perímetro.
+            self.assertNotIn(".prumo/skills/abrir/SKILL.md", after_first)
+            self.assertIn("Perímetro de leitura", after_first)
+            self.assertIn("Prumo/AGENT.md", after_first)
+            # Conteúdo autoral byte-idêntico dos dois lados.
+            self.assertIn(authored_top, after_first)
+            self.assertIn(authored_bottom, after_first)
+            # Porta canônica segue COMPLETA (a transição não a mutila).
+            porta = (workspace / "Prumo" / "AGENT.md").read_text(encoding="utf-8")
+            self.assertIn("Mapa do workspace", porta)
+            self.assertIn("Perímetro de leitura", porta)
+
+            # Idempotência: segundo repair é byte-idêntico.
+            repair_workspace(workspace)
+            self.assertEqual(claude_md.read_text(encoding="utf-8"), after_first)
+
+
 class AgentRootDispatchTests(unittest.TestCase):
     """AGENT.md de raiz deve ter dispatch quando referencia tabela de skills."""
 
