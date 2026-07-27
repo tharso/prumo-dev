@@ -127,8 +127,10 @@ def collect_briefing_route_worst() -> int:
         print(f"[qg]   route audit sem JSON válido: {result.stdout[:200]}")
         return -1
     worst = report.get("worst_profile_total")
-    if report.get("errors") or not isinstance(worst, int):
-        print(f"[qg]   route audit com erros/sem pior perfil: {report.get('errors')}")
+    # type() is int (não isinstance): booleano é int em Python e True viraria
+    # "1 palavra"; zero é termômetro quebrado, nunca rota real.
+    if report.get("errors") or type(worst) is not int or worst <= 0:
+        print(f"[qg]   route audit com erros/sem pior perfil válido: {report.get('errors')}")
         return -1
     return worst
 

@@ -51,6 +51,15 @@ class CollectBriefingRouteWorstTests(unittest.TestCase):
         payload = {"errors": [], "worst_profile_total": None}
         self.assertEqual(self._run(_proc(stdout=json.dumps(payload))), -1)
 
+    def test_boolean_worst_fails_closed(self) -> None:
+        # True é int em Python — viraria "1 palavra" e aprovaria tudo.
+        payload = {"errors": [], "worst_profile_total": True}
+        self.assertEqual(self._run(_proc(stdout=json.dumps(payload))), -1)
+
+    def test_zero_worst_fails_closed(self) -> None:
+        payload = {"errors": [], "worst_profile_total": 0}
+        self.assertEqual(self._run(_proc(stdout=json.dumps(payload))), -1)
+
 
 if __name__ == "__main__":
     unittest.main()
