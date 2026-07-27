@@ -6,6 +6,10 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.68.0] - 2026-07-27
+
+### Fixed
+- **Próximo ID do índice de referências sem colisão (#244, P4 do épico #240)** — em 27/07 um agente leu 32 linhas do `INDICE.md`, viu ID 24 e assumiu 25; o índice já ia a 34 e **dez fichas nasceram colidindo** (corrigido à mão). Não era descuido: é a contradição entre "leia arquivos grandes em pedaços" e "apende numa sequência global". Agora o índice nasce com rodapé `<!-- proximo-id: N -->` (última linha — o agente lê UMA linha em vez do arquivo inteiro), e o procedimento trata o rodapé como **sugestão, nunca oráculo**: sonda `| N |` antes de escrever em **todo** caminho, incrementando até achar livre. Sem rodapé, o fim do arquivo é **semente** (nunca máximo global — a faxina agrupa o índice por temas depois de 30 entradas) e o rodapé é reposto na mesma edição. Concorrência com **lock atômico de verdade** (achados do Codex): `mkdir` da folha (sem `-p`, com os pais criados antes) no escopo `Prumo/Referencias/INDICE.md` — releitura antes de escrever é check-then-write e saiu do contrato; **sem shell, não escreve** (ID adivinhado é o bug original). Liberação **move, nunca deleta** (`rmdir` travaria o índice pra sempre no host que proíbe deleção, #242), com a regra de colisão da quarentena; **sem retomada automática por idade** — lock presente aborta e avisa, com a linha pronta pro dono liberar.
 ## [5.67.0] - 2026-07-27
 
 ### Added
