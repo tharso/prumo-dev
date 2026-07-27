@@ -13,6 +13,22 @@ except ImportError:  # execução como runtime.tests.test_templates
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
+# As 9 regras do runtime-consumo.md, uma âncora DISTINTIVA por regra (#228
+# C1, r1-r2 do Codex) — incluindo os DOIS predicados start-json
+# (não-unificados por decisão do dono). Fonte única do guard.
+RUNTIME_CONSUMO_ANCHORS = (
+    "painel local estruturado (semente/backcompat)",
+    "Se o host souber trabalhar com JSON",
+    "Se o host conseguir renderizar ações próprias",
+    "leia `adapter_hints` e respeite `kind`, `shell_command` e `host_prompt`",
+    "`adapter_contract_version`, `workspace_resolution` e `adapter_hints` antes de bancar o esperto",
+    "Antes de olhar `message`, leia `state_flags`, `degradation`, `next_move` e `selection_contract`",
+    "Se `degradation.status` vier `error` ou `partial`",
+    "Não fabrique JSON de `prumo start --format json`",
+    "Se `next_move.id == kickoff`, não abra cardápio de aeroporto",
+)
+
+
 class TemplateAdapterTests(unittest.TestCase):
     def test_agents_wrapper_includes_short_invocation_contract(self) -> None:
         rendered = templates.render_agents_wrapper("Batata", "Prumo")
@@ -33,20 +49,7 @@ class TemplateAdapterTests(unittest.TestCase):
             Path(__file__).resolve().parents[2]
             / "skills" / "prumo" / "references" / "modules" / "runtime-consumo.md"
         ).read_text(encoding="utf-8")
-        for anchor in (
-            # As 9 regras movidas, uma âncora DISTINTIVA por regra (r1 do
-            # Codex no #235) — incluindo os DOIS predicados start-json
-            # (não-unificados por decisão do dono).
-            "painel local estruturado (semente/backcompat)",
-            "Se o host souber trabalhar com JSON",
-            "Se o host conseguir renderizar ações próprias",
-            "leia `adapter_hints` e respeite `kind`, `shell_command` e `host_prompt`",
-            "`adapter_contract_version`, `workspace_resolution` e `adapter_hints` antes de bancar o esperto",
-            "Antes de olhar `message`, leia `state_flags`, `degradation`, `next_move` e `selection_contract`",
-            "Se `degradation.status` vier `error` ou `partial`",
-            "Não fabrique JSON de `prumo start --format json`",
-            "Se `next_move.id == kickoff`, não abra cardápio de aeroporto",
-        ):
+        for anchor in RUNTIME_CONSUMO_ANCHORS:
             self.assertIn(anchor, module)
 
     def test_nested_wrapper_points_to_real_core_and_state_paths(self) -> None:
@@ -112,20 +115,7 @@ class TemplateAdapterTests(unittest.TestCase):
             Path(__file__).resolve().parents[2]
             / "skills" / "prumo" / "references" / "modules" / "runtime-consumo.md"
         ).read_text(encoding="utf-8")
-        for anchor in (
-            # As 9 regras movidas, uma âncora DISTINTIVA por regra (r1 do
-            # Codex no #235) — incluindo os DOIS predicados start-json
-            # (não-unificados por decisão do dono).
-            "painel local estruturado (semente/backcompat)",
-            "Se o host souber trabalhar com JSON",
-            "Se o host conseguir renderizar ações próprias",
-            "leia `adapter_hints` e respeite `kind`, `shell_command` e `host_prompt`",
-            "`adapter_contract_version`, `workspace_resolution` e `adapter_hints` antes de bancar o esperto",
-            "Antes de olhar `message`, leia `state_flags`, `degradation`, `next_move` e `selection_contract`",
-            "Se `degradation.status` vier `error` ou `partial`",
-            "Não fabrique JSON de `prumo start --format json`",
-            "Se `next_move.id == kickoff`, não abra cardápio de aeroporto",
-        ):
+        for anchor in RUNTIME_CONSUMO_ANCHORS:
             self.assertIn(anchor, module)
 
     def test_workflows_template_exposes_structure_only_phase(self) -> None:

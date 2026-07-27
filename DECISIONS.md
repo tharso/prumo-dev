@@ -71,7 +71,7 @@ Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões ant
 
 **Contexto:** das 403 palavras de "Regras rápidas" da porta, ~135 eram contrato de consumo do JSON — pago na abertura de TODA sessão, usado só quando um comando do runtime roda.
 
-**Decisão:** `runtime-consumo.md` é o dono único das 9 regras de consumo (fonte única MUDOU de lugar: saíram de `wrapper_rules.py`); porta e wrappers (todos os perfis) apontam pra ele; linha F1 condicional no mapa fásico ("ao consumir JSON do runtime"). Cortes C2–C6 de dedup/prosa sem remoção de regra. `briefing_f0f1_words` **6.788 → 6.401**. O caminho até 4.999 exigiria reescrever as regras transversais do core — segue na #228 como decisão futura do dono.
+**Decisão:** `runtime-consumo.md` é o dono único das 9 regras de consumo (fonte única MUDOU de lugar: saíram de `wrapper_rules.py`); porta e wrappers (todos os perfis) apontam pra ele; linha F1 condicional no mapa fásico ("antes de invocar comando do runtime — escolha de formato inclusa"; gatilho não-circular: as regras 1–3 do módulo governam a própria escolha). Cortes C2–C6 de dedup/prosa sem remoção de regra. `briefing_f0f1_words` **6.788 → 6.401**. O caminho até 4.999 exigiria reescrever as regras transversais do core — segue na #228 como decisão futura do dono.
 
 **Alternativas consideradas:** gerar o módulo a partir de `wrapper_rules.py` → rejeitado (duas fontes sincronizadas é o bug da #195 em outra roupa; as regras SAÍRAM do python); manter o contrato só no `AGENTS.md` full → rejeitado (o pior perfil é a régua do gate — não melhoraria nada); cortar as regras transversais do core já → rejeitado nesta fase (reescrever contrato de produto exige o dono corte a corte).
 
