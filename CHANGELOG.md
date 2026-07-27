@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.67.0] - 2026-07-27
+
+### Added
+- **Caixa de entrada declarada: o briefing conta o que apodrece (#245, P5 do épico #240)** — 30 itens parados 5 meses numa rota morta e 10 num clipper desde junho (com duplicata byte a byte) porque só o `Inbox4Mobile/` era contado. Agora o usuário marca pastas com `(caixa de entrada)` no `MAPA-AUTORAL.md` — segundo marcador da **lista fechada** do contrato do mapa (o resto da nota segue não-instrução; match exato: "antiga caixa de entrada" não ativa nada). O marcador traz **exceção delimitada** à guarda "nunca contagem": pasta marcada autoriza **contagem da listagem plana + metadata rasa (nome e mtime)** — inventário e idade do mais velho —, **nunca conteúdo**. O briefing conta no estágio local e apresenta em uma linha; a `higiene` sinaliza caixa com item mais velho que 14 dias. **Escopo honesto:** inventário e cobrança — nenhum processamento automático, `_processed.json` segue contrato exclusivo do `Inbox4Mobile/`, e caixa de terceiros nunca é reorganizada. Bootstrap do ciclo resolvido (achado do Codex): a gramática dos marcadores (dona: `load-policy.md`) carrega em F2 **antes** do gate que depende dela. Cesto neutro: a linha nova do manifesto foi paga com enxugo de prosa no mesmo arquivo (7.795 → 7.794).
+
 ## [5.66.0] - 2026-07-27
 
 ### Added

@@ -95,6 +95,10 @@ Exemplo (voz Equilibrada — não é script): "Não tô dizendo que tá errado. 
 - Inbox4Mobile com **processados inconsistentes**: entrada no `_processed.json`
   além do threshold com o arquivo ainda na pasta (a faxina sinaliza e para —
   #212; a resolução é daqui)
+- **Caixa declarada envelhecida (#245)**: pasta marcada `(caixa de entrada)` no
+  mapa autoral com item mais velho que **14 dias** (mtime — metadata rasa
+  autorizada pelo contrato do marcador; conteúdo, nunca). Threshold
+  sobrescrevível em `Prumo/Custom/rules/`
 
 **Propor:**
 - "Tem coisa no inbox há X dias. Quer processar agora ou deixar pra depois?"
@@ -104,6 +108,9 @@ Exemplo (voz Equilibrada — não é script): "Não tô dizendo que tá errado. 
   que continuam na pasta. Movo pra quarentena `_to_delete/` pra você esvaziar
   quando quiser?" — só com confirmação explícita; mover segue a máquina de
   remoção do `inbox-processing.md` (escopo `higiene`, com trilha no REGISTRO)
+- Pra caixa declarada envelhecida: "`X/` tem N itens, o mais velho de DD/MM.
+  Quer processar agora ou deixar pra depois?" — sinalizar, nunca reorganizar
+  sozinha
 
 **Intenção:** alertar o custo de fila parada e entregar a escolha (agora ou depois) sem insistir.
 Exemplo (voz Equilibrada — não é script): "Fila encostada tende a apodrecer. Mas a decisão é sua."
