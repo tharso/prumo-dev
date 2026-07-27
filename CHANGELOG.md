@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.66.0] - 2026-07-27
+
+### Added
+- **Precedência de roteamento: uma escala declarada em vez de três fontes empatadas (#243, P3 do épico #240)** — o incidente medido em 27/07 (3 artefatos do mesmo artigo espalhados por 2 diretórios em 3 horas, por obediência à fonte errada; 30 itens parados em 5 meses numa rota morta) não foi improviso: era empate real. Agora a Camada 3 do `briefing-canais.md` é a **dona única** da escala — **contrato autoral do usuário** (arquivo apontado por `(contrato: <path>)` no `MAPA-AUTORAL.md`; abre em F2, nunca na abertura) → **`EMAIL-CURADORIA.md`** (config específica de email, #201) → **`PERFIL.md`** (regra global) → **`AGENT.md`** (descreve destinos, nunca decide contra os degraus acima); empate de cobertura, ganha a fonte mais específica. Fontes divergentes: o agente segue a mais forte **e menciona a divergência em uma linha**, sem travar o fluxo. O marcador `(contrato: …)` entra na **lista fechada** de marcadores reservados do mapa autoral (o resto da nota segue livre e não-instrução; match exato). Os demais módulos **apontam** pra escala — nenhuma cópia (guard). Decisão do dono: o produto declara a precedência, não a regra de organização autoral (essa fica no contrato de cada usuário).
+
 ## [5.65.0] - 2026-07-27
 
 ### Added

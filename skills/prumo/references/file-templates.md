@@ -250,7 +250,7 @@ Após o primeiro ciclo de feedback, apagar esta seção de setup e manter apenas
 
 ## Roteamento de conteúdo
 
-(pasta de destino para conteúdo de consumo — artigo, vídeo, newsletter curada. Vazia até o usuário registrar; a Camada 3 do briefing pergunta uma vez e registra só com confirmação)
+(pasta de destino para conteúdo de consumo — artigo, vídeo, newsletter curada. Vazia até o usuário registrar; a Camada 3 do briefing pergunta uma vez e registra só com confirmação. Esta seção é o 2º degrau da precedência — a escala completa mora em `briefing-canais.md` → "Precedência de roteamento")
 
 ## Regras contextuais
 
