@@ -6,6 +6,10 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.70.0] - 2026-07-27
+
+### Changed
+- **Decidir: motivo padrão no descarte e pendência visível antes do copiar (#246, P6 do épico #240)** — feedback do dono depois de despachar 28 cards: *"por que raios o motivo é obrigatório pra descartar algo? E, se é obrigatório, isso deveria ser informado na interface"*. O aviso ⚑ existia no clique, mas nada impedia copiar o relatório com pendências — a fricção caía vinte minutos depois, no chat. Agora: ação pode trazer **`default`** (o `discard` leva `"não interessa mais"`), e o relatório carrega **`default_used` + `resolved_detail`** com o valor concreto — sessão nova não adivinha qual era o padrão, e `comment` fica reservado ao texto autoral (comentário digitado sempre vence). `keep_with_reason` **só** ganha default quando o card já exibe **motivo e tag concretos** (sem os dois, `requires_missing` manda — a ficha canônica exige perguntar). O bloco do relatório mostra **"N itens com detalhe pendente"** antes do botão Copiar respostas. E o rigor passa a ser **proporcional ao risco**: descarte de **linha de pauta** é reversível e registrado (`confirma? não`); descarte de **item de inbox** mexe em arquivo real e segue a máquina de quarentena (`confirma? sim`). Testes **comportamentais** (recusa do Codex a assert de substring pra estado JS): o harness executa as funções reais do template via `node` e decide pelo JSON.
 ## [5.69.0] - 2026-07-27
 
 ### Added

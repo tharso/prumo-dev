@@ -9,6 +9,7 @@ Cada ação tem:
 - **`tone`** — cor do botão: `green` (avançar), `amber` (adiar/cautela), `red` (risco/remoção), `blue` (rotear/secundária), `slate` (neutra).
 - **`effect`** — **token canônico (snake_case) do que o Prumo executa** ao receber o relatório. É um enum estável, não prosa — o agente lê o `effect` do JSON e age. Use exatamente os tokens desta tabela; não invente nem descreva em prosa no campo `effect`.
 - **`requires`** — detalhe que o **comentário** precisa trazer (o usuário preenche). Se preenchido, marque o botão (`⚑`) e, ao receber o relatório com `requires_missing`, peça o detalhe antes de executar.
+- **`default`** (#246) — valor que satisfaz o `requires` sem o usuário digitar nada. Com `default` no card, o `⚑` não aparece e o relatório vem com `default_used: true` + `resolved_detail` (o valor concreto). **Comentário digitado sempre vence.** Onde existe default: `discard` → `"não interessa mais"`; `keep_with_reason` → **só quando o card já exibe motivo E tag concretos** inferidos do item (sem os dois, `requires_missing` manda, como antes — a ficha canônica exige perguntar).
 - **`confirma?`** — se o `effect` precisa de confirmação extra apesar da promessa "executo sem perguntar de novo".
 
 ## Regra de ouro da execução
@@ -71,7 +72,7 @@ O calendário do briefing é "evento do dia", não necessariamente convite. Sem 
 | Aguardar até | `wait_until` | blue | `wait_until` | nova data | não |
 | Cobrar | `follow_up` | amber | `draft_follow_up` | canal e o que pedir | só ao enviar |
 | Delegar | `delegate` | blue | `draft_delegation` | destinatário | só ao enviar |
-| Descartar | `discard` | red | `discard` | motivo | sim (remoção) |
+| Descartar | `discard` | red | `discard` | motivo (default: "não interessa mais") | **não** — descarte de linha de pauta é reversível e fica registrado |
 
 ### Itens de inbox — ações POR CONTEÚDO
 
@@ -83,6 +84,7 @@ Regras transversais aqui:
 - **Links de conteúdo vêm ATIVOS** no card (`<a target="_blank" rel="noopener">`). A regra offline da `decidir` vale para a **mecânica** (fontes/JS embutidos), **não** para os links do usuário. Card com link inerte é triagem no escuro.
 - **Não existe "virar referência" passivo.** Guardar sem motivo, tag e caminho de volta é buraco negro — viola "Ideias não são ações" (`prumo-core`, regra 5). Onde "guardar" existir, é **committal**: exige motivo + tag.
 - Remoção (`discard`) sempre confirma (ASSERT do core: confirmar plano + registrar no `REGISTRO.md` antes de remover o original) — e remover é **mover pra quarentena** `_to_delete/`, nunca deletar (#242).
+- **Rigor por risco (#246):** o **descarte de item de inbox** mexe em arquivo real — `confirma? sim`, com a máquina de remoção. O **descarte de linha de pauta** é reversível e registrado — `confirma? não`. Mesma palavra, riscos diferentes: tratar os dois com o mesmo rigor treina o usuário a clicar no piloto automático.
 
 #### Vídeo (YouTube/Vimeo/…)
 
