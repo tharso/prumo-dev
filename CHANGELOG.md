@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.71.0] - 2026-07-27
+
+### Changed
+- **Dieta do briefing, fase 2: rota 7.795 → 6.651 sem perder contrato (#228, cortes D1–D5 aprovados pelo dono)** — com a régua honesta da #248, a medição seção a seção mostrou onde estava o peso. **(D1)** A **tabela de intenções** do `dispatch.md` (506w) sai da abertura: ela é consultada **depois** que o usuário fala, então por construção não pertence a "antes do primeiro dado" — o arquivo foi reordenado e a seção carrega ao resolver a intenção. **(D2)** `faxina-thresholds.md` vira **condicional** (sem semente OU override do usuário existir): a semente já declara o número efetivo que usou. **(D3)** As **4 regras de invocação** do runtime saem das "Regras rápidas" da porta — pagas na abertura de TODA sessão — e passam a morar no `runtime-consumo.md`, carregado antes de rodar comando; mover ≠ deletar, com **registro origem→destino em teste** (exige a regra presente no dono novo E ausente na porta). **(D4)** Regra 18 do core compactada (o procedimento detalhado já mora no `briefing-canais.md`). **(D5)** Enxugo de prosa nas regras 16/17 e nos rótulos do manifesto. **Teto intermediário registrado:** o alvo histórico de 4.999 **não é perseguido além daqui** — o que sobra no cesto é contrato que vale o peso, e cortá-lo moveria instrução para longe do momento em que ela salva a execução.
+
 ## [5.70.0] - 2026-07-27
 
 ### Changed

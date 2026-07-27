@@ -29,6 +29,14 @@ RUNTIME_CONSUMO_ANCHORS = (
 )
 
 
+RULES_MOVED_TO_RUNTIME_CONSUMO = (
+    "Não leia arquivo para simular",
+    "fingindo ser o runtime",
+    "Não rode comando extra só porque ficou curioso",
+    "disco riscado",
+)
+
+
 class TemplateAdapterTests(unittest.TestCase):
     def test_agents_wrapper_includes_short_invocation_contract(self) -> None:
         rendered = templates.render_agents_wrapper("Batata", "Prumo")
@@ -38,9 +46,12 @@ class TemplateAdapterTests(unittest.TestCase):
         self.assertIn("skill `abrir`", rendered)
         self.assertIn("atalho equivalente", rendered)
         self.assertIn("prumo briefing --workspace . --format json", rendered)
-        self.assertIn("Não leia arquivo para simular", rendered)
-        self.assertIn("Não escreva `_state/`", rendered)
-        self.assertIn("Não rode comando extra só porque ficou curioso", rendered)
+        # #228 fase 2: as 4 regras de INVOCAÇÃO saíram da porta (pagas na
+        # abertura de toda sessão) e passaram a morar no runtime-consumo.md,
+        # carregado antes de rodar comando do runtime. Mover ≠ deletar: o
+        # registro origem→destino é o teste `test_regras_de_invocacao_mudaram_de_dono`.
+        self.assertNotIn("Não leia arquivo para simular", rendered)
+        self.assertNotIn("Não rode comando extra só porque ficou curioso", rendered)
         self.assertIn("Execute primeiro e fale depois", rendered)
         # #228 C1: o contrato de consumo do JSON mudou de dono — as âncoras
         # vivem em runtime-consumo.md; a superfície aponta pra lá.
@@ -65,7 +76,6 @@ class TemplateAdapterTests(unittest.TestCase):
         )
         self.assertIn("Leia `Prumo/AGENT.md`", rendered)
         self.assertIn("Use `.prumo/system/PRUMO-CORE.md`", rendered)
-        self.assertIn("Não escreva `.prumo/state/`", rendered)
         # #228 C1: kickoff é regra do runtime-consumo.md agora; o wrapper
         # full mantém o ponteiro.
         self.assertIn("runtime-consumo.md", rendered)
@@ -104,9 +114,6 @@ class TemplateAdapterTests(unittest.TestCase):
         self.assertIn("skill `abrir`", rendered)
         self.assertIn("atalho equivalente", rendered)
         self.assertIn("prumo briefing --workspace . --format json", rendered)
-        self.assertIn("Não leia arquivo para simular", rendered)
-        self.assertIn("Não escreva `_state/`", rendered)
-        self.assertIn("Não rode comando extra só porque ficou curioso", rendered)
         self.assertIn("Execute primeiro e fale depois", rendered)
         # #228 C1: o contrato de consumo do JSON mudou de dono — as âncoras
         # vivem em runtime-consumo.md; a superfície aponta pra lá.
@@ -209,3 +216,24 @@ class ReadingPerimeterTests(unittest.TestCase):
         )
         self.assertIn("dirigida e rasa", rendered)
         self.assertIn("perguntar", rendered)
+
+
+class RegrasMovidasTest(unittest.TestCase):
+    """#228 fase 2 — mover ≠ deletar: as 4 regras de invocação saíram da porta
+    (custavam a abertura de TODA sessão) e têm dono novo."""
+
+    def test_regras_de_invocacao_mudaram_de_dono(self) -> None:
+        modulo = (
+            Path(__file__).resolve().parents[2]
+            / "skills" / "prumo" / "references" / "modules" / "runtime-consumo.md"
+        ).read_text(encoding="utf-8")
+        porta = templates.render_agent_md(
+            user_name="Batata",
+            agent_name="Prumo",
+            timezone_name="America/Sao_Paulo",
+            briefing_time="09:00",
+        )
+        for regra in RULES_MOVED_TO_RUNTIME_CONSUMO:
+            with self.subTest(regra=regra):
+                self.assertIn(regra, modulo, "regra sumiu do dono novo — isso é DELETAR")
+                self.assertNotIn(regra, porta, "regra continua na porta — não foi movida")

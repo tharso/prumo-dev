@@ -50,33 +50,37 @@ EXPECTED_MAP = frozenset(
     {
         ("F0", "sempre", "CLAUDE.md", "(integral)", "wrapper da raiz"),
         ("F0", "sempre", "Prumo/AGENT.md", "(integral)", "porta canônica"),
-        ("F0", "sempre", ".prumo/system/PRUMO-CORE.md", "até: # Parte 2 — Playbooks operacionais", "core (Parte 1)"),
+        ("F0", "sempre", ".prumo/system/PRUMO-CORE.md", "até: # Parte 2 — Playbooks operacionais", "core P1"),
         # #248: dispatch.md é leitura obrigatória de abertura (opening_reads
         # do AGENT.md) — entrou no cesto na recalibração do termômetro.
-        ("F0", "sempre", ".prumo/skills/prumo/references/modules/dispatch.md", "(integral)", "protocolo de abertura (#248)"),
+        # #228 fase 2: a porta carrega o dispatch ATÉ a tabela de intenções; a
+        # tabela é consultada DEPOIS que o usuário fala — por construção, fora
+        # do "antes do primeiro dado".
+        ("F0", "sempre", ".prumo/skills/prumo/references/modules/dispatch.md", "até: ## Tabela de intenções", "abertura (#248)"),
+        ("F1", "ao resolver a intenção do usuário (nunca na abertura)", ".prumo/skills/prumo/references/modules/dispatch.md", "## Tabela de intenções", "roteamento (#228)"),
         # #241: mapa autoral lido na abertura quando existir — conta no cesto
         # quando presente; ausência tolerada (gatilho `sempre (autoral)`).
-        ("F0", "sempre (autoral)", "Prumo/Agente/MAPA-AUTORAL.md", "(integral)", "caminhos autorais do usuário (#241)"),
+        ("F0", "sempre (autoral)", "Prumo/Agente/MAPA-AUTORAL.md", "(integral)", "caminhos autorais (#241)"),
         ("F1", "sempre", ".prumo/skills/briefing/SKILL.md", "(integral)", "esta skill"),
         ("F1", "sempre", f"{_M}/briefing-procedure.md", "(integral)", "espinha"),
         ("F1", "sempre", ".prumo/system/PRUMO-CORE.md", "## Guardrails", "core (seção)"),
-        ("F1", "sempre", "Prumo/Agente/PERFIL.md", "(integral)", "config do usuário"),
-        ("F1", "sempre", "Prumo/Agente/ROTINA.md", "(integral)", "config do usuário"),
-        ("F1", "sempre", "Prumo/Agente/PESSOAS.md", "(integral)", "predicado de remetente"),
-        ("F1", "sempre", f"{_M}/briefing-estado.md", "(integral)", "estado operacional"),
-        ("F1", "sempre", f"{_M}/version-preflight.md", "(integral)", "preflight de versão"),
-        ("F1", "sempre", f"{_M}/faxina-thresholds.md", "(integral)", "números da faxina (defaults + overrides)"),
-        ("F1", "override do usuário existir", "Prumo/Custom/rules/faxina-thresholds.md", "(integral)", "thresholds customizados"),
+        ("F1", "sempre", "Prumo/Agente/PERFIL.md", "(integral)", "config"),
+        ("F1", "sempre", "Prumo/Agente/ROTINA.md", "(integral)", "config"),
+        ("F1", "sempre", "Prumo/Agente/PESSOAS.md", "(integral)", "remetentes"),
+        ("F1", "sempre", f"{_M}/briefing-estado.md", "(integral)", "estado"),
+        ("F1", "sempre", f"{_M}/version-preflight.md", "(integral)", "preflight"),
+        ("F1", "sem semente OU override do usuário existir", f"{_M}/faxina-thresholds.md", "(integral)", "números da faxina"),
+        ("F1", "override do usuário existir", "Prumo/Custom/rules/faxina-thresholds.md", "(integral)", "overrides"),
         ("F1", "oferta/execução de update (warning/alert)", f"{_M}/version-update.md", "(integral)", "canônico do update"),
-        ("F1", "scripts via shell", f"{_M}/runtime-paths.md", "(integral)", "resolução de scripts"),
+        ("F1", "scripts via shell", f"{_M}/runtime-paths.md", "(integral)", "scripts"),
         ("F1", "shell com runtime alcançável", f"{_M}/cowork-runtime-bridge.md", "(integral)", "ponte do runtime"),
-        ("F1", "antes de invocar comando do runtime (escolha de formato inclusa)", f"{_M}/runtime-consumo.md", "(integral)", "contrato de consumo"),
+        ("F1", "antes de invocar comando do runtime (escolha de formato inclusa)", f"{_M}/runtime-consumo.md", "(integral)", "consumo"),
         (
             "F1",
             "família de faxina pendente (execução — a checagem mínima mora no estado)",
             f"{_M}/faxina.md",
             "(integral)",
-            "executor da faxina",
+            "executor",
         ),
         # #245: a gramática dos marcadores (dona: load-policy) carrega ANTES do
         # gate de "caixa declarada" — senão o reconhecimento seria circular.
@@ -85,28 +89,28 @@ EXPECTED_MAP = frozenset(
             "`MAPA-AUTORAL.md` com nota (gramática dos marcadores)",
             f"{_M}/load-policy.md",
             "## Listagem de diretórios (perímetro de leitura, #194)",
-            "marcadores reservados (#245)",
+            "marcadores (#245)",
         ),
         (
             "F2",
             "antes da triagem local do Inbox4Mobile, de caixa declarada OU de abrir email/agenda",
             f"{_M}/briefing-canais.md",
             "(integral)",
-            "canais + defesas",
+            "canais",
         ),
-        ("F2", "Inbox4Mobile com itens novos", f"{_M}/inbox-processing.md", "(integral)", "triagem do inbox"),
-        ("F2", "antes de filtrar email (se existir)", "Prumo/Referencias/EMAIL-CURADORIA.md", "(integral)", "regras aprendidas"),
+        ("F2", "Inbox4Mobile com itens novos", f"{_M}/inbox-processing.md", "(integral)", "inbox"),
+        ("F2", "antes de filtrar email (se existir)", "Prumo/Referencias/EMAIL-CURADORIA.md", "(integral)", "curadoria"),
         (
             "F2",
             "canal de email disponível E EMAIL-CURADORIA.md ausente (criação)",
             ".prumo/skills/prumo/references/file-templates.md",
             "## Prumo/Referencias/EMAIL-CURADORIA.md",
-            "template canônico",
+            "template",
         ),
-        ("F2", "aprofundamento (predicado g / fallback por fonte)", f"{_M}/load-policy.md", "(integral)", "política de leitura"),
-        ("F3", "ao montar o panorama", f"{_M}/briefing-montagem.md", "(integral)", "dois tempos + fechamento"),
-        ("F3", "ao montar o panorama", f"{_M}/interaction-format.md", "(integral)", "dono da numeração"),
-        ("F3", "6+ itens acionáveis (#218)", ".prumo/skills/decidir/SKILL.md", "(integral)", "despacho visual"),
+        ("F2", "aprofundamento (predicado g / fallback por fonte)", f"{_M}/load-policy.md", "(integral)", "leitura"),
+        ("F3", "ao montar o panorama", f"{_M}/briefing-montagem.md", "(integral)", "dois tempos"),
+        ("F3", "ao montar o panorama", f"{_M}/interaction-format.md", "(integral)", "numeração"),
+        ("F3", "6+ itens acionáveis (#218)", ".prumo/skills/decidir/SKILL.md", "(integral)", "despacho"),
     }
 )
 

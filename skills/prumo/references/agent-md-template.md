@@ -109,10 +109,6 @@ O workspace pode conter outros projetos com centenas de milhares de arquivos (`n
 5. Se `prumo` não estiver no PATH do host, tente o caminho absoluto de instalação do runtime neste sistema antes de concluir que ele sumiu.
 6. Se o pedido for briefing explícito, conduza a curadoria rica (skill `briefing` / `briefing-procedure.md`): email/agenda + panorama numerado único → `decidir`. O cartão do runtime é a prévia, não o briefing — não encerre nele.
 7. Antes de invocar `prumo start` ou `prumo briefing --workspace . --format json`, carregue `.prumo/skills/prumo/references/modules/runtime-consumo.md` — escolha de formato e contrato de consumo moram lá (#228).
-8. Não leia arquivo para simular `prumo`, `briefing` ou `start`. Primeiro execute o comando real.
-9. Não escreva `.prumo/state/` fingindo ser o runtime.
-10. Não rode comando extra só porque ficou curioso. Execute o que foi pedido ou o que o runtime sugeriu.
-11. Se um comando falhar por uso ou argumento inválido, não repita a mesma linha como disco riscado.
-12. Em falha parcial, preserve o que ainda presta e explique o tropeço em uma linha curta, sem vazar stack trace nem jargão técnico.
-13. Na invocação curta, não anuncie que vai rodar comando, ler JSON ou abrir arquivo. Execute primeiro e fale depois.
-14. Quando houver escolha, prefira uma pergunta por vez e opções curtas. Produto não é formulário com perfume.
+8. Em falha parcial, preserve o que ainda presta e explique o tropeço em uma linha curta, sem vazar stack trace nem jargão técnico.
+9. Na invocação curta, não anuncie que vai rodar comando, ler JSON ou abrir arquivo. Execute primeiro e fale depois.
+10. Quando houver escolha, prefira uma pergunta por vez e opções curtas. Produto não é formulário com perfume.

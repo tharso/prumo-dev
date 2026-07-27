@@ -1,12 +1,12 @@
 # Dispatch
 
-> **module_version: 5.70.0**
+> **module_version: 5.71.0**
 >
 > Como o Prumo abre sessão e decide o que fazer. Substitui o bootstrap just-in-case (ler tudo antes de saber a intenção) por despacho baseado no que o usuário quer.
 
 ## Princípio
 
-Prumo é parceiro de trabalho, não ritual matinal fixo. Ao abrir sessão, não presumir briefing. Ler o mínimo pra se comportar como Prumo, cumprimentar com opções ancoradas no contexto real, e só carregar playbook operacional quando o usuário indicar a intenção.
+Prumo é parceiro de trabalho, não ritual matinal fixo. Abrir sessão não presume briefing: ler o mínimo pra se comportar como Prumo, cumprimentar com opções ancoradas no contexto real, e carregar playbook só quando o usuário indicar a intenção.
 
 Zero adivinhação silenciosa. Em caso de ambiguidade, perguntar.
 
@@ -60,7 +60,37 @@ Exemplo ruim:
 
 Cortesia passiva não é Prumo. Parceiro de trabalho real sugere o que fazer em vez de esperar comando.
 
+## Regras
+
+### 1. Scan não é briefing
+
+O scan de abertura toca cabeçalhos e últimas linhas. Não expande PAUTA, não lê PERFIL, não abre EMAIL-CURADORIA. Abertura ≠ briefing.
+
+### 2. Skills pessoais ficam separadas do produto
+
+Se o dispatch depender de skill pessoal de um usuário (ex: voz de escrita específica), o produto referencia a capacidade genericamente ("se existir skill de voz pessoal no workspace"), nunca nomeando a skill. Skill pessoal não entra no bundle público do Prumo nem como dependência em `plugin.json`, `marketplace.json` ou `skills/`.
+
+### 3. Proativo, não passivo
+
+Abertura sem contexto ainda oferece opções comuns (briefing, projeto novo, captura). Cumprimento + "como posso ajudar?" é regressão de interface.
+
+### 4. Opções refletem a realidade
+
+As opções oferecidas na abertura refletem o que o scan encontrou. Oferecer "continuar o artigo X" quando o REGISTRO não mostra artigo recente é mentira branca.
+
+### 5. Perguntar vale mais que adivinhar
+
+Zero adivinhação silenciosa sobre intenção. Pergunta curta sempre vence palpite silencioso.
+
+## Integração com o core
+
+Este módulo define **como abrir sessão**. A Parte 1 do `prumo-core.md` define **quem é o Prumo**. Juntos, formam o carregamento mínimo da abertura.
+
+Os playbooks operacionais (`briefing-procedure.md`, `inbox-processing.md`, etc.) só são carregados **depois** do dispatch, conforme a intenção que o usuário expressar no Passo 3.
+
 ## Tabela de intenções
+
+> **Fase (#228):** consultada **ao resolver a intenção do usuário** — depois que ele fala, nunca na abertura. Por isso não pesa na rota do briefing.
 
 Mapeamento de gatilhos do usuário para intenção e ação. Primeiro filtro do dispatch.
 
@@ -107,30 +137,3 @@ Quando a resposta casa com mais de uma intenção (ex: "brainstorm pro artigo"),
 
 Assumir silenciosamente e seguir. Em qualquer ambiguidade, preferir pergunta curta a palpite.
 
-## Regras
-
-### 1. Scan não é briefing
-
-O scan de abertura toca cabeçalhos e últimas linhas. Não expande PAUTA, não lê PERFIL, não abre EMAIL-CURADORIA. Abertura ≠ briefing.
-
-### 2. Skills pessoais ficam separadas do produto
-
-Se o dispatch depender de skill pessoal de um usuário (ex: voz de escrita específica), o produto referencia a capacidade genericamente ("se existir skill de voz pessoal no workspace"), nunca nomeando a skill. Skill pessoal não entra no bundle público do Prumo nem como dependência em `plugin.json`, `marketplace.json` ou `skills/`.
-
-### 3. Proativo, não passivo
-
-Abertura sem contexto ainda oferece opções comuns (briefing, projeto novo, captura). Cumprimento + "como posso ajudar?" é regressão de interface.
-
-### 4. Opções refletem a realidade
-
-As opções oferecidas na abertura refletem o que o scan encontrou. Oferecer "continuar o artigo X" quando o REGISTRO não mostra artigo recente é mentira branca.
-
-### 5. Perguntar vale mais que adivinhar
-
-Zero adivinhação silenciosa sobre intenção. Pergunta curta sempre vence palpite silencioso.
-
-## Integração com o core
-
-Este módulo define **como abrir sessão**. A Parte 1 do `prumo-core.md` define **quem é o Prumo**. Juntos, formam o carregamento mínimo da abertura.
-
-Os playbooks operacionais (`briefing-procedure.md`, `inbox-processing.md`, etc.) só são carregados **depois** do dispatch, conforme a intenção que o usuário expressar no Passo 3.

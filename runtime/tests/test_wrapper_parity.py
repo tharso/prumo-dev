@@ -92,8 +92,8 @@ class RuleSourceTest(unittest.TestCase):
     def test_surface_counts_match_contract(self) -> None:
         # #228 C1: 9 regras de consumo de JSON viraram runtime-consumo.md
         # (dono único, carregado no uso); as superfícies ganharam o ponteiro.
-        self.assertEqual(len(rules_for("wrapper")), 12)
-        self.assertEqual(len(rules_for("workspace")), 14)
+        self.assertEqual(len(rules_for("wrapper")), 8)  # #228 fase 2: -4 (invocação → runtime-consumo)
+        self.assertEqual(len(rules_for("workspace")), 10)  # #228 fase 2: -4
 
     def test_minimal_profile_accepted_and_subset_of_full(self) -> None:
         minimal = set(rules_for("wrapper", profile="minimal"))

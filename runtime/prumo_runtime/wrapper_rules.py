@@ -94,31 +94,6 @@ RULES: tuple[WrapperRule, ...] = (
         _ALL_PROFILES,
     ),
     WrapperRule(
-        "nao-simule-comando",
-        "Não leia arquivo para simular `prumo`, `briefing` ou `start`. Primeiro execute o "
-        "comando real.",
-        _BOTH,
-        _ALL_PROFILES,
-    ),
-    WrapperRule(
-        "nao-escreva-state",
-        "Não escreva `{state_path}` fingindo ser o runtime.",
-        _BOTH,
-        _ALL_PROFILES,
-    ),
-    WrapperRule(
-        "sem-comando-por-curiosidade",
-        "Não rode comando extra só porque ficou curioso. Execute o que foi pedido ou o que "
-        "o runtime sugeriu.",
-        _BOTH,
-    ),
-    WrapperRule(
-        "sem-disco-riscado",
-        "Se um comando falhar por uso ou argumento inválido, não repita a mesma linha como "
-        "disco riscado.",
-        _BOTH,
-    ),
-    WrapperRule(
         "falha-parcial-preserva",
         "Em falha parcial, preserve o que ainda presta e explique o tropeço em uma linha "
         "curta, sem vazar stack trace nem jargão técnico.",
