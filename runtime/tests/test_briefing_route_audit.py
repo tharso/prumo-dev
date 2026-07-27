@@ -179,16 +179,24 @@ class SandboxMeasurementTest(unittest.TestCase):
             if ln.lstrip().startswith("#"):
                 break
             opening.append(ln)
-        cited = set()
-        for ln in opening:
-            for path in re.findall(r"`([^`]+\.md)`", ln):
-                cited.add(path[2:] if path.startswith("./") else path)
-        self.assertTrue(cited, "âncora da abertura não rendeu nenhum path — template mudou?")
+        numbered = [ln for ln in opening if re.match(r"\s*\d+\.\s", ln)]
+        self.assertTrue(numbered, "âncora da abertura não rendeu linha numerada — template mudou?")
         basket = {item["file"] for item in self.report["items"]}
-        for path in sorted(cited):
-            if path == "AGENT.md":  # o item 1 é o próprio arquivo, já contado como Prumo/AGENT.md
-                continue
-            with self.subTest(opening_read=path):
+        for ln in numbered:
+            paths = re.findall(r"`([^`]+\.md)`", ln)
+            with self.subTest(line=ln.strip()[:70]):
+                # Codex (#250 r1): linha de abertura da qual não se extrai
+                # EXATAMENTE um path deixaria o guard da classe cego a ela —
+                # item novo tem de vir com o arquivo entre crases.
+                self.assertEqual(
+                    len(paths),
+                    1,
+                    f"linha de abertura sem path extraível único: {ln.strip()!r}",
+                )
+                path = paths[0]
+                path = path[2:] if path.startswith("./") else path
+                if path == "AGENT.md":  # o item 1 é o próprio arquivo, já contado como Prumo/AGENT.md
+                    continue
                 self.assertIn(
                     path,
                     basket,
