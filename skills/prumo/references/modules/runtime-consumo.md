@@ -3,10 +3,11 @@
 > **module_version: 1.0.0**
 >
 > Dono ÚNICO do contrato de consumo (#228 C1 — morava nas "Regras rápidas"
-> da porta e dos wrappers, pesando na abertura de TODA sessão; consumo de
-> JSON só acontece quando um comando do runtime roda). Carregar **ao
-> consumir `prumo start --format json` ou `prumo briefing --workspace .
-> --format json`** — os wrappers e a porta apontam pra cá.
+> da porta e dos wrappers, pesando na abertura de TODA sessão; só é preciso
+> quando um comando do runtime vai rodar). Carregar **antes de invocar
+> `prumo start`/`prumo briefing` — a ESCOLHA do formato (JSON ou não, regras
+> 1–3) é parte do contrato**, não consequência dele. Os wrappers e a porta
+> apontam pra cá.
 
 ## As regras
 

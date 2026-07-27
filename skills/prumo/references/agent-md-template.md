@@ -108,7 +108,7 @@ O workspace pode conter outros projetos com centenas de milhares de arquivos (`n
 4. Se o usuário chamar "Prumo" cru, "ei prumo" ou equivalente curto, consulte a tabela de skills disponíveis e leia o SKILL.md da skill `abrir`. Quando shell e runtime estiverem disponíveis, rodar `prumo` no diretório do workspace é atalho equivalente.
 5. Se `prumo` não estiver no PATH do host, tente o caminho absoluto de instalação do runtime neste sistema antes de concluir que ele sumiu.
 6. Se o pedido for briefing explícito, conduza a curadoria rica (skill `briefing` / `briefing-procedure.md`): email/agenda + panorama numerado único → `decidir`. O cartão do runtime é a prévia, não o briefing — não encerre nele.
-7. Ao consumir o JSON do runtime (`prumo start --format json` ou `prumo briefing --workspace . --format json`), carregue `runtime-consumo.md` (em `references/modules/`) — o contrato completo mora lá (#228).
+7. Antes de invocar `prumo start` ou `prumo briefing --workspace . --format json`, carregue `.prumo/skills/prumo/references/modules/runtime-consumo.md` — escolha de formato e contrato de consumo moram lá (#228).
 8. Não leia arquivo para simular `prumo`, `briefing` ou `start`. Primeiro execute o comando real.
 9. Não escreva `.prumo/state/` fingindo ser o runtime.
 10. Não rode comando extra só porque ficou curioso. Execute o que foi pedido ou o que o runtime sugeriu.

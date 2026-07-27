@@ -28,7 +28,7 @@ INÍCIO DO TEMPLATE:
 2. Se `prumo` não estiver no PATH do host, tente o caminho absoluto de instalação do runtime neste sistema antes de concluir que ele sumiu.
 3. Se o pedido for briefing explícito, conduza a curadoria rica (skill `briefing` / `briefing-procedure.md`): email/agenda + panorama numerado único → `decidir`. O cartão do runtime é a prévia, não o briefing — não encerre nele.
 4. Não reinvente `setup`, `migrate`, `repair` ou `auth`. Deixe o runtime tomar a primeira decisão.
-5. Ao consumir o JSON do runtime (`prumo start --format json` ou `prumo briefing --workspace . --format json`), carregue `runtime-consumo.md` (em `references/modules/`) — o contrato completo mora lá (#228).
+5. Antes de invocar `prumo start` ou `prumo briefing --workspace . --format json`, carregue `.prumo/skills/prumo/references/modules/runtime-consumo.md` — escolha de formato e contrato de consumo moram lá (#228).
 6. Não leia arquivo para simular `prumo`, `briefing` ou `start`. Primeiro execute o comando real.
 7. Não escreva `.prumo/state/` fingindo ser o runtime.
 8. Não rode comando extra só porque ficou curioso. Execute o que foi pedido ou o que o runtime sugeriu.

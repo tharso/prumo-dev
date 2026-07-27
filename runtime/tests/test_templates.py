@@ -34,13 +34,18 @@ class TemplateAdapterTests(unittest.TestCase):
             / "skills" / "prumo" / "references" / "modules" / "runtime-consumo.md"
         ).read_text(encoding="utf-8")
         for anchor in (
-            "adapter_hints",
-            "state_flags",
-            "degradation",
-            "selection_contract",
-            "next_move.id == kickoff".replace(".id == kickoff", ""),
-            "Não fabrique JSON",
-            "prumo briefing --workspace . --format json",
+            # As 9 regras movidas, uma âncora DISTINTIVA por regra (r1 do
+            # Codex no #235) — incluindo os DOIS predicados start-json
+            # (não-unificados por decisão do dono).
+            "painel local estruturado (semente/backcompat)",
+            "Se o host souber trabalhar com JSON",
+            "Se o host conseguir renderizar ações próprias",
+            "leia `adapter_hints` e respeite `kind`, `shell_command` e `host_prompt`",
+            "`adapter_contract_version`, `workspace_resolution` e `adapter_hints` antes de bancar o esperto",
+            "Antes de olhar `message`, leia `state_flags`, `degradation`, `next_move` e `selection_contract`",
+            "Se `degradation.status` vier `error` ou `partial`",
+            "Não fabrique JSON de `prumo start --format json`",
+            "Se `next_move.id == kickoff`, não abra cardápio de aeroporto",
         ):
             self.assertIn(anchor, module)
 
@@ -108,13 +113,18 @@ class TemplateAdapterTests(unittest.TestCase):
             / "skills" / "prumo" / "references" / "modules" / "runtime-consumo.md"
         ).read_text(encoding="utf-8")
         for anchor in (
-            "adapter_hints",
-            "state_flags",
-            "degradation",
-            "selection_contract",
-            "next_move.id == kickoff".replace(".id == kickoff", ""),
-            "Não fabrique JSON",
-            "prumo briefing --workspace . --format json",
+            # As 9 regras movidas, uma âncora DISTINTIVA por regra (r1 do
+            # Codex no #235) — incluindo os DOIS predicados start-json
+            # (não-unificados por decisão do dono).
+            "painel local estruturado (semente/backcompat)",
+            "Se o host souber trabalhar com JSON",
+            "Se o host conseguir renderizar ações próprias",
+            "leia `adapter_hints` e respeite `kind`, `shell_command` e `host_prompt`",
+            "`adapter_contract_version`, `workspace_resolution` e `adapter_hints` antes de bancar o esperto",
+            "Antes de olhar `message`, leia `state_flags`, `degradation`, `next_move` e `selection_contract`",
+            "Se `degradation.status` vier `error` ou `partial`",
+            "Não fabrique JSON de `prumo start --format json`",
+            "Se `next_move.id == kickoff`, não abra cardápio de aeroporto",
         ):
             self.assertIn(anchor, module)
 

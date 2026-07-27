@@ -64,7 +64,7 @@ EXPECTED_MAP = frozenset(
         ("F1", "oferta/execução de update (warning/alert)", f"{_M}/version-update.md", "(integral)", "canônico do update"),
         ("F1", "scripts via shell", f"{_M}/runtime-paths.md", "(integral)", "resolução de scripts"),
         ("F1", "shell com runtime alcançável", f"{_M}/cowork-runtime-bridge.md", "(integral)", "ponte do runtime"),
-        ("F1", "ao consumir JSON do runtime", f"{_M}/runtime-consumo.md", "(integral)", "contrato de consumo"),
+        ("F1", "antes de invocar comando do runtime (escolha de formato inclusa)", f"{_M}/runtime-consumo.md", "(integral)", "contrato de consumo"),
         (
             "F1",
             "família de faxina pendente (execução — a checagem mínima mora no estado)",
