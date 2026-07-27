@@ -51,6 +51,9 @@ EXPECTED_MAP = frozenset(
         ("F0", "sempre", "CLAUDE.md", "(integral)", "wrapper da raiz"),
         ("F0", "sempre", "Prumo/AGENT.md", "(integral)", "porta canônica"),
         ("F0", "sempre", ".prumo/system/PRUMO-CORE.md", "até: # Parte 2 — Playbooks operacionais", "core (Parte 1)"),
+        # #248: dispatch.md é leitura obrigatória de abertura (opening_reads
+        # do AGENT.md) — entrou no cesto na recalibração do termômetro.
+        ("F0", "sempre", ".prumo/skills/prumo/references/modules/dispatch.md", "(integral)", "protocolo de abertura (#248)"),
         ("F1", "sempre", ".prumo/skills/briefing/SKILL.md", "(integral)", "esta skill"),
         ("F1", "sempre", f"{_M}/briefing-procedure.md", "(integral)", "espinha"),
         ("F1", "sempre", ".prumo/system/PRUMO-CORE.md", "## Guardrails", "core (seção)"),

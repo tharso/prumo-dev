@@ -158,6 +158,43 @@ class SandboxMeasurementTest(unittest.TestCase):
             with self.subTest(excluded=excluded):
                 self.assertNotIn(excluded, files)
 
+    def test_dispatch_esta_no_cesto(self) -> None:
+        # #248: o dispatch.md (1.189w) é leitura obrigatória da abertura via
+        # opening_reads do AGENT.md — fora do cesto ele era gasto invisível
+        # ("dieta por esconder o bolo atrás da balança", Codex [P1-8]).
+        files = [item["file"] for item in self.report["items"]]
+        self.assertIn(".prumo/skills/prumo/references/modules/dispatch.md", files)
+
+    def test_toda_leitura_de_abertura_esta_no_manifesto(self) -> None:
+        # #248, fechamento da CLASSE: qualquer arquivo .md que o AGENT.md
+        # gerado mande ler na ABERTURA tem de estar no cesto F0/F1 `sempre` —
+        # um opening_read novo fora do manifesto quebra aqui, não vira gasto
+        # invisível de novo.
+        import re
+        agent = (self.ws / "Prumo" / "AGENT.md").read_text(encoding="utf-8")
+        lines = agent.splitlines()
+        anchor = next(i for i, ln in enumerate(lines) if "você já está lendo" in ln)
+        opening: list[str] = []
+        for ln in lines[anchor:]:
+            if ln.lstrip().startswith("#"):
+                break
+            opening.append(ln)
+        cited = set()
+        for ln in opening:
+            for path in re.findall(r"`([^`]+\.md)`", ln):
+                cited.add(path[2:] if path.startswith("./") else path)
+        self.assertTrue(cited, "âncora da abertura não rendeu nenhum path — template mudou?")
+        basket = {item["file"] for item in self.report["items"]}
+        for path in sorted(cited):
+            if path == "AGENT.md":  # o item 1 é o próprio arquivo, já contado como Prumo/AGENT.md
+                continue
+            with self.subTest(opening_read=path):
+                self.assertIn(
+                    path,
+                    basket,
+                    f"leitura de abertura fora do cesto F0/F1 `sempre`: {path}",
+                )
+
     def test_core_is_staged_not_integral(self) -> None:
         # F0 lê o core ATÉ a Parte 2; a seção Guardrails entra em F1 — o
         # integral (2.4k+) nunca volta ao cesto em silêncio.

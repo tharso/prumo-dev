@@ -1,7 +1,7 @@
 {
-  "_note": "Atualizado em 2026-07-27 (2a rodada): 6401 -> 6493 (+92) por CONTEUDO NOVO aprovado pelo dono nas perguntas didaticas do relatorio de 27/07 — descoberta-sem-raiz no perimetro dos wrappers (B4) e ordem de transporte WebFetch-primeiro no preflight (B3); B1 (formato de corpo) e B2 (politica de cobertura em 3 bracos, incl. respostas a enviados) moram em briefing-canais.md (F2, fora do cesto). A catraca desce por corte e so sobe com aprovacao explicita de contrato novo — este e o caso. Historico: 6788 (M3) -> 6401 (C1-C6) -> 6493 (contratos do relatorio). Alvo 4.999 segue na #228. Demais metricas mantidas.",
+  "_note": "Atualizado em 2026-07-27 (3a rodada): 6493 -> 7696 por RECALIBRACAO DE INSTRUMENTO aprovada pelo dono (#248): dispatch.md (1.189w) e leitura obrigatoria de abertura (opening_reads do AGENT.md) mas estava FORA do manifesto — o gasto ja existia, o termometro nao via ('dieta por esconder o bolo atras da balanca', achado P1-8 do Codex). Nao e contrato novo de conteudo; a regra da catraca ganhou o caso 'recalibracao aprovada' no CLAUDE.md e a classe fechou com teste (toda leitura de abertura tem de estar no cesto). Historico: 6788 (M3) -> 6401 (C1-C6) -> 6493 (contratos 27/07) -> 7696 (recalibracao #248). Alvo 4.999 da #228 segue, agora sobre regua honesta. Demais metricas mantidas.",
   "ruff_violations": 6,
   "coverage_pct": 85,
   "largest_file_lines": 868,
-  "briefing_f0f1_words": 6493
+  "briefing_f0f1_words": 7696
 }

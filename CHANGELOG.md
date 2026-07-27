@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.64.0] - 2026-07-27
+
+### Fixed
+- **Termômetro da rota recalibrado — dispatch.md deixa de ser gasto invisível (#248, decisão do dono)** — o `AGENT.md` gerado manda ler `dispatch.md` (1.189 palavras) na abertura, mas o cesto `briefing_f0f1_words` só somava linhas F0/F1 do manifesto do `briefing/SKILL.md` — e o dispatch não estava lá: palavras obrigatórias antes do primeiro dado custavam zero na planilha ("dieta por esconder o bolo atrás da balança", achado do Codex no design review do épico #240). Agora: linha F0 `sempre` do dispatch no manifesto e baseline **recalculado pelo instrumento oficial: 6.493 → 7.696** — correção de MEDIÇÃO, não contrato novo (o gasto sempre existiu; o alvo 4.999 da #228 segue, sobre régua honesta). A regra da catraca no `CLAUDE.md` ganhou o caso correspondente (sobe por contrato aprovado OU recalibração aprovada, sempre com DECISIONS + teste). A CLASSE do furo fechou com teste: **toda leitura obrigatória de abertura do `AGENT.md` gerado tem de estar no cesto** — um `opening_read` novo fora do manifesto quebra o CI, não vira gasto invisível de novo.
+
 ## [5.63.0] - 2026-07-27
 
 ### Changed
