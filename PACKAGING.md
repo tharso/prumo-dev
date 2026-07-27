@@ -34,9 +34,9 @@ O doctor diagnostica os elos 3–5; o drift plugin↔workspace fecha o circuito 
 
 ## Artefato → superfície → forma → sincronizador
 
-| Artefato | Source | Espelho | Store do host | Wheel `_bundled` | Workspace |
+| Artefato | Source | Espelho | Store do host + conta | Wheel `_bundled` | Workspace |
 |---|---|---|---|---|---|
-| Skills top-level (8) | completo | completo (mirror) | completo (host install) | completo (hatchling) | completo em `.prumo/skills/` (`install_skills`/`repair`) |
+| Skills top-level (8) | completo | completo (mirror) | completo (host install; no Cowork, materializado da conta em `rpm/`) | completo (hatchling) | completo em `.prumo/skills/` (`install_skills`/`repair`) |
 | Módulos (`skills/prumo/references/modules/`) | completo | completo | completo | completo | completo em `.prumo/skills/prumo/references/modules/` |
 | `prumo-core.md` | completo | completo | completo | completo | **stub-ponteiro** em `.prumo/skills/.../references/` (`<!-- prumo-core-stub: v1 -->`, `_stub_vendored_core`, #179) — o core REAL vive em `.prumo/system/PRUMO-CORE.md` |
 | Wrappers da raiz (`CLAUDE.md`/`AGENT.md`/`AGENTS.md`) | templates em `templates.py` (+ `generate_adapter_templates.py` gera os `.md` de referência) | — | — | via código do wheel | gerado por template + merge in-place (blocos autorais preservados); `CLAUDE.md` = perfil minimal, `AGENT.md`/`AGENTS.md` = full (#180) |

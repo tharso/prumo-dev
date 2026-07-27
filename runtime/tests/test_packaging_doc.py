@@ -105,7 +105,7 @@ class PackagingDocTests(unittest.TestCase):
         cells = _artifact_cells(self.text, "prumo-core.md")
         self.assertIn("stub-ponteiro", cells["Workspace"], "stub fora da coluna Workspace")
         self.assertIn(".prumo/system/PRUMO-CORE.md", cells["Workspace"])
-        for surface in ("Source", "Espelho", "Store do host", "Wheel _bundled"):
+        for surface in ("Source", "Espelho", "Store do host + conta", "Wheel _bundled"):
             self.assertIn("completo", cells[surface], f"core não é completo em {surface}")
         import sys
 
@@ -117,6 +117,7 @@ class PackagingDocTests(unittest.TestCase):
     def test_skills_and_wrappers_cells_by_column(self) -> None:
         skills = _artifact_cells(self.text, "Skills top-level")
         self.assertIn(".prumo/skills/", skills["Workspace"])
+        self.assertIn("rpm/", skills["Store do host + conta"], "a materialização da conta sumiu da coluna")
         self.assertIn("install_skills", skills["Workspace"])
         self.assertIn("hatchling", skills["Wheel _bundled"])
         wrappers = _artifact_cells(self.text, "Wrappers da raiz")
