@@ -24,9 +24,15 @@ O agente **NUNCA escreve** esse arquivo — é estado do runtime (#214); consumo
 
 ## Faxina (checagem SEMPRE declarada, #217)
 
-Checar faxina pendente (módulo `faxina.md`): se os sinais da semente (ou a checagem manual, no fallback) passaram dos thresholds, rodar a faxina antes de apresentar — ela age sozinha e o resultado entra no briefing em uma linha.
+**A checagem de faxina declara o resultado SEMPRE (#217 — verificável, não pulável):** a linha obrigatória do primeiro tempo (formato na montagem). O **contrato mínimo da checagem mora AQUI** (sem circularidade: checar não exige abrir o módulo executor); `faxina.md` carrega só quando alguma família está PENDENTE, pra executar. **"Nada pendente" só depois de olhar as CINCO famílias do `faxina.md`** — as cinco checagens baratas:
 
-**A checagem de faxina declara o resultado SEMPRE (#217 — verificável, não pulável):** a linha obrigatória do primeiro tempo (formato na montagem). **"Nada pendente" só depois de olhar as CINCO famílias do `faxina.md`** — os sinais da semente cobrem a rotação do REGISTRO (linhas da tabela) e os processados velhos do Inbox4Mobile; as outras três (**PAUTA→REGISTRO de concluídos, `Referencias/INDICE.md` e rotação do `Diario/`**) exigem a checagem local barata descrita no módulo; atestar limpeza olhando só uma parte é a mesma mentira com crachá novo.
+1. **Rotação do REGISTRO** — linhas da tabela > 50 (a semente já traz o número em `local_panorama.faxina`).
+2. **PAUTA→REGISTRO de concluídos** — item marcado concluído (checkbox/riscado/"Concluído") ainda na pauta.
+3. **`Referencias/INDICE.md`** — arquivo em `Referencias/` fora da tabela do índice (excluindo os operacionais).
+4. **Processados velhos do Inbox4Mobile** — entrada de `_processed.json` com `processed_at` > 14 dias (a semente já traz).
+5. **Rotação do `Diario/`** — arquivo com data no NOME > 90 dias.
+
+Atestar limpeza olhando só uma parte é a mesma mentira com crachá novo. Família pendente → carregar `faxina.md` e executar antes de apresentar (ela age sozinha; o resultado entra no briefing em uma linha).
 
 ## Filtro de cobrança (a regra é a mesma nos dois caminhos)
 

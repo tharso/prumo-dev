@@ -10,11 +10,22 @@
 """
 from __future__ import annotations
 
+import importlib.util
 import re
+import sys
 import unittest
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+
+# Parser ÚNICO do manifesto (review Codex r2 do #180): o guard reusa o
+# parse_manifest do audit — dois parsers do mesmo formato divergiriam.
+_spec = importlib.util.spec_from_file_location(
+    "briefing_route_audit", REPO_ROOT / "scripts" / "briefing_route_audit.py"
+)
+_audit = importlib.util.module_from_spec(_spec)
+sys.modules.setdefault("briefing_route_audit", _audit)
+_spec.loader.exec_module(_audit)
 MODULES = REPO_ROOT / "skills" / "prumo" / "references" / "modules"
 SKILL = REPO_ROOT / "skills" / "briefing" / "SKILL.md"
 ESPINHA = MODULES / "briefing-procedure.md"
@@ -30,54 +41,51 @@ MANIFEST_HEADING = "## Mapa de carregamento por fase"
 # novo (a seção mora em briefing-montagem.md, já em contexto desde F3).
 VALID_PHASES = {"F0", "F1", "F2", "F3", "F4"}
 
-# Vocabulário FECHADO de gatilhos (review Codex r1 do #180): gatilho novo no
-# mapa só entra atualizando este conjunto conscientemente — texto livre
-# viraria carregamento não-auditável.
-VALID_TRIGGERS = frozenset(
-    {
-        "sempre",
-        "oferta/execução de update (warning/alert)",
-        "scripts via shell",
-        "shell com runtime alcançável",
-        "sinais de faxina nos thresholds",
-        "antes da triagem local do Inbox4Mobile OU de abrir email/agenda",
-        "Inbox4Mobile com itens novos",
-        "antes de filtrar email (se existir)",
-        "EMAIL-CURADORIA.md ausente (criação)",
-        "aprofundamento (predicado g / fallback por fonte)",
-        "ao montar o panorama",
-        "6+ itens acionáveis (#218)",
-    }
-)
-
-# União canônica da era #195 por PATH COMPLETO de workspace (review Codex r1
-# do #180: basename deixaria um path errado passar) — TODO arquivo daquela
-# lista segue no mapa (mover ≠ cortar), mais os donos novos da rota fásica.
+# O MAPA ESPERADO, EXATO (review Codex r2 do #180): tuplas
+# (fase, gatilho, arquivo, seção) — igualdade de CONJUNTO com o manifesto.
+# Mudança em qualquer célula só entra atualizando aqui conscientemente;
+# validação campo-a-campo deixava `briefing-canais` virar F3 sem ninguém ver.
 _M = ".prumo/skills/prumo/references/modules"
-CANONICAL_PATHS_IN_MAP = frozenset(
+EXPECTED_MAP = frozenset(
     {
-        "CLAUDE.md",
-        "Prumo/AGENT.md",
-        ".prumo/system/PRUMO-CORE.md",
-        ".prumo/skills/briefing/SKILL.md",
-        f"{_M}/briefing-procedure.md",
-        "Prumo/Agente/PERFIL.md",
-        "Prumo/Agente/ROTINA.md",
-        "Prumo/Agente/PESSOAS.md",
-        f"{_M}/load-policy.md",
-        f"{_M}/version-update.md",
-        f"{_M}/interaction-format.md",
-        f"{_M}/runtime-paths.md",
-        f"{_M}/cowork-runtime-bridge.md",
-        f"{_M}/inbox-processing.md",
-        f"{_M}/briefing-estado.md",
-        f"{_M}/briefing-canais.md",
-        f"{_M}/briefing-montagem.md",
-        f"{_M}/version-preflight.md",
-        f"{_M}/faxina.md",
-        "Prumo/Referencias/EMAIL-CURADORIA.md",
-        ".prumo/skills/prumo/references/file-templates.md",
-        ".prumo/skills/decidir/SKILL.md",
+        ("F0", "sempre", "CLAUDE.md", "(integral)"),
+        ("F0", "sempre", "Prumo/AGENT.md", "(integral)"),
+        ("F0", "sempre", ".prumo/system/PRUMO-CORE.md", "até: # Parte 2 — Playbooks operacionais"),
+        ("F1", "sempre", ".prumo/skills/briefing/SKILL.md", "(integral)"),
+        ("F1", "sempre", f"{_M}/briefing-procedure.md", "(integral)"),
+        ("F1", "sempre", ".prumo/system/PRUMO-CORE.md", "## Guardrails"),
+        ("F1", "sempre", "Prumo/Agente/PERFIL.md", "(integral)"),
+        ("F1", "sempre", "Prumo/Agente/ROTINA.md", "(integral)"),
+        ("F1", "sempre", "Prumo/Agente/PESSOAS.md", "(integral)"),
+        ("F1", "sempre", f"{_M}/briefing-estado.md", "(integral)"),
+        ("F1", "sempre", f"{_M}/version-preflight.md", "(integral)"),
+        ("F1", "oferta/execução de update (warning/alert)", f"{_M}/version-update.md", "(integral)"),
+        ("F1", "scripts via shell", f"{_M}/runtime-paths.md", "(integral)"),
+        ("F1", "shell com runtime alcançável", f"{_M}/cowork-runtime-bridge.md", "(integral)"),
+        (
+            "F1",
+            "família de faxina pendente (execução — a checagem mínima mora no estado)",
+            f"{_M}/faxina.md",
+            "(integral)",
+        ),
+        (
+            "F2",
+            "antes da triagem local do Inbox4Mobile OU de abrir email/agenda",
+            f"{_M}/briefing-canais.md",
+            "(integral)",
+        ),
+        ("F2", "Inbox4Mobile com itens novos", f"{_M}/inbox-processing.md", "(integral)"),
+        ("F2", "antes de filtrar email (se existir)", "Prumo/Referencias/EMAIL-CURADORIA.md", "(integral)"),
+        (
+            "F2",
+            "EMAIL-CURADORIA.md ausente (criação)",
+            ".prumo/skills/prumo/references/file-templates.md",
+            "## Prumo/Referencias/EMAIL-CURADORIA.md",
+        ),
+        ("F2", "aprofundamento (predicado g / fallback por fonte)", f"{_M}/load-policy.md", "(integral)"),
+        ("F3", "ao montar o panorama", f"{_M}/briefing-montagem.md", "(integral)"),
+        ("F3", "ao montar o panorama", f"{_M}/interaction-format.md", "(integral)"),
+        ("F3", "6+ itens acionáveis (#218)", ".prumo/skills/decidir/SKILL.md", "(integral)"),
     }
 )
 
@@ -132,7 +140,12 @@ GUARDRAIL_OWNERS: dict[str, Path] = {
     "Sem runtime aqui, o dia não fica marcado": MONTAGEM,
     "A checagem de faxina declara o resultado SEMPRE (#217": ESTADO,
     "só depois de olhar as CINCO famílias do `faxina.md`": ESTADO,
-    "PAUTA→REGISTRO de concluídos, `Referencias/INDICE.md` e rotação do `Diario/`": ESTADO,
+    # As 5 checagens baratas moram no estado (round 2: sem circularidade —
+    # checar não exige abrir o executor).
+    "**PAUTA→REGISTRO de concluídos**": ESTADO,
+    "**`Referencias/INDICE.md`**": ESTADO,
+    "**Rotação do `Diario/`**": ESTADO,
+    "carregar `faxina.md` e executar": ESTADO,
     "Briefing sem a linha de faxina é briefing **fora de conformidade**": MONTAGEM,
     "GERAR o HTML interativo da skill `decidir` e entregá-lo linkado — automaticamente, sem pedir autorização prévia (#218)": MONTAGEM,
     # #211 (review Codex r1 do #180): DETECÇÃO nos canais (comparação +
@@ -189,38 +202,10 @@ FAXINA_INVARIANTS = (
 
 
 def _parse_map_rows(skill_text: str) -> list[dict]:
-    lines = skill_text.splitlines()
-    start = None
-    for i, line in enumerate(lines):
-        if line.strip() == MANIFEST_HEADING:
-            start = i + 1
-            break
-    assert start is not None, f"heading '{MANIFEST_HEADING}' não encontrado no SKILL"
-    rows: list[dict] = []
-    started = False
-    backtick = re.compile(r"`([^`]+)`")
-    for line in lines[start:]:
-        s = line.strip()
-        if s.startswith("#"):
-            break
-        if not s.startswith("|"):
-            if started:
-                break
-            continue
-        started = True
-        cells = [c.strip() for c in s.strip("|").split("|")]
-        if cells and (set(cells[0]) <= set("-: ") and cells[0] != "" or cells[0].lower() == "fase"):
-            continue
-        assert len(cells) == 5 and all(cells), f"linha de mapa malformada: {s}"
-        m = backtick.search(cells[2])
-        rows.append(
-            {
-                "phase": cells[0],
-                "trigger": cells[1],
-                "file": m.group(1).strip() if m else cells[2],
-                "section": cells[3],
-            }
-        )
+    parsed = _audit.parse_manifest(skill_text)
+    assert parsed is not None, f"heading '{MANIFEST_HEADING}' não encontrado no SKILL"
+    rows, invalid = parsed
+    assert not invalid, f"linhas de mapa malformadas: {invalid}"
     return rows
 
 
@@ -231,27 +216,21 @@ class PhaseMapTests(unittest.TestCase):
         self.skill_text = SKILL.read_text(encoding="utf-8")
         self.rows = _parse_map_rows(self.skill_text)
 
-    def test_map_semantics(self) -> None:
-        seen: set[tuple[str, str]] = set()
-        for row in self.rows:
-            with self.subTest(file=row["file"], section=row["section"]):
-                self.assertIn(row["phase"], VALID_PHASES, f"fase inválida: {row['phase']}")
-                self.assertIn(
-                    row["trigger"],
-                    VALID_TRIGGERS,
-                    f"gatilho fora do vocabulário fechado: {row['trigger']!r}",
-                )
-                key = (row["file"], row["section"])
-                self.assertNotIn(key, seen, f"duplicata no mapa: {key}")
-                seen.add(key)
-
-    def test_map_covers_canonical_union_by_full_path(self) -> None:
-        paths = {row["file"] for row in self.rows}
-        missing = CANONICAL_PATHS_IN_MAP - paths
+    def test_map_is_exactly_the_expected_set(self) -> None:
+        # Igualdade de CONJUNTO fase×gatilho×arquivo×seção (Codex r2): célula
+        # trocada, linha nova ou linha sumida — tudo quebra aqui.
+        actual = {
+            (row["phase"], row["trigger"], row["file"], row["section"]) for row in self.rows
+        }
+        self.assertEqual(len(actual), len(self.rows), "linha duplicada no mapa")
+        missing = EXPECTED_MAP - actual
+        extra = actual - EXPECTED_MAP
         self.assertFalse(
-            missing,
-            f"paths da união canônica sumiram do mapa (mover ≠ cortar): {sorted(missing)}",
+            missing or extra,
+            f"mapa divergiu do esperado — faltando={sorted(missing)} sobrando={sorted(extra)}",
         )
+        for phase, _trigger, _file, _section in actual:
+            self.assertIn(phase, VALID_PHASES)
 
     def test_f4_declared_as_phase_without_new_material(self) -> None:
         # F4 é fase do contrato (#177): fechamento sem carregamento novo —
@@ -349,19 +328,21 @@ class MovedGuardrailsRegistryTests(unittest.TestCase):
             with self.subTest(subject=subject):
                 self.assertEqual(bool(post_filter(subject)), expected)
 
-    def test_version_update_treats_smaller_remote_as_suspect(self) -> None:
-        # #215: o canônico completo segue dono do protocolo de suspeita; o
-        # preflight referencia (âncora própria no registro acima).
-        text = VERSION_UPDATE.read_text(encoding="utf-8")
+    def test_preflight_owns_smaller_remote_protocol(self) -> None:
+        # #215 (round 2 do #180): dono ÚNICO do protocolo é o preflight —
+        # que roda SEMPRE; o canônico do update apenas aponta pra ele.
+        preflight = PREFLIGHT.read_text(encoding="utf-8")
         for anchor in (
-            "resposta SUSPEITA — nunca \"em dia\" (#215)",
-            "cache-busting",
-            "declarar status **desconhecido**",
-            "**Nunca** ler \"remoto menor\" como \"estou em dia\"",
+            "resposta SUSPEITA (#215)",
+            "re-tentar UMA vez com **cache-busting**",
+            "**declarar status desconhecido** em uma linha",
+            "**nunca** ler \"remoto menor\" como \"estou em dia\"",
         ):
             with self.subTest(anchor=anchor):
-                self.assertIn(anchor, text)
-        self.assertIn("resposta SUSPEITA (#215)", PREFLIGHT.read_text(encoding="utf-8"))
+                self.assertIn(anchor, preflight)
+        update = VERSION_UPDATE.read_text(encoding="utf-8")
+        self.assertIn("dono do protocolo é o `version-preflight.md`", update)
+        self.assertIn("**Nunca** ler \"remoto menor\" como \"estou em dia\"", update)
 
     def test_version_cache_producer_cited_in_both_modules(self) -> None:
         for path in (PREFLIGHT, VERSION_UPDATE):

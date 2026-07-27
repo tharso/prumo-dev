@@ -19,7 +19,7 @@ from prumo_runtime.fim import accumulation_signals
 REPO_ROOT = Path(__file__).resolve().parents[2]
 # #180: a rota da oferta atravessa o preflight (gatilho + formato) e o
 # canônico (semântica/anti-nag) — o guard lê os dois concatenados.
-BRIEFING_PROC = REPO_ROOT / "skills" / "prumo" / "references" / "modules" / "version-preflight.md"
+VERSION_PREFLIGHT = REPO_ROOT / "skills" / "prumo" / "references" / "modules" / "version-preflight.md"
 FIM_SKILL = REPO_ROOT / "skills" / "fim" / "SKILL.md"
 VERSION_UPDATE = REPO_ROOT / "skills" / "prumo" / "references" / "modules" / "version-update.md"
 
@@ -89,7 +89,7 @@ class SkillContractGuards(unittest.TestCase):
         return " ".join(path.read_text(encoding="utf-8").lower().split())
 
     def test_briefing_abre_com_oferta_executavel(self) -> None:
-        text = self._flat(BRIEFING_PROC) + " " + self._flat(VERSION_UPDATE)
+        text = self._flat(VERSION_PREFLIGHT) + " " + self._flat(VERSION_UPDATE)
         # A oferta explícita, com ORDEM executável: abre a resposta e o
         # briefing segue na MESMA resposta (não espera → não-bloqueante real).
         self.assertIn("atualizar agora", text)

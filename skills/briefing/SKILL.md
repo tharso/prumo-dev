@@ -34,7 +34,7 @@ A **lista canônica ÚNICA** de carregamento do briefing (#195, emendada pela #1
 | F1 | oferta/execução de update (warning/alert) | `.prumo/skills/prumo/references/modules/version-update.md` | (integral) | canônico do update |
 | F1 | scripts via shell | `.prumo/skills/prumo/references/modules/runtime-paths.md` | (integral) | resolução de scripts |
 | F1 | shell com runtime alcançável | `.prumo/skills/prumo/references/modules/cowork-runtime-bridge.md` | (integral) | ponte do runtime |
-| F1 | sinais de faxina nos thresholds | `.prumo/skills/prumo/references/modules/faxina.md` | (integral) | executor da faxina |
+| F1 | família de faxina pendente (execução — a checagem mínima mora no estado) | `.prumo/skills/prumo/references/modules/faxina.md` | (integral) | executor da faxina |
 | F2 | antes da triagem local do Inbox4Mobile OU de abrir email/agenda | `.prumo/skills/prumo/references/modules/briefing-canais.md` | (integral) | canais + defesas |
 | F2 | Inbox4Mobile com itens novos | `.prumo/skills/prumo/references/modules/inbox-processing.md` | (integral) | triagem do inbox |
 | F2 | antes de filtrar email (se existir) | `Prumo/Referencias/EMAIL-CURADORIA.md` | (integral) | regras aprendidas |
