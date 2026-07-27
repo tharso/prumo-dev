@@ -687,20 +687,31 @@ class ArchiveTransportTests(unittest.TestCase):
         self.assertEqual(staged_version, "5.99.0")
         self.assertIsNotNone(staged_dir)
 
-    def test_newer_than_remote_is_accepted(self) -> None:
-        # A main pode avançar entre o fetch da versão e o download.
+    def test_version_mismatch_any_direction_is_rejected(self) -> None:
+        # Contrato ESTRITO (Codex r2): instala exatamente o que o plano
+        # anunciou — main avançou vira "rode de novo", nunca surpresa.
         with tempfile.TemporaryDirectory() as tmp:
             url = self._make_archive(Path(tmp), version="6.0.0")
-            _, staged_version, error = self._stage(url, "5.99.0")
-        self.assertIsNone(error)
-        self.assertEqual(staged_version, "6.0.0")
-
-    def test_older_than_remote_is_rejected(self) -> None:
+            staged_dir, _, error = self._stage(url, "5.99.0")
+        self.assertIsNone(staged_dir)
+        self.assertIn("rode `prumo update` de novo", error)
         with tempfile.TemporaryDirectory() as tmp:
             url = self._make_archive(Path(tmp), version="5.1.0")
             staged_dir, _, error = self._stage(url, "5.99.0")
         self.assertIsNone(staged_dir)
-        self.assertIn("retrocesso", error)
+        self.assertIn("anunciou 5.99.0", error)
+
+    def test_metadata_bomb_member_count_is_capped(self) -> None:
+        # Codex r2: o teto de membros age DURANTE a iteração (tar.next),
+        # nunca depois de materializar tudo.
+        from prumo_runtime.commands import update as upd
+
+        with tempfile.TemporaryDirectory() as tmp:
+            url = self._make_archive(Path(tmp))
+            with patch.object(upd, "_MAX_MEMBERS", 2):
+                staged_dir, _, error = self._stage(url, "5.99.0")
+        self.assertIsNone(staged_dir)
+        self.assertIn("membros — abortado", error)
 
     def test_wrong_package_name_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

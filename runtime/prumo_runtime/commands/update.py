@@ -421,9 +421,16 @@ def _safe_extract(tar: "tarfile.TarFile", dest: Path) -> None:
     path contido por resolve().relative_to, raiz ÚNICA obrigatória, tetos de
     quantidade e soma descompactada. O data_filter entra DEPOIS, como defesa
     adicional quando existir (3.11.4+)."""
-    members = tar.getmembers()
-    if len(members) > _MAX_MEMBERS:
-        raise ValueError(f"tarball com {len(members)} membros — teto {_MAX_MEMBERS}")
+    # Itera com next() em vez de getmembers() (review Codex r2): um
+    # metadata-bomb materializaria milhões de TarInfo ANTES do teto.
+    members: list[tarfile.TarInfo] = []
+    while True:
+        member = tar.next()
+        if member is None:
+            break
+        members.append(member)
+        if len(members) > _MAX_MEMBERS:
+            raise ValueError(f"tarball passou de {_MAX_MEMBERS} membros — abortado")
     dest_resolved = dest.resolve()
     root_part: str | None = None
     total_unpacked = 0
@@ -524,10 +531,13 @@ def stage_archive_source(remote_version: str, work_dir: Path) -> tuple[str | Non
     staged_version = _staged_version(roots[0])
     if staged_version is None:
         return None, None, "artefato extraído não é um prumo-runtime válido (pyproject/VERSION/árvore)"
-    if _version_tuple(staged_version) < _version_tuple(remote_version):
+    if staged_version != remote_version:
+        # Contrato ESTRITO (review Codex r2): instalar versão diferente da
+        # que o plano/oferta anunciou — mesmo que mais nova — é instalar o
+        # que o usuário não confirmou. Main avançou? Rode o update de novo.
         return None, None, (
-            f"tarball traz {staged_version}, menor que a versão remota esperada "
-            f"({remote_version}) — nunca instalar retrocesso"
+            f"tarball traz {staged_version}, mas o plano anunciou {remote_version} — "
+            "a versão pública avançou entre a checagem e o download; rode `prumo update` de novo."
         )
     return str(roots[0]), staged_version, None
 
