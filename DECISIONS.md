@@ -9,8 +9,8 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 | Tópico                | Entradas                                                                                  |
 |-----------------------|-------------------------------------------------------------------------------------------|
 | `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first), 2026-05-04 (#77), 2026-06-21 (#97 mapas), 2026-06-25 (#114 perfil modular), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#139 guarda-corpos), 2026-07-02 (#140 fichário), 2026-07-02 (#141 diário), 2026-07-03 (#147 ideias), 2026-07-03 (#148 conexões), 2026-07-24 (#194 perímetro de leitura), 2026-07-16 (#177 dívidas estruturais), 2026-07-24 (#201 índice de projetos) |
-| `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-04 (#158 detecção defasagem), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime), 2026-07-05 (#170 transporte de update local), 2026-07-12 (#172 taxonomia do picker), 2026-07-19 (#191 decidir mostra o item), 2026-07-24 (#195 dieta fase 1 — produtor do cache de versão), 2026-07-16 (#177 dívidas estruturais), 2026-07-26 (#190 store unificada + camada de sessão) |
-| `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first), 2026-05-06 (quality-gate), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#141 diário — emenda à #68), 2026-07-25 (baseline ruff 6 / 868), 2026-07-26 (baseline coverage 85), 2026-07-26 (#190 store unificada), 2026-07-26 (#180 rota fásica — emenda à #195), 2026-07-27 (#180 gate da rota, teto 6788) |
+| `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-04 (#158 detecção defasagem), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime), 2026-07-05 (#170 transporte de update local), 2026-07-12 (#172 taxonomia do picker), 2026-07-19 (#191 decidir mostra o item), 2026-07-24 (#195 dieta fase 1 — produtor do cache de versão), 2026-07-16 (#177 dívidas estruturais), 2026-07-26 (#190 store unificada + camada de sessão), 2026-07-27 (#181 PACKAGING.md) |
+| `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first), 2026-05-06 (quality-gate), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#141 diário — emenda à #68), 2026-07-25 (baseline ruff 6 / 868), 2026-07-26 (baseline coverage 85), 2026-07-26 (#190 store unificada), 2026-07-26 (#180 rota fásica — emenda à #195), 2026-07-27 (#180 gate da rota, teto 6788), 2026-07-27 (#181 PACKAGING.md) |
 | `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist), 2026-06-24 (#110 não-bundle), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime), 2026-07-05 (#170 transporte de update local), 2026-07-16 (#177 dívidas estruturais) |
 | `dispatch-bootstrap`  | 2026-04-21 (#69 despacho), 2026-06-23 (#104 briefing rico), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-05 (#160 porta/instalação agnóstica), 2026-07-12 (#172 taxonomia do picker), 2026-07-24 (#194 perímetro de leitura), 2026-07-24 (#201 índice de projetos), 2026-07-25 (#197 semente substitui releitura), 2026-07-25 (#206 outras_secoes + gate por capacidade), 2026-07-25 (#196 briefing em dois tempos), 2026-07-26 (#216 seed em arquivo), 2026-07-26 (#180 rota fásica — emenda à #195) |
 | `multiagent-coord`    | 2026-04-20 (#68 HANDOVER), 2026-07-24 (#194 perímetro de leitura — delegação)             |
@@ -60,6 +60,18 @@ Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões ant
 - `code-quality` — métricas de qualidade do codebase, quality gate, baseline.
 
 ---
+
+## 2026-07-27 — Fecho do épico #177: PACKAGING.md sela o mapa de empacotamento (#181, M4)
+
+**Tópicos:** governance, skills-distribution, code-quality
+
+**Issues relacionadas:** [#181](https://github.com/tharso/prumo-dev/issues/181) (M4); fecha o ciclo do épico [#177](https://github.com/tharso/prumo-dev/issues/177) (M1 #178 merged, M2 #179 fechada, M3 #180 fechada).
+
+**Relações com decisões anteriores:** estende 2026-07-16 (#177 dívidas estruturais — é o fechamento planejado); consolida #159 (espelho), #172 (módulos de intenção), #179 (stub do core), #180 (rota fásica) e #190 (5 camadas) num mapa único testado.
+
+**Contexto:** cada divergência de empacotamento do passado (core em duas cópias, skill fantasma, store morta) nasceu como acidente sem dono. O épico matou as instâncias; faltava matar a CLASSE.
+
+**Decisão:** `PACKAGING.md` na raiz (fora de `skills/` — não vendora, não embarca) com as tabelas artefato→superfície→forma→sincronizador e skill×módulo; regra: divergência nova = entrada no DECISIONS + atualização do doc no mesmo PR; `test_packaging_doc.py` transforma esquecimento em CI vermelho. O item opcional do M4 (encolher o fallback literal do core em `templates.py`) fica ADIADO — muda comportamento de emergência e só entra com OK explícito do dono. Recibo final do critério 6 no PR.
 
 ## 2026-07-27 — Gate da rota do briefing: teto exato no pior perfil (#180 PR11b, opção C do dono)
 
