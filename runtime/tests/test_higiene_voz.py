@@ -35,15 +35,25 @@ class HigieneVozTests(unittest.TestCase):
         self.assertIn("## Voz das propostas", self.text)
         self.assertIn("Prumo/Agente/PERFIL.md", self.text)
         self.assertIn("nunca script pra repetir", self.text)
+        # Todos os presets que o setup oferece (review Codex do PR12).
+        self.assertIn("Direto, Equilibrado, Gentil ou o dele próprio", self.text)
 
     def test_every_example_follows_an_intencao(self) -> None:
-        # O rótulo nunca aparece órfão: cada exemplo ilustra uma Intenção
-        # declarada logo acima (mesma detecção).
+        # O exemplo vem IMEDIATAMENTE após a Intenção (próxima linha não
+        # vazia) — em qualquer outro lugar, o rótulo vira decoração solta
+        # (review Codex do PR12).
         blocks = self.text.split("**Intenção:**")[1:]
         self.assertEqual(len(blocks), 6)
         for i, block in enumerate(blocks, start=1):
             with self.subTest(deteccao=i):
-                self.assertIn(EXAMPLE_LABEL, block.split("###")[0])
+                lines = block.splitlines()
+                # linha 0 = resto da linha da Intenção; a próxima não-vazia
+                # tem que ser o exemplo rotulado.
+                next_line = next((l for l in lines[1:] if l.strip()), "")
+                self.assertTrue(
+                    next_line.startswith(EXAMPLE_LABEL),
+                    f"detecção {i}: exemplo não segue imediatamente a Intenção ({next_line[:60]!r})",
+                )
 
 
 if __name__ == "__main__":

@@ -27,7 +27,7 @@ A faxina age. A higiene conversa.
 ## Voz das propostas
 
 A VOZ das propostas vem de `Prumo/Agente/PERFIL.md` — o tom que o usuário
-configurou (Direto, Equilibrado ou o dele próprio). Cada detecção abaixo
+configurou (Direto, Equilibrado, Gentil ou o dele próprio). Cada detecção abaixo
 declara a **Intenção** (o que comunicar); o exemplo é ilustração numa voz,
 **nunca script pra repetir** — seis sessões com a mesma frase decorada é
 telemarketing, não parceria.
