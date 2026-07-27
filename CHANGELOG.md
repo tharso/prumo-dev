@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.59.0] - 2026-07-27
+
+### Added
+- **`PACKAGING.md` — a próxima divergência de empacotamento será decisão, nunca acidente (#181, M4 do épico #177)** — tabela artefato → superfície (source / espelho público / store do host / wheel `_bundled` / workspace) → forma (completo | stub | gerado em build | gerado por template) → sincronizador (hatchling, mirror workflow, host install, `install_skills`/`repair`, `generate_adapter_templates.py`); skill × módulo por superfície (8 skills top-level; faxina/sanitize/doctor são módulos de intenção, #172; `start` é comando de runtime, skill removida na #134); core vendored declarado como stub-ponteiro. Anti-apodrecimento: `test_packaging_doc.py` valida o doc contra `plugin.json`, a árvore `skills/`, o marker real do stub e os sincronizadores citados — doc que mente quebra o CI. **Recibo final do épico** (critério 6): rota do briefing **15.336 → 6.334** palavras (perfil Claude Code) / **6.788** (pior perfil), medido pelo instrumento oficial nos dois estados; medição extra com PERFIL sintético de ~1.256w confirma a aritmética (7.540 medido).
+
 ## [5.58.0] - 2026-07-27
 
 ### Changed
