@@ -46,11 +46,17 @@ _NEG_NEAR = re.compile(
     r"(?:nunca|não|nao|jamais|deixa\s+de|em\s+vez\s+de|falha)[^,\s]*\s+(?:[^,\s]+\s+){0,2}$",
     re.IGNORECASE,
 )
-# Inciso parentético — PAR de vírgulas cercando expressão curta (", portanto,",
-# ", por exemplo,") — é transparente pra negação ([r8]: "não deve, portanto,
-# deletar…" é prosa técnica negada; vírgula SOLTA continua separando ações).
-# Aplicado só ao prefixo inspecionado, nunca ao texto onde se buscam ofensas.
-_INCISO = re.compile(r",\s*[^,.!?;:]{1,30},")
+# Inciso parentético REAL — par de vírgulas cercando um conectivo da lista
+# FECHADA ([r9]: "qualquer coisa curta entre vírgulas" era largo demais —
+# ", registre a falha," é ação em série, não inciso; e o pareamento guloso
+# apagava ", o agente não deve," em vez de ", portanto,"). Transparente pra
+# negação; aplicado só ao prefixo inspecionado, nunca ao texto das ofensas.
+_INCISO = re.compile(
+    r",\s*(?:portanto|por[ée]m|contudo|entretanto|no\s+entanto|por\s+exemplo|"
+    r"ou\s+seja|isto\s+[ée]|ali[áa]s|claro|enfim|afinal|inclusive|sobretudo|"
+    r"principalmente|em\s+regra|em\s+geral|por\s+sua\s+vez|a\s+rigor)\s*,",
+    re.IGNORECASE,
+)
 
 
 def _sem_incisos(prefix: str) -> str:
@@ -220,6 +226,8 @@ class QuarentenaContractsTest(unittest.TestCase):
             "aplique shutil.rmtree no diretório do inbox",
             # [r7]: negação de outra ação ANTES da vírgula não absolve a condicional.
             "Se não mover, deletar o original do inbox",
+            # [r9]: ação em série entre vírgulas NÃO é inciso — não absolve.
+            "Não mova, registre a falha, rode rm no original do inbox",
         )
         for texto in ofensas:
             with self.subTest(texto=texto):
@@ -237,6 +245,9 @@ class QuarentenaContractsTest(unittest.TestCase):
             "jamais use shutil.rmtree no inbox",
             # [r8]: inciso parentético (par de vírgulas) é transparente.
             "O agente não deve, portanto, deletar o original do inbox.",
+            # [r9]: o pareamento não pode apagar a própria negação — só o
+            # conectivo da lista é inciso.
+            "No inbox, o agente não deve, portanto, deletar o original.",
         )
         for texto in permitidos:
             with self.subTest(texto=texto):
