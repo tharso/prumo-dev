@@ -406,25 +406,51 @@ def _confirm_update(plan: dict, method_info: dict) -> bool:
 
 
 ARCHIVE_URL = "https://github.com/tharso/prumo/archive/refs/heads/main.tar.gz"
+# Tetos do transporte (#232, review Codex): o tarball real do repo tem ~3 MB
+# e ~700 arquivos — os limites são folga de 10x, não calibração fina. Servem
+# pra um espelho comprometido/errado não exaurir disco/memória do usuário.
+_MAX_ARCHIVE_BYTES = 30 * 1024 * 1024
+_MAX_MEMBERS = 8000
+_MAX_UNPACKED_BYTES = 150 * 1024 * 1024
 
 
 def _safe_extract(tar: "tarfile.TarFile", dest: Path) -> None:
-    """Extração com filtro de segurança: nada de path absoluto, `..`, links
-    pra fora — usa o data_filter do stdlib quando existir (3.11.4+), senão
-    valida membro a membro."""
-    data_filter = getattr(tarfile, "data_filter", None)
-    if data_filter is not None:
-        tar.extractall(dest, filter="data")
-        return
-    for member in tar.getmembers():
-        target = dest / member.name
-        if member.name.startswith(("/", "..")) or ".." in Path(member.name).parts:
+    """Extração com preflight PRÓPRIO antes de qualquer extractall (review
+    Codex do #232): só diretórios e arquivos regulares (links, devices e
+    FIFOs rejeitados — o data_filter do stdlib ainda permite link interno),
+    path contido por resolve().relative_to, raiz ÚNICA obrigatória, tetos de
+    quantidade e soma descompactada. O data_filter entra DEPOIS, como defesa
+    adicional quando existir (3.11.4+)."""
+    members = tar.getmembers()
+    if len(members) > _MAX_MEMBERS:
+        raise ValueError(f"tarball com {len(members)} membros — teto {_MAX_MEMBERS}")
+    dest_resolved = dest.resolve()
+    root_part: str | None = None
+    total_unpacked = 0
+    for member in members:
+        if not (member.isdir() or member.isreg()):
+            raise ValueError(f"membro não-regular rejeitado (link/device/fifo): {member.name!r}")
+        parts = Path(member.name).parts
+        if member.name.startswith("/") or ".." in parts or not parts:
             raise ValueError(f"membro suspeito no tarball: {member.name!r}")
-        if not str(target.resolve()).startswith(str(dest.resolve())):
-            raise ValueError(f"membro fora do destino: {member.name!r}")
-        if member.issym() or member.islnk():
-            raise ValueError(f"link no tarball rejeitado: {member.name!r}")
-    tar.extractall(dest)
+        if root_part is None:
+            root_part = parts[0]
+        elif parts[0] != root_part:
+            raise ValueError(
+                f"membro fora da raiz única {root_part!r}: {member.name!r}"
+            )
+        target = dest / member.name
+        try:
+            target.resolve().relative_to(dest_resolved)
+        except ValueError:
+            raise ValueError(f"membro fora do destino: {member.name!r}") from None
+        total_unpacked += max(member.size, 0)
+        if total_unpacked > _MAX_UNPACKED_BYTES:
+            raise ValueError("tarball descompactado passa do teto — abortado")
+    if getattr(tarfile, "data_filter", None) is not None:
+        tar.extractall(dest, members=members, filter="data")
+    else:
+        tar.extractall(dest, members=members)
 
 
 def _staged_version(root: Path) -> str | None:
@@ -469,8 +495,20 @@ def stage_archive_source(remote_version: str, work_dir: Path) -> tuple[str | Non
         assert url.startswith("https://"), "URL do tarball deve ser HTTPS"
     archive_path = work_dir / "prumo-main.tar.gz"
     try:
-        with urllib.request.urlopen(url, timeout=60) as response:
-            archive_path.write_bytes(response.read())
+        with urllib.request.urlopen(url, timeout=60) as response, archive_path.open("wb") as out:
+            # Streaming com teto (review Codex): read() ilimitado deixaria um
+            # espelho errado/comprometido exaurir a memória do usuário.
+            received = 0
+            while True:
+                chunk = response.read(256 * 1024)
+                if not chunk:
+                    break
+                received += len(chunk)
+                if received > _MAX_ARCHIVE_BYTES:
+                    return None, None, (
+                        f"tarball passou do teto de download ({_MAX_ARCHIVE_BYTES} bytes) — abortado"
+                    )
+                out.write(chunk)
     except Exception as exc:  # noqa: BLE001 — erro de transporte vira mensagem
         return None, None, f"download do tarball falhou: {exc.__class__.__name__}"
     extract_dir = work_dir / "extracted"

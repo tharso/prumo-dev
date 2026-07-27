@@ -641,6 +641,8 @@ class ArchiveTransportTests(unittest.TestCase):
         pyproject_version: str | None = None,
         name: str = "prumo-runtime",
         evil_member: bool = False,
+        symlink_member: bool = False,
+        stray_root_member: bool = False,
     ) -> str:
         import tarfile as _tarfile
 
@@ -659,6 +661,15 @@ class ArchiveTransportTests(unittest.TestCase):
                 evil = base / "evil.txt"
                 evil.write_text("x", encoding="utf-8")
                 tar.add(evil, arcname="../evil.txt")
+            if symlink_member:
+                link = _tarfile.TarInfo(name="prumo-main/atalho")
+                link.type = _tarfile.SYMTYPE
+                link.linkname = "VERSION"
+                tar.addfile(link)
+            if stray_root_member:
+                stray = base / "solto.txt"
+                stray.write_text("x", encoding="utf-8")
+                tar.add(stray, arcname="outra-raiz/solto.txt")
         return archive.as_uri()
 
     def _stage(self, url: str, remote: str):
@@ -709,6 +720,44 @@ class ArchiveTransportTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             url = self._make_archive(Path(tmp), evil_member=True)
             staged_dir, _, error = self._stage(url, "5.99.0")
+        self.assertIsNone(staged_dir)
+        self.assertIn("extração do tarball falhou", error)
+
+    def test_symlink_member_is_rejected(self) -> None:
+        # Review Codex r1 (#232): o data_filter do stdlib ainda permite link
+        # INTERNO — nosso preflight rejeita qualquer não-regular.
+        with tempfile.TemporaryDirectory() as tmp:
+            url = self._make_archive(Path(tmp), symlink_member=True)
+            staged_dir, _, error = self._stage(url, "5.99.0")
+        self.assertIsNone(staged_dir)
+        self.assertIn("não-regular", error)
+
+    def test_member_outside_single_root_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            url = self._make_archive(Path(tmp), stray_root_member=True)
+            staged_dir, _, error = self._stage(url, "5.99.0")
+        self.assertIsNone(staged_dir)
+        self.assertIn("raiz única", error)
+
+    def test_oversized_download_is_aborted(self) -> None:
+        from prumo_runtime.commands import update as upd
+
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            url = self._make_archive(base)
+            with patch.object(upd, "_MAX_ARCHIVE_BYTES", 16):
+                staged_dir, _, error = self._stage(url, "5.99.0")
+        self.assertIsNone(staged_dir)
+        self.assertIn("teto de download", error)
+
+    def test_unpacked_total_over_ceiling_is_aborted(self) -> None:
+        from prumo_runtime.commands import update as upd
+
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            url = self._make_archive(base)
+            with patch.object(upd, "_MAX_UNPACKED_BYTES", 1):
+                staged_dir, _, error = self._stage(url, "5.99.0")
         self.assertIsNone(staged_dir)
         self.assertIn("extração do tarball falhou", error)
 
