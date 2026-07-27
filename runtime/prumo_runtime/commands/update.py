@@ -16,6 +16,7 @@ import shlex
 import shutil
 import subprocess
 import sys
+import tarfile
 import tempfile
 import tomllib
 import urllib.error
@@ -221,32 +222,39 @@ def build_update_plan(
                 "plugin do host, não do registry)."
             )
         else:
-            plan["command"] = None
+            # Cache sem a versão nova era beco morto (#232, caso real do
+            # dono): agora cai no transporte universal — tarball do espelho.
+            plan["command"] = "archive"
+            plan["archive_installer"] = "uv"
             plan["explanation"] = (
-                f"O runtime foi instalado de um diretório local (cache do plugin), mas "
-                f"não achei o path local da versão {remote_version}. Atualize o plugin "
-                "no seu host (isso refresca o cache) e rode a instalação/setup de novo; "
-                "ou instale o runtime à mão e rode `prumo repair --workspace <ws>`."
+                f"Atualiza runtime de {current_version} pra {remote_version} baixando o "
+                "tarball do espelho público (o cache do plugin ainda não tem a versão "
+                "nova — o espelho sempre tem)."
             )
         return plan
 
-    # Manual/pip direto do registry (canal PyPI, não main)
-    if package_manager in ("pip-user", "pipx"):
-        plan["command"] = "pip install --upgrade prumo-runtime"
+    # NUNCA registry (#232): prumo-runtime não é publicado no PyPI — o comando
+    # falharia hoje e viraria dependency confusion no dia em que alguém
+    # registrasse o nome. O transporte é o tarball do espelho, preservando o
+    # gerenciador da instalação atual (trocar de gerenciador deixaria o
+    # executável velho na frente do PATH).
+    if package_manager in ("pip-user", "pipx", "uv-tool"):
+        installer = {"pip-user": "pip-user", "pipx": "pipx", "uv-tool": "uv"}[package_manager]
+        plan["command"] = "archive"
+        plan["archive_installer"] = installer
         plan["explanation"] = (
-            f"Atualiza runtime de {current_version} pra {remote_version} via pip (registry)."
-        )
-    elif package_manager == "uv-tool":
-        plan["uv_target"] = "prumo-runtime"
-        plan["command"] = "uv tool install --force prumo-runtime"
-        plan["explanation"] = (
-            f"Atualiza runtime de {current_version} pra {remote_version} via uv (registry)."
+            f"Atualiza runtime de {current_version} pra {remote_version} baixando o "
+            f"tarball do espelho público e reinstalando via {package_manager} "
+            "(prumo-runtime não é publicado em registry — o espelho é a fonte)."
         )
     else:
-        plan["command"] = None
+        # Método desconhecido → install-script: ele resolve uv/Python, grava
+        # o marker e deixa a instalação em estado conhecido.
+        plan["command"] = "install-script"
         plan["explanation"] = (
-            "Método de instalação não detectado. Reinstale manualmente via pip "
-            "(`pip install --upgrade prumo-runtime`) ou via install script."
+            f"Método de instalação não detectado — atualiza de {current_version} pra "
+            f"{remote_version} re-executando o install script (deixa a instalação em "
+            "estado conhecido, com marker)."
         )
 
     return plan
@@ -397,6 +405,95 @@ def _confirm_update(plan: dict, method_info: dict) -> bool:
     return answer in ("y", "yes", "s", "sim")
 
 
+ARCHIVE_URL = "https://github.com/tharso/prumo/archive/refs/heads/main.tar.gz"
+
+
+def _safe_extract(tar: "tarfile.TarFile", dest: Path) -> None:
+    """Extração com filtro de segurança: nada de path absoluto, `..`, links
+    pra fora — usa o data_filter do stdlib quando existir (3.11.4+), senão
+    valida membro a membro."""
+    data_filter = getattr(tarfile, "data_filter", None)
+    if data_filter is not None:
+        tar.extractall(dest, filter="data")
+        return
+    for member in tar.getmembers():
+        target = dest / member.name
+        if member.name.startswith(("/", "..")) or ".." in Path(member.name).parts:
+            raise ValueError(f"membro suspeito no tarball: {member.name!r}")
+        if not str(target.resolve()).startswith(str(dest.resolve())):
+            raise ValueError(f"membro fora do destino: {member.name!r}")
+        if member.issym() or member.islnk():
+            raise ValueError(f"link no tarball rejeitado: {member.name!r}")
+    tar.extractall(dest)
+
+
+def _staged_version(root: Path) -> str | None:
+    """Versão do artefato extraído — só se for prumo-runtime de verdade, com
+    a árvore mínima (pyproject coerente + runtime/ + skills/ + VERSION)."""
+    try:
+        data = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))
+    except (OSError, tomllib.TOMLDecodeError):
+        return None
+    project = data.get("project", {})
+    if project.get("name") != "prumo-runtime":
+        return None
+    version = project.get("version")
+    if not version:
+        return None
+    try:
+        version_file = (root / "VERSION").read_text(encoding="utf-8").strip()
+    except OSError:
+        return None
+    if version_file != version:
+        return None
+    if not (root / "runtime" / "prumo_runtime").is_dir() or not (root / "skills").is_dir():
+        return None
+    return version
+
+
+def stage_archive_source(remote_version: str, work_dir: Path) -> tuple[str | None, str | None, str | None]:
+    """Baixa o tarball do espelho, extrai com filtro e valida o artefato.
+
+    Transporte UNIVERSAL do update (#232): mesma fonte do install-script —
+    nunca o registry (prumo-runtime não é publicado; apontar pro PyPI é
+    convite a dependency confusion). Retorna (staged_dir, staged_version,
+    error): o artefato só é aceito se `pyproject`+`VERSION`+árvore validarem
+    e a versão for >= a remota esperada (a main pode ter avançado entre o
+    fetch e o download — regredir nunca).
+
+    `PRUMO_UPDATE_ARCHIVE_URL` (env) troca a fonte — usado pelos testes com
+    tarball local `file://`; a URL default é HTTPS do espelho.
+    """
+    url = os.environ.get("PRUMO_UPDATE_ARCHIVE_URL", ARCHIVE_URL)
+    if url == ARCHIVE_URL:
+        assert url.startswith("https://"), "URL do tarball deve ser HTTPS"
+    archive_path = work_dir / "prumo-main.tar.gz"
+    try:
+        with urllib.request.urlopen(url, timeout=60) as response:
+            archive_path.write_bytes(response.read())
+    except Exception as exc:  # noqa: BLE001 — erro de transporte vira mensagem
+        return None, None, f"download do tarball falhou: {exc.__class__.__name__}"
+    extract_dir = work_dir / "extracted"
+    extract_dir.mkdir()
+    try:
+        with tarfile.open(archive_path, "r:gz") as tar:
+            _safe_extract(tar, extract_dir)
+    except (tarfile.TarError, ValueError, OSError) as exc:
+        return None, None, f"extração do tarball falhou: {exc}"
+    roots = [d for d in extract_dir.iterdir() if d.is_dir()]
+    if len(roots) != 1:
+        return None, None, f"tarball com {len(roots)} raiz(es) — esperado exatamente 1"
+    staged_version = _staged_version(roots[0])
+    if staged_version is None:
+        return None, None, "artefato extraído não é um prumo-runtime válido (pyproject/VERSION/árvore)"
+    if _version_tuple(staged_version) < _version_tuple(remote_version):
+        return None, None, (
+            f"tarball traz {staged_version}, menor que a versão remota esperada "
+            f"({remote_version}) — nunca instalar retrocesso"
+        )
+    return str(roots[0]), staged_version, None
+
+
 def _download_install_script() -> str:
     """Baixa install script pra temp file. Retorna path. Caller limpa."""
     assert CURL_INSTALL_URL.startswith("https://"), "URL do install script deve ser HTTPS"
@@ -412,28 +509,54 @@ def _download_install_script() -> str:
     return path
 
 
-def _execute_plan(plan: dict, method: str) -> int:
-    """Executa o plano. Retorna exit code."""
-    if method in ("pip-user", "pipx"):
-        return subprocess.run(
-            [sys.executable, "-m", "pip", "install", "--upgrade", "prumo-runtime"],
-        ).returncode
+def _install_from_dir(source_dir: str, installer: str) -> int:
+    """Instala o runtime de um diretório local, preservando o gerenciador da
+    instalação atual (#232 — trocar de gerenciador deixaria o executável
+    velho na frente do PATH)."""
+    if installer == "uv":
+        return subprocess.run(["uv", "tool", "install", "--force", source_dir]).returncode
+    if installer == "pipx":
+        return subprocess.run(["pipx", "install", "--force", source_dir]).returncode
+    return subprocess.run(
+        [sys.executable, "-m", "pip", "install", "--user", "--upgrade", source_dir],
+    ).returncode
+
+
+def _execute_plan(plan: dict, method: str) -> tuple[int, str | None]:
+    """Executa o plano. Retorna (exit code, versão do ARTEFATO instalado
+    quando conhecida) — a validação pós-update compara contra o artefato,
+    nunca contra o que o binário diz de si mesmo (review Codex, #232)."""
+    if method == "archive":
+        remote_version = plan.get("remote_version") or ""
+        with tempfile.TemporaryDirectory(prefix="prumo-update-") as tmp:
+            staged_dir, staged_version, error = stage_archive_source(
+                remote_version, Path(tmp)
+            )
+            if staged_dir is None:
+                print(f"Update abortado: {error}")
+                return 1, None
+            print(f"Instalando {staged_version} do tarball do espelho ({ARCHIVE_URL})")
+            rc = _install_from_dir(staged_dir, plan.get("archive_installer") or "uv")
+            return rc, staged_version
 
     if method == "uv-tool":
-        target = plan.get("uv_target") or "prumo-runtime"
-        return subprocess.run(
-            ["uv", "tool", "install", "--force", target],
-        ).returncode
+        # Instalação de DIRETÓRIO local (cache do plugin) — o alvo mora no
+        # plano; nunca um nome de registry (#232).
+        target = plan.get("uv_target")
+        if not target:
+            print("Update abortado: plano uv sem diretório alvo (registry não existe, #232).")
+            return 1, None
+        return subprocess.run(["uv", "tool", "install", "--force", target]).returncode, plan.get("remote_version")
 
     if method == "install-script":
         script_path = _download_install_script()
         try:
             print(f"Executando install script de: {CURL_INSTALL_URL}")
-            return subprocess.run(["bash", script_path]).returncode
+            return subprocess.run(["bash", script_path]).returncode, plan.get("remote_version")
         finally:
             os.unlink(script_path)
 
-    return 1
+    return 1, None
 
 
 def _get_post_update_version() -> str | None:
@@ -526,29 +649,42 @@ def run_update(args) -> int:
     payload["plan"]["would_execute"] = True
     if plan["command"] == "install-script":
         exec_method = "install-script"
+    elif plan["command"] == "archive":
+        exec_method = "archive"
     elif plan.get("uv_target"):
-        # Instalação via uv (registry OU diretório local) — o alvo mora no plano.
+        # Instalação via uv de diretório local — o alvo mora no plano.
         exec_method = "uv-tool"
     else:
         exec_method = method_info["package_manager"]
-    rc = _execute_plan(plan, exec_method)
+    rc, artifact_version = _execute_plan(plan, exec_method)
     payload["plan"]["executed"] = rc == 0
     payload["plan"]["exit_code"] = rc
 
     # Pós-update
     if rc == 0:
         new_version = _get_post_update_version()
+        # A régua é o ARTEFATO instalado (staged/remota), nunca o que o
+        # binário diz de si mesmo — senão um update que não pegou "valida"
+        # comparando a versão velha com ela própria (review Codex, #232).
+        expected = artifact_version or remote_version
         workspace_detected = (Path.cwd() / ".prumo").is_dir()
         payload["post_update"] = {
             "new_version": new_version,
+            "expected_version": expected,
+            "version_confirmed": bool(expected) and new_version == expected,
             "workspace_detected": workspace_detected,
             "repair_suggested": workspace_detected,
         }
+        if expected and new_version != expected:
+            payload["post_update"]["warning"] = (
+                f"binário reporta {new_version}, artefato instalado era {expected} — "
+                "PATH pode estar servindo um executável antigo; repair não vai rodar."
+            )
         # Propaga o update pro workspace (#146): sem isto, o runtime atualiza
         # mas as skills do workspace ficam velhas e comandos novos "não existem".
-        if workspace_detected:
+        elif workspace_detected:
             payload["post_update"].update(
-                _run_post_update_repair(Path.cwd(), expected_version=new_version)
+                _run_post_update_repair(Path.cwd(), expected_version=expected)
             )
 
     return _emit(payload, output_format, exit_code=rc)

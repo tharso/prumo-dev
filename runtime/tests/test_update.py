@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import tempfile
 import unittest
 from contextlib import redirect_stdout
@@ -165,8 +166,10 @@ class DetectInstallMethodTests(unittest.TestCase):
 class BuildUpdatePlanTests(unittest.TestCase):
     """Geração de plano de update baseado no método detectado."""
 
-    def test_pip_user_manual_returns_pip_install_command(self) -> None:
-        """pip-user com launcher=manual vai pro registry."""
+    def test_pip_user_manual_uses_archive_transport(self) -> None:
+        """#232: pip-user NUNCA vai pro registry (prumo-runtime não é
+        publicado — seria dependency confusion) — tarball do espelho,
+        preservando o gerenciador."""
         plan = build_update_plan(
             package_manager="pip-user",
             current_version="5.3.0",
@@ -175,11 +178,12 @@ class BuildUpdatePlanTests(unittest.TestCase):
             launcher="manual",
         )
         self.assertTrue(plan["needs_update"])
-        self.assertIn("pip", plan["command"])
-        self.assertIn("install", plan["command"])
+        self.assertEqual(plan["command"], "archive")
+        self.assertEqual(plan["archive_installer"], "pip-user")
+        self.assertIn("espelho", plan["explanation"])
 
-    def test_uv_tool_manual_returns_uv_command(self) -> None:
-        """uv-tool com launcher=manual/unknown vai pro registry."""
+    def test_uv_tool_manual_uses_archive_transport(self) -> None:
+        """#232: uv-tool sem diretório local também vai pro tarball."""
         plan = build_update_plan(
             package_manager="uv-tool",
             current_version="5.3.0",
@@ -188,7 +192,8 @@ class BuildUpdatePlanTests(unittest.TestCase):
             launcher="manual",
         )
         self.assertTrue(plan["needs_update"])
-        self.assertIn("uv", plan["command"])
+        self.assertEqual(plan["command"], "archive")
+        self.assertEqual(plan["archive_installer"], "uv")
 
     def test_install_script_launcher_returns_script_rerun(self) -> None:
         plan = build_update_plan(
@@ -235,7 +240,9 @@ class BuildUpdatePlanTests(unittest.TestCase):
         self.assertIsNone(plan["command"])
         self.assertIn("offline", plan["explanation"].lower())
 
-    def test_unknown_method_returns_manual_instruction(self) -> None:
+    def test_unknown_method_reruns_install_script(self) -> None:
+        # #232 (emenda do Codex): unknown → install-script, que resolve
+        # uv/Python e grava o marker — nunca pip improvisado de registry.
         plan = build_update_plan(
             package_manager="unknown",
             current_version="5.3.0",
@@ -243,8 +250,8 @@ class BuildUpdatePlanTests(unittest.TestCase):
             source_kind="unknown",
         )
         self.assertTrue(plan["needs_update"])
-        self.assertIsNone(plan["command"])
-        self.assertIn("manualmente", plan["explanation"].lower())
+        self.assertEqual(plan["command"], "install-script")
+        self.assertIn("estado conhecido", plan["explanation"])
 
     def test_editable_install_blocks_auto_update(self) -> None:
         plan = build_update_plan(
@@ -290,7 +297,7 @@ class ConfirmationTests(unittest.TestCase):
                 return_value="5.99.0",
             ), patch(
                 "prumo_runtime.commands.update._execute_plan",
-                return_value=0,
+                return_value=(0, "5.99.0"),
             ) as mock_exec, patch(
                 "prumo_runtime.commands.update._confirm_update",
                 return_value=True,
@@ -311,7 +318,7 @@ class ConfirmationTests(unittest.TestCase):
                 return_value="5.99.0",
             ), patch(
                 "prumo_runtime.commands.update._execute_plan",
-                return_value=0,
+                return_value=(0, "5.99.0"),
             ), patch(
                 "prumo_runtime.commands.update._confirm_update",
                 return_value=True,
@@ -331,7 +338,7 @@ class ConfirmationTests(unittest.TestCase):
                 return_value="5.99.0",
             ), patch(
                 "prumo_runtime.commands.update._execute_plan",
-                return_value=0,
+                return_value=(0, "5.99.0"),
             ) as mock_exec, patch(
                 "prumo_runtime.commands.update._confirm_update",
                 return_value=False,
@@ -352,7 +359,7 @@ class ConfirmationTests(unittest.TestCase):
                 return_value="5.99.0",
             ), patch(
                 "prumo_runtime.commands.update._execute_plan",
-                return_value=0,
+                return_value=(0, "5.99.0"),
             ) as mock_exec, patch(
                 "prumo_runtime.commands.update.sys.stdin") as mock_stdin:
                 mock_stdin.isatty.return_value = False
@@ -382,7 +389,7 @@ class PostUpdateTests(unittest.TestCase):
                 return_value="5.99.0",
             ), patch(
                 "prumo_runtime.commands.update._execute_plan",
-                return_value=0,
+                return_value=(0, "5.99.0"),
             ), patch(
                 "prumo_runtime.commands.update._confirm_update",
                 return_value=True,
@@ -406,7 +413,7 @@ class PostUpdateTests(unittest.TestCase):
                 return_value="5.99.0",
             ), patch(
                 "prumo_runtime.commands.update._execute_plan",
-                return_value=0,
+                return_value=(0, "5.99.0"),
             ), patch(
                 "prumo_runtime.commands.update._confirm_update",
                 return_value=True,
@@ -434,7 +441,7 @@ class PostUpdateTests(unittest.TestCase):
                 return_value="5.99.0",
             ), patch(
                 "prumo_runtime.commands.update._execute_plan",
-                return_value=0,
+                return_value=(0, "5.99.0"),
             ), patch(
                 "prumo_runtime.commands.update._confirm_update",
                 return_value=True,
@@ -478,17 +485,16 @@ class CurlSecureTests(unittest.TestCase):
         self.assertNotIn("-c", args)
         mock_unlink.assert_called_once()
 
-    def test_execute_plan_pip_uses_sys_executable(self) -> None:
-        from prumo_runtime.commands.update import _execute_plan
-        plan = {
-            "command": "pip install --upgrade prumo-runtime",
-            "explanation": "test",
-        }
+    def test_install_from_dir_pip_uses_sys_executable(self) -> None:
+        # #232: o pip do transporte de tarball usa o MESMO Python (--user),
+        # nunca um pip solto do PATH.
+        from prumo_runtime.commands.update import _install_from_dir
         with patch(
             "prumo_runtime.commands.update.subprocess.run",
             return_value=MagicMock(returncode=0),
         ) as mock_run:
-            rc = _execute_plan(plan, "pip-user")
+            rc = _install_from_dir("/tmp/staged", "pip-user")
+        self.assertEqual(rc, 0)
         args = mock_run.call_args[0][0]
         self.assertIn("-m", args)
         self.assertIn("pip", args)
@@ -621,6 +627,129 @@ class UpdateCommandIntegrationTests(unittest.TestCase):
                 rc, output = self._run_main_capturing(["update", "--dry-run", "--format", "json"])
             payload = json.loads(output)
             self.assertEqual(payload["channel"], "latest em main")
+
+
+class ArchiveTransportTests(unittest.TestCase):
+    """#232: o transporte universal de tarball — staging validado, extração
+    segura e o fim do beco do cache."""
+
+    def _make_archive(
+        self,
+        base: Path,
+        *,
+        version: str = "5.99.0",
+        pyproject_version: str | None = None,
+        name: str = "prumo-runtime",
+        evil_member: bool = False,
+    ) -> str:
+        import tarfile as _tarfile
+
+        root = base / "prumo-main"
+        (root / "runtime" / "prumo_runtime").mkdir(parents=True)
+        (root / "skills").mkdir()
+        (root / "VERSION").write_text(version + "\n", encoding="utf-8")
+        (root / "pyproject.toml").write_text(
+            f'[project]\nname = "{name}"\nversion = "{pyproject_version or version}"\n',
+            encoding="utf-8",
+        )
+        archive = base / "main.tar.gz"
+        with _tarfile.open(archive, "w:gz") as tar:
+            tar.add(root, arcname="prumo-main")
+            if evil_member:
+                evil = base / "evil.txt"
+                evil.write_text("x", encoding="utf-8")
+                tar.add(evil, arcname="../evil.txt")
+        return archive.as_uri()
+
+    def _stage(self, url: str, remote: str):
+        from prumo_runtime.commands.update import stage_archive_source
+
+        with tempfile.TemporaryDirectory() as work:
+            with patch.dict(os.environ, {"PRUMO_UPDATE_ARCHIVE_URL": url}):
+                return stage_archive_source(remote, Path(work))
+
+    def test_happy_path_stages_and_validates(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            url = self._make_archive(Path(tmp))
+            staged_dir, staged_version, error = self._stage(url, "5.99.0")
+        self.assertIsNone(error)
+        self.assertEqual(staged_version, "5.99.0")
+        self.assertIsNotNone(staged_dir)
+
+    def test_newer_than_remote_is_accepted(self) -> None:
+        # A main pode avançar entre o fetch da versão e o download.
+        with tempfile.TemporaryDirectory() as tmp:
+            url = self._make_archive(Path(tmp), version="6.0.0")
+            _, staged_version, error = self._stage(url, "5.99.0")
+        self.assertIsNone(error)
+        self.assertEqual(staged_version, "6.0.0")
+
+    def test_older_than_remote_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            url = self._make_archive(Path(tmp), version="5.1.0")
+            staged_dir, _, error = self._stage(url, "5.99.0")
+        self.assertIsNone(staged_dir)
+        self.assertIn("retrocesso", error)
+
+    def test_wrong_package_name_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            url = self._make_archive(Path(tmp), name="prumo-fake")
+            staged_dir, _, error = self._stage(url, "5.99.0")
+        self.assertIsNone(staged_dir)
+        self.assertIn("não é um prumo-runtime válido", error)
+
+    def test_version_file_mismatch_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            url = self._make_archive(Path(tmp), version="5.99.0", pyproject_version="5.98.0")
+            staged_dir, _, error = self._stage(url, "5.98.0")
+        self.assertIsNone(staged_dir)
+        self.assertIn("não é um prumo-runtime válido", error)
+
+    def test_path_traversal_member_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            url = self._make_archive(Path(tmp), evil_member=True)
+            staged_dir, _, error = self._stage(url, "5.99.0")
+        self.assertIsNone(staged_dir)
+        self.assertIn("extração do tarball falhou", error)
+
+    def test_copy_install_without_cached_version_falls_back_to_archive(self) -> None:
+        # O beco morto do caso real do dono (#232): cache sem a versão nova
+        # agora cai no tarball, nunca em plano sem comando.
+        plan = build_update_plan(
+            package_manager="uv-tool",
+            current_version="5.3.0",
+            remote_version="5.4.0",
+            source_kind="copy",
+            launcher="uv",
+            local_source_dir=None,
+            local_install=True,
+        )
+        self.assertTrue(plan["needs_update"])
+        self.assertEqual(plan["command"], "archive")
+        self.assertEqual(plan["archive_installer"], "uv")
+
+    def test_no_plan_ever_targets_public_registry(self) -> None:
+        # Guard anti-dependency-confusion (#232): NENHUMA combinação de
+        # plano emite comando de registry público.
+        import itertools
+
+        managers = ("pip-user", "pipx", "uv-tool", "unknown")
+        launchers = ("manual", "unknown", "uv", "install-script")
+        for pm, launcher, local in itertools.product(managers, launchers, (False, True)):
+            plan = build_update_plan(
+                package_manager=pm,
+                current_version="5.3.0",
+                remote_version="5.4.0",
+                source_kind="unknown",
+                launcher=launcher,
+                local_source_dir=None,
+                local_install=local,
+            )
+            command = plan.get("command") or ""
+            with self.subTest(pm=pm, launcher=launcher, local=local):
+                self.assertNotIn("--upgrade prumo-runtime", command)
+                self.assertNotIn("install --force prumo-runtime", command)
+                self.assertNotEqual(command.strip(), "pip install prumo-runtime")
 
 
 if __name__ == "__main__":
