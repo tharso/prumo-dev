@@ -61,6 +61,20 @@ Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões ant
 
 ---
 
+## 2026-07-27 — `repair` avisa nominalmente o que sumiu do mapa (#247)
+
+**Tópicos:** workspace-layout, governance
+
+**Issues relacionadas:** [#247](https://github.com/tharso/prumo-dev/issues/247) (P7 do épico #240).
+
+**Relações com decisões anteriores:** **estende** 2026-07-27 (#241) — o aviso conduz ao `MAPA-AUTORAL.md`, o lugar que sobrevive ao repair; **mantém** o contrato do repair (#146): o canonical segue regenerado com backup — o que muda é a **superfície observável** (`repair_workspace()` devolve `canonical_map_dropped` e `autoral_map_path`; o comando imprime o aviso). Nenhuma revogação identificada após consulta ao índice temático.
+
+**Contexto:** "backup que ninguém lê é lixo com data" — caminho adicionado ao `## Mapa do workspace` sumia em silêncio no primeiro repair com drift de versão.
+
+**Decisão:** comparação por **identidade de path** (primeiro caminho entre crases do bullet, normalizado: sem `./`, sem barra final, separador único; marcadores `-`, `*` e `+`), de modo que release que muda só a descrição não dispare alarme. O aviso relata o **observável** ("N caminhos presentes antes, ausentes agora") e **não atribui autoria** que o runtime não conhece. Headings homônimos são **unidos** (ler só o primeiro esconderia justamente a perda); mapa ausente é fail-safe; o destino citado no aviso vem do layout (nested → `Prumo/Agente/MAPA-AUTORAL.md`, flat → `Agente/MAPA-AUTORAL.md`).
+
+**Alternativas consideradas:** diff por linha inteira → rejeitado (mudança de descrição viraria alarme); chamar os caminhos perdidos de "autorais" → rejeitado (o runtime não sabe, e afirmar o que não se sabe é pior que não avisar); manter a lógica dentro do `workspace.py` → rejeitado (o arquivo opera no teto do baseline; virou `canonical_diff.py`).
+
 ## 2026-07-27 — Mapa autoral: o usuário declara pastas que sobrevivem a update/repair e entram no perímetro (#241, 7.696 → 7.795)
 
 **Tópicos:** workspace-layout, dispatch-bootstrap, multiagent-coord, briefing, governance, code-quality
