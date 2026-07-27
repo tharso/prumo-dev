@@ -266,6 +266,8 @@
   .seg-btn.sel[data-tone="risk"]   { color: var(--red);     border-color: var(--red-bd);    background: var(--red-bg); }
   .req-note { font-family: var(--mono); font-size: 10.5px; color: var(--amber); margin-top: 8px; display: none; }
   .req-note.show { display: block; }
+  .pending-note { font-family: var(--mono); font-size: 12px; color: var(--amber); margin: 0 0 10px; display: none; }
+  .pending-note.show { display: block; }
 
   /* ── feedback ── */
   .fb { margin-top: 18px; padding-top: 16px; border-top: 1px dashed var(--line); }
@@ -365,6 +367,7 @@
       <span class="status-msg" id="copyStatus"></span>
       <button class="modal-close" onclick="closeReport()">×</button>
     </div>
+    <div id="pendingNote" class="pending-note"></div>
     <pre id="reportPre"></pre>
     <div class="modal-foot">
       <button id="copyBtn" onclick="copyReport()"></button>
@@ -391,6 +394,8 @@ const CONFIG = {
     suggestion: 'Sugestão',
     options: 'Opções',
     action: 'Ação',
+    pendingOne: 'item com detalhe pendente — o Prumo vai perguntar antes de executar.',
+    pendingMany: 'itens com detalhe pendente — o Prumo vai perguntar antes de executar.',
     requiresNote: 'Esta ação precisa de um detalhe no comentário.',
     requiresNotePrefix: 'Falta no comentário: ',
     commentPlaceholder: 'Comentário (entra no relatório como instrução)',
@@ -649,7 +654,7 @@ function updateReqNote(id) {
   if (!note) return;
   const fb = state[id] || {};
   const act = fb.status ? actionByKey(p, fb.status) : null;
-  const needs = !!(act && act.requires);
+  const needs = !!(act && act.requires && !act.default);  // #246: default satisfaz
   const filled = (fb.comment || '').trim().length > 0;
   if (needs) note.textContent = `⚑ ${L.requiresNotePrefix}${act.requires}`;
   note.classList.toggle('show', needs && !filled);
@@ -685,13 +690,20 @@ function buildReportData() {
     } else {
       const act = fb.status ? actionByKey(p, fb.status) : null;
       const requires = act && act.requires ? act.requires : null;
+      // #246: ação com `default` no card resolve o detalhe sem o usuário
+      // digitar. O JSON carrega o VALOR resolvido (`resolved_detail`) — sessão
+      // nova não adivinha qual era o default; `comment` fica só pro texto
+      // autoral, e comentário digitado sempre vence.
+      const resolved = (!comment && act && act.default) ? String(act.default) : null;
       items.push({
         item_id: String(p.id), type: 'despacho',
         action_key: fb.status || null,
         label: act ? act.label : null,
         effect: act && act.effect ? act.effect : null,
         requires: requires,
-        requires_missing: !!(requires && !comment),
+        default_used: !!resolved,
+        resolved_detail: resolved,
+        requires_missing: !!(requires && !comment && !resolved),
         // O link do item (vídeo/artigo) entra no JSON: extract_transcript/summarize/
         // open_link precisam saber QUAL conteúdo, mesmo numa sessão nova.
         source_url: p.link ? safeUrl(p.link.href) : null,
@@ -758,9 +770,19 @@ function buildReport() {
   return md;
 }
 
+function pendingCount() {
+  // #246: pendência = ação que exige detalhe, sem comentário E sem default.
+  return buildReportData().filter(it => it.requires_missing).length;
+}
+
 function openReport() {
   document.getElementById('reportPre').textContent = buildReport();
   document.getElementById('copyStatus').textContent = '';
+  // #246: pendência visível ANTES do copiar — não vinte minutos depois, no chat.
+  const n = pendingCount();
+  const note = document.getElementById('pendingNote');
+  note.textContent = n ? `⚑ ${n} ${n === 1 ? L.pendingOne : L.pendingMany}` : '';
+  note.classList.toggle('show', n > 0);
   document.getElementById('modalBg').classList.add('open');
 }
 function closeReport() { document.getElementById('modalBg').classList.remove('open'); }
