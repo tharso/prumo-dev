@@ -83,7 +83,7 @@ Isso vale apenas para commits onde o agente *efetivamente redige* — código, m
 
 ### Quality gate e baseline (`scripts/baseline.json`)
 
-O projeto tem um quality gate que congela três métricas: violações de ruff, cobertura de testes e tamanho do maior arquivo. A catraca só anda num sentido — o codebase só pode manter ou melhorar.
+O projeto tem um quality gate que congela as métricas do `scripts/baseline.json` (ruff, cobertura, maior arquivo, rota do briefing). A catraca só anda num sentido — o codebase só pode manter ou melhorar. Exceção única e regrada: `briefing_f0f1_words` mede um CONTRATO (palavras da rota) e pode SUBIR quando o dono aprova contrato novo explicitamente — sempre com entrada no `DECISIONS.md` (decisão de 27/07), nunca só a `_note` do baseline.
 
 **Regras para o agente:**
 

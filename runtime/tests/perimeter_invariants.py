@@ -13,11 +13,6 @@ PERIMETER_INVARIANTS: tuple[str, ...] = (
     # Escopo 1: perímetro automático, sem exploração espontânea.
     "Perímetro automático",
     "Zero exploração espontânea da raiz",
-    # B4 (relatório de 27/07, decisão do dono): a DESCOBERTA vai direto às
-    # pastas do Prumo — a primeira listagem nunca passa pela raiz (nested).
-    "inclusive na descoberta",
-    "as pastas do Prumo são sempre `Prumo/` e `.prumo/`",
-    'nunca liste a raiz pra "descobrir o workspace"',
     # Proibição por efeito, não por comando — qualquer ferramenta.
     "Nenhuma enumeração recursiva ou ilimitada",
     "por qualquer ferramenta",
@@ -40,4 +35,14 @@ PERIMETER_INVARIANTS: tuple[str, ...] = (
     "caminhos permitidos",
     "proibição de enumerar fora deles",
     'Nunca "explore o workspace"',
+)
+
+
+# B4 (relatório de 27/07, decisão do dono): descoberta direta é contrato
+# EXCLUSIVO do layout nested — no flat os arquivos do Prumo moram NA raiz.
+# Nested contém as três; flat as OMITE preservando a base acima.
+NESTED_DISCOVERY_INVARIANTS: tuple[str, ...] = (
+    "inclusive na descoberta",
+    "as pastas do Prumo são sempre `Prumo/` e `.prumo/`",
+    'nunca liste a raiz pra "descobrir o workspace"',
 )

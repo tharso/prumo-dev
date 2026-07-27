@@ -6,9 +6,9 @@ from pathlib import Path
 from prumo_runtime import templates
 
 try:
-    from perimeter_invariants import PERIMETER_INVARIANTS
+    from perimeter_invariants import NESTED_DISCOVERY_INVARIANTS, PERIMETER_INVARIANTS
 except ImportError:  # execução como runtime.tests.test_templates
-    from runtime.tests.perimeter_invariants import PERIMETER_INVARIANTS
+    from runtime.tests.perimeter_invariants import NESTED_DISCOVERY_INVARIANTS, PERIMETER_INVARIANTS
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
@@ -144,6 +144,25 @@ class ReadingPerimeterTests(unittest.TestCase):
     def _assert_perimeter(self, rendered: str, where: str) -> None:
         for invariant in PERIMETER_INVARIANTS:
             self.assertIn(invariant, rendered, f"invariante do perímetro ausente em {where}: {invariant!r}")
+
+    def test_discovery_clause_nested_only(self) -> None:
+        # B4: nested tem as 3 âncoras da descoberta; flat as OMITE (arquivos
+        # moram na raiz) preservando a base do perímetro.
+        nested = templates.render_agent_md(
+            user_name="B", agent_name="P", timezone_name="America/Sao_Paulo",
+            briefing_time="09:00", core_path=".prumo/system/PRUMO-CORE.md",
+            state_path=".prumo/state/", skills_path=".prumo/skills/",
+        )
+        flat = templates.render_agent_md(
+            user_name="B", agent_name="P", timezone_name="America/Sao_Paulo",
+            briefing_time="09:00",
+        )
+        for invariant in NESTED_DISCOVERY_INVARIANTS:
+            with self.subTest(invariant=invariant, layout="nested"):
+                self.assertIn(invariant, nested)
+            with self.subTest(invariant=invariant, layout="flat"):
+                self.assertNotIn(invariant, flat)
+        self._assert_perimeter(flat, "AGENT.md flat (base preservada)")
 
     def test_agent_md_declares_reading_perimeter(self) -> None:
         rendered = templates.render_agent_md(
