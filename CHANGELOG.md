@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.62.0] - 2026-07-27
+
+### Changed
+- **Quatro contratos do relatório de 27/07, decididos pelo dono em perguntas didáticas** — (B1) **formato na leitura de corpo de email**: texto puro primeiro, `FULL_CONTENT` só se não bastar, `htmlBody` de newsletter descartado (um corpo completo custou 24 KB — 7% do briefing — pra duas linhas úteis); (B2) **política de cobertura de email FIXA em três braços** (1ª página de não-lidos + buscas dirigidas por item quente da PAUTA + **respostas ao que o usuário enviou desde o último briefing** — braço novo pedido pelo dono, com o cuidado do alias `from:me` quebrado, #236) e cobertura **declarada em uma linha** — antes cada execução decidia onde parar em silêncio (201 threads, ~30% cobertos); (B3) **"tem shell" ≠ "tem internet"**: em Cowork, WebFetch antes de `curl` e falha de rede escala o transporte em vez de virar "não consegui checar"; (B4) **descoberta sem listar a raiz** (layout nested): as pastas do Prumo são `Prumo/` e `.prumo/` — a primeira listagem não passa mais pelo acervo pessoal do usuário (~160 entradas pagas antes do mapa no caso real); no flat os arquivos moram NA raiz e a cláusula é omitida. Catraca ajustada 6.401 → 6.493 (+92 de contrato novo aprovado — a catraca desce por corte e sobe só com aprovação explícita; registro no baseline).
+
 ## [5.61.0] - 2026-07-27
 
 ### Changed

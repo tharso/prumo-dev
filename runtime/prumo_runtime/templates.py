@@ -93,7 +93,7 @@ def render_root_wrapper(
 
 {render_rules("wrapper", state_path=state_path, profile=profile)}
 {dispatch_section}
-{_render_reading_perimeter(map_reference=f"do mapa do workspace em `{canonical_target}`")}
+{_render_reading_perimeter(map_reference=f"do mapa do workspace em `{canonical_target}`", discovery_paths="`Prumo/` e `.prumo/`" if canonical_target.startswith("Prumo/") else None)}
 
 ## Instrução primária
 
@@ -103,7 +103,7 @@ Agente: **{agent_name}**
 """
 
 
-def _render_reading_perimeter(*, map_reference: str) -> str:
+def _render_reading_perimeter(*, map_reference: str, discovery_paths: str | None = None) -> str:
     """Seção "Perímetro de leitura" (#194).
 
     O workspace do usuário convive com repos de código (node_modules, .git)
@@ -113,11 +113,20 @@ def _render_reading_perimeter(*, map_reference: str) -> str:
     precisa manter paridade de invariantes com
     `skills/prumo/references/agent-md-template.md` (test_templates.py).
     """
+    # Descoberta direta (relatório de 27/07, B4): só no layout NESTED — no
+    # flat os arquivos do Prumo moram NA raiz e "nunca listar a raiz" não se
+    # aplica; o resto do perímetro vale igual.
+    discovery_clause = (
+        f" — **inclusive na descoberta**: as pastas do Prumo são sempre {discovery_paths}; "
+        'vá direto a elas, nunca liste a raiz pra "descobrir o workspace"'
+        if discovery_paths
+        else ""
+    )
     return f"""## Perímetro de leitura
 
 O workspace pode conter outros projetos com centenas de milhares de arquivos (`node_modules`, `.git`, caches, builds) que **não** são do Prumo.
 
-1. **Perímetro automático:** por iniciativa própria, opere apenas nos caminhos {map_reference}. Zero exploração espontânea da raiz.
+1. **Perímetro automático:** por iniciativa própria, opere apenas nos caminhos {map_reference}. Zero exploração espontânea da raiz{discovery_clause}.
 2. **Nenhuma enumeração recursiva ou ilimitada** da raiz ou de pastas fora do mapa, por qualquer ferramenta (`find`, `ls -R`, `rg --files`, `tree`, glob `**/*`, APIs de filesystem). `node_modules`, `.git`, caches e builds ficam fora de qualquer listagem, em qualquer escopo — e os backups do próprio Prumo também: `.prumo/backups/` e `.prumo/backup/` são snapshots, nunca conteúdo de trabalho (#213); listagem de `.prumo/` é rasa por default.
 3. **Escopo autorizado pela tarefa:** quando o usuário citar projeto ou caminho fora do mapa, expandir de forma dirigida e rasa — listar o top-level do caminho citado e aprofundar só no rastro do alvo. Ambiguidade → perguntar o caminho, não explorar.
 4. **Delegação leva o perímetro junto:** o prompt de qualquer subagente inclui os caminhos permitidos e a proibição de enumerar fora deles. Nunca "explore o workspace"."""
@@ -270,7 +279,7 @@ Fora disso, abertura não abre mais nada. A saudação vem proativa, com 2-4 op�
 
 {workspace_map}
 
-{_render_reading_perimeter(map_reference="do mapa acima")}
+{_render_reading_perimeter(map_reference="do mapa acima", discovery_paths="`Prumo/` e `.prumo/`" if core_path.startswith(".prumo/") else None)}
 
 ## Regras rápidas
 

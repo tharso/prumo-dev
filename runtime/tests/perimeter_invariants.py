@@ -36,3 +36,13 @@ PERIMETER_INVARIANTS: tuple[str, ...] = (
     "proibição de enumerar fora deles",
     'Nunca "explore o workspace"',
 )
+
+
+# B4 (relatório de 27/07, decisão do dono): descoberta direta é contrato
+# EXCLUSIVO do layout nested — no flat os arquivos do Prumo moram NA raiz.
+# Nested contém as três; flat as OMITE preservando a base acima.
+NESTED_DISCOVERY_INVARIANTS: tuple[str, ...] = (
+    "inclusive na descoberta",
+    "as pastas do Prumo são sempre `Prumo/` e `.prumo/`",
+    'nunca liste a raiz pra "descobrir o workspace"',
+)

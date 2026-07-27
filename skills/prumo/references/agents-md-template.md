@@ -40,7 +40,7 @@ INÍCIO DO TEMPLATE:
 
 O workspace pode conter outros projetos com centenas de milhares de arquivos (`node_modules`, `.git`, caches, builds) que **não** são do Prumo.
 
-1. **Perímetro automático:** por iniciativa própria, opere apenas nos caminhos do mapa do workspace em `Prumo/AGENT.md`. Zero exploração espontânea da raiz.
+1. **Perímetro automático:** por iniciativa própria, opere apenas nos caminhos do mapa do workspace em `Prumo/AGENT.md`. Zero exploração espontânea da raiz — **inclusive na descoberta**: as pastas do Prumo são sempre `Prumo/` e `.prumo/`; vá direto a elas, nunca liste a raiz pra "descobrir o workspace".
 2. **Nenhuma enumeração recursiva ou ilimitada** da raiz ou de pastas fora do mapa, por qualquer ferramenta (`find`, `ls -R`, `rg --files`, `tree`, glob `**/*`, APIs de filesystem). `node_modules`, `.git`, caches e builds ficam fora de qualquer listagem, em qualquer escopo — e os backups do próprio Prumo também: `.prumo/backups/` e `.prumo/backup/` são snapshots, nunca conteúdo de trabalho (#213); listagem de `.prumo/` é rasa por default.
 3. **Escopo autorizado pela tarefa:** quando o usuário citar projeto ou caminho fora do mapa, expandir de forma dirigida e rasa — listar o top-level do caminho citado e aprofundar só no rastro do alvo. Ambiguidade → perguntar o caminho, não explorar.
 4. **Delegação leva o perímetro junto:** o prompt de qualquer subagente inclui os caminhos permitidos e a proibição de enumerar fora deles. Nunca "explore o workspace".

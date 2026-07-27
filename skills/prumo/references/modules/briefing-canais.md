@@ -78,6 +78,14 @@ is:unread after:{ontem}
 ```
 A inbox agrega 4 contas (tharso@gmail.com, tharso@brise.cloud, tharso@brise.science, tharso@tharso.com). Uma query cobre todas. Emails em CC/BCC são válidos quando vêm de pessoas reais.
 
+**Política de cobertura (FIXA — decisão do dono em 27/07; antes cada execução decidia em silêncio):** três braços, sempre os três:
+
+1. **Primeira página** de `is:unread` (a varredura cega dos mais recentes);
+2. **Buscas dirigidas** por item quente da PAUTA (uma query curta por tema — é o braço que pega o que a paginação cega perderia);
+3. **Respostas ao que o usuário enviou** desde o último briefing. Como (executável): buscar as threads com participação dele — `in:sent` validado ou `from:<conta>` pra cada conta monitorada registrada em `EMAIL-CURADORIA.md`, janela ampla (a participação pode ser antiga) —, coletar os `thread_id`s, e **nas threads** selecionar as mensagens EXTERNAS recebidas desde o último briefing (inclusive resposta nova a envio antigo; buscar só o que ele enviou acha as PERGUNTAS dele, não as respostas dos outros). Atenção: o alias `from:me` pode NÃO resolver no conector (#236) — nunca confiar em alias sem um teste positivo.
+
+Paginar além da primeira página NÃO é default. **Declarar a cobertura em uma linha** no segundo tempo (*"emails: 1ª página de N não lidos + X buscas dirigidas + respostas às suas threads"*) — cobertura silenciosa foi o que o relatório de 27/07 flagrou.
+
 **Filtragem em dois estágios:**
 
 *Estágio 1 — Sinal de automatização (metadata, sem ler corpo):*
@@ -95,6 +103,8 @@ Ler o corpo via `gmail_read_message` quando:
 - (e) o **snippet é inconclusivo** para classificar — o fail-open que preserva P1/P2: na dúvida, lê;
 - (f) regra **sempre-relevante** aprendida em `EMAIL-CURADORIA.md`;
 - (g) qualquer gatilho da **heurística de aprofundamento** do `load-policy.md` (risco legal/financeiro/documental, vencimento ≤72h, ambiguidade que impeça ação segura) — carregar `load-policy.md` aqui, no primeiro uso, se ainda não estiver no contexto.
+
+**FORMATO da leitura de corpo (relatório de 27/07, achado 5.1):** pedir primeiro o formato **mínimo/texto puro** (`plaintextBody`); escalar pra `FULL_CONTENT` **só** se o texto puro não bastar pra classificar ou extrair o fato; `htmlBody` de newsletter é descartado sem ler (um único corpo completo custou 24 KB — 7% do briefing — pra dizer duas linhas úteis). O gatilho decide SE lê; o formato decide QUANTO paga.
 
 Fica **sem corpo lido** apenas o que nenhum predicado alcança — automatizados e informativos claros, classificáveis por metadata (P3). A Camada 3 (roteamento de conteúdo) pode ler pra rotear.
 
