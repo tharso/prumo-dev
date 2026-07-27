@@ -41,10 +41,13 @@ class VersionWarnManualGuards(unittest.TestCase):
         self.assertRegex(text, r"[Nn]unca[^\n]*sem drift")
 
     def test_briefing_entrypoints_mention_remote_comparison(self):
-        proc = _read("skills/prumo/references/modules/briefing-procedure.md")
+        # #180: o dono do preflight (transporte + comparação + URL pública) é
+        # o mini-módulo; o SKILL aponta o gatilho graduado sem duplicar.
+        proc = _read("skills/prumo/references/modules/version-preflight.md")
         self.assertIn("comparação remota", proc)
+        self.assertIn(RAW_VERSION_URL, proc)
         skill = _read("skills/briefing/SKILL.md")
-        self.assertIn(RAW_VERSION_URL, skill)
+        self.assertIn("nunca \"em dia\" sem comparar", skill)
 
     def test_version_update_guides_runtime_for_stale_skills(self):
         """#108: skills congeladas exigem o runtime. A orientação tem que dar o

@@ -21,7 +21,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CORE = REPO_ROOT / "skills" / "prumo" / "references" / "prumo-core.md"
 BRIEFING = (
-    REPO_ROOT / "skills" / "prumo" / "references" / "modules" / "briefing-procedure.md"
+    REPO_ROOT / "skills" / "prumo" / "references" / "modules" / "briefing-canais.md"
 )
 ALLOWLIST = (
     REPO_ROOT / "skills" / "decidir" / "references" / "acoes-allowlist.md"

@@ -124,12 +124,15 @@ class SandboxMeasurementTest(unittest.TestCase):
     def tearDownClass(cls) -> None:
         cls._tmp.cleanup()
 
-    def test_legacy_mode_on_current_skill(self) -> None:
-        self.assertEqual(self.report["mode"], "legacy")
+    def test_manifest_mode_on_current_skill(self) -> None:
+        # #180: o SKILL instalado declara o mapa fásico — o audit flipa
+        # sozinho pro modo manifest.
+        self.assertEqual(self.report["mode"], "manifest")
 
-    def test_route_has_all_legacy_items(self) -> None:
-        # A rota legacy é a Pré-carga canônica da #195 no pior caso realista
-        # (Cowork + shell + inbox) — round 1 do Codex na série.
+    def test_basket_has_f0_f1_always_items(self) -> None:
+        # O cesto do modo manifest = linhas F0/F1 com gatilho `sempre` do
+        # mapa (#180). Módulos condicionais (canais, montagem, update...)
+        # ficam FORA do cesto por design.
         files = [item["file"] for item in self.report["items"]]
         modules = ".prumo/skills/prumo/references/modules"
         for expected in (
@@ -141,15 +144,46 @@ class SandboxMeasurementTest(unittest.TestCase):
             "Prumo/Agente/PERFIL.md",
             "Prumo/Agente/ROTINA.md",
             "Prumo/Agente/PESSOAS.md",
-            f"{modules}/load-policy.md",
-            f"{modules}/version-update.md",
-            f"{modules}/interaction-format.md",
-            f"{modules}/runtime-paths.md",
-            f"{modules}/cowork-runtime-bridge.md",
-            f"{modules}/inbox-processing.md",
+            f"{modules}/briefing-estado.md",
+            f"{modules}/version-preflight.md",
         ):
             with self.subTest(file=expected):
                 self.assertIn(expected, files)
+        for excluded in (
+            f"{modules}/briefing-canais.md",
+            f"{modules}/briefing-montagem.md",
+            f"{modules}/version-update.md",
+            f"{modules}/load-policy.md",
+        ):
+            with self.subTest(excluded=excluded):
+                self.assertNotIn(excluded, files)
+
+    def test_core_is_staged_not_integral(self) -> None:
+        # F0 lê o core ATÉ a Parte 2; a seção Guardrails entra em F1 — o
+        # integral (2.4k+) nunca volta ao cesto em silêncio.
+        core_items = [i for i in self.report["items"] if i["file"].endswith("PRUMO-CORE.md")]
+        sections = {i["section"] for i in core_items}
+        self.assertEqual(len(core_items), 2)
+        self.assertTrue(any(s.startswith("até:") for s in sections), sections)
+        self.assertNotIn("(integral)", sections)
+
+    def test_legacy_mode_still_works_without_manifest(self) -> None:
+        # Compat: SKILL sem o heading do mapa → modo legacy com a rota fixa.
+        skill_path = self.ws / ".prumo" / "skills" / "briefing" / "SKILL.md"
+        original = skill_path.read_text(encoding="utf-8")
+        try:
+            skill_path.write_text(
+                original.replace(audit.MANIFEST_HEADING, "## Mapa desligado"),
+                encoding="utf-8",
+            )
+            report = audit.measure(self.ws)
+            self.assertEqual(report["mode"], "legacy")
+            files = [item["file"] for item in report["items"]]
+            self.assertIn(
+                ".prumo/skills/prumo/references/modules/briefing-procedure.md", files
+            )
+        finally:
+            skill_path.write_text(original, encoding="utf-8")
 
     def test_sandbox_route_has_no_errors(self) -> None:
         self.assertEqual(self.report["errors"], [])

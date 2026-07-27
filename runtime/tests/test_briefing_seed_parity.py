@@ -232,58 +232,62 @@ class SeedParityTest(unittest.TestCase):
 
 
 class SeedFirstTextGuard(unittest.TestCase):
-    """Registro CONGELADO das menções a `PAUTA.md` no briefing-procedure.
+    """Registro CONGELADO das menções a `PAUTA.md` na rota do briefing.
 
-    A #197 fechou a porta da releitura integral; este guard fecha a janela:
-    linha nova mencionando `PAUTA.md` no procedure só entra atualizando o
-    registro CONSCIENTEMENTE — e toda menção precisa estar qualificada
-    (semente-primeiro, fallback por fonte, edição ou apresentação), nunca
-    como ordem incondicional de leitura.
+    A #197 fechou a porta da releitura integral; a #180 fatiou a rota — o
+    guard agora cobre os QUATRO arquivos de fase. Linha nova mencionando
+    `PAUTA.md` só entra atualizando o registro CONSCIENTEMENTE — e toda
+    menção precisa estar qualificada (semente-primeiro, fallback por fonte,
+    edição ou apresentação), nunca como ordem incondicional de leitura.
     """
 
-    ALLOWED_ANCHORS = (
-        "não reler `PAUTA.md`/`INBOX.md` integrais pra exibir",  # Passo 3, a regra
-        "**Edição** — atualizar `PAUTA.md`/`REGISTRO.md` no fechamento",  # caso 1
-        "pauta incompleta → ler `PAUTA.md`",  # caso 2, fallback por fonte
-        "fallback integral — ler `PAUTA.md` e `INBOX.md` como sempre",  # sem runtime
-        "arquivo `PAUTA.md` só no fallback do Passo 3",  # DAG do Passo 4
-        "`Prumo/PAUTA.md` direto só no fallback do Passo 3",  # classificação
-        "Pendências vivas de `PAUTA.md`",  # Passo 5, apresentação
-        "no fallback, `PAUTA.md` integral",  # ponte associativa
-        "Atualizar `PAUTA.md` se algo mudou",  # Passo 6, edição
-        "Se `PAUTA.md` estiver vazia",  # Passo 7, brain dump
-    )
+    _MODULES = Path(__file__).resolve().parents[2] / "skills/prumo/references/modules"
+    ALLOWED_BY_FILE = {
+        "briefing-procedure.md": (
+            "Leitura direta** (`PAUTA.md` + `INBOX.md`) quando não há semente válida",
+        ),
+        "briefing-estado.md": (
+            "não reler `PAUTA.md`/`INBOX.md` integrais pra exibir",  # a regra
+            "escrever `PAUTA.md`/`REGISTRO.md` no fechamento sempre relê antes",  # edição
+            "pauta incompleta → `PAUTA.md`",  # fallback por fonte
+            "fallback integral — ler `PAUTA.md` e `INBOX.md` como sempre",  # sem semente
+        ),
+        "briefing-canais.md": (
+            "arquivo `PAUTA.md` só no fallback do estado",  # DAG
+            "`Prumo/PAUTA.md` direto só no fallback do estado",  # classificação
+        ),
+        "briefing-montagem.md": (
+            "no fallback, `PAUTA.md` integral",  # ponte associativa
+            "Atualizar `PAUTA.md` se algo mudou",  # fechamento, edição
+            "Se `PAUTA.md` estiver vazia",  # brain dump
+        ),
+    }
 
     def test_every_pauta_mention_is_registered(self) -> None:
-        procedure = (
-            Path(__file__).resolve().parents[2]
-            / "skills/prumo/references/modules/briefing-procedure.md"
-        ).read_text(encoding="utf-8")
         offenders = []
-        for number, line in enumerate(procedure.splitlines(), start=1):
-            if "PAUTA.md" not in line:
-                continue
-            if not any(anchor in line for anchor in self.ALLOWED_ANCHORS):
-                offenders.append(f"linha {number}: {line.strip()[:120]}")
+        for name, anchors in self.ALLOWED_BY_FILE.items():
+            text = (self._MODULES / name).read_text(encoding="utf-8")
+            for number, line in enumerate(text.splitlines(), start=1):
+                if "PAUTA.md" not in line:
+                    continue
+                if not any(anchor in line for anchor in anchors):
+                    offenders.append(f"{name}:{number}: {line.strip()[:120]}")
         self.assertEqual(
             offenders,
             [],
-            "menção nova a PAUTA.md no procedure sem registro no guard — "
+            "menção nova a PAUTA.md na rota sem registro no guard — "
             "a releitura integral só entra qualificada (semente/fallback/edição); "
-            f"atualize ALLOWED_ANCHORS conscientemente: {offenders}",
+            f"atualize ALLOWED_BY_FILE conscientemente: {offenders}",
         )
 
     def test_seed_first_rule_is_present(self) -> None:
-        procedure = (
-            Path(__file__).resolve().parents[2]
-            / "skills/prumo/references/modules/briefing-procedure.md"
-        ).read_text(encoding="utf-8")
-        self.assertIn("semente-primeiro, #197", procedure)
-        self.assertIn("prumo_local_panorama.v1", procedure)
-        self.assertIn("dois casos apenas", procedure)
+        estado = (self._MODULES / "briefing-estado.md").read_text(encoding="utf-8")
+        self.assertIn("semente-primeiro, #197", estado)
+        self.assertIn("prumo_local_panorama.v1", estado)
+        self.assertIn("dois casos apenas", estado)
         self.assertIn(
             "`pauta.outras_secoes` presente como lista",
-            procedure,
+            estado,
             "gate por capacidade (#206): schema + campo, nunca só presença de binário",
         )
 

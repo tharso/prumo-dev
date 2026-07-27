@@ -193,16 +193,19 @@ class SetupGeneratesDispatchTests(unittest.TestCase):
     """Setup deve gerar CLAUDE.md com dispatch block (skills instaladas antes)."""
 
     def test_claude_md_contains_dispatch_after_setup(self) -> None:
+        # #180: CLAUDE.md é minimal (host com registry — sem bloco dinâmico);
+        # o dispatch vive nos wrappers dos hosts SEM registry (AGENTS/AGENT).
         with tempfile.TemporaryDirectory() as tmpdir:
             workspace = _make_test_workspace(Path(tmpdir))
             claude_md = workspace / "CLAUDE.md"
             self.assertTrue(claude_md.exists())
             content = claude_md.read_text(encoding="utf-8")
-            # Deve ter o dispatch de skills
-            self.assertIn(".prumo/skills/abrir/SKILL.md", content)
-            self.assertIn(".prumo/skills/briefing/SKILL.md", content)
-            # NÃO deve dizer "ative a skill"
+            self.assertNotIn(".prumo/skills/abrir/SKILL.md", content)
             self.assertNotIn("ative a skill", content.lower())
+            agents_md = (workspace / "AGENTS.md").read_text(encoding="utf-8")
+            self.assertIn(".prumo/skills/abrir/SKILL.md", agents_md)
+            self.assertIn(".prumo/skills/briefing/SKILL.md", agents_md)
+            self.assertNotIn("ative a skill", agents_md.lower())
 
 
 class RepairUpdatesDispatchTests(unittest.TestCase):
@@ -221,17 +224,19 @@ class RepairUpdatesDispatchTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmpdir:
             workspace = _make_test_workspace(Path(tmpdir))
-            claude_md = workspace / "CLAUDE.md"
+            # #180: o dispatch dinâmico vive nos wrappers dos hosts sem
+            # registry — o cenário roda no AGENTS.md.
+            agents_md = workspace / "AGENTS.md"
 
             shutil.rmtree(workspace / ".prumo" / "skills" / "fim")
-            content = claude_md.read_text(encoding="utf-8")
+            content = agents_md.read_text(encoding="utf-8")
             content = re.sub(r"(?m)^\| fim \|.*\n", "", content)
-            claude_md.write_text(content, encoding="utf-8")
-            self.assertNotIn(".prumo/skills/fim/SKILL.md", claude_md.read_text(encoding="utf-8"))
+            agents_md.write_text(content, encoding="utf-8")
+            self.assertNotIn(".prumo/skills/fim/SKILL.md", agents_md.read_text(encoding="utf-8"))
 
             repair_workspace(workspace)
 
-            content_after = claude_md.read_text(encoding="utf-8")
+            content_after = agents_md.read_text(encoding="utf-8")
             self.assertIn(".prumo/skills/fim/SKILL.md", content_after)
             self.assertTrue((workspace / ".prumo" / "skills" / "fim" / "SKILL.md").exists())
 
@@ -283,8 +288,13 @@ class RepairPreIssue90WrapperTests(unittest.TestCase):
             content = claude_md.read_text(encoding="utf-8")
             # NÃO deve ter "ative a skill" (instrução antiga)
             self.assertNotIn("ative a skill", content.lower())
-            # Deve ter dispatch dinâmico
-            self.assertIn(".prumo/skills/abrir/SKILL.md", content)
+            # #180: CLAUDE.md minimal — sem bloco dinâmico; o dispatch segue
+            # vivo no wrapper dos hosts sem registry.
+            self.assertNotIn(".prumo/skills/abrir/SKILL.md", content)
+            self.assertIn(
+                ".prumo/skills/abrir/SKILL.md",
+                (workspace / "AGENTS.md").read_text(encoding="utf-8"),
+            )
             # NÃO deve ter header duplicado
             self.assertEqual(content.count("# Prumo Adapter"), 1)
 

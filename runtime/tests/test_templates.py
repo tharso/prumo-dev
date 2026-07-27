@@ -35,6 +35,7 @@ class TemplateAdapterTests(unittest.TestCase):
         self.assertIn("Execute primeiro e fale depois", rendered)
 
     def test_nested_wrapper_points_to_real_core_and_state_paths(self) -> None:
+        # Perfil FULL: contrato completo segue derivando os paths reais.
         rendered = templates.render_claude_wrapper(
             "Batata",
             "Prumo",
@@ -42,12 +43,35 @@ class TemplateAdapterTests(unittest.TestCase):
             context_root="Prumo/Agente/",
             core_path=".prumo/system/PRUMO-CORE.md",
             state_path=".prumo/state/",
+            profile="full",
         )
         self.assertIn("Leia `Prumo/AGENT.md`", rendered)
         self.assertIn("Use `.prumo/system/PRUMO-CORE.md`", rendered)
         self.assertIn("Não escreva `.prumo/state/`", rendered)
         self.assertIn("next_move.id == kickoff", rendered)
         self.assertIn("Execute primeiro e fale depois", rendered)
+
+    def test_claude_wrapper_default_is_minimal_with_door_and_perimeter(self) -> None:
+        # #180: default do CLAUDE.md é minimal — porta + perímetro presentes,
+        # SEM o bloco dinâmico de dispatch (host com registry o dispensa).
+        rendered = templates.render_claude_wrapper(
+            "Batata",
+            "Prumo",
+            canonical_target="Prumo/AGENT.md",
+            context_root="Prumo/Agente/",
+            core_path=".prumo/system/PRUMO-CORE.md",
+            state_path=".prumo/state/",
+            skills_dispatch="<!-- prumo:skills-dispatch -->\nbloco",
+        )
+        self.assertIn("Leia `Prumo/AGENT.md`", rendered)
+        self.assertIn("Perímetro de leitura", rendered)
+        self.assertNotIn("prumo:skills-dispatch", rendered)
+        agents = templates.render_agents_wrapper(
+            "Batata",
+            "Prumo",
+            skills_dispatch="<!-- prumo:skills-dispatch -->\nbloco",
+        )
+        self.assertIn("prumo:skills-dispatch", agents, "hosts sem registry mantêm o dispatch")
 
     def test_agent_md_mentions_host_invocation_rules(self) -> None:
         rendered = templates.render_agent_md(

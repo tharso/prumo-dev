@@ -943,11 +943,17 @@ class SkillGuardsTests(unittest.TestCase):
     REPO_ROOT = Path(__file__).resolve().parents[2]
 
     def test_revue_hardcode_never_returns_to_canonical(self) -> None:
-        procedure = (
+        # #180: o roteamento de conteúdo migrou pro dono briefing-canais.md;
+        # o guard cobre o dono novo E a espinha (nenhum path pessoal em nenhum).
+        canais = (
+            self.REPO_ROOT / "skills" / "prumo" / "references" / "modules" / "briefing-canais.md"
+        ).read_text(encoding="utf-8")
+        espinha = (
             self.REPO_ROOT / "skills" / "prumo" / "references" / "modules" / "briefing-procedure.md"
         ).read_text(encoding="utf-8")
-        self.assertNotIn("Revue", procedure, "path pessoal do dono vazou de volta pro canônico")
-        self.assertIn("Roteamento de conteúdo", procedure)
+        self.assertNotIn("Revue", canais, "path pessoal do dono vazou de volta pro canônico")
+        self.assertNotIn("Revue", espinha, "path pessoal do dono vazou de volta pro canônico")
+        self.assertIn("Roteamento de conteúdo", canais)
         # O template REAL do setup (file-templates) também precisa da seção —
         # sem ela, workspace novo nasce sem o lugar do registro (Codex r1.9).
         file_templates = (
