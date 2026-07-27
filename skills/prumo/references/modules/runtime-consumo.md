@@ -25,9 +25,9 @@
 > #179): os predicados diferem em substância — "renderizar ações próprias"
 > ⊂ "saber trabalhar com JSON".
 
-10. **Não simule comando.** Não leia arquivo para simular `prumo`, `briefing` ou `start` — execute o comando real primeiro.
-11. **Não escreva estado do runtime à mão.** Não escreva `.prumo/state/` fingindo ser o runtime — foi o bug da #214.
-12. **Sem comando por curiosidade.** Não rode comando extra só porque ficou curioso: execute o que foi pedido ou o que o runtime sugeriu.
-13. **Sem disco riscado.** Se um comando falhar por uso ou argumento inválido, não repita a mesma linha como disco riscado.
+10. **Não simule comando.** Não leia arquivo para simular `prumo`, `briefing` ou `start`. Primeiro execute o comando real.
+11. **Não escreva estado do runtime à mão.** Não escreva `.prumo/state/` fingindo ser o runtime (`_state/` no layout flat) — foi o bug da #214.
+12. **Sem comando por curiosidade.** Não rode comando extra só porque ficou curioso. Execute o que foi pedido ou o que o runtime sugeriu.
+13. **Sem disco riscado.** Se um comando falhar por uso ou argumento inválido, não repita a mesma linha como disco riscado.** Se um comando falhar por uso ou argumento inválido, não repita a mesma linha como disco riscado.
 
 > As quatro acima moravam nas "Regras rápidas" da porta e vinham na abertura de TODA sessão (#228, fase 2): são contrato de INVOCAÇÃO — pertencem aqui, onde já se carrega antes de rodar comando do runtime.

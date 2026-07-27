@@ -33,9 +33,9 @@ RUNTIME_CONSUMO_ANCHORS = (
 # ("disco riscado") aceitaria paráfrase: o texto tem de chegar inteiro no dono
 # novo (Codex, diff r1).
 RULES_MOVED_TO_RUNTIME_CONSUMO = (
-    "Não leia arquivo para simular `prumo`, `briefing` ou `start`",
-    "Não escreva `.prumo/state/` fingindo ser o runtime",
-    "Não rode comando extra só porque ficou curioso: execute o que foi pedido ou o que o runtime sugeriu.",
+    "Não leia arquivo para simular `prumo`, `briefing` ou `start`. Primeiro execute o comando real.",
+    "Não escreva `{state_path}` fingindo ser o runtime",
+    "Não rode comando extra só porque ficou curioso. Execute o que foi pedido ou o que o runtime sugeriu.",
     "Se um comando falhar por uso ou argumento inválido, não repita a mesma linha como disco riscado.",
 )
 
@@ -247,10 +247,14 @@ class RegrasMovidasTest(unittest.TestCase):
             "AGENTS.md": templates.render_agents_wrapper("Batata", "Prumo"),
             "AGENT.md raiz": templates.render_agent_root_wrapper("Batata", "Prumo"),
         }
-        for regra in RULES_MOVED_TO_RUNTIME_CONSUMO:
+        for bruta in RULES_MOVED_TO_RUNTIME_CONSUMO:
+            # o texto de origem trazia `{state_path}` — normalizar por layout é
+            # a ÚNICA licença; o resto tem de ser byte-equivalente à main.
+            regra = bruta.replace("{state_path}", ".prumo/state/")
             with self.subTest(regra=regra[:40]):
-                self.assertIn(regra, modulo, "regra sumiu do dono novo — isso é DELETAR")
+                self.assertIn(regra, modulo, "texto chegou parafraseado ao dono novo — isso não é mover")
                 for nome, texto in superficies.items():
-                    self.assertNotIn(
-                        regra, texto, f"regra ainda na porta {nome} — não foi movida"
-                    )
+                    for variante in (regra, bruta.replace("{state_path}", "_state/")):
+                        self.assertNotIn(
+                            variante, texto, f"regra ainda na porta {nome} — não foi movida"
+                        )
