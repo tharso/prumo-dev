@@ -24,13 +24,13 @@ O agente **NUNCA escreve** esse arquivo — é estado do runtime (#214); consumo
 
 ## Faxina (checagem SEMPRE declarada, #217)
 
-**A checagem de faxina declara o resultado SEMPRE (#217 — verificável, não pulável):** a linha obrigatória do primeiro tempo (formato na montagem). O **contrato mínimo da checagem mora AQUI** (sem circularidade: checar não exige abrir o módulo executor); `faxina.md` carrega só quando alguma família está PENDENTE, pra executar. **"Nada pendente" só depois de olhar as CINCO famílias do `faxina.md`** — as cinco checagens baratas:
+**A checagem de faxina declara o resultado SEMPRE (#217 — verificável, não pulável):** a linha obrigatória do primeiro tempo (formato na montagem). O **contrato mínimo da checagem mora AQUI** (sem circularidade: checar não exige abrir o módulo executor); `faxina.md` carrega só quando alguma família está PENDENTE, pra executar. Os NÚMEROS vêm do dono `faxina-thresholds.md` (F1, já carregado) — **defaults + overrides do usuário em `Prumo/Custom/rules/`**; checar contra número fixo ignorando a customização declararia "nada pendente" contra a configuração do usuário. **"Nada pendente" só depois de olhar as CINCO famílias do `faxina.md`** — as cinco checagens baratas:
 
-1. **Rotação do REGISTRO** — linhas da tabela > 50 (a semente já traz o número em `local_panorama.faxina`).
+1. **Rotação do REGISTRO** — linhas da tabela acima de `max_items` (a semente já traz o número em `local_panorama.faxina`).
 2. **PAUTA→REGISTRO de concluídos** — item marcado concluído (checkbox/riscado/"Concluído") ainda na pauta.
 3. **`Referencias/INDICE.md`** — arquivo em `Referencias/` fora da tabela do índice (excluindo os operacionais).
-4. **Processados velhos do Inbox4Mobile** — entrada de `_processed.json` com `processed_at` > 14 dias (a semente já traz).
-5. **Rotação do `Diario/`** — arquivo com data no NOME > 90 dias.
+4. **Processados velhos do Inbox4Mobile** — entrada de `_processed.json` com `processed_at` além de `processed_expiry_days` (a semente já traz).
+5. **Rotação do `Diario/`** — arquivo com data no NOME além do prazo de rotação do diário.
 
 Atestar limpeza olhando só uma parte é a mesma mentira com crachá novo. Família pendente → carregar `faxina.md` e executar antes de apresentar (ela age sozinha; o resultado entra no briefing em uma linha).
 

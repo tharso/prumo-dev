@@ -41,51 +41,55 @@ MANIFEST_HEADING = "## Mapa de carregamento por fase"
 # novo (a seção mora em briefing-montagem.md, já em contexto desde F3).
 VALID_PHASES = {"F0", "F1", "F2", "F3", "F4"}
 
-# O MAPA ESPERADO, EXATO (review Codex r2 do #180): tuplas
-# (fase, gatilho, arquivo, seção) — igualdade de CONJUNTO com o manifesto.
-# Mudança em qualquer célula só entra atualizando aqui conscientemente;
-# validação campo-a-campo deixava `briefing-canais` virar F3 sem ninguém ver.
+# O MAPA ESPERADO, EXATO (rounds 2-3 do Codex no #180): tuplas
+# (fase, gatilho, arquivo, seção, tipo) — igualdade de CONJUNTO com o
+# manifesto, TODAS as células. Mudança em qualquer uma só entra atualizando
+# aqui conscientemente.
 _M = ".prumo/skills/prumo/references/modules"
 EXPECTED_MAP = frozenset(
     {
-        ("F0", "sempre", "CLAUDE.md", "(integral)"),
-        ("F0", "sempre", "Prumo/AGENT.md", "(integral)"),
-        ("F0", "sempre", ".prumo/system/PRUMO-CORE.md", "até: # Parte 2 — Playbooks operacionais"),
-        ("F1", "sempre", ".prumo/skills/briefing/SKILL.md", "(integral)"),
-        ("F1", "sempre", f"{_M}/briefing-procedure.md", "(integral)"),
-        ("F1", "sempre", ".prumo/system/PRUMO-CORE.md", "## Guardrails"),
-        ("F1", "sempre", "Prumo/Agente/PERFIL.md", "(integral)"),
-        ("F1", "sempre", "Prumo/Agente/ROTINA.md", "(integral)"),
-        ("F1", "sempre", "Prumo/Agente/PESSOAS.md", "(integral)"),
-        ("F1", "sempre", f"{_M}/briefing-estado.md", "(integral)"),
-        ("F1", "sempre", f"{_M}/version-preflight.md", "(integral)"),
-        ("F1", "oferta/execução de update (warning/alert)", f"{_M}/version-update.md", "(integral)"),
-        ("F1", "scripts via shell", f"{_M}/runtime-paths.md", "(integral)"),
-        ("F1", "shell com runtime alcançável", f"{_M}/cowork-runtime-bridge.md", "(integral)"),
+        ("F0", "sempre", "CLAUDE.md", "(integral)", "wrapper da raiz"),
+        ("F0", "sempre", "Prumo/AGENT.md", "(integral)", "porta canônica"),
+        ("F0", "sempre", ".prumo/system/PRUMO-CORE.md", "até: # Parte 2 — Playbooks operacionais", "core (Parte 1)"),
+        ("F1", "sempre", ".prumo/skills/briefing/SKILL.md", "(integral)", "esta skill"),
+        ("F1", "sempre", f"{_M}/briefing-procedure.md", "(integral)", "espinha"),
+        ("F1", "sempre", ".prumo/system/PRUMO-CORE.md", "## Guardrails", "core (seção)"),
+        ("F1", "sempre", "Prumo/Agente/PERFIL.md", "(integral)", "config do usuário"),
+        ("F1", "sempre", "Prumo/Agente/ROTINA.md", "(integral)", "config do usuário"),
+        ("F1", "sempre", "Prumo/Agente/PESSOAS.md", "(integral)", "predicado de remetente"),
+        ("F1", "sempre", f"{_M}/briefing-estado.md", "(integral)", "estado operacional"),
+        ("F1", "sempre", f"{_M}/version-preflight.md", "(integral)", "preflight de versão"),
+        ("F1", "sempre", f"{_M}/faxina-thresholds.md", "(integral)", "números da faxina (defaults + overrides)"),
+        ("F1", "oferta/execução de update (warning/alert)", f"{_M}/version-update.md", "(integral)", "canônico do update"),
+        ("F1", "scripts via shell", f"{_M}/runtime-paths.md", "(integral)", "resolução de scripts"),
+        ("F1", "shell com runtime alcançável", f"{_M}/cowork-runtime-bridge.md", "(integral)", "ponte do runtime"),
         (
             "F1",
             "família de faxina pendente (execução — a checagem mínima mora no estado)",
             f"{_M}/faxina.md",
             "(integral)",
+            "executor da faxina",
         ),
         (
             "F2",
             "antes da triagem local do Inbox4Mobile OU de abrir email/agenda",
             f"{_M}/briefing-canais.md",
             "(integral)",
+            "canais + defesas",
         ),
-        ("F2", "Inbox4Mobile com itens novos", f"{_M}/inbox-processing.md", "(integral)"),
-        ("F2", "antes de filtrar email (se existir)", "Prumo/Referencias/EMAIL-CURADORIA.md", "(integral)"),
+        ("F2", "Inbox4Mobile com itens novos", f"{_M}/inbox-processing.md", "(integral)", "triagem do inbox"),
+        ("F2", "antes de filtrar email (se existir)", "Prumo/Referencias/EMAIL-CURADORIA.md", "(integral)", "regras aprendidas"),
         (
             "F2",
-            "EMAIL-CURADORIA.md ausente (criação)",
+            "canal de email disponível E EMAIL-CURADORIA.md ausente (criação)",
             ".prumo/skills/prumo/references/file-templates.md",
             "## Prumo/Referencias/EMAIL-CURADORIA.md",
+            "template canônico",
         ),
-        ("F2", "aprofundamento (predicado g / fallback por fonte)", f"{_M}/load-policy.md", "(integral)"),
-        ("F3", "ao montar o panorama", f"{_M}/briefing-montagem.md", "(integral)"),
-        ("F3", "ao montar o panorama", f"{_M}/interaction-format.md", "(integral)"),
-        ("F3", "6+ itens acionáveis (#218)", ".prumo/skills/decidir/SKILL.md", "(integral)"),
+        ("F2", "aprofundamento (predicado g / fallback por fonte)", f"{_M}/load-policy.md", "(integral)", "política de leitura"),
+        ("F3", "ao montar o panorama", f"{_M}/briefing-montagem.md", "(integral)", "dois tempos + fechamento"),
+        ("F3", "ao montar o panorama", f"{_M}/interaction-format.md", "(integral)", "dono da numeração"),
+        ("F3", "6+ itens acionáveis (#218)", ".prumo/skills/decidir/SKILL.md", "(integral)", "despacho visual"),
     }
 )
 
@@ -217,10 +221,11 @@ class PhaseMapTests(unittest.TestCase):
         self.rows = _parse_map_rows(self.skill_text)
 
     def test_map_is_exactly_the_expected_set(self) -> None:
-        # Igualdade de CONJUNTO fase×gatilho×arquivo×seção (Codex r2): célula
-        # trocada, linha nova ou linha sumida — tudo quebra aqui.
+        # Igualdade de CONJUNTO em TODAS as células (Codex r2-r3): fase,
+        # gatilho, arquivo, seção e tipo — qualquer troca quebra aqui.
         actual = {
-            (row["phase"], row["trigger"], row["file"], row["section"]) for row in self.rows
+            (row["phase"], row["trigger"], row["file"], row["section"], row["type"])
+            for row in self.rows
         }
         self.assertEqual(len(actual), len(self.rows), "linha duplicada no mapa")
         missing = EXPECTED_MAP - actual
@@ -229,8 +234,8 @@ class PhaseMapTests(unittest.TestCase):
             missing or extra,
             f"mapa divergiu do esperado — faltando={sorted(missing)} sobrando={sorted(extra)}",
         )
-        for phase, _trigger, _file, _section in actual:
-            self.assertIn(phase, VALID_PHASES)
+        for row in actual:
+            self.assertIn(row[0], VALID_PHASES)
 
     def test_f4_declared_as_phase_without_new_material(self) -> None:
         # F4 é fase do contrato (#177): fechamento sem carregamento novo —

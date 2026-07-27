@@ -143,7 +143,7 @@ Quando o usuário corrigir a curadoria ("esse era ruído", "faltou aquele email 
 2. Formato: data, remetente/pattern, regra aprendida, motivo.
 3. Viés explícito: na dúvida, trazer. Melhor ruído que perda.
 
-Se `EMAIL-CURADORIA.md` não existir, criar a partir do template canônico em `skills/prumo/references/file-templates.md` → seção "EMAIL-CURADORIA.md" (dono ÚNICO do template — a cópia que vivia aqui foi removida na #180; duas cópias divergindo em silêncio é o bug da #195 em outra roupa).
+Se `EMAIL-CURADORIA.md` não existir **e o canal de email estiver disponível** (sem Gmail não há curadoria — não criar arquivo pra fluxo que não vai rodar), criar a partir do template canônico em `skills/prumo/references/file-templates.md` → seção "EMAIL-CURADORIA.md" (dono ÚNICO do template — a cópia que vivia aqui foi removida na #180; duas cópias divergindo em silêncio é o bug da #195 em outra roupa).
 
 ### Calendário
 
