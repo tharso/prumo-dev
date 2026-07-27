@@ -82,7 +82,7 @@ A inbox agrega 4 contas (tharso@gmail.com, tharso@brise.cloud, tharso@brise.scie
 
 1. **Primeira página** de `is:unread` (a varredura cega dos mais recentes);
 2. **Buscas dirigidas** por item quente da PAUTA (uma query curta por tema — é o braço que pega o que a paginação cega perderia);
-3. **Respostas ao que o usuário enviou** desde o último briefing — threads com participação dele; atenção: o alias `from:me` pode NÃO resolver no conector (#236) — usar os endereços das contas monitoradas registradas em `EMAIL-CURADORIA.md` (ou `in:sent` validado), nunca confiar em alias sem um teste positivo.
+3. **Respostas ao que o usuário enviou** desde o último briefing. Como (executável): buscar as threads com participação dele — `in:sent` validado ou `from:<conta>` pra cada conta monitorada registrada em `EMAIL-CURADORIA.md`, janela ampla (a participação pode ser antiga) —, coletar os `thread_id`s, e **nas threads** selecionar as mensagens EXTERNAS recebidas desde o último briefing (inclusive resposta nova a envio antigo; buscar só o que ele enviou acha as PERGUNTAS dele, não as respostas dos outros). Atenção: o alias `from:me` pode NÃO resolver no conector (#236) — nunca confiar em alias sem um teste positivo.
 
 Paginar além da primeira página NÃO é default. **Declarar a cobertura em uma linha** no segundo tempo (*"emails: 1ª página de N não lidos + X buscas dirigidas + respostas às suas threads"*) — cobertura silenciosa foi o que o relatório de 27/07 flagrou.
 

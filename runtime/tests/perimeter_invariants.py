@@ -13,6 +13,11 @@ PERIMETER_INVARIANTS: tuple[str, ...] = (
     # Escopo 1: perímetro automático, sem exploração espontânea.
     "Perímetro automático",
     "Zero exploração espontânea da raiz",
+    # B4 (relatório de 27/07, decisão do dono): a DESCOBERTA vai direto às
+    # pastas do Prumo — a primeira listagem nunca passa pela raiz (nested).
+    "inclusive na descoberta",
+    "as pastas do Prumo são sempre `Prumo/` e `.prumo/`",
+    'nunca liste a raiz pra "descobrir o workspace"',
     # Proibição por efeito, não por comando — qualquer ferramenta.
     "Nenhuma enumeração recursiva ou ilimitada",
     "por qualquer ferramenta",
