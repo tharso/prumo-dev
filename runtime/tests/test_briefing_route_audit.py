@@ -181,6 +181,24 @@ class SandboxMeasurementTest(unittest.TestCase):
             report["total_before_first_user_data"] - claude_words + agents_words,
         )
 
+    def test_manifest_without_claude_entry_is_error_not_common_profile(self) -> None:
+        # Review Codex (PR11b): sem CLAUDE.md no cesto, "sem pior perfil"
+        # aprovaria pelo perfil comum — tem que ser erro (rc 2).
+        skill_path = self.ws / ".prumo" / "skills" / "briefing" / "SKILL.md"
+        original = skill_path.read_text(encoding="utf-8")
+        try:
+            skill_path.write_text(
+                original.replace("| F0 | sempre | `CLAUDE.md` | (integral) | wrapper da raiz |\n", ""),
+                encoding="utf-8",
+            )
+            report = audit.measure(self.ws)
+            self.assertIsNone(report["worst_profile_total"])
+            self.assertTrue(any("exatamente 1" in e for e in report["errors"]))
+            rc = audit.main(["--workspace", str(self.ws), "--json"])
+            self.assertEqual(rc, 2)
+        finally:
+            skill_path.write_text(original, encoding="utf-8")
+
     def test_worst_profile_fails_closed_without_agents(self) -> None:
         agents = self.ws / "AGENTS.md"
         backup = agents.read_text(encoding="utf-8")
