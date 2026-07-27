@@ -31,13 +31,17 @@ ALLOWLIST = SKILLS / "decidir" / "references" / "acoes-allowlist.md"
 # ([D9] r3: "Nunca mover; deletar o original" não está negado). O acervo
 # (--permanent) tem contrato próprio e não usa esse fraseado.
 _OPS = r"(?:rm|rmdir|unlink|os\.remove|shutil\.rmtree)"
+# Janela dentro da mesma oração e SEM palavra de negação no meio ([D9] r4:
+# "no original do inbox, não execute unlink" tem a negação ENTRE objeto e
+# operação — não pode acusar).
+_GAP = r"(?:(?!\b(?:não|nao|nunca|jamais)\b)[^.!?;:]){0,60}"
 _FORBIDDEN_PATTERNS = (
     re.compile(
         r"(?:deletar|apagar|excluir|remover\s+fisicamente)\s+(?:o\s+|um\s+)?(?:arquivo\s+)?origina(?:l|is)",
         re.IGNORECASE,
     ),
-    re.compile(rf"\b{_OPS}\b[^.!?;:]{{0,60}}(?:original|inbox)", re.IGNORECASE),
-    re.compile(rf"(?:original|inbox)[^.!?;:]{{0,60}}\b{_OPS}\b", re.IGNORECASE),
+    re.compile(rf"\b{_OPS}\b{_GAP}(?:original|inbox)", re.IGNORECASE),
+    re.compile(rf"(?:original|inbox){_GAP}\b{_OPS}\b", re.IGNORECASE),
 )
 # Lookback preso à oração: não atravessa . ! ? ; : — a negação de outra frase
 # não absolve a operação proibida desta.
@@ -197,6 +201,9 @@ class QuarentenaContractsTest(unittest.TestCase):
             "a deleção falha com Operation not permitted no host",
             "remover o original do inbox movendo-o pra quarentena",
             "rode rm -rf no diretório de build do seu projeto",
+            # [D9] r4: negação ENTRE objeto e operação, mesma oração.
+            "no original do inbox, não execute unlink",
+            "no inbox, jamais rode rm",
         )
         for texto in permitidos:
             with self.subTest(texto=texto):
