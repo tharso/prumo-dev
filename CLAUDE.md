@@ -147,7 +147,7 @@ Handover é ferramenta de coordenação entre agentes **dentro do desenvolviment
 Regras:
 
 - **Artefatos de handover vivem em `dev-archive/`** (gitignored). Nada de handover deve aparecer em `skills/`, `runtime/` ou `scripts/`.
-- **Lock entre agentes no produto final**: coordenação no workspace do usuário acontece exclusivamente via `.prumo/state/agent-lock.json`. Sem narrativa, sem PENDING_VALIDATION.
+- **Lock entre agentes no produto final**: coordenação no workspace do usuário acontece via `.prumo/state/agent-lock.json`. Sem narrativa, sem PENDING_VALIDATION. **Exceção nomeada (#244):** o escopo `Prumo/Referencias/INDICE.md` usa aquisição atômica de filesystem (`.prumo/state/locks/`) porque ID sequencial não admite duplicata e lock cooperativo tem janela — contrato em `multiagent.md`.
 - **Validações cruzadas entre Codex/Cowork/Gemini/Claude durante dev**: podem usar os artefatos em `dev-archive/` como registro histórico ou continuar a prática localmente, desde que não vaze nada disso pra dentro das skills ou do runtime.
 - Se uma próxima geração do produto precisar de um contrato de handover de volta, vira issue nova e decisão arquitetural explícita. Não é "reverter a remoção".
 

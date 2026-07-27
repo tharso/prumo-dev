@@ -27,23 +27,39 @@ FILE_TEMPLATES = SKILLS / "prumo" / "references" / "file-templates.md"
 _FOOTER = re.compile(r"<!-- proximo-id: (\d+) -->")
 
 
-def _flat(path: Path) -> str:
-    return re.sub(r"\s+", " ", path.read_text(encoding="utf-8"))
+def _flat(value) -> str:
+    text = value.read_text(encoding="utf-8") if isinstance(value, Path) else value
+    return re.sub(r"\s+", " ", text)
+
+
+def _section(text: str, heading: str) -> str:
+    """Do heading até o próximo de nível igual/superior — guard por seção, não
+    por varredura global do arquivo."""
+    lines = text.splitlines()
+    level = len(heading) - len(heading.lstrip("#"))
+    start = next((i for i, ln in enumerate(lines) if ln.strip() == heading), None)
+    if start is None:
+        return ""
+    for j in range(start + 1, len(lines)):
+        stripped = lines[j].lstrip()
+        if stripped.startswith("#") and len(stripped) - len(stripped.lstrip("#")) <= level:
+            return "\n".join(lines[start:j])
+    return "\n".join(lines[start:])
 
 
 class ProximoIdTest(unittest.TestCase):
     def test_renderer_nasce_com_rodape_um(self) -> None:
         rendered = templates.render_referencias_md("2026-07-27")
-        m = _FOOTER.search(rendered)
-        self.assertIsNotNone(m, "renderer do INDICE sem rodapé proximo-id")
+        ultima = rendered.rstrip().splitlines()[-1]
+        # `fullmatch`: a última linha É o rodapé — não "termina com -->"
+        # (qualquer comentário HTML passaria nesse teste frouxo).
+        m = _FOOTER.fullmatch(ultima.strip())
+        self.assertIsNotNone(m, f"última linha do INDICE não é o rodapé: {ultima!r}")
         self.assertEqual(m.group(1), "1")
-        self.assertTrue(
-            rendered.rstrip().endswith("-->"),
-            "o rodapé tem de ser a ÚLTIMA linha (o agente lê só ela)",
-        )
 
     def test_paridade_template_manual_e_renderer(self) -> None:
-        """Caminho manual e runtime geram o MESMO rodapé."""
+        """O rodapé do caminho manual é IDÊNTICO ao do renderer — comparação
+        direta entre os dois, não dois hard-codes separados."""
         text = FILE_TEMPLATES.read_text(encoding="utf-8")
         bloco = re.search(
             r"## Prumo/Referencias/INDICE\.md.*?--- INÍCIO ---\n(.*?)\n--- FIM ---",
@@ -51,36 +67,94 @@ class ProximoIdTest(unittest.TestCase):
             re.DOTALL,
         )
         self.assertIsNotNone(bloco, "seção do INDICE sumiu do file-templates.md")
-        manual = bloco.group(1)
-        self.assertIn("<!-- proximo-id: 1 -->", manual)
-        self.assertTrue(manual.rstrip().endswith("-->"))
+        manual_ultima = bloco.group(1).rstrip().splitlines()[-1].strip()
+        render_ultima = (
+            templates.render_referencias_md("2026-07-27").rstrip().splitlines()[-1].strip()
+        )
+        self.assertIsNotNone(
+            _FOOTER.fullmatch(manual_ultima),
+            f"última linha do template manual não é o rodapé: {manual_ultima!r}",
+        )
+        self.assertEqual(
+            manual_ultima, render_ultima, "rodapé do caminho manual ≠ do renderer"
+        )
 
-    def test_procedimento_sonda_em_todo_caminho(self) -> None:
-        flat = _flat(FICHA)
-        self.assertIn("## Alocação de ID no `INDICE.md` (#244)", flat)
-        self.assertIn("N é **sugestão**", flat)
-        self.assertIn("Vale em TODO caminho", flat)
-        self.assertIn("rodapé stale não é oráculo", flat)
+    def test_procedimento_na_secao_dona_e_na_ordem(self) -> None:
+        """Os passos moram NA seção de alocação, na ordem do contrato — termo
+        solto em outra seção não vale (Codex, diff r1: 'sacola de palavras')."""
+        secao = _flat(_section(FICHA.read_text(encoding="utf-8"), "## Alocação de ID no `INDICE.md` (#244)"))
+        self.assertTrue(secao, "seção de alocação ausente do ficha-de-fonte.md")
+        marcos = [
+            "Adquirir o lock",
+            "última linha",
+            "sugestão",
+            "Sondar o candidato",
+            "Escrever numa edição só",
+            "Liberar o lock",
+        ]
+        pos = [secao.find(m) for m in marcos]
+        for m, p_ in zip(marcos, pos):
+            self.assertNotEqual(p_, -1, f"passo ausente da alocação: {m}")
+        self.assertEqual(pos, sorted(pos), "passos da alocação fora de ordem")
+        self.assertIn("Vale em TODO caminho", secao)
 
     def test_recuperacao_usa_semente_nao_maximo_global(self) -> None:
-        flat = _flat(FICHA)
-        self.assertIn("como *semente*", flat)
-        self.assertIn("nunca como máximo global", flat)
-        self.assertIn("Repor o rodapé na mesma edição", flat)
+        secao = _flat(_section(FICHA.read_text(encoding="utf-8"), "## Alocação de ID no `INDICE.md` (#244)"))
+        self.assertIn("como *semente*", secao)
+        self.assertIn("nunca como máximo global", secao)
+        self.assertIn("Repor o rodapé na mesma edição", secao)
 
-    def test_lock_atomico_com_escopo_declarado(self) -> None:
-        flat = _flat(MULTIAGENT)
-        self.assertIn("Escopo com aquisição ATÔMICA (#244)", flat)
-        self.assertIn("`Prumo/Referencias/INDICE.md`", flat)
-        self.assertIn("mkdir", flat)
-        self.assertIn("O_CREAT|O_EXCL", flat)
-        self.assertIn("**não escrever**", flat)
+    def test_lock_na_secao_dona_com_escopo_e_primitivas(self) -> None:
+        secao = _flat(_section(MULTIAGENT.read_text(encoding="utf-8"), "## Escopo com aquisição ATÔMICA (#244)"))
+        self.assertTrue(secao, "seção do lock atômico ausente do multiagent.md")
+        for marco in (
+            "`Prumo/Referencias/INDICE.md`",
+            "mkdir -p .prumo/state/locks/released",
+            "sem `-p`",
+            "O_CREAT|O_EXCL",
+            "**não escrever**",
+            "Liberação: mover, nunca deletar",
+            "sufixo determinístico",
+            "Sem retomada automática por idade",
+        ):
+            self.assertIn(marco, secao, f"contrato do lock sem: {marco!r}")
 
-    def test_liberacao_move_e_nao_deleta(self) -> None:
-        flat = _flat(MULTIAGENT)
-        self.assertIn("Liberação: mover, nunca deletar", flat)
-        self.assertIn("sufixo determinístico", flat)
-        self.assertIn("Sem retomada automática por idade", flat)
+    def test_claude_md_registra_a_excecao_do_lock(self) -> None:
+        """[P2 da r1]: a fonte de verdade dizia 'exclusivamente agent-lock.json'
+        — a segunda primitiva precisa estar reconciliada, não contrabandeada."""
+        flat = _flat((REPO_ROOT / "CLAUDE.md").read_text(encoding="utf-8"))
+        self.assertIn("Exceção nomeada (#244)", flat)
+        self.assertIn("`Prumo/Referencias/INDICE.md` usa aquisição atômica", flat)
+
+    def test_protocolo_de_lock_funciona_em_workspace_novo(self) -> None:
+        """[P1 da r1]: o setup cria `.prumo/state/`, NÃO as subpastas do lock.
+        Executa o protocolo documentado num workspace recém-criado."""
+        import subprocess
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp)
+            (ws / ".prumo" / "state").mkdir(parents=True)  # o que o setup entrega
+            lock = ws / ".prumo" / "state" / "locks" / "referencias-indice.d"
+            released = ws / ".prumo" / "state" / "locks" / "released"
+
+            def sh(cmd: str) -> int:
+                return subprocess.run(cmd, shell=True, cwd=ws, capture_output=True).returncode
+
+            # passo 0 + 1 do contrato: pais idempotentes, folha atômica
+            self.assertEqual(sh("mkdir -p .prumo/state/locks/released"), 0)
+            self.assertEqual(sh("mkdir .prumo/state/locks/referencias-indice.d"), 0)
+            self.assertTrue(lock.is_dir())
+            # concorrência: o segundo mkdir FALHA (exclusão sem janela)
+            self.assertNotEqual(sh("mkdir .prumo/state/locks/referencias-indice.d"), 0)
+            # liberação: move, nunca deleta
+            self.assertEqual(
+                sh("mv .prumo/state/locks/referencias-indice.d .prumo/state/locks/released/2026-07-27T23-00-00"),
+                0,
+            )
+            self.assertFalse(lock.exists(), "lock não foi liberado")
+            self.assertTrue((released / "2026-07-27T23-00-00").is_dir())
+            # e o path volta a ser adquirível
+            self.assertEqual(sh("mkdir .prumo/state/locks/referencias-indice.d"), 0)
 
     def test_faxina_aponta_para_a_alocacao(self) -> None:
         flat = _flat(FAXINA)

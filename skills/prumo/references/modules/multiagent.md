@@ -44,9 +44,12 @@ Operações rápidas e locais (atualizar PAUTA.md, registrar no REGISTRO.md) nã
 
 ## Escopo com aquisição ATÔMICA (#244)
 
+> Emenda ao contrato da #68 (coordenação por `agent-lock.json`): para **um escopo nomeado** — o índice de referências — o lock cooperativo não basta, e a primitiva abaixo passa a valer. O `agent-lock.json` segue sendo o mecanismo de coordenação para todo o resto.
+
 O `agent-lock.json` acima é **cooperativo**: bom pra evitar atropelo, insuficiente pra garantir unicidade (ler-e-escrever tem janela; duas sessões passam pelo mesmo buraco). Onde a corrida corrompe dado — hoje **um escopo: `Prumo/Referencias/INDICE.md`**, cujo ID sequencial não admite duplicata —, o lock é adquirido por operação **atômica do filesystem**:
 
-1. **Com shell:** `mkdir '.prumo/state/locks/referencias-indice.d'` — falha se já existe, sem janela.
+0. **Garantir os pais** (o setup cria `.prumo/state/`, não as subpastas do lock): `mkdir -p .prumo/state/locks/released` — idempotente, não é a trava.
+1. **Com shell:** `mkdir '.prumo/state/locks/referencias-indice.d'` — a folha, **sem `-p`**: falha se já existe, e é isso que dá a exclusão sem janela.
 2. **Com runtime alcançável:** equivalente via `O_CREAT|O_EXCL`.
 3. **Sem nenhuma das duas:** **não escrever**. Dizer em uma linha que a alocação fica pra uma sessão com shell — ID adivinhado é o bug que a #244 corrigiu.
 
