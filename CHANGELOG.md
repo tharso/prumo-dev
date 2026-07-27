@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.60.0] - 2026-07-27
+
+### Fixed
+- **Update de produto funciona em QUALQUER instalação — transporte universal do espelho (#232, pedido do dono)** — dois transportes estavam quebrados pra usuário final: (1) instalação vinda do **cache do plugin** sem a versão nova no cache morria num beco ("atualize o plugin no host e rode o setup de novo" — o caso real da máquina de referência); (2) instalações pip/pipx/uv mandavam `pip install --upgrade prumo-runtime` — **pacote que não existe no PyPI** (404): falha hoje, e **dependency confusion** no dia em que alguém registrar o nome. Agora: o plano cai no **tarball do espelho público** (mesma fonte do install-script) com staging validado — extração com filtro de segurança (path traversal/links rejeitados), `pyproject`+`VERSION`+árvore conferidos, versão do artefato EXATAMENTE a anunciada pelo plano (mismatch em qualquer direção aborta com 'rode de novo') — e reinstala **preservando o gerenciador** da instalação atual (uv/pipx/pip do mesmo Python); método desconhecido re-executa o install-script (deixa marker e estado conhecido). A validação pós-update compara contra a **versão do artefato instalado** (não o que o binário diz de si mesmo) e só então roda o `repair` que propaga core+skills+wrappers pro workspace. Guard anti-registry: nenhuma combinação de plano emite comando de registry público. `PRUMO_UPDATE_ARCHIVE_URL` (env) permite teste hermético com tarball local.
+
 ## [5.59.0] - 2026-07-27
 
 ### Added

@@ -45,7 +45,10 @@ class BuildPlanCopyInstall(unittest.TestCase):
         # NÃO pode virar o alvo de registry.
         self.assertNotEqual(plan["command"].strip(), "uv tool install --force prumo-runtime")
 
-    def test_copy_sem_path_local_e_erro_honesto(self) -> None:
+    def test_copy_sem_path_local_cai_no_tarball(self) -> None:
+        # #232 substitui o "erro honesto" da era #170: cache sem a versão
+        # nova era o beco do caso real do dono — agora o plano cai no
+        # transporte universal (tarball do espelho), mesmo instalador.
         plan = build_update_plan(
             package_manager="uv-tool",
             current_version="5.16.0",
@@ -56,12 +59,13 @@ class BuildPlanCopyInstall(unittest.TestCase):
             local_install=True,
         )
         self.assertTrue(plan["needs_update"])
-        # Erro honesto: sem comando executável, explicação clara (não um plano que morre).
-        self.assertIsNone(plan["command"])
-        self.assertIn("local", plan["explanation"].lower())
-        self.assertNotIn("prumo-runtime", plan["explanation"] or "")
+        self.assertEqual(plan["command"], "archive")
+        self.assertEqual(plan["archive_installer"], "uv")
+        self.assertIn("espelho", plan["explanation"])
 
-    def test_registry_continua_indo_pro_registry(self) -> None:
+    def test_registry_nunca_mais(self) -> None:
+        # #232: prumo-runtime NÃO é publicado — registry era beco hoje e
+        # dependency confusion amanhã. uv "manual" também vai pro tarball.
         plan = build_update_plan(
             package_manager="uv-tool",
             current_version="5.3.0",
@@ -69,7 +73,8 @@ class BuildPlanCopyInstall(unittest.TestCase):
             source_kind="archive",
             launcher="manual",
         )
-        self.assertEqual(plan["command"], "uv tool install --force prumo-runtime")
+        self.assertEqual(plan["command"], "archive")
+        self.assertNotIn("prumo-runtime", plan.get("uv_target") or "")
 
 
 class ResolveLocalSourceDir(unittest.TestCase):

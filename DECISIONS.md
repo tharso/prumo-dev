@@ -9,9 +9,9 @@ Use o tópico para encontrar decisões ativas na sua área antes de propor mudan
 | Tópico                | Entradas                                                                                  |
 |-----------------------|-------------------------------------------------------------------------------------------|
 | `workspace-layout`    | 2026-04-15 (#65), 2026-04-22 (workspace-first), 2026-05-04 (#77), 2026-06-21 (#97 mapas), 2026-06-25 (#114 perfil modular), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#139 guarda-corpos), 2026-07-02 (#140 fichário), 2026-07-02 (#141 diário), 2026-07-03 (#147 ideias), 2026-07-03 (#148 conexões), 2026-07-24 (#194 perímetro de leitura), 2026-07-16 (#177 dívidas estruturais), 2026-07-24 (#201 índice de projetos) |
-| `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-04 (#158 detecção defasagem), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime), 2026-07-05 (#170 transporte de update local), 2026-07-12 (#172 taxonomia do picker), 2026-07-19 (#191 decidir mostra o item), 2026-07-24 (#195 dieta fase 1 — produtor do cache de versão), 2026-07-16 (#177 dívidas estruturais), 2026-07-26 (#190 store unificada + camada de sessão), 2026-07-27 (#181 PACKAGING.md) |
-| `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first), 2026-05-06 (quality-gate), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#141 diário — emenda à #68), 2026-07-25 (baseline ruff 6 / 868), 2026-07-26 (baseline coverage 85), 2026-07-26 (#190 store unificada), 2026-07-26 (#180 rota fásica — emenda à #195), 2026-07-27 (#180 gate da rota, teto 6788), 2026-07-27 (#181 PACKAGING.md) |
-| `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist), 2026-06-24 (#110 não-bundle), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime), 2026-07-05 (#170 transporte de update local), 2026-07-16 (#177 dívidas estruturais), 2026-07-27 (#181 PACKAGING.md) |
+| `skills-distribution` | 2026-04-14 (skills-first), 2026-04-15 (#65), 2026-04-21 (tharso-voice), 2026-05-04 (#77), 2026-06-23 (#102 decidir), 2026-06-24 (#109/#110 decidir conteúdo), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-04 (#158 detecção defasagem), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime), 2026-07-05 (#170 transporte de update local), 2026-07-12 (#172 taxonomia do picker), 2026-07-19 (#191 decidir mostra o item), 2026-07-24 (#195 dieta fase 1 — produtor do cache de versão), 2026-07-16 (#177 dívidas estruturais), 2026-07-26 (#190 store unificada + camada de sessão), 2026-07-27 (#181 PACKAGING.md), 2026-07-27 (#232 tarball universal) |
+| `governance`          | 2026-04-14 (CLAUDE.md), 2026-04-20 (#68 HANDOVER), 2026-04-22 (workspace-first), 2026-05-06 (quality-gate), 2026-06-26 (#125/#126 acervo+fim), 2026-07-02 (#141 diário — emenda à #68), 2026-07-25 (baseline ruff 6 / 868), 2026-07-26 (baseline coverage 85), 2026-07-26 (#190 store unificada), 2026-07-26 (#180 rota fásica — emenda à #195), 2026-07-27 (#180 gate da rota, teto 6788), 2026-07-27 (#181 PACKAGING.md), 2026-07-27 (#232 tarball universal) |
+| `distribution`        | 2026-04-14 (skills-first), 2026-04-21 (tharso-voice), 2026-04-22 (multi-cliente), 2026-04-22 (split dev/dist), 2026-06-24 (#110 não-bundle), 2026-07-05 (#159 espelho preserva história), 2026-07-05 (#108 update via runtime), 2026-07-05 (#170 transporte de update local), 2026-07-16 (#177 dívidas estruturais), 2026-07-27 (#181 PACKAGING.md), 2026-07-27 (#232 tarball universal) |
 | `dispatch-bootstrap`  | 2026-04-21 (#69 despacho), 2026-06-23 (#104 briefing rico), 2026-06-26 (#125/#126 acervo+fim), 2026-06-28 (#134/#135 onboarding+entrada), 2026-07-05 (#160 porta/instalação agnóstica), 2026-07-12 (#172 taxonomia do picker), 2026-07-24 (#194 perímetro de leitura), 2026-07-24 (#201 índice de projetos), 2026-07-25 (#197 semente substitui releitura), 2026-07-25 (#206 outras_secoes + gate por capacidade), 2026-07-25 (#196 briefing em dois tempos), 2026-07-26 (#216 seed em arquivo), 2026-07-26 (#180 rota fásica — emenda à #195) |
 | `multiagent-coord`    | 2026-04-20 (#68 HANDOVER), 2026-07-24 (#194 perímetro de leitura — delegação)             |
 | `documentation`       | 2026-04-14 (CLAUDE.md), 2026-06-21 (#97 mapas), 2026-07-03 (#149 guia Obsidian)           |
@@ -60,6 +60,20 @@ Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões ant
 - `code-quality` — métricas de qualidade do codebase, quality gate, baseline.
 
 ---
+
+## 2026-07-27 — Update: tarball do espelho é o transporte universal; registry nunca (#232)
+
+**Tópicos:** distribution, skills-distribution, governance
+
+**Issues relacionadas:** [#232](https://github.com/tharso/prumo-dev/issues/232) (pedido direto do dono: "updates de produto funcionando nos workspaces dos usuários").
+
+**Relações com decisões anteriores:** estende #108 (update por elo) e #170 (instalação local do cache — o "erro honesto" de lá vira fallback pro tarball); mantém #159 (espelho preserva história — é o que torna o tarball fonte estável); nenhuma revogação.
+
+**Contexto:** o caso real da máquina de referência provou o beco (cache do host preso em versão velha) e a investigação achou o risco: os planos de registry apontavam pra um pacote INEXISTENTE no PyPI (dependency confusion à espera de squatter).
+
+**Decisão:** transporte universal = tarball `main.tar.gz` do espelho, com staging validado (filtro de extração, pyproject+VERSION+árvore, artefato EXATAMENTE o anunciado — mismatch aborta) e reinstalação preservando o gerenciador; `unknown` → install-script; **nenhum plano cita registry público** (guard). Validação pós-update contra a versão do ARTEFATO; só então o repair propaga ao workspace. **Recomendação operacional ao dono (fora do PR): registrar `prumo-runtime` no PyPI como placeholder** — ocupar o nome fecha a janela de confusão por fora.
+
+**Alternativas consideradas:** publicar no PyPI de verdade → rejeitado por ora (canal é main-latest via espelho, #170; publicar exige processo de release próprio — pode virar decisão futura); `git+https` como fonte pip → rejeitado (exige git no host; o tarball só precisa de HTTPS); apontar o update pro cache do host com retry → rejeitado (o host materializa quando quer — foi o beco original).
 
 ## 2026-07-27 — Fecho do épico #177: PACKAGING.md sela o mapa de empacotamento (#181, M4)
 
