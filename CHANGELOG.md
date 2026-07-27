@@ -6,6 +6,10 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.69.0] - 2026-07-27
+
+### Added
+- **`prumo repair` avisa quando o mapa perde caminho (#247, P7 do épico #240)** — o repair regenera o `Prumo/AGENT.md` do template quando há drift de versão; o que o usuário tivesse adicionado ao `## Mapa do workspace` sumia com backup silencioso ("backup que ninguém lê é lixo com data"). Agora a saída do comando lista **nominalmente** os caminhos que estavam no mapa anterior e não aparecem no regenerado, com o backup e o destino certo: `Prumo/Agente/MAPA-AUTORAL.md`, que sobrevive ao repair (#241). Comparação por **identidade de path** (primeiro caminho entre crases do bullet): release que muda só a DESCRIÇÃO não dispara alarme; o aviso relata o observável e **não atribui autoria que o runtime não conhece**. Mapa ausente ou heading duplicado é fail-safe (repair completa, sem aviso falso). Lógica em `canonical_diff.py` — módulo novo, mantendo a fiação no `repair_workspace()` em duas linhas.
 ## [5.68.0] - 2026-07-27
 
 ### Fixed
