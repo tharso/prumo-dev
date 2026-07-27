@@ -14,6 +14,7 @@ Antes de gerar QUALQUER arquivo, verificar se ele já existe na pasta do usuári
 | Prumo/Agente/PERFIL.md | **Não sobrescrever silenciosamente** conteúdo do usuário. **Exceção:** se o arquivo existir apenas como **esqueleto do runtime** (seções com `_Preencher no setup._`, sem dados reais), o setup **completa-o** — não é sobrescrita. Em setup inicial pode criar/completar; em reconfiguração com dados reais, pedir confirmação explícita. Conteúdo histórico e drift de governança vão para a higiene assistida, com backup em `.prumo/backups/perfil-hygiene/<timestamp>/PERFIL.md`. |
 | Prumo/PAUTA.md, Prumo/INBOX.md, Prumo/REGISTRO.md, Prumo/IDEIAS.md | **NÃO sobrescrever.** Informar: "Encontrei [arquivo] com conteúdo existente. Mantendo o atual." |
 | Prumo/Agente/PESSOAS.md, Prumo/Agente/ROTINA.md, Prumo/Agente/SAUDE.md, Prumo/Agente/INFRA.md, Prumo/Agente/PROJETOS.md, Prumo/Agente/RELACOES.md, Prumo/Referencias/INDICE.md, Prumo/Referencias/EMAIL-CURADORIA.md | **NÃO sobrescrever.** Informar: "Encontrei [arquivo] com conteúdo existente. Mantendo o atual." |
+| Prumo/Agente/MAPA-AUTORAL.md | **NÃO sobrescrever (#241).** Esqueleto criado no setup se ausente; o conteúdo (caminhos autorais somados ao perímetro de leitura) é do usuário e nenhum caminho automático o reescreve — `repair` reporta ausência sem recriar. |
 | Prumo/Agente/PROJETOS.md (blocos `<!-- prumo:pulso:begin/end -->`) | **Exceção cirúrgica (#201):** só o `prumo projetos --sync` reescreve o MIOLO desses blocos, transacionalmente; todo byte fora deles é autoral e intocável. Estrutura inválida = zero escrita. |
 | Prumo/Agente/INDEX.md (legado) | **NÃO sobrescrever.** Aposentado (#97): não é mais gerado, mas workspaces antigos têm um tombstone aqui — preservar. |
 | [Area]/README.md | **NÃO sobrescrever.** Informar: "A pasta [Area] já tem um README com contexto. Mantendo." |
@@ -36,6 +37,7 @@ Ao final da geração de arquivos, mostrar resumo claro:
 | AGENTS.md (raiz) | agents-md-template.md | Ponteiro de compatibilidade para Codex e outros agentes. |
 | Prumo/AGENT.md | agent-md-template.md | Fonte canônica: navegação, fallback chain, regras do workspace. |
 | Prumo/Agente/PERFIL.md | perfil-template.md | Configuração pessoal: áreas, tom, integrações. Nunca atualizado automaticamente. |
+| Prumo/Agente/MAPA-AUTORAL.md | file-templates.md | Caminhos autorais do usuário, somados ao perímetro de leitura (#241). Esqueleto; nunca atualizado automaticamente. |
 | .prumo/system/PRUMO-CORE.md | prumo-core.md | Motor do sistema (única cópia completa no workspace — a vendored em `.prumo/skills/` é stub-ponteiro, #179). Atualizável automaticamente. |
 | Prumo/PAUTA.md | file-templates.md | Estado atual. Itens quentes, andamento, agendados. |
 | Prumo/INBOX.md | file-templates.md | Itens não processados. |

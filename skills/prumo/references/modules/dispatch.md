@@ -1,6 +1,6 @@
 # Dispatch
 
-> **module_version: 5.64.0**
+> **module_version: 5.65.0**
 >
 > Como o Prumo abre sessão e decide o que fazer. Substitui o bootstrap just-in-case (ler tudo antes de saber a intenção) por despacho baseado no que o usuário quer.
 
@@ -20,6 +20,7 @@ Ler:
 
 - `Prumo/AGENT.md` (porta curta)
 - `.prumo/system/PRUMO-CORE.md` — Parte 1 (identidade e interação, lida sempre)
+- `Prumo/Agente/MAPA-AUTORAL.md` — caminhos autorais somados ao perímetro (se existir; #241)
 
 Nunca ler, nesta fase: `PERFIL.md`, `EMAIL-CURADORIA.md`, `briefing-procedure.md`, playbooks operacionais em geral.
 

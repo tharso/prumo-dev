@@ -24,6 +24,7 @@ A **lista canônica ÚNICA** de carregamento do briefing (#195, emendada pela #1
 | F0 | sempre | `Prumo/AGENT.md` | (integral) | porta canônica |
 | F0 | sempre | `.prumo/system/PRUMO-CORE.md` | até: `# Parte 2 — Playbooks operacionais` | core (Parte 1) |
 | F0 | sempre | `.prumo/skills/prumo/references/modules/dispatch.md` | (integral) | protocolo de abertura (#248) |
+| F0 | sempre (autoral) | `Prumo/Agente/MAPA-AUTORAL.md` | (integral) | caminhos autorais do usuário (#241) |
 | F1 | sempre | `.prumo/skills/briefing/SKILL.md` | (integral) | esta skill |
 | F1 | sempre | `.prumo/skills/prumo/references/modules/briefing-procedure.md` | (integral) | espinha |
 | F1 | sempre | `.prumo/system/PRUMO-CORE.md` | `## Guardrails` | core (seção) |

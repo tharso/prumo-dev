@@ -1,7 +1,7 @@
 {
-  "_note": "Atualizado em 2026-07-27 (3a rodada): 6493 -> 7696 por RECALIBRACAO DE INSTRUMENTO aprovada pelo dono (#248): dispatch.md (1.189w) e leitura obrigatoria de abertura (opening_reads do AGENT.md) mas estava FORA do manifesto — o gasto ja existia, o termometro nao via ('dieta por esconder o bolo atras da balanca', achado P1-8 do Codex). Nao e contrato novo de conteudo; a regra da catraca ganhou o caso 'recalibracao aprovada' no CLAUDE.md e a classe fechou com teste (toda leitura de abertura tem de estar no cesto). Historico: 6788 (M3) -> 6401 (C1-C6) -> 6493 (contratos 27/07) -> 7696 (recalibracao #248). Alvo 4.999 da #228 segue, agora sobre regua honesta. Demais metricas mantidas.",
+  "_note": "Atualizado em 2026-07-27 (4a rodada): 7696 -> 7795 (+99) por CONTRATO NOVO aprovado pelo dono (#241, P1 do epico #240, teto autorizado +100): MAPA-AUTORAL.md — o usuario declara pastas autorais num arquivo que o runtime nao reescreve e elas SOMAM-SE ao perimetro de leitura (frase no perimetro das portas/wrappers, item na lista de abertura do core e do dispatch, linha 'sempre (autoral)' no manifesto, esqueleto criado no setup). E a garantia pedida no relatorio de 27/07: update+repair nao desfazem a arrumacao. Historico: 6788 (M3) -> 6401 (C1-C6) -> 6493 (contratos 27/07) -> 7696 (recalibracao #248) -> 7795 (P1 #241). Alvo 4.999 da #228 segue. Demais metricas mantidas.",
   "ruff_violations": 6,
   "coverage_pct": 85,
   "largest_file_lines": 868,
-  "briefing_f0f1_words": 7696
+  "briefing_f0f1_words": 7795
 }

@@ -93,7 +93,7 @@ def render_root_wrapper(
 
 {render_rules("wrapper", state_path=state_path, profile=profile)}
 {dispatch_section}
-{_render_reading_perimeter(map_reference=f"do mapa do workspace em `{canonical_target}`", discovery_paths="`Prumo/` e `.prumo/`" if canonical_target.startswith("Prumo/") else None)}
+{_render_reading_perimeter(map_reference=f"do mapa do workspace em `{canonical_target}`", discovery_paths="`Prumo/` e `.prumo/`" if canonical_target.startswith("Prumo/") else None, autoral_map="Prumo/Agente/MAPA-AUTORAL.md" if canonical_target.startswith("Prumo/") else "Agente/MAPA-AUTORAL.md")}
 
 ## Instrução primária
 
@@ -103,7 +103,9 @@ Agente: **{agent_name}**
 """
 
 
-def _render_reading_perimeter(*, map_reference: str, discovery_paths: str | None = None) -> str:
+def _render_reading_perimeter(
+    *, map_reference: str, discovery_paths: str | None = None, autoral_map: str
+) -> str:
     """Seção "Perímetro de leitura" (#194).
 
     O workspace do usuário convive com repos de código (node_modules, .git)
@@ -126,7 +128,7 @@ def _render_reading_perimeter(*, map_reference: str, discovery_paths: str | None
 
 O workspace pode conter outros projetos com centenas de milhares de arquivos (`node_modules`, `.git`, caches, builds) que **não** são do Prumo.
 
-1. **Perímetro automático:** por iniciativa própria, opere apenas nos caminhos {map_reference}. Zero exploração espontânea da raiz{discovery_clause}.
+1. **Perímetro automático:** por iniciativa própria, opere apenas nos caminhos {map_reference}, somados aos declarados em `{autoral_map}` (leia-o na abertura, quando existir). Zero exploração espontânea da raiz{discovery_clause}.
 2. **Nenhuma enumeração recursiva ou ilimitada** da raiz ou de pastas fora do mapa, por qualquer ferramenta (`find`, `ls -R`, `rg --files`, `tree`, glob `**/*`, APIs de filesystem). `node_modules`, `.git`, caches e builds ficam fora de qualquer listagem, em qualquer escopo — e os backups do próprio Prumo também: `.prumo/backups/` e `.prumo/backup/` são snapshots, nunca conteúdo de trabalho (#213); listagem de `.prumo/` é rasa por default.
 3. **Escopo autorizado pela tarefa:** quando o usuário citar projeto ou caminho fora do mapa, expandir de forma dirigida e rasa — listar o top-level do caminho citado e aprofundar só no rastro do alvo. Ambiguidade → perguntar o caminho, não explorar.
 4. **Delegação leva o perímetro junto:** o prompt de qualquer subagente inclui os caminhos permitidos e a proibição de enumerar fora deles. Nunca "explore o workspace"."""
@@ -275,11 +277,11 @@ Fora disso, abertura não abre mais nada. A saudação vem proativa, com 2-4 op�
 
 ## Mapa do workspace
 
-> Fonte canônica de navegação do workspace. Se outra árvore divergir desta, esta prevalece.
+> Fonte canônica de navegação do workspace. Se outra árvore divergir desta, esta prevalece — e o mapa autoral soma-se a ela.
 
 {workspace_map}
 
-{_render_reading_perimeter(map_reference="do mapa acima", discovery_paths="`Prumo/` e `.prumo/`" if core_path.startswith(".prumo/") else None)}
+{_render_reading_perimeter(map_reference="do mapa acima", discovery_paths="`Prumo/` e `.prumo/`" if core_path.startswith(".prumo/") else None, autoral_map="Prumo/Agente/MAPA-AUTORAL.md" if core_path.startswith(".prumo/") else "Agente/MAPA-AUTORAL.md")}
 
 ## Regras rápidas
 
@@ -400,6 +402,21 @@ def render_health_md() -> str:
 ## Estado atual
 
 _Sem informações registradas ainda._
+"""
+
+
+def render_mapa_autoral_md() -> str:
+    """Mapa autoral (#241): pastas do usuário somadas ao perímetro de leitura.
+
+    Esqueleto criado no setup (categoria authorial: nunca sobrescrito; repair
+    reporta ausência sem recriar). O conteúdo é do usuário; as guardas de
+    leitura que o AGENTE respeita moram no `load-policy.md`.
+    """
+    return """# Mapa autoral
+
+> Pastas SUAS, além do mapa gerado: uma por linha, caminho relativo à raiz entre crases, sem globs. O Prumo lê e aponta; nunca indexa nem escreve nelas sem pedido.
+
+<!-- Exemplo: - `Escrita/` — trabalho autoral; contrato em Escrita/README.md -->
 """
 
 

@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.65.0] - 2026-07-27
+
+### Added
+- **Mapa autoral: pastas do usuário sobrevivem a update/repair e entram no perímetro (#241, P1 do épico #240)** — a garantia pedida no relatório de 27/07 ("evitar que uma atualização do Prumo desfaça a arrumação"): o usuário declara pastas autorais em **`Prumo/Agente/MAPA-AUTORAL.md`** (`Agente/MAPA-AUTORAL.md` no flat) — arquivo **authorial**: esqueleto criado no setup (runtime e caminho manual geram o MESMO esqueleto, paridade travada por teste), nunca sobrescrito, e o `repair` preserva byte a byte e **reporta** ausência sem recriar (deletar o mapa é decisão do usuário). Os caminhos declarados **somam-se ao perímetro de leitura**: frase única no builder propaga a todas as portas/wrappers (invariantes novos na coleção única, dois layouts), o arquivo entra na lista fechada de abertura (core, Passo 1 do dispatch, Camada 1 do load-policy) e no manifesto com o gatilho novo **`sempre (autoral)`** — conta no cesto quando presente; ausência tolerada pelo audit (mapa deletado ≠ instalação quebrada; `sempre` puro segue fail-closed). Contrato de consumo no `load-policy.md`: só backticks é caminho, inválidos (absoluto, `~`, URI, `.`, `..`, glob) ignorados e reportados, tudo dentro da raiz, symlink pra fora não segue, **só leitura e listagem plana** (declarar não autoriza indexar nem escrever), exclusões fixas valem mesmo declaradas (`_to_delete/` inclusive); delegação leva os caminhos autorais no prompt. Catraca: **7.696 → 7.795 (+99, teto de +100 aprovado pelo dono)**, recibo do instrumento oficial no PR.
+
 ## [5.64.0] - 2026-07-27
 
 ### Fixed

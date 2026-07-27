@@ -318,6 +318,7 @@ Após coletar todas as respostas:
 3. Ler `references/agent-md-template.md` → gerar `Prumo/AGENT.md` (fonte canônica do workspace)
 4. Ler `references/perfil-template.md` → gerar `Prumo/Agente/PERFIL.md` (configuração pessoal: identidade, áreas, tom — **sem** rituais). Se o runtime já criou o `PERFIL.md` como esqueleto (`_Preencher no setup._`), **preenchê-lo** com os dados do usuário — não conta como sobrescrita protegida.
    - Criar `Prumo/Agente/ROTINA.md` (cabeçalho: "rituais, horários, hábitos e cadências sem hora") e **populá-lo** com os rituais **sem hora** coletados na Etapa 4 — uma linha por padrão estável, só o que muda alguma decisão do Prumo. Para os rituais **com hora**, oferecer criar na agenda (não escrever no calendário sem o ok). Descartar o que não muda decisão (poda).
+   - Criar `Prumo/Agente/MAPA-AUTORAL.md` a partir do esqueleto em `references/file-templates.md` (#241) — **idêntico ao do runtime**; se já existir, mão fora (conteúdo é do usuário).
 5. Copiar `references/prumo-core.md` → gerar `.prumo/system/PRUMO-CORE.md` (motor do sistema)
 6. Ler `references/claude-md-template.md` → gerar `CLAUDE.md` na raiz (ponteiro)
 7. Gerar `AGENT.md` na raiz (ponteiro, mesmo conteúdo adaptado)

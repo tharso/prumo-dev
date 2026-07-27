@@ -13,6 +13,11 @@ PERIMETER_INVARIANTS: tuple[str, ...] = (
     # Escopo 1: perímetro automático, sem exploração espontânea.
     "Perímetro automático",
     "Zero exploração espontânea da raiz",
+    # #241: os caminhos autorais declarados pelo usuário SOMAM-SE ao mapa —
+    # frases estáveis nos dois layouts (o path muda: Prumo/Agente/ vs Agente/).
+    "MAPA-AUTORAL.md",
+    "somados aos declarados em",
+    "(leia-o na abertura, quando existir)",
     # Proibição por efeito, não por comando — qualquer ferramenta.
     "Nenhuma enumeração recursiva ou ilimitada",
     "por qualquer ferramenta",
