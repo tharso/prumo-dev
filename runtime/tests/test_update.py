@@ -699,7 +699,23 @@ class ArchiveTransportTests(unittest.TestCase):
             url = self._make_archive(Path(tmp), version="5.1.0")
             staged_dir, _, error = self._stage(url, "5.99.0")
         self.assertIsNone(staged_dir)
-        self.assertIn("anunciou 5.99.0", error)
+        self.assertIn("ATRASADO", error)
+
+    def test_failed_staging_never_reaches_installer(self) -> None:
+        # Codex r3: mismatch aborta ANTES de qualquer uv/pip — o instalador
+        # não pode ser tocado com artefato reprovado.
+        from prumo_runtime.commands.update import _execute_plan
+
+        with tempfile.TemporaryDirectory() as tmp:
+            url = self._make_archive(Path(tmp), version="6.0.0")
+            plan = {"command": "archive", "archive_installer": "uv", "remote_version": "5.99.0"}
+            with patch.dict(os.environ, {"PRUMO_UPDATE_ARCHIVE_URL": url}), patch(
+                "prumo_runtime.commands.update._install_from_dir"
+            ) as installer:
+                rc, artifact_version = _execute_plan(plan, "archive")
+        self.assertEqual(rc, 1)
+        self.assertIsNone(artifact_version)
+        installer.assert_not_called()
 
     def test_metadata_bomb_member_count_is_capped(self) -> None:
         # Codex r2: o teto de membros age DURANTE a iteração (tar.next),

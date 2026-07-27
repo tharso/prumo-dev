@@ -491,8 +491,9 @@ def stage_archive_source(remote_version: str, work_dir: Path) -> tuple[str | Non
     nunca o registry (prumo-runtime não é publicado; apontar pro PyPI é
     convite a dependency confusion). Retorna (staged_dir, staged_version,
     error): o artefato só é aceito se `pyproject`+`VERSION`+árvore validarem
-    e a versão for >= a remota esperada (a main pode ter avançado entre o
-    fetch e o download — regredir nunca).
+    e a versão for EXATAMENTE a anunciada pelo plano — mismatch em qualquer
+    direção aborta (mais nova = main avançou, rode de novo; mais velha =
+    artefato atrasado/inconsistente).
 
     `PRUMO_UPDATE_ARCHIVE_URL` (env) troca a fonte — usado pelos testes com
     tarball local `file://`; a URL default é HTTPS do espelho.
@@ -534,10 +535,13 @@ def stage_archive_source(remote_version: str, work_dir: Path) -> tuple[str | Non
     if staged_version != remote_version:
         # Contrato ESTRITO (review Codex r2): instalar versão diferente da
         # que o plano/oferta anunciou — mesmo que mais nova — é instalar o
-        # que o usuário não confirmou. Main avançou? Rode o update de novo.
+        # que o usuário não confirmou.
+        if _version_tuple(staged_version) > _version_tuple(remote_version):
+            detail = "a versão pública avançou entre a checagem e o download; rode `prumo update` de novo."
+        else:
+            detail = "o tarball está ATRASADO em relação à versão anunciada — espelho inconsistente; tente de novo mais tarde."
         return None, None, (
-            f"tarball traz {staged_version}, mas o plano anunciou {remote_version} — "
-            "a versão pública avançou entre a checagem e o download; rode `prumo update` de novo."
+            f"tarball traz {staged_version}, mas o plano anunciou {remote_version} — {detail}"
         )
     return str(roots[0]), staged_version, None
 
