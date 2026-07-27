@@ -61,8 +61,9 @@ def _make_ws(parent: Path) -> Path:
     return workspace
 
 
-def _force_core_version(workspace: Path, version: str) -> None:
-    core = workspace / ".prumo" / "system" / "PRUMO-CORE.md"
+def _force_core_version(workspace: Path, version: str, *, layout: str = "nested") -> None:
+    from prumo_runtime.workspace_paths import workspace_paths
+    core = workspace_paths(workspace, layout_mode=layout).core
     text = core.read_text(encoding="utf-8")
     core.write_text(
         re.sub(r"prumo_version:\s*[0-9.]+", f"prumo_version: {version}", text, count=1),
@@ -146,20 +147,45 @@ class RepairAvisoTest(unittest.TestCase):
             result = repair_workspace(ws)
         self.assertIn("SoNaSegunda", result.get("canonical_map_dropped", []))
 
-    def test_destino_do_aviso_segue_o_layout(self) -> None:
-        """[r1]: em flat o mapa autoral é `Agente/MAPA-AUTORAL.md`."""
-        from prumo_runtime.workspace_paths import workspace_paths
+    def test_destino_do_aviso_segue_o_layout_no_fluxo_real(self) -> None:
+        """[r1]: nested E flat pelo fluxo completo — repair_workspace →
+        resultado → saída humana. Cálculo isolado de path não prova fiação."""
         with tempfile.TemporaryDirectory() as tmp:
             ws = _make_ws(Path(tmp))
             _force_core_version(ws, "1.0.0")
             result = repair_workspace(ws)
         self.assertEqual(result.get("autoral_map_path"), "Prumo/Agente/MAPA-AUTORAL.md")
-        flat_paths = workspace_paths(Path("/tmp/x"), layout_mode="flat")
-        self.assertEqual(
-            flat_paths.relative(flat_paths.agente_root / "MAPA-AUTORAL.md"),
+
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp) / "flat"
+            config = WorkspaceConfig(
+                workspace=ws,
+                user_name="Test User",
+                agent_name="Prumo",
+                timezone_name="America/Sao_Paulo",
+                briefing_time="09:00",
+                layout_mode="flat",
+                workspace_name="Flat",
+            )
+            ensure_directories(ws)
+            install_skills(ws, layout_mode="flat")
+            create_missing_files(config)
+            canonical = ws / "AGENT.md"
+            canonical.write_text(
+                "# AGENT\n\n## Mapa do workspace\n\n- `Escrita/`: autoral\n",
+                encoding="utf-8",
+            )
+            _force_core_version(ws, "1.0.0", layout="flat")
+            buffer = io.StringIO()
+            with redirect_stdout(buffer):
+                run_repair(Namespace(workspace=str(ws), format="text"))
+            out = buffer.getvalue()
+        self.assertIn(
             "Agente/MAPA-AUTORAL.md",
-            "no flat o destino do aviso tem de ser Agente/MAPA-AUTORAL.md",
+            out,
+            "no flat a saída tem de apontar Agente/MAPA-AUTORAL.md",
         )
+        self.assertNotIn("Prumo/Agente/MAPA-AUTORAL.md", out)
 
     def test_saida_humana_traz_o_aviso_e_o_destino_certo(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

@@ -23,7 +23,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 MAP_HEADING = "## Mapa do workspace"
-_BULLET_PATH = re.compile(r"^\s*[-*]\s+`([^`]+)`")
+# CommonMark aceita `-`, `*` e `+` como marcador de lista: aceitar só dois
+# faria uma entrada autoral legítima sumir sem aviso (Codex, diff r1).
+_BULLET_PATH = re.compile(r"^\s*[-*+]\s+`([^`]+)`")
 
 
 def _heading_level(line: str) -> int:
