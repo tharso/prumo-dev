@@ -34,7 +34,9 @@ _VERB_FORBIDDEN = re.compile(
     r"(?:deletar|apagar|excluir|remover\s+fisicamente)\s+(?:o\s+|um\s+)?(?:arquivo\s+)?origina(?:l|is)",
     re.IGNORECASE,
 )
-_OPS_RE = re.compile(r"\b(?:rm|rmdir|unlink|os\.remove|shutil\.rmtree)\b", re.IGNORECASE)
+# Aceita a forma protegida (os_remove/shutil_rmtree) — o "." desses tokens
+# cortaria a oração no _CLAUSE_SPLIT ([r6]); eles são escudados antes do split.
+_OPS_RE = re.compile(r"\b(?:rm|rmdir|unlink|os[._]remove|shutil[._]rmtree)\b", re.IGNORECASE)
 _OBJ_RE = re.compile(r"\b(?:original|origina(?:l|is)|inbox)\b", re.IGNORECASE)
 _CLAUSE_SPLIT = re.compile(r"[.!?;:—]")
 # Negação imediatamente antes da operação (mesma oração, janela curta).
@@ -46,6 +48,9 @@ _NEG_NEAR = re.compile(
 
 def _deletion_offenses(flat: str) -> list[str]:
     """Trechos que AFIRMAM deleção do original — lógica única, testável."""
+    # Escuda os tokens com ponto ANTES do split de orações ([r6]: sem isso,
+    # "os.remove" vira "os" + "remove" e o matcher nunca vê a operação).
+    flat = flat.replace("os.remove", "os_remove").replace("shutil.rmtree", "shutil_rmtree")
     out: list[str] = []
     for clause in _CLAUSE_SPLIT.split(flat):
         # Verbo PT: a negação é a que precede o próprio verbo, na oração.
@@ -195,6 +200,9 @@ class QuarentenaContractsTest(unittest.TestCase):
             "use rm no diretório do inbox",
             # [r5]: negação de OUTRA ação na mesma oração não absolve a destrutiva.
             "No inbox, não mova o arquivo e rode rm no original",
+            # [r6]: tokens com ponto não podem ser cortados pelo split de orações.
+            "use os.remove no original do inbox",
+            "aplique shutil.rmtree no diretório do inbox",
         )
         for texto in ofensas:
             with self.subTest(texto=texto):
@@ -207,6 +215,9 @@ class QuarentenaContractsTest(unittest.TestCase):
             # [D9] r4: negação ENTRE objeto e operação, mesma oração.
             "no original do inbox, não execute unlink",
             "no inbox, jamais rode rm",
+            # [r6]: negação amarrada também vale pros tokens com ponto.
+            "nunca chame os.remove no original do inbox",
+            "jamais use shutil.rmtree no inbox",
         )
         for texto in permitidos:
             with self.subTest(texto=texto):
