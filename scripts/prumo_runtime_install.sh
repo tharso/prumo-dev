@@ -40,6 +40,19 @@ bootstrap_source_archive() {
 }
 
 resolve_root_dir() {
+  # Diretório JÁ VALIDADO pelo `prumo update` (#232): instala como cópia
+  # (modo archive, nunca editable — o diretório é temporário) e sem nenhum
+  # download/extração adicional.
+  if [ -n "${PRUMO_INSTALL_SOURCE_DIR:-}" ]; then
+    if [ ! -f "${PRUMO_INSTALL_SOURCE_DIR}/VERSION" ] || [ ! -f "${PRUMO_INSTALL_SOURCE_DIR}/pyproject.toml" ]; then
+      echo "erro: PRUMO_INSTALL_SOURCE_DIR não parece um checkout válido do Prumo." >&2
+      exit 1
+    fi
+    ROOT_DIR="$(cd "${PRUMO_INSTALL_SOURCE_DIR}" && pwd)"
+    INSTALL_MODE="archive"
+    return 0
+  fi
+
   if [ -n "${PRUMO_INSTALL_ROOT_DIR:-}" ] && [ -f "${PRUMO_INSTALL_ROOT_DIR}/VERSION" ] && [ -f "${PRUMO_INSTALL_ROOT_DIR}/pyproject.toml" ]; then
     ROOT_DIR="$(cd "${PRUMO_INSTALL_ROOT_DIR}" && pwd)"
     INSTALL_MODE="editable"

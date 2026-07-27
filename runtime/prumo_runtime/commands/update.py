@@ -546,21 +546,6 @@ def stage_archive_source(remote_version: str, work_dir: Path) -> tuple[str | Non
     return str(roots[0]), staged_version, None
 
 
-def _download_install_script() -> str:
-    """Baixa install script pra temp file. Retorna path. Caller limpa."""
-    assert CURL_INSTALL_URL.startswith("https://"), "URL do install script deve ser HTTPS"
-    fd, path = tempfile.mkstemp(suffix=".sh", prefix="prumo_install_")
-    os.close(fd)
-    try:
-        with urllib.request.urlopen(CURL_INSTALL_URL, timeout=30) as response:
-            data = response.read()
-        Path(path).write_bytes(data)
-    except Exception:
-        os.unlink(path)
-        raise
-    return path
-
-
 def _install_from_dir(source_dir: str, installer: str) -> int:
     """Instala o runtime de um diretório local, preservando o gerenciador da
     instalação atual (#232 — trocar de gerenciador deixaria o executável
@@ -601,12 +586,13 @@ def _execute_plan(plan: dict, method: str) -> tuple[int, str | None]:
         return subprocess.run(["uv", "tool", "install", "--force", target]).returncode, plan.get("remote_version")
 
     if method == "install-script":
-        # O script instala "latest em main" — sem contrato, é o mesmo bypass
-        # do registry em outra roupa (review Codex r4): a versão instalada
-        # poderia divergir da anunciada. Staging PRIMEIRO (mesmo preflight e
-        # contrato estrito do archive); o script então consome o tarball JÁ
-        # VALIDADO via PRUMO_INSTALL_ARCHIVE_URL (env que ele suporta),
-        # preservando marker e launcher.
+        # O script instalava "latest em main" sem contrato — o mesmo bypass
+        # do registry em outra roupa (review Codex r4-r5). Staging PRIMEIRO
+        # (mesmo preflight e contrato estrito do archive); depois roda o
+        # script CONTIDO no artefato validado (a versão do script casa com o
+        # artefato — zero download adicional, nem do próprio script) em modo
+        # PRUMO_INSTALL_SOURCE_DIR: instala como cópia (nunca editable de um
+        # tmp) e grava o marker source_kind=archive.
         remote_version = plan.get("remote_version") or ""
         with tempfile.TemporaryDirectory(prefix="prumo-update-") as tmp:
             staged_dir, staged_version, error = stage_archive_source(
@@ -615,18 +601,14 @@ def _execute_plan(plan: dict, method: str) -> tuple[int, str | None]:
             if staged_dir is None:
                 print(f"Update abortado: {error}")
                 return 1, None
-            validated_tarball = (Path(tmp) / "prumo-main.tar.gz").resolve()
-            script_path = _download_install_script()
-            try:
-                print(
-                    f"Executando install script de: {CURL_INSTALL_URL} "
-                    f"(fonte: tarball validado {staged_version})"
-                )
-                env = {**os.environ, "PRUMO_INSTALL_ARCHIVE_URL": validated_tarball.as_uri()}
-                rc = subprocess.run(["bash", script_path], env=env).returncode
-                return rc, staged_version
-            finally:
-                os.unlink(script_path)
+            script_path = Path(staged_dir) / "scripts" / "prumo_runtime_install.sh"
+            if not script_path.is_file():
+                print("Update abortado: o artefato validado não traz o install script.")
+                return 1, None
+            print(f"Executando install script do artefato validado ({staged_version})")
+            env = {**os.environ, "PRUMO_INSTALL_SOURCE_DIR": staged_dir}
+            rc = subprocess.run(["bash", str(script_path)], env=env).returncode
+            return rc, staged_version
 
     return 1, None
 

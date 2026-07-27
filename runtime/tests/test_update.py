@@ -461,41 +461,22 @@ class PostUpdateTests(unittest.TestCase):
 class CurlSecureTests(unittest.TestCase):
     """Testa que o caminho curl baixa pra temp file e não usa process substitution."""
 
-    def test_execute_plan_curl_uses_temp_file(self) -> None:
-        # #232: o script agora roda DEPOIS do staging validado — o teste
-        # patcha o staging (unidade: só o consumo do script) e usa arquivo
-        # de script REAL (patchar os.unlink globalmente quebrava o cleanup
-        # do tempfile).
-        import tempfile as _tempfile
-
+    def test_missing_script_in_artifact_aborts(self) -> None:
+        # #232 r5: o script vem DO artefato; staged sem scripts/ → aborta
+        # (nunca baixa script avulso — _download_install_script morreu).
         from prumo_runtime.commands.update import _execute_plan
-        plan = {
-            "command": "install-script",
-            "explanation": "test",
-            "remote_version": "5.99.0",
-        }
-        fd, fake_script = _tempfile.mkstemp(suffix=".sh")
-        os.close(fd)
+
+        plan = {"command": "install-script", "remote_version": "5.99.0"}
         with patch(
             "prumo_runtime.commands.update.stage_archive_source",
-            return_value=("/tmp/staged", "5.99.0", None),
+            return_value=("/tmp/staged-sem-script", "5.99.0", None),
         ), patch(
-            "prumo_runtime.commands.update._download_install_script",
-            return_value=fake_script,
-        ) as mock_dl, patch(
-            "prumo_runtime.commands.update.subprocess.run",
-            return_value=MagicMock(returncode=0),
-        ) as mock_run:
+            "prumo_runtime.commands.update.subprocess.run"
+        ) as run:
             rc, artifact_version = _execute_plan(plan, "install-script")
-        self.assertEqual(rc, 0)
-        self.assertEqual(artifact_version, "5.99.0")
-        mock_dl.assert_called_once()
-        mock_run.assert_called_once()
-        args = mock_run.call_args[0][0]
-        self.assertEqual(args[0], "bash")
-        self.assertEqual(args[1], fake_script)
-        self.assertNotIn("-c", args)
-        self.assertFalse(Path(fake_script).exists(), "script temporário não foi limpo")
+        self.assertEqual(rc, 1)
+        self.assertIsNone(artifact_version)
+        run.assert_not_called()
 
     def test_install_from_dir_pip_uses_sys_executable(self) -> None:
         # #232: o pip do transporte de tarball usa o MESMO Python (--user),
@@ -661,6 +642,11 @@ class ArchiveTransportTests(unittest.TestCase):
         root = base / "prumo-main"
         (root / "runtime" / "prumo_runtime").mkdir(parents=True)
         (root / "skills").mkdir()
+        (root / "scripts").mkdir()
+        real_script = Path(__file__).resolve().parents[2] / "scripts" / "prumo_runtime_install.sh"
+        (root / "scripts" / "prumo_runtime_install.sh").write_text(
+            real_script.read_text(encoding="utf-8"), encoding="utf-8"
+        )
         (root / "VERSION").write_text(version + "\n", encoding="utf-8")
         (root / "pyproject.toml").write_text(
             f'[project]\nname = "{name}"\nversion = "{pyproject_version or version}"\n',
@@ -810,40 +796,88 @@ class ArchiveTransportTests(unittest.TestCase):
             url = self._make_archive(Path(tmp), version="6.0.0")
             plan = {"command": "install-script", "remote_version": "5.99.0"}
             with patch.dict(os.environ, {"PRUMO_UPDATE_ARCHIVE_URL": url}), patch(
-                "prumo_runtime.commands.update._download_install_script"
-            ) as dl, patch(
                 "prumo_runtime.commands.update.subprocess.run"
             ) as run:
                 rc, artifact_version = _execute_plan(plan, "install-script")
         self.assertEqual(rc, 1)
         self.assertIsNone(artifact_version)
-        dl.assert_not_called()
         run.assert_not_called()
 
-    def test_install_script_consumes_validated_tarball(self) -> None:
+    def test_install_script_runs_from_validated_artifact(self) -> None:
+        # Codex r5: o script vem DO ARTEFATO validado (zero download extra,
+        # nem do próprio script) com PRUMO_INSTALL_SOURCE_DIR apontando o
+        # diretório staged.
         from prumo_runtime.commands.update import _execute_plan
 
-        import tempfile as _tempfile
-
-        fd, fake_script = _tempfile.mkstemp(suffix=".sh")
-        os.close(fd)
         with tempfile.TemporaryDirectory() as tmp:
             url = self._make_archive(Path(tmp), version="5.99.0")
             plan = {"command": "install-script", "remote_version": "5.99.0"}
             with patch.dict(os.environ, {"PRUMO_UPDATE_ARCHIVE_URL": url}), patch(
-                "prumo_runtime.commands.update._download_install_script",
-                return_value=fake_script,
-            ), patch(
                 "prumo_runtime.commands.update.subprocess.run",
                 return_value=MagicMock(returncode=0),
             ) as run:
                 rc, artifact_version = _execute_plan(plan, "install-script")
         self.assertEqual(rc, 0)
         self.assertEqual(artifact_version, "5.99.0")
+        args = run.call_args[0][0]
+        self.assertEqual(args[0], "bash")
+        self.assertIn("prumo_runtime_install.sh", args[1])
         env = run.call_args.kwargs["env"]
-        self.assertIn("PRUMO_INSTALL_ARCHIVE_URL", env)
-        self.assertTrue(env["PRUMO_INSTALL_ARCHIVE_URL"].startswith("file://"))
-        self.assertIn("prumo-main.tar.gz", env["PRUMO_INSTALL_ARCHIVE_URL"])
+        self.assertIn("PRUMO_INSTALL_SOURCE_DIR", env)
+        self.assertIn(env["PRUMO_INSTALL_SOURCE_DIR"], args[1])
+
+    @unittest.skipUnless(os.name == "posix", "integração exige bash")
+    def test_install_script_source_dir_mode_end_to_end(self) -> None:
+        # Codex r5: Bash REAL + uv/curl falsos — zero download adicional,
+        # instalação por CÓPIA (nunca --editable de um tmp) e marker
+        # source_kind=archive/launcher=install-script.
+        import subprocess as _subprocess
+
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            self._make_archive(base, version="5.99.0")
+            source_dir = base / "prumo-main"
+            bin_dir = base / "bin"
+            bin_dir.mkdir()
+            uv_log = base / "uv-args.txt"
+            (bin_dir / "uv").write_text(
+                "#!/usr/bin/env bash\n"
+                f'if [ "$1" = "tool" ]; then echo "$@" >> {uv_log}; exit 0; fi\n'
+                'if [ "$1" = "python" ]; then echo /usr/bin/python3.11; exit 0; fi\n'
+                "exit 0\n",
+                encoding="utf-8",
+            )
+            (bin_dir / "curl").write_text(
+                "#!/usr/bin/env bash\necho 'curl chamado — download proibido' >&2\nexit 97\n",
+                encoding="utf-8",
+            )
+            for stub in ("uv", "curl"):
+                (bin_dir / stub).chmod(0o755)
+            data_home = base / "xdg"
+            env = {
+                **os.environ,
+                "PATH": f"{bin_dir}:{os.environ['PATH']}",
+                "PRUMO_INSTALL_SOURCE_DIR": str(source_dir),
+                "XDG_DATA_HOME": str(data_home),
+            }
+            result = _subprocess.run(
+                ["bash", str(source_dir / "scripts" / "prumo_runtime_install.sh")],
+                env=env,
+                capture_output=True,
+                text=True,
+                timeout=60,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            uv_args = uv_log.read_text(encoding="utf-8")
+            self.assertIn("tool install --force", uv_args)
+            self.assertNotIn("--editable", uv_args, "tmp staged instalado como editable")
+            self.assertNotIn("curl chamado", result.stderr, "houve download adicional")
+            marker = json.loads(
+                (data_home / "prumo" / "install-method.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(marker["source_kind"], "archive")
+            self.assertEqual(marker["launcher"], "install-script")
+            self.assertEqual(marker["installed_version"], "5.99.0")
 
     def test_copy_install_without_cached_version_falls_back_to_archive(self) -> None:
         # O beco morto do caso real do dono (#232): cache sem a versão nova
