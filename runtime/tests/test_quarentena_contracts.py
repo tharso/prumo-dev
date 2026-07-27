@@ -39,9 +39,11 @@ _VERB_FORBIDDEN = re.compile(
 _OPS_RE = re.compile(r"\b(?:rm|rmdir|unlink|os[._]remove|shutil[._]rmtree)\b", re.IGNORECASE)
 _OBJ_RE = re.compile(r"\b(?:original|origina(?:l|is)|inbox)\b", re.IGNORECASE)
 _CLAUSE_SPLIT = re.compile(r"[.!?;:—]")
-# Negação imediatamente antes da operação (mesma oração, janela curta).
+# Negação imediatamente antes da operação (mesma oração, janela curta, SEM
+# atravessar vírgula — [r7]: "Se não mover, deletar o original" não está
+# negado: a negação é do "mover", a vírgula abre outra ação).
 _NEG_NEAR = re.compile(
-    r"(?:nunca|não|nao|jamais|deixa\s+de|em\s+vez\s+de|falha)\S*\s+(?:\S+\s+){0,2}$",
+    r"(?:nunca|não|nao|jamais|deixa\s+de|em\s+vez\s+de|falha)[^,\s]*\s+(?:[^,\s]+\s+){0,2}$",
     re.IGNORECASE,
 )
 
@@ -203,6 +205,8 @@ class QuarentenaContractsTest(unittest.TestCase):
             # [r6]: tokens com ponto não podem ser cortados pelo split de orações.
             "use os.remove no original do inbox",
             "aplique shutil.rmtree no diretório do inbox",
+            # [r7]: negação de outra ação ANTES da vírgula não absolve a condicional.
+            "Se não mover, deletar o original do inbox",
         )
         for texto in ofensas:
             with self.subTest(texto=texto):
