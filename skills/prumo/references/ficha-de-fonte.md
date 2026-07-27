@@ -79,5 +79,5 @@ Uma ficha = um arquivo em `Prumo/Referencias/`.
    `Referencias/`, não referência catalogável (mesma lista de exclusão do
    `acervo` e do runtime).
 6. **Acervo e a ficha-ponteiro:** "excluir" no acervo arquiva **a ficha**
-   (quarentena em `Prumo/Arquivo/Acervo/`, fluxo normal) e **nunca toca o
+   (retenção em `Prumo/Arquivo/Acervo/`, fluxo normal) e **nunca toca o
    conteúdo externo** apontado — o Prumo cataloga, não é dono das estantes.

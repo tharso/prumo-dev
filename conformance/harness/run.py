@@ -50,8 +50,11 @@ def run_case_replay(scenario: Scenario, case: Case, which: str) -> Result:
     with tempfile.TemporaryDirectory(prefix=f"conf-{scenario.id}-") as tmp:
         ws = Path(tmp)
         _setup_workspace(scenario, ws)
-        hosts.apply_replay(ws, ops)
-        verdict = scenario.oracle(ws, **case.oracle_params)
+        trace = hosts.apply_replay(ws, ops)
+        params = dict(case.oracle_params)
+        if scenario.oracle_wants_trace:
+            params["trace"] = trace
+        verdict = scenario.oracle(ws, **params)
     return Result(scenario.id, case.variant, f"replay:{which}", verdict, tmp)
 
 
@@ -75,7 +78,12 @@ def run_case_claude(scenario: Scenario, case: Case, *, keep: bool = True) -> Res
         )
         verdict = Verdict.failed(reason)
     else:
-        verdict = scenario.oracle(ws, **case.oracle_params)
+        params = dict(case.oracle_params)
+        if scenario.oracle_wants_trace:
+            # Sem trace no agente real até A1 (parser de tool calls): o oráculo
+            # pula as checagens de trace — prova por estado, honestamente parcial.
+            params["trace"] = None
+        verdict = scenario.oracle(ws, **params)
     if not keep:
         shutil.rmtree(tmp, ignore_errors=True)
     return Result(scenario.id, case.variant, "claude_code", verdict, tmp)

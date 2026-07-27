@@ -1,6 +1,6 @@
 # Inbox Processing
 
-> **module_version: 4.19.0**
+> **module_version: 5.63.0**
 >
 > Fonte canônica da triagem e do commit de inbox do Prumo.
 
@@ -60,18 +60,60 @@ Depois da triagem:
 3. se for agendado futuro, registrar `| cobrar: DD/MM`;
 4. renomear arquivos com nomes descritivos;
 5. registrar no `REGISTRO.md`;
-6. deletar o original do inbox com ação real de filesystem.
+6. remover o original do inbox pela **máquina de remoção** abaixo — mover, nunca deletar.
 
-## Deleção e fallback
+## Remoção: mover, nunca deletar (#242)
 
-1. Antes de deletar, confirmar o plano com o usuário.
-2. Se a deleção falhar por permissão:
-   - solicitar a permissão do runtime;
-   - tentar novamente.
-3. Se continuar falhando:
-   - registrar `DELECAO_FALHOU` no `REGISTRO.md`;
-   - marcar o item em `Inbox4Mobile/_processed.json`.
-4. No próximo briefing, usar `_processed.json` para não reapresentar como novo o que já foi processado.
+Deleção real não é operação do **fluxo de inbox** — há host em que ela nem
+existe (a ponte do Cowork falha com `Operation not permitted`), e o que este
+fluxo promete é reversibilidade. (O `acervo` mantém o contrato próprio dele:
+`--permanent` só sob pedido explícito.) O destino do original depende da ação:
+
+- **Retenção durável** — o item vira referência com o próprio arquivo movido
+  pra `Referencias/`, ou é arquivado com destino explícito: o arquivo move
+  DIRETO pro destino durável. Não passa pela quarentena e nunca é duplicado.
+- **Quarentena** — descarte (`discard`) ou original já materializado noutro
+  canal (nota que virou linha de PAUTA/IDEIAS, conteúdo extraído/resumido):
+  mover para `_to_delete/<AAAA-MM-DD>_<escopo>/` na **raiz do workspace** (o
+  diretório que contém os wrappers, nos dois layouts) e informar na resposta
+  os arquivos movidos — quem esvazia a quarentena é o usuário, à mão.
+
+### Máquina de remoção (por item, nesta ordem)
+
+1. **Confirmar** o plano único de commit (ASSERT do core).
+2. **Registrar** no `REGISTRO.md`: item, ação e destino planejado — a trilha
+   vem ANTES da remoção (ASSERT).
+3. **Mover** o original pro destino planejado (criar a pasta datada da
+   quarentena ao mover o primeiro item).
+4. **Verificar**: origem ausente e destino íntegro.
+5. **Marcar** o item em `Inbox4Mobile/_processed.json` (`reason` recomendado:
+   `movido para quarentena`; o valor legado `fallback sem deleção física`
+   continua válido em registros antigos).
+6. **Se o move falhar**: registrar `REMOCAO_FALHOU` no `REGISTRO.md`, deixar o
+   item onde está e manter a trilha coerente. Sem retry cego — não existe
+   "pedir permissão e tentar de novo".
+
+No próximo briefing, usar `_processed.json` para não reapresentar como novo o
+que já foi processado.
+
+### Regras do destino de quarentena
+
+1. `<escopo>` deste fluxo é `inbox` (a `higiene` usa `higiene`).
+2. **Nunca sobrescrever**: antes de mover, checar o path candidato DIRETO
+   (nunca listar `_to_delete/`); colisão de nome ganha sufixo determinístico
+   (`-2`, `-3`, …).
+3. **Retry idempotente**: item já no destino com o mesmo conteúdo → não criar
+   cópia; só completar a trilha ou a baixa que faltou.
+4. Symlink move-se como **link**; nunca seguir o alvo.
+5. `_to_delete/` é **quarentena do usuário**: o Prumo nunca lista, indexa,
+   conta ou esvazia (`file-protection-rules.md`). Não é `Arquivo/` nem o
+   archive do runtime — não participa de `ARCHIVE-INDEX`.
+
+### Sequência de arquivamento (retenção)
+
+Arquivar é **mover o arquivo pro destino e editar depois, no lugar** — nunca
+"escrever cópia nova no destino e apagar a velha": falha no meio deixa o
+arquivo duplicado em dois diretórios (caso real de 27/07).
 
 ## Contrato mínimo do `_processed.json`
 
@@ -85,7 +127,7 @@ Formato recomendado:
       "filename": "captura-exemplo.txt",
       "processed_at": "2026-03-16T19:00:00-03:00",
       "status": "processed",
-      "reason": "fallback sem deleção física"
+      "reason": "movido para quarentena"
     }
   ]
 }
@@ -96,7 +138,11 @@ Regras:
 1. O nome do arquivo deve ser preservado em `filename`.
 2. `processed_at` deve registrar o timestamp ISO da decisão.
 3. `status` recomendado: `processed`.
-4. A autolimpeza fria só pode arquivar item que esteja marcado aqui e já esteja frio pelo threshold configurado.
+4. `reason` recomendado: `movido para quarentena` (ou o destino durável). O
+   valor legado `fallback sem deleção física` continua válido em registros
+   antigos — não reescrever histórico.
+5. A limpeza fria da faxina só pode podar do JSON entrada marcada aqui, fria
+   pelo threshold e cujo arquivo já saiu da pasta (#212).
 
 ## Material de referência
 
@@ -116,7 +162,10 @@ seguindo o template de `../ficha-de-fonte.md`:
      pra onde o texto vive.
 3. registrar no `Referencias/INDICE.md` (mapeamento definido na
    `ficha-de-fonte.md`);
-4. remover o original do inbox (fluxo normal de commit, com `REGISTRO.md`).
+4. dar baixa no original conforme a máquina de remoção: arquivo **movido**
+   pra `Referencias/` é retenção durável (já saiu do inbox — sem quarentena);
+   ficha-ponteiro deixa o original materializado na ficha → o original vai
+   pra quarentena, pelo fluxo normal de commit com `REGISTRO.md`.
 
 ## Destilação de ideias
 

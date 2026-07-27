@@ -118,10 +118,220 @@ class ConformanceHarnessTests(unittest.TestCase):
         mencionar o item removido (o furo que o Codex apontou)."""
         c5 = scenarios.by_id("c5_inbox_removal")
         pos = next(c for c in c5.cases if c.variant == "pos")
-        # A violation_ops do pos é exatamente 'remove + linha de fachada'.
+        # A violation_ops do pos é exatamente 'move + linha de fachada'.
         v = run.run_case_replay(c5, pos, "violation")
         self.assertFalse(v.verdict.ok)
-        self.assertIn("não menciona o item", v.verdict.reason)
+        self.assertIn("não é trilha", v.verdict.reason)
+
+    def test_c5_compliant_roda_em_host_sem_delecao(self) -> None:
+        """O fluxo feliz do #242 não depende de deleção: as compliant_ops do pos
+        rodam com `allow_delete=False` (a ponte do Cowork) e o oráculo PASSA."""
+        import tempfile
+        c5 = scenarios.by_id("c5_inbox_removal")
+        pos = next(c for c in c5.cases if c.variant == "pos")
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp)
+            run._setup_workspace(c5, ws)
+            trace = hosts.apply_replay(ws, pos.compliant_ops, allow_delete=False)
+            verdict = c5.oracle(ws, **{**pos.oracle_params, "trace": trace})
+        self.assertTrue(verdict.ok, verdict.reason)
+
+    def test_host_sem_delecao_bloqueia_delete(self) -> None:
+        """`allow_delete=False` levanta PermissionError na op delete — o mesmo
+        sintoma da ponte real do Cowork (Operation not permitted)."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp)
+            (ws / "x.txt").write_text("x", encoding="utf-8")
+            with self.assertRaises(PermissionError):
+                hosts.apply_replay(ws, [{"op": "delete", "path": "x.txt"}], allow_delete=False)
+
+    def test_c5_delete_recriacao_cai_pelo_trace(self) -> None:
+        """Estado final idêntico ao move, mas o trace acusa a deleção — o caso
+        que oráculo só-de-estado não pega (achado [P2-3] do Codex)."""
+        c5 = scenarios.by_id("c5_inbox_removal")
+        caso = next(c for c in c5.cases if c.variant == "pos_delete_recria")
+        v = run.run_case_replay(c5, caso, "violation")
+        self.assertFalse(v.verdict.ok)
+        self.assertIn("DELEÇÃO", v.verdict.reason)
+
+    def test_apply_replay_move_preserva_symlink(self) -> None:
+        """Mover um symlink move o LINK, nunca o alvo (achado [P2-6])."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp)
+            alvo = ws / "alvo.txt"
+            alvo.write_text("conteúdo do alvo", encoding="utf-8")
+            link = ws / "link.txt"
+            link.symlink_to(alvo)
+            hosts.apply_replay(ws, [{"op": "move", "path": "link.txt", "dest": "q/link.txt"}])
+            dest = ws / "q" / "link.txt"
+            self.assertTrue(dest.is_symlink(), "destino deveria ser o próprio link")
+            self.assertTrue(alvo.is_file(), "o alvo do link não pode ser tocado")
+            self.assertFalse(link.is_symlink() or link.exists())
+
+    def test_apply_replay_move_nunca_sobrescreve(self) -> None:
+        """Destino de move já existente é erro — colisão nunca é silenciosa."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp)
+            (ws / "a.txt").write_text("a", encoding="utf-8")
+            (ws / "q").mkdir()
+            (ws / "q" / "a.txt").write_text("já existe", encoding="utf-8")
+            with self.assertRaises(ValueError):
+                hosts.apply_replay(ws, [{"op": "move", "path": "a.txt", "dest": "q/a.txt"}])
+
+    def test_c5_cobre_variantes_do_242(self) -> None:
+        """As direções de segurança novas do #242 existem como casos pareados."""
+        c5 = scenarios.by_id("c5_inbox_removal")
+        variants = {c.variant for c in c5.cases}
+        self.assertLessEqual(
+            {"neg", "neg_copia", "neg_marcacao", "neg_delete_processed", "pos",
+             "pos_delete_recria", "pos_sem_destino", "pos_sem_processed",
+             "pos_move_destino_errado", "pos_delete_no_destino", "pos_colisao",
+             "pos_colisao_sufixo_errado"},
+            variants,
+        )
+
+    def test_oracle_reprova_symlink_como_candidato(self) -> None:
+        """[r2]: link com alvo de bytes iguais no lugar do item não é o item
+        movido — com contrato de bytes, candidato symlink reprova (fecha o
+        falso PASS de `trace=None` no host real)."""
+        import tempfile
+        c5 = scenarios.by_id("c5_inbox_removal")
+        pos = next(c for c in c5.cases if c.variant == "pos")
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp)
+            run._setup_workspace(c5, ws)
+            item_rel = pos.oracle_params["item_rel"]
+            alvo = ws / "alvo-externo-simulado.txt"
+            (ws / item_rel).rename(alvo)
+            hosts.apply_replay(
+                ws, [op for op in pos.compliant_ops if op["op"] != "move"]
+            )
+            qdir = ws / "_to_delete" / "2026-03-20_inbox"
+            qdir.mkdir(parents=True, exist_ok=True)
+            (qdir / "captura-exemplo.txt").symlink_to(alvo)
+            verdict = c5.oracle(ws, **pos.oracle_params)
+        self.assertFalse(verdict.ok)
+        self.assertIn("symlink no lugar do item", verdict.reason)
+
+    def test_oracle_reprova_trilha_negada(self) -> None:
+        """[D2] r3: linha nova com o item e o destino mas ação NEGADA
+        ("não removido") não é trilha — exige afirmação."""
+        import tempfile
+        c5 = scenarios.by_id("c5_inbox_removal")
+        pos = next(c for c in c5.cases if c.variant == "pos")
+        adversarial = (
+            "| 20/03 | Inbox | captura-exemplo não removido; destino planejado "
+            "_to_delete/2026-03-20_inbox | — | — |\n"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp)
+            run._setup_workspace(c5, ws)
+            ops = [
+                {"op": "append", "path": "Prumo/REGISTRO.md", "content": adversarial},
+                *[op for op in pos.compliant_ops if op["op"] != "append"],
+            ]
+            trace = hosts.apply_replay(ws, ops)
+            verdict = c5.oracle(ws, **{**pos.oracle_params, "trace": trace})
+        self.assertFalse(verdict.ok)
+        self.assertIn("AFIRMATIVA", verdict.reason)
+
+    def test_oracle_reprova_trilha_por_substituicao(self) -> None:
+        """[D2 r2]: reescrever o REGISTRO trocando linha antiga pela linha-trilha
+        não é adição — o baseline tem de estar preservado inteiro."""
+        import tempfile
+        c5 = scenarios.by_id("c5_inbox_removal")
+        pos = next(c for c in c5.cases if c.variant == "pos")
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp)
+            run._setup_workspace(c5, ws)
+            baseline = pos.oracle_params["registro_baseline_text"]
+            substituted = baseline.replace(
+                "| 19/03 | Inbox  | captura-exemplo chegou | Visto      | Inbox     |",
+                "| 20/03 | Inbox | captura-exemplo | Removido (quarentena) | _to_delete/2026-03-20_inbox |",
+            )
+            self.assertNotEqual(substituted, baseline, "fixture mudou; atualizar o teste")
+            (ws / "Prumo" / "REGISTRO.md").write_text(substituted, encoding="utf-8")
+            ops = [op for op in pos.compliant_ops if op["op"] != "append"]
+            trace = hosts.apply_replay(ws, ops)
+            verdict = c5.oracle(ws, **{**pos.oracle_params, "trace": trace})
+        self.assertFalse(verdict.ok)
+        self.assertIn("perdeu linha", verdict.reason)
+
+    def test_oracle_positivo_reprova_symlink_pendurado_na_origem(self) -> None:
+        """[D5]: link pendurado restante no inbox conta como PRESENTE — `exists()`
+        puro diria 'removido' e o positivo passaria com lixo pra trás."""
+        import tempfile
+        from conformance.harness import oracles
+        c5 = scenarios.by_id("c5_inbox_removal")
+        pos = next(c for c in c5.cases if c.variant == "pos")
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp)
+            run._setup_workspace(c5, ws)
+            hosts.apply_replay(ws, pos.compliant_ops)
+            item = ws / pos.oracle_params["item_rel"]
+            item.symlink_to(ws / "alvo-que-nao-existe.txt")  # link pendurado
+            verdict = c5.oracle(ws, **pos.oracle_params)
+        self.assertFalse(verdict.ok)
+        self.assertIn("symlink", verdict.reason)
+
+    def test_oracle_destino_symlink_pendurado_da_fail_limpo(self) -> None:
+        """[D5]: entrada ilegível na quarentena vira FAIL explícito, não traceback."""
+        import tempfile
+        from conformance.harness import oracles as _o
+        c5 = scenarios.by_id("c5_inbox_removal")
+        pos = next(c for c in c5.cases if c.variant == "pos")
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp)
+            run._setup_workspace(c5, ws)
+            # Remoção "completa" mas o destino é um link pendurado com o nome certo.
+            hosts.apply_replay(ws, [op for op in pos.compliant_ops if op["op"] != "move"])
+            (ws / pos.oracle_params["item_rel"]).unlink()
+            qdir = ws / _o.QUARANTINE_DIR / "2026-03-20_inbox"
+            qdir.mkdir(parents=True)
+            (qdir / "captura-exemplo.txt").symlink_to(ws / "sumiu.txt")
+            verdict = c5.oracle(ws, **pos.oracle_params)
+        self.assertFalse(verdict.ok)
+        # A checagem de symlink-candidato pega antes da leitura ([r2]) — link
+        # pendurado reprova pela mesma porta, sem traceback.
+        self.assertIn("symlink no lugar do item", verdict.reason)
+
+    def test_safe_parent_recusa_pai_symlink_pra_fora(self) -> None:
+        """[D6]: origem OU destino cujo pai é symlink pra fora do workspace →
+        ValueError antes de qualquer efeito (inclusive com subpasta inexistente)."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp, tempfile.TemporaryDirectory() as fora:
+            ws = Path(tmp)
+            (ws / "escape").symlink_to(Path(fora))
+            (ws / "a.txt").write_text("a", encoding="utf-8")
+            with self.assertRaises(ValueError):
+                hosts.apply_replay(
+                    ws, [{"op": "move", "path": "a.txt", "dest": "escape/a.txt"}]
+                )
+            with self.assertRaises(ValueError):
+                hosts.apply_replay(
+                    ws, [{"op": "move", "path": "a.txt", "dest": "escape/sub-nova/a.txt"}]
+                )
+            (Path(fora) / "b.txt").write_text("b", encoding="utf-8")
+            with self.assertRaises(ValueError):
+                hosts.apply_replay(
+                    ws, [{"op": "move", "path": "escape/b.txt", "dest": "q/b.txt"}]
+                )
+            self.assertTrue((Path(fora) / "b.txt").is_file(), "efeito vazou pra fora do ws")
+
+    def test_safe_parent_aceita_pai_symlink_interno(self) -> None:
+        """[D6]: pai symlink que resolve DENTRO do workspace é permitido —
+        comportamento documentado, não brecha."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp)
+            (ws / "real").mkdir()
+            (ws / "alias").symlink_to(ws / "real")
+            (ws / "a.txt").write_text("a", encoding="utf-8")
+            hosts.apply_replay(ws, [{"op": "move", "path": "a.txt", "dest": "alias/a.txt"}])
+            self.assertTrue((ws / "real" / "a.txt").is_file())
 
 
 if __name__ == "__main__":

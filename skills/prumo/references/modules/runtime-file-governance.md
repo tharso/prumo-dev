@@ -1,6 +1,6 @@
 # Runtime File Governance
 
-> **module_version: 4.21.0**
+> **module_version: 5.63.0**
 >
 > Política canônica de ciclo de vida dos arquivos vivos do Prumo.
 
@@ -114,7 +114,7 @@ Mora aqui:
 
 1. captura mobile bruta (texto, foto, áudio, link) ainda não processada.
 
-Equivale ao `INBOX.md` para o canal mobile. Item processado é roteado para o destino certo e marcado em `_processed.json`; o original sai pelo fluxo de inbox, com registro.
+Equivale ao `INBOX.md` para o canal mobile. Item processado é roteado para o destino certo e marcado em `_processed.json`; o original sai pelo fluxo de inbox, com registro — **movido** pra retenção durável ou pra quarentena `_to_delete/` (máquina em `inbox-processing.md`, #242); deleção real não é operação do fluxo de inbox.
 
 ## Sinais de drift
 

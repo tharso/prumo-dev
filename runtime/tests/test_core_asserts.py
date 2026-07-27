@@ -17,12 +17,15 @@ CORE = REPO_ROOT / "skills" / "prumo" / "references" / "prumo-core.md"
 
 _ASSERT_LINE = re.compile(r"^`(ASSERT:.*)`\s*$", re.MULTILINE)
 
-# Registro canônico — texto exato dos 12 ASSERTs (v5.33.x). Mudança aqui é
+# Registro canônico — texto exato dos ASSERTs do core. Mudança aqui é
 # decisão, não acidente: atualize junto com o core e explique no PR.
 EXPECTED_ASSERTS = {
     "ASSERT: Usar Gmail MCP e Calendar MCP como fonte primária de email e calendário.",
     "ASSERT: Se existir Prumo/Inbox4Mobile/_preview-index.json, linkar inbox-preview.html antes de abrir qualquer arquivo bruto.",
-    "ASSERT: Antes de deletar item de inbox, confirmar com o usuário o plano único de commit.",
+    # #242: "deletar" → "remover" (troca 1:1, cesto neutro). Remover é MOVER —
+    # quarentena _to_delete/ ou destino durável; a máquina mora no
+    # inbox-processing.md. Deleção real deixou de ser operação do produto.
+    "ASSERT: Antes de remover item de inbox, confirmar com o usuário o plano único de commit.",
     "ASSERT: Registrar no Prumo/REGISTRO.md antes de remover o original do inbox.",
     # #196: "primeira resposta" redefinida conscientemente como "primeiro
     # tempo" (a proibição segue idêntica em substância — o que muda é o nome

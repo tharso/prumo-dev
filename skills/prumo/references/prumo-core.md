@@ -1,6 +1,6 @@
 # Prumo Core — Motor do sistema
 
-> **prumo_version: 5.62.0**
+> **prumo_version: 5.63.0**
 >
 > Núcleo estável do Prumo. Define regras, guardrails e localização dos módulos canônicos.
 > Procedimento detalhado não mora aqui.
@@ -221,7 +221,7 @@ O briefing chega em **dois tempos na mesma conversa** (#196): primeiro o panoram
 
 `ASSERT: Se existir Prumo/Inbox4Mobile/_preview-index.json, linkar inbox-preview.html antes de abrir qualquer arquivo bruto.`
 
-`ASSERT: Antes de deletar item de inbox, confirmar com o usuário o plano único de commit.`
+`ASSERT: Antes de remover item de inbox, confirmar com o usuário o plano único de commit.`
 
 `ASSERT: Registrar no Prumo/REGISTRO.md antes de remover o original do inbox.`
 
@@ -332,8 +332,8 @@ Histórico completo de versão vive em `CHANGELOG.md`.
 
 Versão atual deste core:
 
-- `5.62.0`
+- `5.63.0`
 
 ---
 
-*Prumo Core v5.62.0 — https://github.com/tharso/prumo*
+*Prumo Core v5.63.0 — https://github.com/tharso/prumo*

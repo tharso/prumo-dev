@@ -36,17 +36,53 @@ def _safe_target(workspace: Path, rel: str) -> Path:
     return target
 
 
-def apply_replay(workspace: Path, ops: list[dict]) -> None:
-    """Aplica operações de filesystem gravadas. Usado pelo host `replay`.
+def _safe_parent(workspace: Path, rel: str) -> Path:
+    """Valida `rel` pelo diretório-PAI, sem resolver o componente final.
+
+    Para `move` (#242): `.resolve()` no componente final seguiria um symlink
+    terminal — e mover um link significa mover o LINK, nunca o alvo. O pai é
+    normalizado (tem de ficar dentro do workspace); o último componente fica
+    como está, inspecionável via `lstat`/`is_symlink`.
+    """
+    ws = workspace.resolve()
+    raw = workspace / rel
+    parent = raw.parent.resolve()
+    if parent != ws and ws not in parent.parents:
+        raise ValueError(f"op de replay tenta sair do workspace: {rel!r}")
+    return parent / raw.name
+
+
+def apply_replay(workspace: Path, ops: list[dict], *, allow_delete: bool = True) -> list[dict]:
+    """Aplica operações de filesystem gravadas e devolve o TRACE (ops aplicadas).
 
     Ops suportadas (o mínimo pra representar o que os cenários exercem):
     - {"op": "write", "path": ..., "content": ...}  — escreve/sobrescreve
     - {"op": "append", "path": ..., "content": ...} — anexa
     - {"op": "delete", "path": ...}                  — remove arquivo
     - {"op": "mkdir", "path": ...}                   — cria diretório
+    - {"op": "move", "path": ..., "dest": ...}       — move (nunca sobrescreve;
+      symlink terminal é movido como link, não o alvo)
+
+    `allow_delete=False` simula o host sem deleção (a ponte do Cowork, #242):
+    op `delete` levanta `PermissionError` — prova que um fluxo compliant não
+    depende de deleção. O trace retornado preserva a ordem e é a base da parte
+    de trace do oráculo do C5 (discrimina `move` de `delete` + recriação, que
+    produzem o mesmo estado final).
     """
+    trace: list[dict] = []
     for op in ops:
         kind = op["op"]
+        if kind == "move":
+            src = _safe_parent(workspace, op["path"])
+            if not src.exists() and not src.is_symlink():
+                raise ValueError(f"origem de move inexistente: {op['path']!r}")
+            dest = _safe_parent(workspace, op["dest"])
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            if dest.exists() or dest.is_symlink():
+                raise ValueError(f"destino de move já existe: {op['dest']!r}")
+            src.rename(dest)
+            trace.append(op)
+            continue
         target = _safe_target(workspace, op["path"])
         if kind == "write":
             target.parent.mkdir(parents=True, exist_ok=True)
@@ -56,12 +92,18 @@ def apply_replay(workspace: Path, ops: list[dict]) -> None:
             with target.open("a", encoding="utf-8") as fh:
                 fh.write(op["content"])
         elif kind == "delete":
+            if not allow_delete:
+                raise PermissionError(
+                    f"host sem deleção: op delete bloqueada ({op['path']!r})"
+                )
             if target.exists():
                 target.unlink()
         elif kind == "mkdir":
             target.mkdir(parents=True, exist_ok=True)
         else:  # pragma: no cover - guarda contra op inválida em cenário mal escrito
             raise ValueError(f"op de replay desconhecida: {kind!r}")
+        trace.append(op)
+    return trace
 
 
 def provision_skills(workspace: Path) -> str:

@@ -136,7 +136,7 @@ Quando o usuário colar o relatório:
         adivinhar qual remover.
      3. Confirmar o plano com o usuário e **registrar no `REGISTRO.md`** antes de
         remover o original (ASSERT do core).
-     4. **Mover** o fragmento/arquivo para `Prumo/Arquivo/Acervo/` (quarentena).
+     4. **Mover** o fragmento/arquivo para `Prumo/Arquivo/Acervo/` (retenção do acervo).
         Deleção **permanente** só se o usuário escrever explicitamente "apagar
         permanentemente".
      5. **Ficha de fonte (ponteiro):** arquivar a ficha remove só o catálogo —
