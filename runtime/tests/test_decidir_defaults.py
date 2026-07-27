@@ -22,13 +22,13 @@ TEMPLATE = REPO_ROOT / "skills" / "decidir" / "assets" / "template.html"
 ALLOWLIST = REPO_ROOT / "skills" / "decidir" / "references" / "acoes-allowlist.md"
 SKILL = REPO_ROOT / "skills" / "decidir" / "SKILL.md"
 
-_FUNCS = ("actionsOf", "actionByKey", "safeUrl", "buildReportData")
+_FUNCS = ("actionsOf", "actionByKey", "safeUrl", "buildReportData", "pendingCount")
 
 _HARNESS = """
 %(funcs)s
 const POINTS = %(points)s;
 const state = %(state)s;
-console.log(JSON.stringify(buildReportData()));
+console.log(JSON.stringify({items: buildReportData(), pending: pendingCount()}));
 """
 
 
@@ -62,6 +62,10 @@ def _run(points: list[dict], state: dict) -> list[dict]:
     return json.loads(out.stdout)
 
 
+def _items(points: list[dict], state: dict) -> list[dict]:
+    return _run(points, state)["items"]
+
+
 _DISCARD = {
     "key": "discard",
     "label": "Descartar",
@@ -80,7 +84,7 @@ _DELEGATE = {
 @unittest.skipUnless(shutil.which("node"), "node ausente (harness comportamental)")
 class DecidirDefaultsTest(unittest.TestCase):
     def test_discard_sem_comentario_resolve_o_default(self) -> None:
-        items = _run(
+        items = _items(
             [{"id": 1, "type": "despacho", "actions": [_DISCARD]}],
             {"1": {"status": "discard"}},
         )
@@ -91,7 +95,7 @@ class DecidirDefaultsTest(unittest.TestCase):
         self.assertIsNone(item["comment"], "comment é do texto autoral, não do default")
 
     def test_comentario_sobrescreve_o_default(self) -> None:
-        items = _run(
+        items = _items(
             [{"id": 1, "type": "despacho", "actions": [_DISCARD]}],
             {"1": {"status": "discard", "comment": "já resolvi por fora"}},
         )
@@ -101,24 +105,44 @@ class DecidirDefaultsTest(unittest.TestCase):
         self.assertEqual(item["comment"], "já resolvi por fora")
 
     def test_acao_sem_default_continua_pendente(self) -> None:
-        items = _run(
+        items = _items(
             [{"id": 1, "type": "despacho", "actions": [_DELEGATE]}],
             {"1": {"status": "delegate"}},
         )
         self.assertTrue(items[0]["requires_missing"], "delegate sem destinatário é pendência")
 
     def test_comentario_zera_a_pendencia(self) -> None:
-        items = _run(
+        items = _items(
             [{"id": 1, "type": "despacho", "actions": [_DELEGATE]}],
             {"1": {"status": "delegate", "comment": "pra Ana"}},
         )
         self.assertFalse(items[0]["requires_missing"])
 
-    def test_contador_de_pendencias_no_template(self) -> None:
-        """A contagem existe e é exibida ANTES do botão de copiar."""
+    def test_contador_conta_de_verdade(self) -> None:
+        """[256-1]: `pendingCount()` executado — não basta existir no arquivo
+        (uma função que retornasse 0 sempre passaria no guard textual)."""
+        pontos = [
+            {"id": 1, "type": "despacho", "actions": [_DELEGATE]},
+            {"id": 2, "type": "despacho", "actions": [_DISCARD]},
+        ]
+        # delegate sem destinatário = 1 pendência; discard usa o default = 0.
+        self.assertEqual(
+            _run(pontos, {"1": {"status": "delegate"}, "2": {"status": "discard"}})["pending"],
+            1,
+        )
+        # comentário no delegate zera.
+        self.assertEqual(
+            _run(
+                pontos,
+                {"1": {"status": "delegate", "comment": "pra Ana"}, "2": {"status": "discard"}},
+            )["pending"],
+            0,
+        )
+        # nada respondido = nada pendente (pendência é da AÇÃO escolhida).
+        self.assertEqual(_run(pontos, {})["pending"], 0)
+
+    def test_contador_aparece_antes_do_botao(self) -> None:
         html = TEMPLATE.read_text(encoding="utf-8")
-        self.assertIn("function pendingCount()", html)
-        self.assertIn("pendingNote", html)
         self.assertLess(
             html.index('id="pendingNote"'),
             html.index('id="copyBtn"'),
