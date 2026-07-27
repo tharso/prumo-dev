@@ -28,8 +28,9 @@ create_missing_files) num tempdir — nunca toca workspace real. O setup
 materializa um `PERFIL.md` template enxuto (contado como está e declarado);
 recibos oficiais de antes/depois semeiam PERFIL sintético ~1.256w (M4).
 
-`--ceiling N` sai com código 1 se o cesto passar de N palavras (a M3 liga
-isso no quality gate via métrica `briefing_f0_words`).
+`--ceiling N` sai com código 1 se o cesto passar de N palavras — no modo
+manifest, medido sobre o PIOR perfil (AGENTS.md full). O PR11b do M3 liga
+isso no quality gate via métrica `briefing_f0f1_words`.
 """
 
 from __future__ import annotations
@@ -261,6 +262,30 @@ def measure(workspace: Path) -> dict:
     total = sum(item.words for item in items)
     if total == 0 and not errors:
         errors.append("rota mediu zero palavras — termômetro quebrado")
+
+    # Pior perfil (#180 PR11b, emenda A4 do Codex): o cesto acima usa o
+    # wrapper do mapa (CLAUDE.md, minimal). O host SEM plugin registry entra
+    # por AGENTS.md (full, com dispatch) — o teto do gate mede ESSE perfil,
+    # senão a folga do wrapper minimal mascara regressão nos módulos.
+    worst_total = None
+    worst_wrapper_words = None
+    if mode == "manifest":
+        claude_items = [item for item in items if item.file == "CLAUDE.md"]
+        if len(claude_items) != 1:
+            # Sem exatamente UM CLAUDE.md no cesto não há swap confiável —
+            # e "sem pior perfil" aprovaria pelo perfil comum (fail-closed,
+            # review Codex do PR11b).
+            errors.append(
+                f"cesto com {len(claude_items)} entrada(s) CLAUDE.md — pior perfil exige exatamente 1 (fail-closed)"
+            )
+        else:
+            agents_path = workspace / "AGENTS.md"
+            if not agents_path.exists():
+                errors.append("AGENTS.md ausente — pior perfil não mensurável (fail-closed)")
+            else:
+                worst_wrapper_words = count_words(agents_path.read_text(encoding="utf-8"))
+                worst_total = total - claude_items[0].words + worst_wrapper_words
+
     reduction_pct = round(100 * (1 - total / REFERENCE_WORDS), 1)
     return {
         "schema_version": SCHEMA_VERSION,
@@ -269,6 +294,8 @@ def measure(workspace: Path) -> dict:
         "items": [asdict(item) for item in items],
         "errors": errors,
         "total_before_first_user_data": total,
+        "worst_profile_total": worst_total,
+        "worst_profile_wrapper_words": worst_wrapper_words,
         "reference_words": REFERENCE_WORDS,
         "reduction_pct_vs_reference": reduction_pct,
     }
@@ -301,13 +328,19 @@ def _print_report(report: dict, ceiling: int | None) -> None:
         )
     total = report["total_before_first_user_data"]
     print(f"[audit] total antes do 1º dado do usuário: {total} palavras")
+    if report.get("worst_profile_total") is not None:
+        print(
+            f"[audit] pior perfil (AGENTS.md full, {report['worst_profile_wrapper_words']}w "
+            f"no lugar do CLAUDE.md): {report['worst_profile_total']} palavras"
+        )
     print(
         f"[audit] vs referência da auditoria ({report['reference_words']}): "
         f"{report['reduction_pct_vs_reference']}% de redução"
     )
     if ceiling is not None:
-        status = "OK" if total <= ceiling else "ESTOURO"
-        print(f"[audit] teto {ceiling}: {status}")
+        gated = report.get("worst_profile_total") or total
+        status = "OK" if gated <= ceiling else "ESTOURO"
+        print(f"[audit] teto {ceiling} (sobre o pior perfil): {status}")
     for error in report.get("errors", []):
         print(f"[audit] ERRO: {error}")
 
@@ -333,7 +366,8 @@ def main(argv: list[str] | None = None) -> int:
     if report.get("errors"):
         # Fail-closed: rota quebrada nunca "passa" — nem sem --ceiling.
         return 2
-    if args.ceiling is not None and report["total_before_first_user_data"] > args.ceiling:
+    gated = report.get("worst_profile_total") or report["total_before_first_user_data"]
+    if args.ceiling is not None and gated > args.ceiling:
         return 1
     return 0
 

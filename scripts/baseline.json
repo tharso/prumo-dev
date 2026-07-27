@@ -1,6 +1,7 @@
 {
-  "_note": "Atualizado em 2026-07-26 (aprovacao do Tharso, fecho da #179 completa): coverage 82->85 — a regua de 25/07 pedia >=84 estavel nos dois ambientes e a medicao pos-PR9/PR10 (v5.54/5.55) deu 85 nos TRES pontos (ubuntu, macos, local). O dono escolheu 85 (catraca no maximo medido, sem margem de flutuacao): se algum runner regredir a fronteira, o PR quebra e a queda fica visivel — comportamento desejado. Ruff 6 e largest_file 868 mantidos. PRs so podem manter ou melhorar estas metricas.",
+  "_note": "Atualizado em 2026-07-27 (aprovacao do Tharso, opcao C do M3 #180): metrica NOVA briefing_f0f1_words = 6788 — o cesto F0+F1 da rota fasica no PIOR perfil (AGENTS.md full), medido pelo briefing_route_audit em sandbox. Teto EXATO no medido (rota e deterministica — palavras em markdown, zero flutuacao de runner): qualquer palavra adicionada quebra o CI visivel e vira decisao consciente; foi a falta desta catraca que deixou a rota engordar de 8.3k pra 15.3k. O alvo 4.999 segue vivo na issue de fase 2 (porta canonica + core Parte 1) — cada corte que entrar desce a catraca. Demais metricas mantidas (26/07: coverage 85; ruff 6; largest 868). PRs so podem manter ou melhorar.",
   "ruff_violations": 6,
   "coverage_pct": 85,
-  "largest_file_lines": 868
+  "largest_file_lines": 868,
+  "briefing_f0f1_words": 6788
 }
