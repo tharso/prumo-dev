@@ -24,29 +24,22 @@ ALLOWLIST = SKILLS / "decidir" / "references" / "acoes-allowlist.md"
 
 # Afirmações de deleção do ORIGINAL de inbox são proibidas em qualquer skill —
 # em qualquer formulação: verbo em PT ("deletar/apagar/excluir [o|um] [arquivo]
-# original") ou operação literal (rm/unlink/os.remove) perto de original/inbox,
-# em QUALQUER ordem ([D9] r3: "no original do inbox, execute unlink" também é
-# ofensa). Contexto negativo ("nunca", "não é", "jamais") é permitido — é assim
-# que o contrato se enuncia — mas a negação só vale DENTRO da mesma oração
-# ([D9] r3: "Nunca mover; deletar o original" não está negado). O acervo
-# (--permanent) tem contrato próprio e não usa esse fraseado.
-_OPS = r"(?:rm|rmdir|unlink|os\.remove|shutil\.rmtree)"
-# Janela dentro da mesma oração e SEM palavra de negação no meio ([D9] r4:
-# "no original do inbox, não execute unlink" tem a negação ENTRE objeto e
-# operação — não pode acusar).
-_GAP = r"(?:(?!\b(?:não|nao|nunca|jamais)\b)[^.!?;:]){0,60}"
-_FORBIDDEN_PATTERNS = (
-    re.compile(
-        r"(?:deletar|apagar|excluir|remover\s+fisicamente)\s+(?:o\s+|um\s+)?(?:arquivo\s+)?origina(?:l|is)",
-        re.IGNORECASE,
-    ),
-    re.compile(rf"\b{_OPS}\b{_GAP}(?:original|inbox)", re.IGNORECASE),
-    re.compile(rf"(?:original|inbox){_GAP}\b{_OPS}\b", re.IGNORECASE),
+# original") ou operação literal (rm/unlink/os.remove) na MESMA ORAÇÃO que
+# original/inbox, em qualquer ordem ([D9] r3). A negação absolve apenas quando
+# está amarrada à PRÓPRIA operação destrutiva — janela imediata antes dela, sem
+# cruzar oração ([D9] r4/r5: "não execute unlink" absolve; "não mova o arquivo
+# e rode rm" NÃO absolve, a negação é do mover). O acervo (--permanent) tem
+# contrato próprio e não usa esse fraseado.
+_VERB_FORBIDDEN = re.compile(
+    r"(?:deletar|apagar|excluir|remover\s+fisicamente)\s+(?:o\s+|um\s+)?(?:arquivo\s+)?origina(?:l|is)",
+    re.IGNORECASE,
 )
-# Lookback preso à oração: não atravessa . ! ? ; : — a negação de outra frase
-# não absolve a operação proibida desta.
-_NEGATION_BEFORE = re.compile(
-    r"(?:nunca|não|nao|jamais|deixa\s+de|em\s+vez\s+de|falha[^.!?;:—]{0,20})[^.!?;:—]{0,60}$",
+_OPS_RE = re.compile(r"\b(?:rm|rmdir|unlink|os\.remove|shutil\.rmtree)\b", re.IGNORECASE)
+_OBJ_RE = re.compile(r"\b(?:original|origina(?:l|is)|inbox)\b", re.IGNORECASE)
+_CLAUSE_SPLIT = re.compile(r"[.!?;:—]")
+# Negação imediatamente antes da operação (mesma oração, janela curta).
+_NEG_NEAR = re.compile(
+    r"(?:nunca|não|nao|jamais|deixa\s+de|em\s+vez\s+de|falha)\S*\s+(?:\S+\s+){0,2}$",
     re.IGNORECASE,
 )
 
@@ -54,11 +47,19 @@ _NEGATION_BEFORE = re.compile(
 def _deletion_offenses(flat: str) -> list[str]:
     """Trechos que AFIRMAM deleção do original — lógica única, testável."""
     out: list[str] = []
-    for pattern in _FORBIDDEN_PATTERNS:
-        for m in pattern.finditer(flat):
-            if _NEGATION_BEFORE.search(flat[: m.start()]):
+    for clause in _CLAUSE_SPLIT.split(flat):
+        # Verbo PT: a negação é a que precede o próprio verbo, na oração.
+        for m in _VERB_FORBIDDEN.finditer(clause):
+            if _NEG_NEAR.search(clause[: m.start()]):
                 continue
-            out.append(flat[max(0, m.start() - 40): m.end() + 20])
+            out.append(clause[max(0, m.start() - 40): m.end() + 20].strip())
+        # Operação literal: ofende quando divide a oração com original/inbox e
+        # NÃO está ela mesma negada (a negação de outra ação não absolve).
+        if _OBJ_RE.search(clause):
+            for m in _OPS_RE.finditer(clause):
+                if _NEG_NEAR.search(clause[: m.start()]):
+                    continue
+                out.append(clause[max(0, m.start() - 40): m.end() + 20].strip())
     return out
 
 
@@ -192,6 +193,8 @@ class QuarentenaContractsTest(unittest.TestCase):
             "No original do inbox, execute unlink em seguida",
             "Nunca mover; deletar o original",  # negação de OUTRA oração não absolve
             "use rm no diretório do inbox",
+            # [r5]: negação de OUTRA ação na mesma oração não absolve a destrutiva.
+            "No inbox, não mova o arquivo e rode rm no original",
         )
         for texto in ofensas:
             with self.subTest(texto=texto):
