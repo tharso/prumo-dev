@@ -53,6 +53,11 @@ REFERENCE_WORDS = 8332
 MANIFEST_HEADING = "## Mapa de carregamento por fase"
 _BASKET_PHASES = {"F0", "F1"}
 _ALWAYS = "sempre"
+# Gatilho de arquivo AUTORAL lido sempre que existir (#241, MAPA-AUTORAL):
+# conta no cesto quando presente (o sandbox oficial cria o esqueleto), mas a
+# ausência num workspace real NÃO é erro — usuário que deletou o arquivo não
+# pode parecer instalação quebrada. `sempre` puro segue fail-closed.
+_ALWAYS_AUTORAL = "sempre (autoral)"
 
 
 @dataclass
@@ -234,9 +239,20 @@ def measure(workspace: Path) -> dict:
         for bad in invalid_lines:
             errors.append(f"linha de manifesto inválida: {bad}")
         for row in rows:
-            if row["phase"] not in _BASKET_PHASES or row["trigger"].lower() != _ALWAYS:
+            trigger = row["trigger"].lower()
+            if row["phase"] not in _BASKET_PHASES or trigger not in (_ALWAYS, _ALWAYS_AUTORAL):
                 continue
             words, exists, note, error = resolve_words(workspace, row["file"], row["section"])
+            if trigger == _ALWAYS_AUTORAL and not exists and not error:
+                # Autoral ausente: fora do cesto, sem erro (#241) — registrado
+                # como item de 0 palavras pra ficar visível no relatório.
+                items.append(
+                    RouteItem(
+                        row["phase"], row["file"], row["section"], 0, False,
+                        "autoral ausente — tolerado (não conta no cesto)",
+                    )
+                )
+                continue
             items.append(
                 RouteItem(row["phase"], row["file"], row["section"], words, exists, note)
             )

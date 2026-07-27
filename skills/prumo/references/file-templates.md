@@ -25,6 +25,7 @@
 │   ├── IDEIAS.md
 │   ├── Agente/
 │   │   ├── PERFIL.md      ← identidade, áreas de vida, tom
+│   │   ├── MAPA-AUTORAL.md ← pastas do usuário somadas ao perímetro (#241)
 │   │   ├── PESSOAS.md     ← pessoas-chave e relacionamentos
 │   │   ├── ROTINA.md      ← rituais, hábitos, cadências sem hora
 │   │   ├── SAUDE.md       ← saúde, exames, médicos
@@ -145,6 +146,23 @@ _Inbox limpo._
 >   - DD/MM: desdobramento, contra-evidência ou nuance nova.
 
 _Nenhuma ideia registrada ainda._
+
+--- FIM ---
+
+---
+
+## Prumo/Agente/MAPA-AUTORAL.md
+
+Paridade travada com `templates.render_mapa_autoral_md()` (o setup manual e o
+runtime têm de gerar o MESMO esqueleto — `test_templates.py`).
+
+--- INÍCIO ---
+
+# Mapa autoral
+
+> Pastas SUAS, além do mapa gerado: uma por linha, caminho relativo à raiz entre crases, sem globs. O Prumo lê e aponta; nunca indexa nem escreve nelas sem pedido.
+
+<!-- Exemplo: - `Escrita/` — trabalho autoral; contrato em Escrita/README.md -->
 
 --- FIM ---
 

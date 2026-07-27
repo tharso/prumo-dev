@@ -165,6 +165,7 @@ class WorkspacePaths:
         # apenas como path de compatibilidade (leitura legada / tombstone).
         return (
             self.relative(self.agente_root / "PERFIL.md"),
+            self.relative(self.agente_root / "MAPA-AUTORAL.md"),
             self.relative(self.agente_root / "PESSOAS.md"),
             self.relative(self.agente_root / "SAUDE.md"),
             self.relative(self.agente_root / "ROTINA.md"),

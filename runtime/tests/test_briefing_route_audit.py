@@ -51,6 +51,78 @@ class SectionExtractionTest(unittest.TestCase):
         self.assertIsNone(audit.extract_until_marker(self.TEXT, "# Nada"))
 
 
+class AutoralTriggerTest(unittest.TestCase):
+    """Gatilho `sempre (autoral)` (#241): conta quando presente; ausência é
+    tolerada (mapa deletado pelo usuário ≠ instalação quebrada); `sempre` puro
+    segue fail-closed."""
+
+    SKILL = "\n".join(
+        [
+            "# Briefing",
+            "",
+            "## Mapa de carregamento por fase",
+            "",
+            "| Fase | Gatilho | Arquivo | Seção | Tipo |",
+            "|---|---|---|---|---|",
+            "| F0 | sempre | `CLAUDE.md` | (integral) | wrapper |",
+            "| F0 | sempre | `Prumo/AGENT.md` | (integral) | porta |",
+            "| F0 | sempre (autoral) | `Prumo/Agente/MAPA-AUTORAL.md` | (integral) | autoral |",
+            "",
+        ]
+    )
+
+    def _measure(self, *, with_autoral: bool) -> dict:
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp)
+            (ws / ".prumo" / "skills" / "briefing").mkdir(parents=True)
+            (ws / ".prumo" / "skills" / "briefing" / "SKILL.md").write_text(
+                self.SKILL, encoding="utf-8"
+            )
+            (ws / "CLAUDE.md").write_text("wrapper de quatro palavras", encoding="utf-8")
+            (ws / "AGENTS.md").write_text("wrapper pior perfil aqui", encoding="utf-8")
+            (ws / "Prumo").mkdir()
+            (ws / "Prumo" / "AGENT.md").write_text("porta com três", encoding="utf-8")
+            if with_autoral:
+                (ws / "Prumo" / "Agente").mkdir()
+                (ws / "Prumo" / "Agente" / "MAPA-AUTORAL.md").write_text(
+                    "# Mapa autoral\n\n- `Escrita/` — contrato próprio\n", encoding="utf-8"
+                )
+            return audit.measure(ws)
+
+    def test_autoral_presente_conta_no_cesto(self) -> None:
+        report = self._measure(with_autoral=True)
+        item = next(i for i in report["items"] if "MAPA-AUTORAL" in i["file"])
+        self.assertTrue(item["exists"])
+        self.assertGreater(item["words"], 0)
+        self.assertFalse([e for e in report["errors"] if "MAPA-AUTORAL" in e])
+
+    def test_autoral_ausente_e_tolerado_sem_erro(self) -> None:
+        report = self._measure(with_autoral=False)
+        item = next(i for i in report["items"] if "MAPA-AUTORAL" in i["file"])
+        self.assertFalse(item["exists"])
+        self.assertEqual(item["words"], 0)
+        self.assertIn("tolerado", item["note"])
+        self.assertFalse([e for e in report["errors"] if "MAPA-AUTORAL" in e])
+
+    def test_sempre_puro_ausente_continua_fail_closed(self) -> None:
+        skill = self.SKILL.replace("sempre (autoral)", "sempre")
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp)
+            (ws / ".prumo" / "skills" / "briefing").mkdir(parents=True)
+            (ws / ".prumo" / "skills" / "briefing" / "SKILL.md").write_text(skill, encoding="utf-8")
+            (ws / "CLAUDE.md").write_text("wrapper de quatro palavras", encoding="utf-8")
+            (ws / "AGENTS.md").write_text("wrapper pior perfil aqui", encoding="utf-8")
+            (ws / "Prumo").mkdir()
+            (ws / "Prumo" / "AGENT.md").write_text("porta com três", encoding="utf-8")
+            report = audit.measure(ws)
+        self.assertTrue(
+            [e for e in report["errors"] if "MAPA-AUTORAL" in e and "ausente" in e],
+            f"`sempre` puro ausente deveria ser erro — errors={report['errors']}",
+        )
+
+
 class ManifestParserTest(unittest.TestCase):
     SKILL = "\n".join(
         [

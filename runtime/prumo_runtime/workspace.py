@@ -184,6 +184,7 @@ def render_files(config: WorkspaceConfig) -> dict[str, str]:
             skills_path=paths.relative(paths.skills_root) + "/" if paths.nested_layout else None,
         ),
         paths.relative(paths.agente_root / "PERFIL.md"): templates.render_perfil_md(),
+        paths.relative(paths.agente_root / "MAPA-AUTORAL.md"): templates.render_mapa_autoral_md(),
         paths.relative(paths.agente_root / "PESSOAS.md"): templates.render_people_md(),
         paths.relative(paths.agente_root / "SAUDE.md"): templates.render_health_md(),
         paths.relative(paths.agente_root / "ROTINA.md"): templates.render_routine_md(),
@@ -612,8 +613,7 @@ def migrate_legacy_workspace(config: WorkspaceConfig) -> dict[str, list[str] | s
             moved=moved,
         )
 
-    # Aposenta o INDEX.md legado já movido: vira tombstone apontando o AGENT.md.
-    # A identidade já foi extraída antes (run_migrate / infer_user_name).
+    # INDEX.md legado vira tombstone → AGENT.md (identidade já extraída antes).
     convert_legacy_index_to_tombstone(
         config.workspace,
         nested_paths.agent_index,

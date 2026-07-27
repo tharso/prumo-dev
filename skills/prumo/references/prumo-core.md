@@ -1,6 +1,6 @@
 # Prumo Core — Motor do sistema
 
-> **prumo_version: 5.64.0**
+> **prumo_version: 5.65.0**
 >
 > Núcleo estável do Prumo. Define regras, guardrails e localização dos módulos canônicos.
 > Procedimento detalhado não mora aqui.
@@ -168,7 +168,8 @@ Se o runtime não expuser o repositório local `.prumo/skills/`, ele deve usar a
 
 1. `Prumo/AGENT.md` (porta curta).
 2. `.prumo/system/PRUMO-CORE.md` — Parte 1 (identidade e interação).
-3. Scan leve via `modules/dispatch.md`: cabeçalhos de `Prumo/PAUTA.md` e últimas 5-10 linhas de `Prumo/REGISTRO.md`.
+3. `Prumo/Agente/MAPA-AUTORAL.md` — caminhos autorais (se existir).
+4. Scan leve via `modules/dispatch.md`: cabeçalhos de `Prumo/PAUTA.md` e últimas 5-10 linhas de `Prumo/REGISTRO.md`.
 
 Fora disso, abertura não abre mais nada. `PERFIL.md`, `EMAIL-CURADORIA.md`, `briefing-procedure.md`, `INBOX.md` e a Parte 2 deste core só entram sob demanda, conforme a intenção expressada pelo usuário.
 
@@ -332,8 +333,8 @@ Histórico completo de versão vive em `CHANGELOG.md`.
 
 Versão atual deste core:
 
-- `5.64.0`
+- `5.65.0`
 
 ---
 
-*Prumo Core v5.64.0 — https://github.com/tharso/prumo*
+*Prumo Core v5.65.0 — https://github.com/tharso/prumo*
