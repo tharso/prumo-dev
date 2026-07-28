@@ -69,7 +69,7 @@ EXPECTED_MAP = frozenset(
         ("F1", "sempre", "Prumo/Agente/PESSOAS.md", "(integral)", "remetentes"),
         ("F1", "sempre", f"{_M}/briefing-estado.md", "(integral)", "estado"),
         ("F1", "sempre", f"{_M}/version-preflight.md", "(integral)", "preflight"),
-        ("F1", "sempre", f"{_M}/faxina-thresholds.md", "(integral)", "números da faxina"),
+        ("F1", "sem semente OU `schema` de thresholds desconhecido", f"{_M}/faxina-thresholds.md", "(integral)", "números da faxina (#258)"),
         ("F1", "override do usuário existir", "Prumo/Custom/rules/faxina-thresholds.md", "(integral)", "overrides"),
         ("F1", "oferta/execução de update (warning/alert)", f"{_M}/version-update.md", "(integral)", "canônico do update"),
         ("F1", "scripts via shell", f"{_M}/runtime-paths.md", "(integral)", "scripts"),
@@ -119,6 +119,11 @@ EXPECTED_MAP = frozenset(
 # briefing-procedure.md; mover uma frase sem atualizar aqui quebra o guard —
 # é o teste `test_moved_guardrails_registry` pedido na issue.
 
+# #258: duas invariantes SAÍRAM daqui por OBSOLESCÊNCIA, não por mudança de
+# dono — "threshold efetivo ≠ declarado" e "recalcular direto da fonte" eram
+# remendo para a semente declarar sempre o default. Com o runtime aplicando o
+# override, a semente parou de mentir e a obrigação deixou de existir. Ver
+# test_faxina_thresholds.py (que prova o novo comportamento) e DECISIONS.
 GUARDRAIL_OWNERS: dict[str, Path] = {
     # DAG do ex-Passo 4 (#195/#196/#205) → canais
     "Ordem de execução (DAG lógico, execução ADAPTATIVA": CANAIS,
@@ -173,8 +178,6 @@ GUARDRAIL_OWNERS: dict[str, Path] = {
     "carregar `faxina.md` e executar": ESTADO,
     # Override × semente (round 4): threshold efetivo ≠ declarado pela
     # semente → recalcular da fonte, nunca usar o pré-calculado.
-    "se o threshold EFETIVO (com override) diferir do declarado": ESTADO,
-    "**recalcular direto da fonte**": ESTADO,
     "Briefing sem a linha de faxina é briefing **fora de conformidade**": MONTAGEM,
     "GERAR o HTML interativo da skill `decidir` e entregá-lo linkado — automaticamente, sem pedir autorização prévia (#218)": MONTAGEM,
     # #211 (review Codex r1 do #180): DETECÇÃO nos canais (comparação +
@@ -397,22 +400,32 @@ class MovedGuardrailsRegistryTests(unittest.TestCase):
             with self.subTest(invariant=invariant):
                 self.assertIn(invariant, faxina)
 
-    def test_override_mismatch_contract_is_coherent(self) -> None:
-        # Round 5 do Codex (#180): o contrato de override é executável de
-        # ponta a ponta — o runtime DECLARA 14 (constante travada), o dono
-        # dos números exemplifica um override diferente (7), e a regra que
-        # os liga (efetivo ≠ declarado → recalcular da fonte) está no dono
-        # certo. Se qualquer ponta mudar sem as outras, quebra aqui.
+    def test_override_contract_is_executable(self) -> None:
+        # #258 (substitui o contrato da r5 do #180): antes o runtime DECLARAVA
+        # sempre o default e o agente é que recalculava quando o efetivo
+        # divergisse — remendo que dependia de o doc estar em contexto. Agora o
+        # runtime APLICA o override e a semente transporta o efetivo; o contrato
+        # segue executável de ponta a ponta, com outra mecânica.
         sys.path.insert(0, str(REPO_ROOT / "runtime"))
-        from prumo_runtime.local_panorama import _PROCESSED_STALE_DAYS
+        from prumo_runtime import faxina_thresholds
 
-        self.assertEqual(_PROCESSED_STALE_DAYS, 14)
+        # 1. o runtime conhece TODOS os números do doc (paridade travada em
+        #    test_faxina_thresholds.py) e sabe onde mora o override do usuário
+        self.assertEqual(faxina_thresholds.DEFAULTS["processed_expiry_days"], 14)
+        self.assertIn("Custom", str(faxina_thresholds.override_path(REPO_ROOT)))
+        # 2. o dono dos números exemplifica um override diferente do default
         thresholds = (MODULES / "faxina-thresholds.md").read_text(encoding="utf-8")
         self.assertIn("- processed_expiry_days: 7", thresholds)
-        self.assertIn("stale_days_threshold", thresholds)
+        # 3. o consumidor lê da semente, com fallback declarado pra quem não tem
         estado = ESTADO.read_text(encoding="utf-8")
-        self.assertIn("threshold efetivo ≠ declarado pela semente", estado)
-        # E o executor não guarda mais literal nenhum dos 5 números.
+        self.assertIn("`faxina.thresholds` da semente", estado)
+        self.assertIn("Sem semente", estado)
+        self.assertNotIn(
+            "threshold efetivo ≠ declarado pela semente",
+            estado,
+            "remendo obsoleto voltou: a semente não declara mais um número e conta por outro",
+        )
+        # 4. E o executor não guarda literal nenhum dos números.
         faxina = FAXINA.read_text(encoding="utf-8")
         for param in (
             "max_items",

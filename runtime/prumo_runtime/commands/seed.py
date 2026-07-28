@@ -39,6 +39,7 @@ from zoneinfo import ZoneInfo
 
 from prumo_runtime.constants import repo_root_from
 from prumo_runtime.inbox_preview import load_inbox_preview
+from prumo_runtime import faxina_thresholds
 from prumo_runtime.local_panorama import build_local_panorama
 from prumo_runtime.workspace import build_config_from_existing
 from prumo_runtime.workspace_paths import workspace_paths
@@ -133,6 +134,7 @@ def _build_once(workspace: Path, paths, timezone_name: str) -> dict:
         processed_path=paths.inbox_processed,
         preview=preview,
         today=today,
+        thresholds=faxina_thresholds.effective(workspace),  # #258
     )
     return {
         "schema_version": SEED_SCHEMA_VERSION,

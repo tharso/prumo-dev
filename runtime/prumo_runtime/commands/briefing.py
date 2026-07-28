@@ -16,6 +16,7 @@ from prumo_runtime.daily_operator import (
     selection_contract_payload,
 )
 from prumo_runtime.inbox_preview import load_inbox_preview, summarize_inbox_entry
+from prumo_runtime import faxina_thresholds
 from prumo_runtime.local_panorama import build_local_panorama
 from prumo_runtime.pauta_parsing import extract_section, filter_by_due_date
 from prumo_runtime.version_check import compute_staleness, read_cached_remote_version
@@ -299,6 +300,7 @@ def build_briefing_payload(workspace: Path) -> dict:
         processed_path=paths.inbox_processed,
         preview=preview,
         today=today,
+        thresholds=faxina_thresholds.effective(workspace),  # #258
     )
     degradation = build_briefing_degradation(
         core_outdated=core_outdated,
