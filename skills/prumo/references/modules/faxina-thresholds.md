@@ -57,4 +57,4 @@ override e a semente transporta os thresholds **efetivos** em
 `thresholds_source` e `override_keys`); o pré-cálculo usa esses valores. Não há
 mais divergência entre o número declarado e o número usado — a regra antiga de
 "recalcular direto da fonte quando diferirem" **foi revogada por construção**.
-Este doc entra na rota **só** quando não há semente ou o schema é outro.
+Este doc entra na rota quando não há semente, o schema é outro **ou o override divergiu da semente** (#258).

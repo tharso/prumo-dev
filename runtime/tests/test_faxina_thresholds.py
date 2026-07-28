@@ -215,7 +215,7 @@ class PontaAPontaTest(unittest.TestCase):
     threshold passado à mão — senão briefing/seed poderiam parar de passá-lo e
     a suíte seguiria verde."""
 
-    def _ws(self, tmp: Path) -> Path:
+    def _ws(self, tmp: Path, *, com_override: bool = True) -> Path:
         from prumo_runtime.workspace import (
             WorkspaceConfig, create_missing_files, ensure_directories, install_skills,
         )
@@ -229,9 +229,10 @@ class PontaAPontaTest(unittest.TestCase):
         install_skills(ws, layout_mode="nested")
         create_missing_files(cfg)
         (ws / "Prumo" / "Custom" / "rules").mkdir(parents=True, exist_ok=True)
-        (ws / "Prumo" / "Custom" / "rules" / "faxina-thresholds.md").write_text(
-            "- max_items: 99\n- processed_expiry_days: 1\n", encoding="utf-8"
-        )
+        if com_override:
+            (ws / "Prumo" / "Custom" / "rules" / "faxina-thresholds.md").write_text(
+                "- max_items: 99\n- processed_expiry_days: 1\n", encoding="utf-8"
+            )
         from datetime import date, timedelta
         proc = ws / "Prumo" / "Inbox4Mobile" / "_processed.json"
         proc.parent.mkdir(parents=True, exist_ok=True)
@@ -264,6 +265,28 @@ class PontaAPontaTest(unittest.TestCase):
         # [P1-1]: o override é FONTE no controle de frescor
         self.assertIn("faxina_override", payload["source_mtimes"])
         self.assertIsNotNone(payload["source_mtimes"]["faxina_override"])
+
+    def test_semente_persistida_sem_override_conta_pelo_default(self) -> None:
+        """[P1 da r3]: o MESMO item de 3 dias tem de ficar FRESCO no default 14
+        — pela semente persistida, não pelo helper chamado à mão."""
+        from argparse import Namespace
+        from contextlib import redirect_stdout
+        import io
+        from prumo_runtime.commands.seed import run_seed
+
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = self._ws(Path(tmp), com_override=False)
+            with redirect_stdout(io.StringIO()):
+                run_seed(Namespace(workspace=str(ws), format="json"))
+            faxina = json.loads(
+                (ws / ".prumo" / "state" / "local-panorama.json").read_text(encoding="utf-8")
+            )["local_panorama"]["faxina"]
+        self.assertEqual(faxina["thresholds_source"], "default")
+        self.assertEqual(faxina["stale_days_threshold"], 14)
+        self.assertEqual(
+            faxina["processed_stale_entries"], 0,
+            "item de 3 dias tem de ser FRESCO sob o default de 14",
+        )
 
     def test_editar_override_depois_do_seed_e_detectavel(self) -> None:
         """[P1 da r2]: o zumbi morre quando a divergência é VISÍVEL ao
