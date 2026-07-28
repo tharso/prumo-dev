@@ -29,6 +29,17 @@ RUNTIME_CONSUMO_ANCHORS = (
 )
 
 
+# #228 fase 2 — os QUATRO contratos INTEGRAIS que mudaram de dono. Fragmento
+# ("disco riscado") aceitaria paráfrase: o texto tem de chegar inteiro no dono
+# novo (Codex, diff r1).
+RULES_MOVED_TO_RUNTIME_CONSUMO = (
+    "Não leia arquivo para simular `prumo`, `briefing` ou `start`. Primeiro execute o comando real.",
+    "Não escreva `{state_path}` fingindo ser o runtime.",
+    "Não rode comando extra só porque ficou curioso. Execute o que foi pedido ou o que o runtime sugeriu.",
+    "Se um comando falhar por uso ou argumento inválido, não repita a mesma linha como disco riscado.",
+)
+
+
 class TemplateAdapterTests(unittest.TestCase):
     def test_agents_wrapper_includes_short_invocation_contract(self) -> None:
         rendered = templates.render_agents_wrapper("Batata", "Prumo")
@@ -37,10 +48,13 @@ class TemplateAdapterTests(unittest.TestCase):
         self.assertIn('Se o usuário chamar "Prumo"', rendered)
         self.assertIn("skill `abrir`", rendered)
         self.assertIn("atalho equivalente", rendered)
-        self.assertIn("prumo briefing --workspace . --format json", rendered)
-        self.assertIn("Não leia arquivo para simular", rendered)
-        self.assertIn("Não escreva `_state/`", rendered)
-        self.assertIn("Não rode comando extra só porque ficou curioso", rendered)
+        self.assertIn("QUALQUER comando `prumo`", rendered)  # #228 fase 2: gatilho amplo
+        # #228 fase 2: as 4 regras de INVOCAÇÃO saíram da porta (pagas na
+        # abertura de toda sessão) e passaram a morar no runtime-consumo.md,
+        # carregado antes de rodar comando do runtime. Mover ≠ deletar: o
+        # registro origem→destino é o teste `test_regras_de_invocacao_mudaram_de_dono`.
+        self.assertNotIn("Não leia arquivo para simular", rendered)
+        self.assertNotIn("Não rode comando extra só porque ficou curioso", rendered)
         self.assertIn("Execute primeiro e fale depois", rendered)
         # #228 C1: o contrato de consumo do JSON mudou de dono — as âncoras
         # vivem em runtime-consumo.md; a superfície aponta pra lá.
@@ -65,7 +79,6 @@ class TemplateAdapterTests(unittest.TestCase):
         )
         self.assertIn("Leia `Prumo/AGENT.md`", rendered)
         self.assertIn("Use `.prumo/system/PRUMO-CORE.md`", rendered)
-        self.assertIn("Não escreva `.prumo/state/`", rendered)
         # #228 C1: kickoff é regra do runtime-consumo.md agora; o wrapper
         # full mantém o ponteiro.
         self.assertIn("runtime-consumo.md", rendered)
@@ -103,10 +116,7 @@ class TemplateAdapterTests(unittest.TestCase):
         self.assertIn('Se o usuário chamar "Prumo"', rendered)
         self.assertIn("skill `abrir`", rendered)
         self.assertIn("atalho equivalente", rendered)
-        self.assertIn("prumo briefing --workspace . --format json", rendered)
-        self.assertIn("Não leia arquivo para simular", rendered)
-        self.assertIn("Não escreva `_state/`", rendered)
-        self.assertIn("Não rode comando extra só porque ficou curioso", rendered)
+        self.assertIn("QUALQUER comando `prumo`", rendered)  # #228 fase 2: gatilho amplo
         self.assertIn("Execute primeiro e fale depois", rendered)
         # #228 C1: o contrato de consumo do JSON mudou de dono — as âncoras
         # vivem em runtime-consumo.md; a superfície aponta pra lá.
@@ -209,3 +219,68 @@ class ReadingPerimeterTests(unittest.TestCase):
         )
         self.assertIn("dirigida e rasa", rendered)
         self.assertIn("perguntar", rendered)
+
+
+class RegrasMovidasTest(unittest.TestCase):
+    """#228 fase 2 — mover ≠ deletar: as 4 regras de invocação saíram da porta
+    (custavam a abertura de TODA sessão) e têm dono novo."""
+
+    def test_dono_novo_declara_gatilho_amplo(self) -> None:
+        """#228 fase 2 (Codex, r6): o cabeçalho do módulo não pode contradizer a
+        regra ampla — as 10–13 valem pra qualquer invocação, não só start/briefing."""
+        modulo = (
+            Path(__file__).resolve().parents[2]
+            / "skills" / "prumo" / "references" / "modules" / "runtime-consumo.md"
+        ).read_text(encoding="utf-8")
+        cabecalho = modulo.split("## As regras")[0]
+        self.assertIn("antes de QUALQUER comando `prumo`", cabecalho)
+        self.assertNotIn(
+            "antes de invocar\n> `prumo start`/`prumo briefing`",
+            cabecalho,
+            "formulação restritiva antiga voltou ao cabeçalho",
+        )
+        self.assertNotRegex(
+            cabecalho.replace("\n", " "),
+            r"Carregar \*\*antes de invocar\*\*? `prumo start`",
+            "cabeçalho voltou a restringir o gatilho a start/briefing",
+        )
+
+    def test_regras_de_invocacao_mudaram_de_dono(self) -> None:
+        modulo = (
+            Path(__file__).resolve().parents[2]
+            / "skills" / "prumo" / "references" / "modules" / "runtime-consumo.md"
+        ).read_text(encoding="utf-8")
+        # TODAS as superfícies de porta, nos dois layouts — ausência numa só
+        # renderização não prova mudança de dono (Codex, diff r1).
+        superficies = {
+            "AGENT.md (nested)": templates.render_agent_md(
+                user_name="Batata", agent_name="Prumo",
+                timezone_name="America/Sao_Paulo", briefing_time="09:00",
+                core_path=".prumo/system/PRUMO-CORE.md", state_path=".prumo/state/",
+                skills_path=".prumo/skills/",
+            ),
+            "AGENT.md (flat)": templates.render_agent_md(
+                user_name="Batata", agent_name="Prumo",
+                timezone_name="America/Sao_Paulo", briefing_time="09:00",
+            ),
+            "CLAUDE.md": templates.render_claude_wrapper("Batata", "Prumo"),
+            "AGENTS.md": templates.render_agents_wrapper("Batata", "Prumo"),
+            "AGENT.md raiz": templates.render_agent_root_wrapper("Batata", "Prumo"),
+        }
+        for bruta in RULES_MOVED_TO_RUNTIME_CONSUMO:
+            # o texto de origem trazia `{state_path}` — normalizar por layout é
+            # a ÚNICA licença; o resto tem de ser byte-equivalente à main.
+            regra = bruta.replace("{state_path}", ".prumo/state/")
+            with self.subTest(regra=regra[:40]):
+                # `assertIn` aceitaria duplicata (Codex, r3): exigir UMA
+                # ocorrência prova byte-equivalência de verdade.
+                self.assertEqual(
+                    modulo.count(regra),
+                    1,
+                    "texto ausente, parafraseado ou DUPLICADO no dono novo — isso não é mover",
+                )
+                for nome, texto in superficies.items():
+                    for variante in (regra, bruta.replace("{state_path}", "_state/")):
+                        self.assertNotIn(
+                            variante, texto, f"regra ainda na porta {nome} — não foi movida"
+                        )

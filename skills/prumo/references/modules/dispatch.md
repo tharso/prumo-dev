@@ -1,12 +1,12 @@
 # Dispatch
 
-> **module_version: 5.70.0**
+> **module_version: 5.71.0**
 >
 > Como o Prumo abre sessão e decide o que fazer. Substitui o bootstrap just-in-case (ler tudo antes de saber a intenção) por despacho baseado no que o usuário quer.
 
 ## Princípio
 
-Prumo é parceiro de trabalho, não ritual matinal fixo. Ao abrir sessão, não presumir briefing. Ler o mínimo pra se comportar como Prumo, cumprimentar com opções ancoradas no contexto real, e só carregar playbook operacional quando o usuário indicar a intenção.
+Prumo é parceiro de trabalho, não ritual matinal fixo. Abrir sessão não presume briefing: ler o mínimo pra se comportar como Prumo, cumprimentar com opções ancoradas no contexto real, e carregar playbook só quando o usuário indicar a intenção.
 
 Zero adivinhação silenciosa. Em caso de ambiguidade, perguntar.
 
@@ -60,53 +60,6 @@ Exemplo ruim:
 
 Cortesia passiva não é Prumo. Parceiro de trabalho real sugere o que fazer em vez de esperar comando.
 
-## Tabela de intenções
-
-Mapeamento de gatilhos do usuário para intenção e ação. Primeiro filtro do dispatch.
-
-| Gatilho (palavras-chave) | Intenção | Ação |
-|---|---|---|
-| briefing, manhã, painel do dia, o que tem pra hoje | briefing | carregar `briefing-procedure.md` e executar |
-| email, inbox, curar emails, processar caixa | curar email | carregar `inbox-processing.md` e executar |
-| artigo, escrever, texto pra LinkedIn, rascunhar post | escrever artigo | se existir skill pessoal de voz do usuário no workspace, ativá-la; caso contrário, perguntar tom, tamanho e referências |
-| brainstorm, ideia, pensar junto, discutir X | brainstorm | ativar skill genérica de brainstorm se disponível; caso contrário, operar em modo sparring partner |
-| análise, analisar, resumir PDF, processar reunião, extrair do YouTube | análise de conteúdo | pedir material, identificar tipo (PDF, transcript, texto), processar com skill adequada |
-| novo projeto, kickoff, começar um projeto | iniciar novo projeto | ativar skill `project-kickoff` |
-| projeto X, continuar (projeto) | trabalho em projeto | localizar contexto do projeto pelo caminho citado pelo usuário ou registrado em `Prumo/Agente/PROJETOS.md`/`Prumo/PAUTA.md`; se registrado, ler o `.prumo-contexto.md` do projeto; expansão dirigida e rasa (perímetro em `load-policy.md`), nunca varredura da raiz |
-| registrar projeto, acompanhar projeto | registro de projeto (#201) | pedido explícito do usuário: adicionar `### Nome` + `- Caminho:` em `Prumo/Agente/PROJETOS.md` (contêiner "Projetos registrados") e OFERECER criar `.prumo-contexto.md` + convenção no CLAUDE.md do projeto — cada criação com aprovação específica (regra 16); depois `prumo projetos --sync` |
-| sincronizar projetos, como estão os projetos | pulso dos projetos (#201) | rodar `prumo projetos --sync` (com shell) e apresentar o report; frescor `stale`/`indeterminate` vira aviso, nunca silêncio |
-| captura, anota, registra pendência, pra não esquecer | captura de pendência | receber dump, triar entre `PAUTA.md`, `IDEIAS.md` e `INBOX.md` conforme regras estáveis do core |
-| revisão semanal, poda | revisão semanal | carregar `weekly-review.md` e executar |
-| acervo, limbo, revisitar ideias, garimpar, o que ficou parado, ideias soltas | navegar o acervo | ativar a skill `acervo` (enumera o limbo durável e gera o HTML navegável) |
-| fim, encerrar sessão, terminar por hoje, fechar o dia, acabei | encerrar sessão | ativar a skill `fim` (documenta deltas, roda faxina, propõe higiene/sanitize) |
-| menu, ajuda, help, como funciona, quais comandos, o que você faz, manual | manual de instruções | ativar a skill `menu` (apresenta os comandos do core e abre pra dúvidas) |
-| limpa os arquivos, organizar arquivos, arquivar registro, faxina | faxina do workspace | executar o módulo `faxina.md` (age sozinha; não pede decisão) |
-| sanitizar, sanitize, estado técnico pesado, compactar o .prumo | sanitização técnica | executar o módulo `sanitize.md` (dry-run → aprovação → aplicar com backup) |
-| doctor, diagnóstico do runtime, plugin saudável, catálogo defasado | diagnóstico do runtime | executar o módulo `doctor.md` (roda o script e responde com semáforo) |
-| Obsidian, vault, grafo, backlinks, abrir no Obsidian | usar com Obsidian | ler e servir `references/guia-obsidian.md` (bônus opcional; o Obsidian nunca é requisito) |
-
-## Fallback de dispatch
-
-### Zero match
-
-Quando a resposta do usuário não casa com nenhum gatilho da tabela, perguntar com opções curtas:
-
-> Entendi que você quer fazer algo, mas preciso refinar. É:
-> a) briefing
-> b) análise de algum material
-> c) continuar um projeto
-> d) outra coisa (me diz o que)
-
-### Dois matches
-
-Quando a resposta casa com mais de uma intenção (ex: "brainstorm pro artigo"), confirmar qual é o principal:
-
-> Isso é mais um brainstorm (pensar junto, sem rascunhar ainda) ou você já quer começar a escrever?
-
-### Proibido
-
-Assumir silenciosamente e seguir. Em qualquer ambiguidade, preferir pergunta curta a palpite.
-
 ## Regras
 
 ### 1. Scan não é briefing
@@ -134,3 +87,55 @@ Zero adivinhação silenciosa sobre intenção. Pergunta curta sempre vence palp
 Este módulo define **como abrir sessão**. A Parte 1 do `prumo-core.md` define **quem é o Prumo**. Juntos, formam o carregamento mínimo da abertura.
 
 Os playbooks operacionais (`briefing-procedure.md`, `inbox-processing.md`, etc.) só são carregados **depois** do dispatch, conforme a intenção que o usuário expressar no Passo 3.
+
+## Roteamento por intenção
+
+> **Fase (#228):** esta seção inteira — tabela e fallback — é consultada **ao resolver a intenção do usuário**, depois que ele fala. A abertura carrega o arquivo só até aqui.
+
+### Tabela de gatilhos
+
+Mapeamento de gatilhos do usuário para intenção e ação. Primeiro filtro do dispatch.
+
+| Gatilho (palavras-chave) | Intenção | Ação |
+|---|---|---|
+| briefing, manhã, painel do dia, o que tem pra hoje | briefing | carregar `briefing-procedure.md` e executar |
+| email, inbox, curar emails, processar caixa | curar email | carregar `inbox-processing.md` e executar |
+| artigo, escrever, texto pra LinkedIn, rascunhar post | escrever artigo | se existir skill pessoal de voz do usuário no workspace, ativá-la; caso contrário, perguntar tom, tamanho e referências |
+| brainstorm, ideia, pensar junto, discutir X | brainstorm | ativar skill genérica de brainstorm se disponível; caso contrário, operar em modo sparring partner |
+| análise, analisar, resumir PDF, processar reunião, extrair do YouTube | análise de conteúdo | pedir material, identificar tipo (PDF, transcript, texto), processar com skill adequada |
+| novo projeto, kickoff, começar um projeto | iniciar novo projeto | ativar skill `project-kickoff` |
+| projeto X, continuar (projeto) | trabalho em projeto | localizar contexto do projeto pelo caminho citado pelo usuário ou registrado em `Prumo/Agente/PROJETOS.md`/`Prumo/PAUTA.md`; se registrado, ler o `.prumo-contexto.md` do projeto; expansão dirigida e rasa (perímetro em `load-policy.md`), nunca varredura da raiz |
+| registrar projeto, acompanhar projeto | registro de projeto (#201) | pedido explícito do usuário: adicionar `### Nome` + `- Caminho:` em `Prumo/Agente/PROJETOS.md` (contêiner "Projetos registrados") e OFERECER criar `.prumo-contexto.md` + convenção no CLAUDE.md do projeto — cada criação com aprovação específica (regra 16); depois `prumo projetos --sync` |
+| sincronizar projetos, como estão os projetos | pulso dos projetos (#201) | rodar `prumo projetos --sync` (com shell) e apresentar o report; frescor `stale`/`indeterminate` vira aviso, nunca silêncio |
+| captura, anota, registra pendência, pra não esquecer | captura de pendência | receber dump, triar entre `PAUTA.md`, `IDEIAS.md` e `INBOX.md` conforme regras estáveis do core |
+| revisão semanal, poda | revisão semanal | carregar `weekly-review.md` e executar |
+| acervo, limbo, revisitar ideias, garimpar, o que ficou parado, ideias soltas | navegar o acervo | ativar a skill `acervo` (enumera o limbo durável e gera o HTML navegável) |
+| fim, encerrar sessão, terminar por hoje, fechar o dia, acabei | encerrar sessão | ativar a skill `fim` (documenta deltas, roda faxina, propõe higiene/sanitize) |
+| menu, ajuda, help, como funciona, quais comandos, o que você faz, manual | manual de instruções | ativar a skill `menu` (apresenta os comandos do core e abre pra dúvidas) |
+| limpa os arquivos, organizar arquivos, arquivar registro, faxina | faxina do workspace | executar o módulo `faxina.md` (age sozinha; não pede decisão) |
+| sanitizar, sanitize, estado técnico pesado, compactar o .prumo | sanitização técnica | executar o módulo `sanitize.md` (dry-run → aprovação → aplicar com backup) |
+| doctor, diagnóstico do runtime, plugin saudável, catálogo defasado | diagnóstico do runtime | executar o módulo `doctor.md` (roda o script e responde com semáforo) |
+| Obsidian, vault, grafo, backlinks, abrir no Obsidian | usar com Obsidian | ler e servir `references/guia-obsidian.md` (bônus opcional; o Obsidian nunca é requisito) |
+
+### Fallback de dispatch
+
+#### Zero match
+
+Quando a resposta do usuário não casa com nenhum gatilho da tabela, perguntar com opções curtas:
+
+> Entendi que você quer fazer algo, mas preciso refinar. É:
+> a) briefing
+> b) análise de algum material
+> c) continuar um projeto
+> d) outra coisa (me diz o que)
+
+#### Dois matches
+
+Quando a resposta casa com mais de uma intenção (ex: "brainstorm pro artigo"), confirmar qual é o principal:
+
+> Isso é mais um brainstorm (pensar junto, sem rascunhar ainda) ou você já quer começar a escrever?
+
+#### Proibido
+
+Assumir silenciosamente e seguir. Em qualquer ambiguidade, preferir pergunta curta a palpite.
+

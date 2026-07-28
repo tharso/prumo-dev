@@ -22,33 +22,34 @@ A **lista canônica ÚNICA** de carregamento do briefing (#195, emendada pela #1
 |---|---|---|---|---|
 | F0 | sempre | `CLAUDE.md` | (integral) | wrapper da raiz |
 | F0 | sempre | `Prumo/AGENT.md` | (integral) | porta canônica |
-| F0 | sempre | `.prumo/system/PRUMO-CORE.md` | até: `# Parte 2 — Playbooks operacionais` | core (Parte 1) |
-| F0 | sempre | `.prumo/skills/prumo/references/modules/dispatch.md` | (integral) | protocolo de abertura (#248) |
-| F0 | sempre (autoral) | `Prumo/Agente/MAPA-AUTORAL.md` | (integral) | caminhos autorais do usuário (#241) |
+| F0 | sempre | `.prumo/system/PRUMO-CORE.md` | até: `# Parte 2 — Playbooks operacionais` | core P1 |
+| F0 | sempre | `.prumo/skills/prumo/references/modules/dispatch.md` | até: `## Roteamento por intenção` | abertura (#248) |
+| F1 | ao resolver a intenção do usuário (nunca na abertura) | `.prumo/skills/prumo/references/modules/dispatch.md` | `## Roteamento por intenção` | roteamento (#228) |
+| F0 | sempre (autoral) | `Prumo/Agente/MAPA-AUTORAL.md` | (integral) | caminhos autorais (#241) |
 | F1 | sempre | `.prumo/skills/briefing/SKILL.md` | (integral) | esta skill |
 | F1 | sempre | `.prumo/skills/prumo/references/modules/briefing-procedure.md` | (integral) | espinha |
 | F1 | sempre | `.prumo/system/PRUMO-CORE.md` | `## Guardrails` | core (seção) |
-| F1 | sempre | `Prumo/Agente/PERFIL.md` | (integral) | config do usuário |
-| F1 | sempre | `Prumo/Agente/ROTINA.md` | (integral) | config do usuário |
-| F1 | sempre | `Prumo/Agente/PESSOAS.md` | (integral) | predicado de remetente |
-| F1 | sempre | `.prumo/skills/prumo/references/modules/briefing-estado.md` | (integral) | estado operacional |
-| F1 | sempre | `.prumo/skills/prumo/references/modules/version-preflight.md` | (integral) | preflight de versão |
+| F1 | sempre | `Prumo/Agente/PERFIL.md` | (integral) | config |
+| F1 | sempre | `Prumo/Agente/ROTINA.md` | (integral) | config |
+| F1 | sempre | `Prumo/Agente/PESSOAS.md` | (integral) | remetentes |
+| F1 | sempre | `.prumo/skills/prumo/references/modules/briefing-estado.md` | (integral) | estado |
+| F1 | sempre | `.prumo/skills/prumo/references/modules/version-preflight.md` | (integral) | preflight |
 | F1 | oferta/execução de update (warning/alert) | `.prumo/skills/prumo/references/modules/version-update.md` | (integral) | canônico do update |
-| F1 | scripts via shell | `.prumo/skills/prumo/references/modules/runtime-paths.md` | (integral) | resolução de scripts |
+| F1 | scripts via shell | `.prumo/skills/prumo/references/modules/runtime-paths.md` | (integral) | scripts |
 | F1 | shell com runtime alcançável | `.prumo/skills/prumo/references/modules/cowork-runtime-bridge.md` | (integral) | ponte do runtime |
-| F1 | antes de invocar comando do runtime (escolha de formato inclusa) | `.prumo/skills/prumo/references/modules/runtime-consumo.md` | (integral) | contrato de consumo |
-| F1 | sempre | `.prumo/skills/prumo/references/modules/faxina-thresholds.md` | (integral) | números da faxina (defaults + overrides) |
-| F1 | override do usuário existir | `Prumo/Custom/rules/faxina-thresholds.md` | (integral) | thresholds customizados |
-| F1 | família de faxina pendente (execução — a checagem mínima mora no estado) | `.prumo/skills/prumo/references/modules/faxina.md` | (integral) | executor da faxina |
-| F2 | `MAPA-AUTORAL.md` com nota (gramática dos marcadores) | `.prumo/skills/prumo/references/modules/load-policy.md` | `## Listagem de diretórios (perímetro de leitura, #194)` | marcadores reservados (#245) |
-| F2 | antes da triagem local do Inbox4Mobile, de caixa declarada OU de abrir email/agenda | `.prumo/skills/prumo/references/modules/briefing-canais.md` | (integral) | canais + defesas |
-| F2 | Inbox4Mobile com itens novos | `.prumo/skills/prumo/references/modules/inbox-processing.md` | (integral) | triagem do inbox |
-| F2 | antes de filtrar email (se existir) | `Prumo/Referencias/EMAIL-CURADORIA.md` | (integral) | regras aprendidas |
-| F2 | canal de email disponível E EMAIL-CURADORIA.md ausente (criação) | `.prumo/skills/prumo/references/file-templates.md` | `## Prumo/Referencias/EMAIL-CURADORIA.md` | template canônico |
-| F2 | aprofundamento (predicado g / fallback por fonte) | `.prumo/skills/prumo/references/modules/load-policy.md` | (integral) | política de leitura |
-| F3 | ao montar o panorama | `.prumo/skills/prumo/references/modules/briefing-montagem.md` | (integral) | dois tempos + fechamento |
-| F3 | ao montar o panorama | `.prumo/skills/prumo/references/modules/interaction-format.md` | (integral) | dono da numeração |
-| F3 | 6+ itens acionáveis (#218) | `.prumo/skills/decidir/SKILL.md` | (integral) | despacho visual |
+| F1 | antes de QUALQUER comando do runtime (formato e invocação) | `.prumo/skills/prumo/references/modules/runtime-consumo.md` | (integral) | consumo |
+| F1 | sempre | `.prumo/skills/prumo/references/modules/faxina-thresholds.md` | (integral) | números da faxina |
+| F1 | override do usuário existir | `Prumo/Custom/rules/faxina-thresholds.md` | (integral) | overrides |
+| F1 | família de faxina pendente (execução — a checagem mínima mora no estado) | `.prumo/skills/prumo/references/modules/faxina.md` | (integral) | executor |
+| F2 | `MAPA-AUTORAL.md` com nota (gramática dos marcadores) | `.prumo/skills/prumo/references/modules/load-policy.md` | `## Listagem de diretórios (perímetro de leitura, #194)` | marcadores (#245) |
+| F2 | antes da triagem local do Inbox4Mobile, de caixa declarada OU de abrir email/agenda | `.prumo/skills/prumo/references/modules/briefing-canais.md` | (integral) | canais |
+| F2 | Inbox4Mobile com itens novos | `.prumo/skills/prumo/references/modules/inbox-processing.md` | (integral) | inbox |
+| F2 | antes de filtrar email (se existir) | `Prumo/Referencias/EMAIL-CURADORIA.md` | (integral) | curadoria |
+| F2 | canal de email disponível E EMAIL-CURADORIA.md ausente (criação) | `.prumo/skills/prumo/references/file-templates.md` | `## Prumo/Referencias/EMAIL-CURADORIA.md` | template |
+| F2 | aprofundamento (predicado g / fallback por fonte) | `.prumo/skills/prumo/references/modules/load-policy.md` | (integral) | leitura |
+| F3 | ao montar o panorama | `.prumo/skills/prumo/references/modules/briefing-montagem.md` | (integral) | dois tempos |
+| F3 | ao montar o panorama | `.prumo/skills/prumo/references/modules/interaction-format.md` | (integral) | numeração |
+| F3 | 6+ itens acionáveis (#218) | `.prumo/skills/decidir/SKILL.md` | (integral) | despacho |
 
 **F4 (fechamento)** não carrega material novo: executa `## Escrita e fechamento` de `briefing-montagem.md` (em contexto desde F3) — escrita nos canais, `_processed.json` e marcação do dia. É FASE do contrato (#177/#180); sem linha na tabela por design.
 

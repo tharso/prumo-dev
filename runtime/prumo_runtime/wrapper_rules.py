@@ -87,36 +87,11 @@ RULES: tuple[WrapperRule, ...] = (
     ),
     WrapperRule(
         "consumo-json-no-modulo",
-        "Antes de invocar `prumo start` ou `prumo briefing --workspace . --format json`, "
+        "Antes de invocar QUALQUER comando `prumo` (start, briefing, repair, setup, migrate...), "
         "carregue `.prumo/skills/prumo/references/modules/runtime-consumo.md` — escolha de "
-        "formato e contrato de consumo moram lá (#228).",
+        "formato e contrato de invocação moram lá (#228).",
         _BOTH,
         _ALL_PROFILES,
-    ),
-    WrapperRule(
-        "nao-simule-comando",
-        "Não leia arquivo para simular `prumo`, `briefing` ou `start`. Primeiro execute o "
-        "comando real.",
-        _BOTH,
-        _ALL_PROFILES,
-    ),
-    WrapperRule(
-        "nao-escreva-state",
-        "Não escreva `{state_path}` fingindo ser o runtime.",
-        _BOTH,
-        _ALL_PROFILES,
-    ),
-    WrapperRule(
-        "sem-comando-por-curiosidade",
-        "Não rode comando extra só porque ficou curioso. Execute o que foi pedido ou o que "
-        "o runtime sugeriu.",
-        _BOTH,
-    ),
-    WrapperRule(
-        "sem-disco-riscado",
-        "Se um comando falhar por uso ou argumento inválido, não repita a mesma linha como "
-        "disco riscado.",
-        _BOTH,
     ),
     WrapperRule(
         "falha-parcial-preserva",

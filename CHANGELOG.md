@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.71.0] - 2026-07-27
+
+### Changed
+- **Dieta do briefing, fase 2: rota 7.795 → 6.941 sem perder contrato (#228, cortes aprovados pelo dono)** — com a régua honesta da #248, a medição seção a seção mostrou onde estava o peso. **(D1)** A **seção de roteamento por intenção** do `dispatch.md` (tabela + fallback) sai da abertura: é consultada **depois** que o usuário fala. Só vale porque **a porta declara a leitura parcial** — manda ler o dispatch até a seção de roteamento, e o instrumento conta exatamente a mesma fatia; **teste novo compara as duas declarações** (a primeira versão deste corte media menos do que o agente pagava — gaming pego no gate). **(D2 — revertido no gate)** tornar `faxina-thresholds.md` condicional se mostrou perda de contrato: a semente transporta só `stale_days_threshold`, não `max_items` nem `diario_expiry_days` — a checagem das cinco famílias da faxina ficaria sem número. O arquivo segue carregando sempre. **(D3)** As **4 regras de invocação** do runtime saem das "Regras rápidas" da porta — pagas na abertura de TODA sessão — e passam a morar no `runtime-consumo.md`, carregado antes de rodar comando; mover ≠ deletar, com **registro origem→destino em teste** (exige a regra presente no dono novo E ausente na porta). **(D4)** Regra 18 do core compactada (o procedimento detalhado já mora no `briefing-canais.md`). **(D5)** Enxugo de prosa nas regras 16/17 e nos rótulos do manifesto. **Teto intermediário registrado:** o alvo histórico de 4.999 **não é perseguido além daqui** — o que sobra no cesto é contrato que vale o peso, e cortá-lo moveria instrução para longe do momento em que ela salva a execução.
+
 ## [5.70.0] - 2026-07-27
 
 ### Changed
