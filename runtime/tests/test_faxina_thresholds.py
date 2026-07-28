@@ -67,6 +67,39 @@ class ParidadeDocCodigoTest(unittest.TestCase):
         )
 
 
+class FonteUnicaTest(unittest.TestCase):
+    """[P2 da r5]: literal de threshold fora do módulo dono é segunda fonte de
+    verdade — hoje o fluxo produtivo passa o valor, mas uma chamada futura sem
+    argumento divergiria em silêncio."""
+
+    def test_nenhum_literal_de_threshold_fora_do_dono(self) -> None:
+        import re as _re
+        runtime_dir = REPO_ROOT / "runtime" / "prumo_runtime"
+        dono = runtime_dir / "faxina_thresholds.py"
+        alvos = {
+            "_PROCESSED_STALE_DAYS": 14,
+            "BACKUP_EXPIRY_DAYS": 90,
+        }
+        offenders = []
+        for py in sorted(runtime_dir.rglob("*.py")):
+            if py == dono:
+                continue
+            texto = py.read_text(encoding="utf-8")
+            for nome, valor in alvos.items():
+                if _re.search(rf"^{nome}\s*=\s*{valor}\b", texto, _re.M):
+                    offenders.append(f"{py.name}:{nome}")
+        self.assertEqual(
+            offenders, [], f"threshold com literal fora da fonte única: {offenders}"
+        )
+
+    def test_default_do_helper_vem_da_fonte_unica(self) -> None:
+        from prumo_runtime import local_panorama
+        self.assertEqual(
+            local_panorama._PROCESSED_STALE_DAYS,
+            faxina_thresholds.DEFAULTS["processed_expiry_days"],
+        )
+
+
 class OverrideTest(unittest.TestCase):
     def test_sem_override_usa_defaults(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

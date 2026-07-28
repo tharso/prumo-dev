@@ -42,7 +42,9 @@ PAUTA_SECTIONS: tuple[tuple[str, str], ...] = (
 
 _DISPLAY_MAX_CHARS = 200
 _REGISTRO_TAIL_LINES = 10
-_PROCESSED_STALE_DAYS = 14
+# #258: default vem da fonte única (`faxina_thresholds`) — constante local
+# aqui seria a segunda fonte de verdade que a decisão aboliu.
+_PROCESSED_STALE_DAYS = faxina_thresholds.DEFAULTS["processed_expiry_days"]
 
 
 def _mtime_iso(path: Path) -> str | None:
