@@ -76,21 +76,57 @@ class FonteUnicaTest(unittest.TestCase):
         import re as _re
         runtime_dir = REPO_ROOT / "runtime" / "prumo_runtime"
         dono = runtime_dir / "faxina_thresholds.py"
-        alvos = {
-            "_PROCESSED_STALE_DAYS": 14,
-            "BACKUP_EXPIRY_DAYS": 90,
-        }
+        # Formas REAIS de consumo (Codex r6): constante de módulo, campo de
+        # dataclass e default de argparse — não só duas atribuições nomeadas.
+        nomes = "|".join(
+            ["_PROCESSED_STALE_DAYS", "BACKUP_EXPIRY_DAYS", "CACHE_DAYS"]
+            + [k.upper() for k in faxina_thresholds.DEFAULTS]
+            + list(faxina_thresholds.DEFAULTS)
+            + ["backup_expiry_days", "cache_days", "backup-expiry-days", "cache-days"]
+        )
+        valores = "|".join(str(v) for v in sorted(set(faxina_thresholds.DEFAULTS.values())))
+        padroes = (
+            # cobre `NOME = 90`, `nome: int = 90` (dataclass) e `nome=90`
+            _re.compile(rf"^\s*({nomes})\s*(?::\s*\w+\s*)?=\s*({valores})\b", _re.M),
+            _re.compile(rf"--({nomes})\"[^)]*?default\s*=\s*({valores})\b", _re.S),
+        )
         offenders = []
         for py in sorted(runtime_dir.rglob("*.py")):
             if py == dono:
                 continue
             texto = py.read_text(encoding="utf-8")
-            for nome, valor in alvos.items():
-                if _re.search(rf"^{nome}\s*=\s*{valor}\b", texto, _re.M):
-                    offenders.append(f"{py.name}:{nome}")
+            for padrao in padroes:
+                for m in padrao.finditer(texto):
+                    offenders.append(f"{py.name}:{m.group(1)}={m.group(2)}")
         self.assertEqual(
             offenders, [], f"threshold com literal fora da fonte única: {offenders}"
         )
+
+    def test_guard_pega_literal_reintroduzido(self) -> None:
+        """Fixture negativa: as três formas reais de consumo TÊM de ser
+        detectadas — guard que não pega o que existia é decoração."""
+        import re as _re
+        nomes = "|".join(
+            ["_PROCESSED_STALE_DAYS", "BACKUP_EXPIRY_DAYS", "CACHE_DAYS"]
+            + [k.upper() for k in faxina_thresholds.DEFAULTS]
+            + list(faxina_thresholds.DEFAULTS)
+            + ["backup_expiry_days", "cache_days", "backup-expiry-days", "cache-days"]
+        )
+        valores = "|".join(str(v) for v in sorted(set(faxina_thresholds.DEFAULTS.values())))
+        padroes = (
+            _re.compile(rf"^\s*({nomes})\s*(?::\s*\w+\s*)?=\s*({valores})\b", _re.M),
+            _re.compile(rf"--({nomes})\"[^)]*?default\s*=\s*({valores})\b", _re.S),
+        )
+        for caso in (
+            "BACKUP_EXPIRY_DAYS = 90",
+            "    backup_expiry_days: int = 90",
+            'sanitize.add_argument("--cache-days", type=int, default=30)',
+        ):
+            with self.subTest(caso=caso.strip()[:40]):
+                self.assertTrue(
+                    any(p.search(caso) for p in padroes),
+                    f"guard não pega literal reintroduzido: {caso!r}",
+                )
 
     def test_default_do_helper_vem_da_fonte_unica(self) -> None:
         from prumo_runtime import local_panorama

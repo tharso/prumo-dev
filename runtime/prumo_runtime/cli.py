@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 
 from prumo_runtime import __version__
+from prumo_runtime.sanitize import Thresholds
 from prumo_runtime.commands import (
     run_acervo,
     run_acervo_apply,
@@ -148,9 +149,13 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Subconjunto de regras, separado por vírgula (aprovação seletiva)",
     )
-    sanitize.add_argument("--ephemeral-days", type=int, default=14)
-    sanitize.add_argument("--backup-expiry-days", type=int, default=90)
-    sanitize.add_argument("--cache-days", type=int, default=30)
+    # #258: defaults derivados da fonte única — literal aqui contornaria o
+    # `faxina_thresholds`, já que `run_sanitize` sempre repassa estes valores.
+    sanitize.add_argument("--ephemeral-days", type=int, default=Thresholds().ephemeral_days)
+    sanitize.add_argument(
+        "--backup-expiry-days", type=int, default=Thresholds().backup_expiry_days
+    )
+    sanitize.add_argument("--cache-days", type=int, default=Thresholds().cache_days)
     sanitize.set_defaults(handler=run_sanitize)
 
     seed = subparsers.add_parser(
