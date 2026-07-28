@@ -51,7 +51,10 @@ nomes das tabelas acima** (apelido novo não é override, é dialeto):
 A faxina checa `Prumo/Custom/rules/faxina-thresholds.md` primeiro.
 Se existir, usa os valores de lá. Se não, usa os padrões acima.
 
-**Override × semente do runtime:** a semente pré-calcula sinais com os
-DEFAULTS e **declara o número usado** (`local_panorama.faxina.stale_days_threshold`).
-Com override cujo valor difira do declarado, a checagem daquela família **não
-pode usar o pré-calculado** — recalcular direto da fonte (ex.: `_processed.json`).
+**Override × semente do runtime (mecânica v1, #258):** o **runtime aplica** o
+override e a semente transporta os thresholds **efetivos** em
+`local_panorama.faxina.thresholds` (com `schema: prumo_faxina_thresholds.v1`,
+`thresholds_source` e `override_keys`); o pré-cálculo usa esses valores. Não há
+mais divergência entre o número declarado e o número usado — a regra antiga de
+"recalcular direto da fonte quando diferirem" **foi revogada por construção**.
+Este doc entra na rota quando não há semente, o schema é outro **ou o override divergiu da semente** (#258).

@@ -24,6 +24,7 @@ import json
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
+from prumo_runtime import faxina_thresholds
 from prumo_runtime.pauta_parsing import (
     cobrar_state,
     extract_all_sections,
@@ -41,7 +42,9 @@ PAUTA_SECTIONS: tuple[tuple[str, str], ...] = (
 
 _DISPLAY_MAX_CHARS = 200
 _REGISTRO_TAIL_LINES = 10
-_PROCESSED_STALE_DAYS = 14
+# #258: default vem da fonte única (`faxina_thresholds`) — constante local
+# aqui seria a segunda fonte de verdade que a decisão aboliu.
+_PROCESSED_STALE_DAYS = faxina_thresholds.DEFAULTS["processed_expiry_days"]
 
 
 def _mtime_iso(path: Path) -> str | None:
@@ -169,7 +172,9 @@ def _registro_table_rows(registro_text: str) -> int:
     return max(rows - 1, 0) if rows else 0
 
 
-def _processed_signals(processed_path: Path, today: date) -> tuple[int, int, str | None]:
+def _processed_signals(
+    processed_path: Path, today: date, stale_days: int = _PROCESSED_STALE_DAYS
+) -> tuple[int, int, str | None]:
     """(total, stale, error). Arquivo AUSENTE é estado legítimo (nada
     processado ainda) → (0, 0, None); corrompido ou com schema inválido é
     fonte INCOMPLETA → error preenchido (a semente nunca declara faxina
@@ -186,7 +191,7 @@ def _processed_signals(processed_path: Path, today: date) -> tuple[int, int, str
     total = 0
     stale = 0
     invalid = 0
-    cutoff = today - timedelta(days=_PROCESSED_STALE_DAYS)
+    cutoff = today - timedelta(days=stale_days)
     for item in items:
         if not isinstance(item, dict):
             invalid += 1
@@ -216,6 +221,7 @@ def build_local_panorama(
     processed_path: Path,
     preview: dict,
     today: date,
+    thresholds: dict | None = None,
 ) -> tuple[dict, dict]:
     """Monta (`local_panorama`, `payload_completeness`).
 
@@ -262,8 +268,20 @@ def build_local_panorama(
             registro_path, complete=False, error="arquivo ausente"
         )
 
+    # #258: os thresholds EFETIVOS (default + override do usuário) viajam na
+    # semente e governam o pré-cálculo — antes o contrato mandava o agente
+    # recalcular quando o efetivo divergisse do declarado, porque a semente
+    # declarava sempre o default.
+    thresholds = thresholds or {
+        "schema": faxina_thresholds.SCHEMA,
+        "values": dict(faxina_thresholds.DEFAULTS),
+        "source": "default",
+        "override_keys": [],
+        "ignored_keys": [],
+    }
+    stale_days = int(thresholds["values"]["processed_expiry_days"])
     processed_total, processed_stale, processed_error = _processed_signals(
-        processed_path, today
+        processed_path, today, stale_days
     )
     completeness["processed"] = _source_status(
         processed_path, complete=processed_error is None, error=processed_error
@@ -291,10 +309,15 @@ def build_local_panorama(
             "freshness": preview.get("freshness") or {},
         },
         "faxina": {
+            "schema": thresholds["schema"],
             "registro_table_rows": registro_rows,
             "processed_entries": processed_total,
             "processed_stale_entries": processed_stale,
-            "stale_days_threshold": _PROCESSED_STALE_DAYS,
+            "stale_days_threshold": stale_days,
+            "thresholds": thresholds["values"],
+            "thresholds_source": thresholds["source"],
+            "override_keys": thresholds["override_keys"],
+            "ignored_keys": thresholds["ignored_keys"],
         },
         "budget": {
             "display_max_chars": _DISPLAY_MAX_CHARS,

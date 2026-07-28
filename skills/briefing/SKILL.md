@@ -38,7 +38,7 @@ A **lista canônica ÚNICA** de carregamento do briefing (#195, emendada pela #1
 | F1 | scripts via shell | `.prumo/skills/prumo/references/modules/runtime-paths.md` | (integral) | scripts |
 | F1 | shell com runtime alcançável | `.prumo/skills/prumo/references/modules/cowork-runtime-bridge.md` | (integral) | ponte do runtime |
 | F1 | antes de QUALQUER comando do runtime (formato e invocação) | `.prumo/skills/prumo/references/modules/runtime-consumo.md` | (integral) | consumo |
-| F1 | sempre | `.prumo/skills/prumo/references/modules/faxina-thresholds.md` | (integral) | números da faxina |
+| F1 | sem semente, `faxina.schema` ≠ `prumo_faxina_thresholds.v1` OU override divergente | `.prumo/skills/prumo/references/modules/faxina-thresholds.md` | (integral) | números da faxina (#258) |
 | F1 | override do usuário existir | `Prumo/Custom/rules/faxina-thresholds.md` | (integral) | overrides |
 | F1 | família de faxina pendente (execução — a checagem mínima mora no estado) | `.prumo/skills/prumo/references/modules/faxina.md` | (integral) | executor |
 | F2 | `MAPA-AUTORAL.md` com nota (gramática dos marcadores) | `.prumo/skills/prumo/references/modules/load-policy.md` | `## Listagem de diretórios (perímetro de leitura, #194)` | marcadores (#245) |

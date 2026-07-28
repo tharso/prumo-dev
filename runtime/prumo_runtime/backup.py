@@ -17,9 +17,11 @@ import shutil
 from datetime import date
 from pathlib import Path
 
-# Mesmo limiar do `/fim` (fim.BACKUP_EXPIRY_DAYS): backup mais velho que
-# isso é poeira. A poda só roda quando chamada (sanitize) — nunca automática.
-BACKUP_EXPIRY_DAYS = 90
+from prumo_runtime import faxina_thresholds
+
+# Fonte única dos thresholds (#258): backup mais velho que isso é poeira.
+# A poda só roda quando chamada (sanitize) — nunca automática.
+BACKUP_EXPIRY_DAYS = faxina_thresholds.DEFAULTS["backup_expiry_days"]
 
 _BACKUP_DIR_NAMES = {"backup", "backups"}
 def backup_ignore(dirpath: str, names: list[str]) -> set[str]:

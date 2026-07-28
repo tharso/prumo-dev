@@ -17,6 +17,8 @@ A higiene conversa. A faxina age.
 - **Sob demanda:** "limpa os arquivos pra mim", "organizar arquivos"
 - **Nunca:** no meio de uma conversa produtiva (a faxina espera)
 
+> **Origem dos números (#258):** com semente, os efetivos vêm em `faxina.thresholds` (override já aplicado). Sem semente, com schema desconhecido ou override divergente: defaults do `faxina-thresholds.md` **+ o override em `Custom/rules/`** — ignorá-lo é checar contra a configuração do usuário.
+
 ## O que a faxina faz
 
 ### 1. Rotação do REGISTRO.md

@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.72.0] - 2026-07-28
+
+### Fixed
+- **Semente transporta os thresholds EFETIVOS da faxina (#258)** — o bloco `faxina` da semente carregava só `stale_days_threshold`, sempre o default, **ignorando o override do usuário** em `Prumo/Custom/rules/faxina-thresholds.md`: o pré-cálculo de processados contava pelo default mesmo com customização, e o doc de thresholds precisava carregar em TODO briefing pro agente ter os outros números (foi por isso que o corte D2 da #228 teve de ser revertido no gate). Agora: `faxina_thresholds.py` é a fonte única em código dos **8 thresholds**, com **paridade travada por teste** contra a tabela do doc; o override é lido com **vocabulário controlado** (chave fora da lista ou valor inválido → ignorados **e reportados** em `ignored_keys`, nunca adivinhados); a semente transporta `thresholds` + `thresholds_source` + `override_keys` + `schema` versionado, e o pré-cálculo usa o efetivo. O `briefing-estado.md` lê da semente e o doc **entra na rota sem semente, com schema desconhecido ou com override divergente** (nesse caso o bloco `faxina` inteiro é invalidado: recompor e recontar) — o remendo "recalcular quando o efetivo divergir do declarado" morreu por construção. **Catraca: 6.941 → 6.642** (aperto aprovado pelo dono).
+
 ## [5.71.0] - 2026-07-27
 
 ### Changed
