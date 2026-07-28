@@ -458,8 +458,6 @@ class FailClosedTest(unittest.TestCase):
         self.assertEqual(rc, 2, "rota quebrada não pode passar no teto")
 
 
-if __name__ == "__main__":
-    unittest.main()
 
 
 class PortaVersusManifestoTest(unittest.TestCase):
@@ -488,3 +486,7 @@ class PortaVersusManifestoTest(unittest.TestCase):
             linha[0],
             "a porta manda ler o dispatch sem o limite que o manifesto contabiliza",
         )
+
+
+if __name__ == "__main__":
+    unittest.main()
