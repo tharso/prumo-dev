@@ -119,6 +119,12 @@ def _capture_sources(paths) -> dict:
         "registro": _stat_entry(paths.registro),
         "processed": _stat_entry(paths.inbox_processed),
         "inbox4mobile": _inbox4mobile_manifest(paths.inbox4mobile_root),
+        # #258: o override de thresholds é FONTE — sem ele aqui, editar
+        # `Custom/rules/faxina-thresholds.md` depois do `prumo seed` deixaria
+        # a semente "fresca" transportando número velho (Codex, diff r1).
+        "faxina_override": _stat_entry(
+            paths.custom_rules_root / "faxina-thresholds.md"
+        ),
     }
 
 

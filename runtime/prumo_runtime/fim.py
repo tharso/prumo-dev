@@ -4,8 +4,9 @@ O `/fim` é a porta única de encerramento de sessão. Roda a `faxina` (automát
 e, quando detecta acúmulo que exige julgamento, **sugere** `/higiene` ou a
 sanitização técnica — nunca executa por conta própria (elas pedem aprovação). Este
 módulo computa os sinais de acúmulo de forma determinística, usando os
-thresholds PADRÃO da `faxina`/`sanitize` (overrides em `Prumo/Custom/rules/`
-ainda não são lidos aqui — é só detecção pra sugerir, não execução).
+thresholds PADRÃO de `faxina_thresholds.DEFAULTS` (#258). Override do usuário
+não é lido aqui — é detecção pra sugerir, não execução; a semente do briefing
+é quem transporta os efetivos.
 
 Read-only: nunca escreve. NÃO lê email/calendário e NÃO toca `last-briefing.json`
 (é encerramento, não briefing). Ver DECISIONS.md 2026-06-26 (#126).
@@ -16,7 +17,7 @@ import re
 from datetime import date
 from pathlib import Path
 
-from prumo_runtime import __version__
+from prumo_runtime import __version__, faxina_thresholds
 from prumo_runtime.sanitize import iter_handover_files, iter_nested_backup_dirs
 from prumo_runtime.version_check import compute_staleness, read_cached_remote_version
 from prumo_runtime.workspace import parse_core_version, read_text
@@ -28,7 +29,7 @@ SCHEMA_VERSION = "1.1"
 
 # Thresholds reusados da faxina/sanitize (skills/prumo/references/modules/faxina-thresholds.md).
 PAUTA_STALLED_DAYS = 14   # item da pauta parado há mais de 14d → higiene
-BACKUP_EXPIRY_DAYS = 90   # backup em .prumo/backups/ → sanitize
+BACKUP_EXPIRY_DAYS = faxina_thresholds.DEFAULTS["backup_expiry_days"]  # #258: fonte única
 EPHEMERAL_DAYS = 14       # artefato efêmero do decidir/acervo (HTML, fonte) → sanitize
 
 _DESDE_PATTERN = re.compile(

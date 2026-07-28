@@ -53,6 +53,7 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
 
+from prumo_runtime import faxina_thresholds
 from prumo_runtime.backup import iter_backup_roots
 
 SCHEMA_VERSION = "prumo_sanitize_report.v1"
@@ -81,9 +82,11 @@ class SanitizeError(RuntimeError):
 
 @dataclass(frozen=True)
 class Thresholds:
-    ephemeral_days: int = 14   # mesmos defaults do /fim e do faxina-thresholds
-    backup_expiry_days: int = 90
-    cache_days: int = 30
+    # #258: os dois que moram na tabela do `faxina-thresholds.md` vêm da fonte
+    # única; `ephemeral_days` é só daqui (não está no doc).
+    ephemeral_days: int = 14
+    backup_expiry_days: int = faxina_thresholds.DEFAULTS["backup_expiry_days"]
+    cache_days: int = faxina_thresholds.DEFAULTS["cache_expiry_days"]
 
     def validate(self) -> None:
         for name in ("ephemeral_days", "backup_expiry_days", "cache_days"):

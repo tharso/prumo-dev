@@ -19,6 +19,8 @@ import re
 from pathlib import Path
 
 SCHEMA = "prumo_faxina_thresholds.v1"
+# O literal ACEITO pelo consumidor — declarado também no `briefing-estado.md`:
+# "desconhecido" sem lista de conhecidos é horóscopo, não gate (Codex).
 
 # Espelho da tabela do `faxina-thresholds.md`. Chave nova entra nos DOIS.
 DEFAULTS: dict[str, int] = {
@@ -37,7 +39,10 @@ DEFAULTS: dict[str, int] = {
     "diario_expiry_days": 90,
 }
 
-_OVERRIDE_LINE = re.compile(r"^\s*[-*]\s*([a-z_][a-z0-9_]*)\s*:\s*(.+?)\s*$", re.IGNORECASE)
+# Candidato = qualquer `- chave: valor`. A gramática da CHAVE é validada
+# depois, pra que nome inválido (maiúscula, hífen) apareça em `ignored_keys`
+# em vez de sumir sem rastro (Codex, diff r1).
+_OVERRIDE_LINE = re.compile(r"^\s*[-*]\s*([^\s:][^:]*?)\s*:\s*(.+?)\s*$")
 
 
 def override_path(workspace: Path) -> Path:
@@ -63,7 +68,8 @@ def read_override(workspace: Path) -> tuple[dict[str, int], list[str]]:
         m = _OVERRIDE_LINE.match(line)
         if m is None:
             continue
-        chave, bruto = m.group(1).lower(), m.group(2).strip().strip("`")
+        chave, bruto = m.group(1).strip().strip("`"), m.group(2).strip().strip("`")
+        # case-sensitive: `MAX_ITEMS` não é `max_items` (vocabulário controlado)
         if chave not in DEFAULTS:
             ignoradas.append(chave)
             continue

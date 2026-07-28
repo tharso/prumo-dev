@@ -1,7 +1,7 @@
 {
-  "_note": "Atualizado em 2026-07-28 (#258): 6941 -> 6669 (-272). A catraca DESCE por corte mergeado (aperto aprovado pelo dono). O corte D2 da #228 \u2014 que tinha sido revertido no gate porque a semente transportava so stale_days_threshold \u2014 volta agora que o runtime aplica o override e a semente carrega os 8 thresholds efetivos: o faxina-thresholds.md deixa de carregar sempre e passa a entrar so sem semente OU com schema desconhecido. Historico: 6788 -> 6401 -> 6493 -> 7696 (recalibracao #248) -> 7795 (#241) -> 6941 (#228 fase 2) -> 6669 (#258). Teto intermediario da #228 segue valendo: 4.999 nao e perseguido.",
+  "_note": "Atualizado em 2026-07-28 (#258): 6941 -> 6645 (-296). A catraca DESCE por corte mergeado (aperto aprovado pelo dono). O corte D2 da #228 \u2014 que tinha sido revertido no gate porque a semente transportava so stale_days_threshold \u2014 volta agora que o runtime aplica o override e a semente carrega os 8 thresholds efetivos: o faxina-thresholds.md deixa de carregar sempre e passa a entrar so sem semente OU com schema desconhecido. Historico: 6788 -> 6401 -> 6493 -> 7696 (recalibracao #248) -> 7795 (#241) -> 6941 (#228 fase 2) -> 6645 (#258). Teto intermediario da #228 segue valendo: 4.999 nao e perseguido.",
   "ruff_violations": 6,
   "coverage_pct": 85,
   "largest_file_lines": 868,
-  "briefing_f0f1_words": 6669
+  "briefing_f0f1_words": 6645
 }
