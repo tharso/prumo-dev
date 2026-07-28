@@ -48,7 +48,7 @@ class TemplateAdapterTests(unittest.TestCase):
         self.assertIn('Se o usuário chamar "Prumo"', rendered)
         self.assertIn("skill `abrir`", rendered)
         self.assertIn("atalho equivalente", rendered)
-        self.assertIn("prumo briefing --workspace . --format json", rendered)
+        self.assertIn("QUALQUER comando `prumo`", rendered)  # #228 fase 2: gatilho amplo
         # #228 fase 2: as 4 regras de INVOCAÇÃO saíram da porta (pagas na
         # abertura de toda sessão) e passaram a morar no runtime-consumo.md,
         # carregado antes de rodar comando do runtime. Mover ≠ deletar: o
@@ -116,7 +116,7 @@ class TemplateAdapterTests(unittest.TestCase):
         self.assertIn('Se o usuário chamar "Prumo"', rendered)
         self.assertIn("skill `abrir`", rendered)
         self.assertIn("atalho equivalente", rendered)
-        self.assertIn("prumo briefing --workspace . --format json", rendered)
+        self.assertIn("QUALQUER comando `prumo`", rendered)  # #228 fase 2: gatilho amplo
         self.assertIn("Execute primeiro e fale depois", rendered)
         # #228 C1: o contrato de consumo do JSON mudou de dono — as âncoras
         # vivem em runtime-consumo.md; a superfície aponta pra lá.

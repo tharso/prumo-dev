@@ -87,9 +87,9 @@ RULES: tuple[WrapperRule, ...] = (
     ),
     WrapperRule(
         "consumo-json-no-modulo",
-        "Antes de invocar `prumo start` ou `prumo briefing --workspace . --format json`, "
+        "Antes de invocar QUALQUER comando `prumo` (start, briefing, repair, setup, migrate...), "
         "carregue `.prumo/skills/prumo/references/modules/runtime-consumo.md` — escolha de "
-        "formato e contrato de consumo moram lá (#228).",
+        "formato e contrato de invocação moram lá (#228).",
         _BOTH,
         _ALL_PROFILES,
     ),

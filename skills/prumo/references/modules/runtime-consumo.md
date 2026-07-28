@@ -30,4 +30,4 @@
 12. **Sem comando por curiosidade.** Não rode comando extra só porque ficou curioso. Execute o que foi pedido ou o que o runtime sugeriu.
 13. **Sem disco riscado.** Se um comando falhar por uso ou argumento inválido, não repita a mesma linha como disco riscado.
 
-> As quatro acima moravam nas "Regras rápidas" da porta e vinham na abertura de TODA sessão (#228, fase 2): são contrato de INVOCAÇÃO — pertencem aqui, onde já se carrega antes de rodar comando do runtime.
+> As quatro acima moravam nas "Regras rápidas" da porta e vinham na abertura de TODA sessão (#228, fase 2): são contrato de INVOCAÇÃO — pertencem aqui. **Valem para QUALQUER comando `prumo`** (start, briefing, repair, setup, migrate, doctor...), não só os que consomem JSON: por isso o gatilho deste módulo é qualquer invocação do runtime.

@@ -37,7 +37,7 @@ A **lista canônica ÚNICA** de carregamento do briefing (#195, emendada pela #1
 | F1 | oferta/execução de update (warning/alert) | `.prumo/skills/prumo/references/modules/version-update.md` | (integral) | canônico do update |
 | F1 | scripts via shell | `.prumo/skills/prumo/references/modules/runtime-paths.md` | (integral) | scripts |
 | F1 | shell com runtime alcançável | `.prumo/skills/prumo/references/modules/cowork-runtime-bridge.md` | (integral) | ponte do runtime |
-| F1 | antes de invocar comando do runtime (escolha de formato inclusa) | `.prumo/skills/prumo/references/modules/runtime-consumo.md` | (integral) | consumo |
+| F1 | antes de QUALQUER comando do runtime (formato e invocação) | `.prumo/skills/prumo/references/modules/runtime-consumo.md` | (integral) | consumo |
 | F1 | sempre | `.prumo/skills/prumo/references/modules/faxina-thresholds.md` | (integral) | números da faxina |
 | F1 | override do usuário existir | `Prumo/Custom/rules/faxina-thresholds.md` | (integral) | overrides |
 | F1 | família de faxina pendente (execução — a checagem mínima mora no estado) | `.prumo/skills/prumo/references/modules/faxina.md` | (integral) | executor |
