@@ -34,7 +34,7 @@ RUNTIME_CONSUMO_ANCHORS = (
 # novo (Codex, diff r1).
 RULES_MOVED_TO_RUNTIME_CONSUMO = (
     "Não leia arquivo para simular `prumo`, `briefing` ou `start`. Primeiro execute o comando real.",
-    "Não escreva `{state_path}` fingindo ser o runtime",
+    "Não escreva `{state_path}` fingindo ser o runtime.",
     "Não rode comando extra só porque ficou curioso. Execute o que foi pedido ou o que o runtime sugeriu.",
     "Se um comando falhar por uso ou argumento inválido, não repita a mesma linha como disco riscado.",
 )
