@@ -232,6 +232,14 @@ class PontaAPontaTest(unittest.TestCase):
         (ws / "Prumo" / "Custom" / "rules" / "faxina-thresholds.md").write_text(
             "- max_items: 99\n- processed_expiry_days: 1\n", encoding="utf-8"
         )
+        from datetime import date, timedelta
+        proc = ws / "Prumo" / "Inbox4Mobile" / "_processed.json"
+        proc.parent.mkdir(parents=True, exist_ok=True)
+        proc.write_text(json.dumps({"version": "1.0", "items": [{
+            "filename": "x.txt",
+            "processed_at": (date.today() - timedelta(days=3)).isoformat(),
+            "status": "processed",
+        }]}), encoding="utf-8")
         return ws
 
     def test_semente_persistida_transporta_o_efetivo(self) -> None:
@@ -251,9 +259,61 @@ class PontaAPontaTest(unittest.TestCase):
         self.assertEqual(faxina["thresholds"]["max_items"], 99)
         self.assertEqual(faxina["stale_days_threshold"], 1)
         self.assertEqual(faxina["thresholds_source"], "override")
+        # a CONTAGEM segue o efetivo: item de 3 dias é velho com override de 1
+        self.assertEqual(faxina["processed_stale_entries"], 1)
         # [P1-1]: o override é FONTE no controle de frescor
         self.assertIn("faxina_override", payload["source_mtimes"])
         self.assertIsNotNone(payload["source_mtimes"]["faxina_override"])
+
+    def test_editar_override_depois_do_seed_e_detectavel(self) -> None:
+        """[P1 da r2]: o zumbi morre quando a divergência é VISÍVEL ao
+        consumidor — mtime do override na semente ≠ mtime atual."""
+        from argparse import Namespace
+        from contextlib import redirect_stdout
+        import io, os, time
+        from prumo_runtime.commands.seed import run_seed
+
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = self._ws(Path(tmp))
+            with redirect_stdout(io.StringIO()):
+                run_seed(Namespace(workspace=str(ws), format="json"))
+            semente = json.loads(
+                (ws / ".prumo" / "state" / "local-panorama.json").read_text(encoding="utf-8")
+            )
+            antes = semente["source_mtimes"]["faxina_override"]
+            override = ws / "Prumo" / "Custom" / "rules" / "faxina-thresholds.md"
+            time.sleep(0.01)
+            override.write_text("- max_items: 7\n", encoding="utf-8")
+            agora = os.stat(override).st_mtime_ns
+        self.assertNotEqual(
+            antes["mtime_ns"], agora,
+            "editar o override depois do seed tem de ser detectável pelo frescor",
+        )
+
+    def test_remover_override_depois_do_seed_e_detectavel(self) -> None:
+        from argparse import Namespace
+        from contextlib import redirect_stdout
+        import io
+        from prumo_runtime.commands.seed import run_seed
+
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = self._ws(Path(tmp))
+            with redirect_stdout(io.StringIO()):
+                run_seed(Namespace(workspace=str(ws), format="json"))
+            semente = json.loads(
+                (ws / ".prumo" / "state" / "local-panorama.json").read_text(encoding="utf-8")
+            )
+            override = ws / "Prumo" / "Custom" / "rules" / "faxina-thresholds.md"
+            override.rename(override.with_suffix(".md.bak"))  # remover = mover (#242)
+            ainda_existe = override.exists()
+        self.assertIsNotNone(semente["source_mtimes"]["faxina_override"])
+        self.assertFalse(ainda_existe)
+
+    def test_contrato_manda_invalidar_o_bloco_faxina(self) -> None:
+        """Detectar sem mandar recompor deixaria o consumidor com número velho."""
+        flat = re.sub(r"\s+", " ", ESTADO.read_text(encoding="utf-8"))
+        self.assertIn("invalida o bloco `faxina` inteiro", flat)
+        self.assertIn("recontar", flat)
 
 
 class ContratoTest(unittest.TestCase):

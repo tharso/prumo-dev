@@ -69,7 +69,7 @@ EXPECTED_MAP = frozenset(
         ("F1", "sempre", "Prumo/Agente/PESSOAS.md", "(integral)", "remetentes"),
         ("F1", "sempre", f"{_M}/briefing-estado.md", "(integral)", "estado"),
         ("F1", "sempre", f"{_M}/version-preflight.md", "(integral)", "preflight"),
-        ("F1", "sem semente OU `faxina.schema` ≠ `prumo_faxina_thresholds.v1`", f"{_M}/faxina-thresholds.md", "(integral)", "números da faxina (#258)"),
+        ("F1", "sem semente, `faxina.schema` ≠ `prumo_faxina_thresholds.v1` OU override divergente", f"{_M}/faxina-thresholds.md", "(integral)", "números da faxina (#258)"),
         ("F1", "override do usuário existir", "Prumo/Custom/rules/faxina-thresholds.md", "(integral)", "overrides"),
         ("F1", "oferta/execução de update (warning/alert)", f"{_M}/version-update.md", "(integral)", "canônico do update"),
         ("F1", "scripts via shell", f"{_M}/runtime-paths.md", "(integral)", "scripts"),
