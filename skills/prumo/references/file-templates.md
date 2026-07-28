@@ -265,9 +265,11 @@ Após o primeiro ciclo de feedback, apagar esta seção de setup e manter apenas
 > contrária. Veredito registrado aqui vale só para a assinatura registrada —
 > `from:me` reprovado não reprova `from:<endereço>`.
 
-(formato: validado_em | host/conector | conta ou caixa | predicado exato | composição | veredito | evidência)
+(formato: validado_em | host/conector | conta ou caixa | assinatura normalizada | predicado exato testado | veredito | evidência)
 
-(ex: `2026-07-27 | Gmail MCP (Cowork) | tharso@… | from:me | sozinho | FALHA | msg 23/07 com SENT em labelIds não voltou`)
+(a assinatura normalizada — operador + classe do argumento + sozinho/composto — é o que casa entre briefings; sem ela `after:27/07` e `after:28/07` viram assinaturas diferentes e nada se reaproveita)
+
+(ex: `2026-07-27 | Gmail MCP (Cowork) | caixa principal | from:alias sozinho | from:me newer_than:4d | FALHA | msg 23/07 com SENT em labelIds não voltou`)
 
 ## Regras contextuais
 

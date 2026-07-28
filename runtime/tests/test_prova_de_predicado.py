@@ -26,7 +26,10 @@ MONTAGEM = SKILLS / "prumo" / "references" / "modules" / "briefing-montagem.md"
 FILE_TEMPLATES = SKILLS / "prumo" / "references" / "file-templates.md"
 
 TITULO = "### Prova de predicado de busca (#236)"
-ESTADOS = ("VALIDADA", "FALHA", "INCONCLUSIVO")
+# Os 3 primeiros são estados da ASSINATURA; o 4º é da resposta deste briefing e
+# se alcança sem assinatura — sem ele, varredura exaustiva sem correspondência
+# ficava simultaneamente `INCONCLUSIVO` e "zero confiável" (gate r1, achado 1).
+ESTADOS = ("VALIDADA", "FALHA", "INCONCLUSIVO", "VAZIO CONFIRMADO")
 
 
 def _flat(text: str) -> str:
@@ -142,12 +145,14 @@ class ProvaTest(unittest.TestCase):
         self.assertIn("ID de label opaco não vira nome", flat)
 
     def test_prova_declarada_por_operador(self) -> None:
-        """`SENT` cobre `in:sent` e mais nada — cada predicado tem sua prova."""
+        """`SENT` cobre `in:sent` e mais nada — cada predicado tem sua prova.
+        A perna da COMPOSIÇÃO morria calada antes do gate r1."""
         flat = _flat(_secao_do_protocolo())
         for par in (
             "`in:sent` ← `SENT` em `labelIds`",
             "`from:<endereço>` ← header `From`",
             "predicado temporal ← timestamp da mensagem",
+            "composição ← prova de cada componente aplicável",
         ):
             self.assertIn(par, flat, f"prova não declarada para: {par}")
 
@@ -156,7 +161,24 @@ class ProvaTest(unittest.TestCase):
         zero continua inconclusivo."""
         flat = _flat(_secao_do_protocolo())
         self.assertIn("paginar até o conector declarar fim", flat)
-        self.assertIn("Limite oculto, cursor ausente ou paginação incerta → segue `INCONCLUSIVO`", flat)
+        self.assertIn("nem exaustiva foi, então segue `INCONCLUSIVO`", flat)
+
+    def test_varredura_exige_aplicar_o_predicado_localmente(self) -> None:
+        """Metade que morria calada (gate r1): varrer sem aplicar o predicado
+        não responde pergunta nenhuma."""
+        flat = _flat(_secao_do_protocolo())
+        self.assertIn("aplicar o predicado localmente", flat)
+        self.assertIn("As duas metades são obrigatórias", flat)
+
+    def test_zero_so_e_confiavel_pelos_dois_caminhos(self) -> None:
+        flat = _flat(_secao_do_protocolo())
+        self.assertIn("**Zero só é confiável** com assinatura `VALIDADA`, ou por `VAZIO CONFIRMADO`", flat)
+
+    def test_vazio_confirmado_nao_valida_a_assinatura(self) -> None:
+        """Varrer localmente responde ESTE briefing; não prova nada sobre o
+        conector. Confundir os dois reabriria a porta pelo outro lado."""
+        flat = _flat(_secao_do_protocolo())
+        self.assertIn("**Não valida a assinatura** — varrer não prova nada sobre o conector", flat)
 
 
 class OrcamentoTest(unittest.TestCase):
@@ -164,12 +186,42 @@ class OrcamentoTest(unittest.TestCase):
         """Só "uma por assinatura" ainda permite 4 contas × 4 assinaturas num
         canal que mede 22–28s por chamada."""
         flat = _flat(_secao_do_protocolo())
-        self.assertIn("**uma** validação por assinatura", flat)
+        self.assertIn("**uma** validação por assinatura **por briefing**", flat)
         self.assertIn("**três validações novas por briefing**", flat)
 
-    def test_o_que_estoura_o_teto_roda_depois(self) -> None:
+    def test_inconclusivo_volta_a_fila_e_validada_nao(self) -> None:
+        """Sem isso o limbo é permanente — e não estava dito se dava pra
+        tentar de novo (gate r1, achado 3)."""
         flat = _flat(_secao_do_protocolo())
-        self.assertIn("rotação, não silêncio", flat)
+        self.assertIn("`VALIDADA` e `FALHA` não voltam à fila até invalidar", flat)
+        self.assertIn("`INCONCLUSIVO` **volta**", flat)
+
+    def test_fila_tem_criterio_deterministico(self) -> None:
+        """"Rotação" sem critério deixa o agente literal repetir as mesmas três
+        pra sempre — hamster com SLA."""
+        flat = _flat(_secao_do_protocolo())
+        self.assertIn("Fila determinística: **primeiro a nunca tentada**", flat)
+        self.assertIn("empate, a de registro mais antigo", flat)
+
+    def test_tentativa_inconclusiva_tambem_e_registrada(self) -> None:
+        """O registro É o estado persistido; tentativa não registrada se repete
+        amanhã e a rotação não sai do lugar."""
+        flat = _flat(_secao_do_protocolo())
+        self.assertIn("**Registrar também o `INCONCLUSIVO`**", flat)
+
+    def test_prioridade_do_teto_na_ordem_certa(self) -> None:
+        """Presença não basta: invertida, a cláusula diria o contrário e o
+        assert continuaria verde (gate r1 mutou exatamente isto)."""
+        flat = _flat(_secao_do_protocolo())
+        i_cobertura = flat.find("braço da política de cobertura")
+        i_dirigida = flat.find("busca dirigida")
+        self.assertNotEqual(i_cobertura, -1, "prioridade do teto sumiu")
+        self.assertNotEqual(i_dirigida, -1, "prioridade do teto sumiu")
+        self.assertLess(
+            i_cobertura,
+            i_dirigida,
+            "prioridade invertida: busca dirigida não vem antes do braço da cobertura",
+        )
 
 
 class DegradacaoVisivelTest(unittest.TestCase):
@@ -195,14 +247,32 @@ class DegradacaoVisivelTest(unittest.TestCase):
 
 
 class RegistroTest(unittest.TestCase):
-    def test_template_tem_a_secao_com_o_schema(self) -> None:
-        flat = _flat(FILE_TEMPLATES.read_text(encoding="utf-8"))
-        self.assertIn("## Compatibilidade da busca", flat)
-        self.assertIn(
-            "validado_em | host/conector | conta ou caixa | predicado exato "
-            "| composição | veredito | evidência",
-            flat,
-        )
+    SCHEMA = (
+        "validado_em | host/conector | conta ou caixa | assinatura normalizada "
+        "| predicado exato testado | veredito | evidência"
+    )
+
+    def test_schema_identico_nos_dois_lados(self) -> None:
+        """Dono e template divergindo em silêncio já foi bug aqui (#195)."""
+        for nome, path in (("template", FILE_TEMPLATES), ("canais", CANAIS)):
+            self.assertIn(self.SCHEMA, _flat(path.read_text(encoding="utf-8")), f"schema ausente em {nome}")
+        self.assertIn("## Compatibilidade da busca", _flat(FILE_TEMPLATES.read_text(encoding="utf-8")))
+
+    def test_assinatura_normalizada_e_o_que_casa(self) -> None:
+        """Sem ela `after:27/07` e `after:28/07` viram assinaturas diferentes e
+        a validação nunca se reaproveita (gate r1, achado 2)."""
+        flat = _flat(_secao_do_protocolo())
+        self.assertIn("é o que casa entre briefings", flat)
+        self.assertIn("operador + classe do argumento + sozinho/composto", flat)
+
+    def test_secao_ausente_e_criada_de_forma_idempotente(self) -> None:
+        """O template só roda em workspace novo. Arquivo antigo não tem a seção
+        — sem instrução de criação, o registro não existe onde mais importa."""
+        flat = _flat(_secao_do_protocolo())
+        self.assertIn("**Seção ausente**", flat)
+        self.assertIn("criar a seção uma vez", flat)
+        self.assertIn("sem tocar em nenhuma outra parte do arquivo", flat)
+        self.assertIn("existindo, só acrescentar linha", flat)
 
     def test_escrita_so_por_evidencia_do_conector(self) -> None:
         """"Padrões suspeitos" existe porque email hostil não pode escrever no
@@ -215,15 +285,15 @@ class RegistroTest(unittest.TestCase):
         self.assertIn("nunca a partir do conteúdo de uma mensagem", flat_tpl)
 
     def test_invalidacao_declarada_nos_dois_lados(self) -> None:
+        """Os TRÊS gatilhos, cada um checado: "invalidam na hora" enfraquecido
+        pra dois passava verde antes do gate r1."""
         for nome, flat in (
             ("canais", _flat(_secao_do_protocolo())),
             ("template", _flat(FILE_TEMPLATES.read_text(encoding="utf-8"))),
         ):
-            self.assertIn(
-                "troca de host/conector, conta desconhecida, evidência contrária",
-                flat,
-                f"gatilho de invalidação ausente em {nome}",
-            )
+            self.assertIn("Invalidam na hora", flat, f"invalidação sem urgência em {nome}")
+            for gatilho in ("troca de host/conector", "conta desconhecida", "evidência contrária"):
+                self.assertIn(gatilho, flat, f"gatilho de invalidação ausente em {nome}: {gatilho}")
 
     def test_referencia_bilateral_modulo_template(self) -> None:
         self.assertIn(
@@ -300,12 +370,25 @@ class SemEnderecoPessoalTest(unittest.TestCase):
     todo usuário do Prumo lia os emails do Tharso no próprio módulo."""
 
     def test_nenhum_endereco_pessoal_em_skills(self) -> None:
+        """Varre TODO arquivo de texto de `skills/`, não só `*.md`: o guard
+        prometia `skills/` e percorria markdown — e existe HTML lá (gate r1)."""
         offenders: dict[str, set[str]] = {}
-        for md in sorted(SKILLS.rglob("*.md")):
-            achados = _enderecos_pessoais(md.read_text(encoding="utf-8"))
+        vistos = 0
+        for path in sorted(SKILLS.rglob("*")):
+            if not path.is_file() or path.name == ".DS_Store":
+                continue
+            try:
+                texto = path.read_text(encoding="utf-8")
+            except (UnicodeDecodeError, ValueError):
+                continue  # binário (fontes .otf) não carrega endereço legível
+            vistos += 1
+            achados = _enderecos_pessoais(texto)
             if achados:
-                offenders[str(md.relative_to(REPO_ROOT))] = achados
+                offenders[str(path.relative_to(REPO_ROOT))] = achados
         self.assertEqual(offenders, {}, f"endereço pessoal em módulo canônico: {offenders}")
+        htmls = [p for p in SKILLS.rglob("*.html")]
+        self.assertTrue(htmls, "fixture do próprio guard: sumiram os HTML de skills/")
+        self.assertGreaterEqual(vistos, len(htmls), "o guard deixou de ler os não-markdown")
 
     def test_guard_pega_o_endereco_que_estava_la(self) -> None:
         """Fixture negativa com a linha REAL que existia antes da correção."""
