@@ -16,7 +16,7 @@ Arquivo bruto abre em **dois casos apenas**: (1) **edição** — escrever `PAUT
 
 1. **Capacidade**, como na semente viva: `local_panorama.schema_version == prumo_local_panorama.v1` E `pauta.outras_secoes` presente como lista — senão, fallback direto.
 2. **DATA**: `local_panorama.generated_for` == a data de HOJE no fuso do workspace — `visible_today` (filtro de cobrança) e sinais de faxina dependem da data, não só dos arquivos; **semente de ontem invalida no mínimo PAUTA e processados** (virada do dia), mesmo com arquivos intactos.
-3. **Frescor POR FONTE**: o arquivo carrega `source_mtimes` (mtime de cada fonte na geração — **inclusive o override**, #258: editá-lo após o `seed` invalida os números) e o `inbox4mobile_manifest` (nome+tamanho+mtime de CADA arquivo; só "o mais novo" deixaria remoção/renome invisível). Comparar com o estado ATUAL (listagem plana barata de `Prumo/`): fonte cujo retrato difere → **fallback direto daquela fonte** (o resto do arquivo segue valendo); tudo igual → semente inteira vale. Declarar a idade ao usar (*"panorama da semente de HH:MM"*).
+3. **Frescor POR FONTE**: o arquivo carrega `source_mtimes` (mtime de cada fonte na geração — **inclusive o override**, #258: editá-lo após o `seed` invalida os números) e o `inbox4mobile_manifest` (nome+tamanho+mtime de CADA arquivo; só "o mais novo" deixaria remoção/renome invisível). Comparar com o estado ATUAL (listagem plana barata de `Prumo/`): fonte cujo retrato difere → **fallback direto dela** (o resto segue valendo); tudo igual → semente inteira vale. Declarar a idade ao usar (*"panorama da semente de HH:MM"*).
 
 O agente **NUNCA escreve** esse arquivo — estado do runtime (#214); consumo é leitura pura.
 
@@ -24,7 +24,7 @@ O agente **NUNCA escreve** esse arquivo — estado do runtime (#214); consumo é
 
 ## Faxina (checagem SEMPRE declarada, #217)
 
-**A checagem de faxina declara o resultado SEMPRE (#217 — verificável, não pulável):** a linha obrigatória do primeiro tempo (formato na montagem). O **contrato mínimo da checagem mora AQUI** (sem circularidade: checar não exige abrir o módulo executor); `faxina.md` carrega só quando alguma família está PENDENTE, pra executar. Os NÚMEROS vêm de `faxina.thresholds` da semente (#258): **efetivos**, com o override (`Custom/rules/faxina-thresholds.md`) já aplicado pelo runtime; `thresholds_source` diz a origem e `ignored_keys` lista o que o override trazia fora do vocabulário (reportar, nunca adivinhar). **Sem semente**, ou com `faxina.schema` ≠ `prumo_faxina_thresholds.v1` (o único aceito): carregar `faxina-thresholds.md` — é o único caminho em que o doc entra na rota. **"Nada pendente" só depois de olhar as CINCO famílias do `faxina.md`** — as cinco checagens baratas:
+**A checagem de faxina declara o resultado SEMPRE (#217 — verificável, não pulável):** a linha obrigatória do primeiro tempo (formato na montagem). O **contrato mínimo da checagem mora AQUI** (sem circularidade: checar não exige abrir o módulo executor); `faxina.md` carrega só quando alguma família está PENDENTE, pra executar. Os NÚMEROS vêm de `faxina.thresholds` da semente (#258): **efetivos**, com o override (`Custom/rules/faxina-thresholds.md`) já aplicado pelo runtime; `thresholds_source` diz a origem; `ignored_keys` lista o que o override trazia fora do vocabulário (reportar, nunca adivinhar). Sem semente, com `faxina.schema` ≠ `prumo_faxina_thresholds.v1` (o único aceito) ou com override divergente: carregar o doc **+ o override atual** — os três caminhos que trazem `faxina-thresholds.md` pra rota. **"Nada pendente" só depois de olhar as CINCO famílias do `faxina.md`** — as cinco checagens baratas:
 
 1. **Rotação do REGISTRO** — linhas da tabela acima de `max_items` (a semente já traz o número em `local_panorama.faxina`).
 2. **PAUTA→REGISTRO de concluídos** — item marcado concluído (checkbox/riscado/"Concluído") ainda na pauta.
@@ -38,4 +38,4 @@ Atestar limpeza olhando só uma parte é mentira com crachá novo. Família pend
 
 Itens com marker `| cobrar: DD/MM` só são elegíveis para o briefing quando a data é hoje, ontem (véspera) ou passada (atrasado). Itens com cobrança para daqui a 2+ dias ficam de fora — não cobrar antes da hora. Itens sem marker aparecem sempre. Marker ambíguo: fail-open (mostrar). Na semente, `visible_today` já vem calculado por essa regra (e o teste de paridade do runtime trava a equivalência); em leitura direta, aplicar manualmente.
 
-Não persistir estado de briefing entre sessões. A janela temporal de email é fixa em 24h (ver `briefing-canais.md`).
+Não persistir estado de briefing entre sessões. Janela de email fixa em 24h (`briefing-canais.md`).

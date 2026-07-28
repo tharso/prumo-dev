@@ -63,7 +63,7 @@ Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões ant
 
 ## 2026-07-28 — Semente transporta os thresholds efetivos; o doc sai da rota sempre-carregada (#258)
 
-**Tópicos:** briefing, code-quality, governance
+**Tópicos:** briefing, code-quality, governance, dispatch-bootstrap
 
 **Issues relacionadas:** [#258](https://github.com/tharso/prumo-dev/issues/258) (**executa** — nasceu do achado do Codex no gate do PR #257); #228 (**desbloqueia** — o corte D2, revertido lá, volta valendo).
 
