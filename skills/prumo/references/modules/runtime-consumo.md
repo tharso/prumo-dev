@@ -1,13 +1,14 @@
-# Contrato de consumo do JSON do runtime
+# Contrato de consumo e invocação do runtime
 
 > **module_version: 1.0.0**
 >
-> Dono ÚNICO do contrato de consumo (#228 C1 — morava nas "Regras rápidas"
-> da porta e dos wrappers, pesando na abertura de TODA sessão; só é preciso
-> quando um comando do runtime vai rodar). Carregar **antes de invocar
-> `prumo start`/`prumo briefing` — a ESCOLHA do formato (JSON ou não, regras
-> 1–3) é parte do contrato**, não consequência dele. Os wrappers e a porta
-> apontam pra cá.
+> Dono ÚNICO do contrato de consumo E de invocação (#228 C1 e fase 2 —
+> morava nas "Regras rápidas" da porta e dos wrappers, pesando na abertura de
+> TODA sessão; só é preciso quando um comando do runtime vai rodar).
+> **Carregar antes de QUALQUER comando `prumo`** — start, briefing, repair,
+> setup, migrate, doctor: as regras 10–13 valem pra toda invocação, e a
+> ESCOLHA do formato (JSON ou não, regras 1–3) é parte do contrato, não
+> consequência dele. Os wrappers e a porta apontam pra cá.
 
 ## As regras
 

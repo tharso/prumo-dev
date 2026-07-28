@@ -225,6 +225,26 @@ class RegrasMovidasTest(unittest.TestCase):
     """#228 fase 2 — mover ≠ deletar: as 4 regras de invocação saíram da porta
     (custavam a abertura de TODA sessão) e têm dono novo."""
 
+    def test_dono_novo_declara_gatilho_amplo(self) -> None:
+        """#228 fase 2 (Codex, r6): o cabeçalho do módulo não pode contradizer a
+        regra ampla — as 10–13 valem pra qualquer invocação, não só start/briefing."""
+        modulo = (
+            Path(__file__).resolve().parents[2]
+            / "skills" / "prumo" / "references" / "modules" / "runtime-consumo.md"
+        ).read_text(encoding="utf-8")
+        cabecalho = modulo.split("## As regras")[0]
+        self.assertIn("antes de QUALQUER comando `prumo`", cabecalho)
+        self.assertNotIn(
+            "antes de invocar\n> `prumo start`/`prumo briefing`",
+            cabecalho,
+            "formulação restritiva antiga voltou ao cabeçalho",
+        )
+        self.assertNotRegex(
+            cabecalho.replace("\n", " "),
+            r"Carregar \*\*antes de invocar\*\*? `prumo start`",
+            "cabeçalho voltou a restringir o gatilho a start/briefing",
+        )
+
     def test_regras_de_invocacao_mudaram_de_dono(self) -> None:
         modulo = (
             Path(__file__).resolve().parents[2]
