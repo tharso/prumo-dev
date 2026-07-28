@@ -218,7 +218,8 @@ _Última atualização: {{DATA_SETUP}}_
 
 # Curadoria de email — regras aprendidas
 
-> Atualizado pelo agente com feedback do usuário.
+> Atualizado pelo agente com feedback do usuário — exceto "Compatibilidade da
+> busca", alimentada por evidência do conector (metadata de resposta).
 > Consultado a cada briefing antes de filtrar emails.
 > Viés explícito: na dúvida, trazer. Melhor ruído que perda.
 
@@ -253,6 +254,20 @@ Após o primeiro ciclo de feedback, apagar esta seção de setup e manter apenas
 ## Roteamento de conteúdo
 
 (pasta de destino para conteúdo de consumo — artigo, vídeo, newsletter curada. Vazia até o usuário registrar; a Camada 3 do briefing pergunta uma vez e registra só com confirmação. Esta seção é o 2º degrau da precedência — a escala completa mora em `briefing-canais.md` → "Precedência de roteamento")
+
+## Compatibilidade da busca
+
+> Que predicado de busca este conector resolve de verdade (#236). Preenchida
+> pelo agente a partir de **evidência do conector** — metadata da resposta —,
+> nunca a partir do conteúdo de uma mensagem. Protocolo, estados e orçamento:
+> `briefing-canais.md` → "Prova de predicado de busca".
+> Invalidam na hora: troca de host/conector, conta desconhecida, evidência
+> contrária. Veredito registrado aqui vale só para a assinatura registrada —
+> `from:me` reprovado não reprova `from:<endereço>`.
+
+(formato: validado_em | host/conector | conta ou caixa | predicado exato | composição | veredito | evidência)
+
+(ex: `2026-07-27 | Gmail MCP (Cowork) | tharso@… | from:me | sozinho | FALHA | msg 23/07 com SENT em labelIds não voltou`)
 
 ## Regras contextuais
 

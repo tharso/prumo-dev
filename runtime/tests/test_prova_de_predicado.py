@@ -1,0 +1,330 @@
+"""Prova de predicado de busca (#236) — o zero silencioso vira estado declarado.
+
+`from:me newer_than:4d` devolveu `{}` no briefing real de 27/07 enquanto existia
+mensagem com `SENT` em `labelIds` DENTRO da janela: o conector não resolvia o
+alias `me`, e o vazio foi lido como "não tem nada". A regra que existia pra
+prevenir o furo da Cora estava silenciosamente morta desde que foi escrita — o
+buraco só não apareceu porque uma busca por palavra-chave o cobriu por sorte.
+
+ESCOPO DESTES GUARDS: travam o CONTRATO TEXTUAL — protocolo, estados fechados,
+orçamento, dono da completude, schema do registro. NÃO provam comportamento de
+conector: não existe função de produção que execute query e classifique
+veredito, e simular conector dentro do teste seria teatro com crachá. O que
+eles impedem é o contrato perder uma perna numa edição futura.
+"""
+
+from __future__ import annotations
+
+import re
+import unittest
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+SKILLS = REPO_ROOT / "skills"
+CANAIS = SKILLS / "prumo" / "references" / "modules" / "briefing-canais.md"
+MONTAGEM = SKILLS / "prumo" / "references" / "modules" / "briefing-montagem.md"
+FILE_TEMPLATES = SKILLS / "prumo" / "references" / "file-templates.md"
+
+TITULO = "### Prova de predicado de busca (#236)"
+ESTADOS = ("VALIDADA", "FALHA", "INCONCLUSIVO")
+
+
+def _flat(text: str) -> str:
+    """Achata pra comparar frase. Tira o `>` de continuação de citação: numa
+    frase quebrada em duas linhas de blockquote o marcador vira lixo no meio
+    do texto ("evidência > contrária") e o assert falha por diagramação."""
+    sem_citacao = re.sub(r"(?m)^\s*>\s?", "", text)
+    return re.sub(r"\s+", " ", sem_citacao)
+
+
+def _secao_do_protocolo() -> str:
+    """O corpo da seção dona, do título até o próximo `### `."""
+    texto = CANAIS.read_text(encoding="utf-8")
+    inicio = texto.find(TITULO)
+    assert inicio != -1, f"seção dona sumiu de {CANAIS.name}"
+    fim = texto.find("\n### ", inicio + len(TITULO))
+    return texto[inicio : fim if fim != -1 else len(texto)]
+
+
+# Marcas do protocolo, na ordem em que aparecem no dono. Uma CÓPIA tem todas
+# nesta sequência; um ponteiro legítimo ("o protocolo mora em X") não tem.
+_MARCAS = ("VALIDADA", "FALHA", "INCONCLUSIVO", "testemunha", "osmose")
+
+
+def _copia_do_protocolo(flat: str) -> bool:
+    pos = -1
+    for marca in _MARCAS:
+        found = flat.find(marca, pos + 1)
+        if found == -1:
+            return False
+        pos = found
+    return True
+
+
+class EstadosETransicoesTest(unittest.TestCase):
+    """O bug do plano r2: o protocolo sabia concluir FALHA e INCONCLUSIVO, mas
+    VALIDADA nascia por geração espontânea — osmose de bigode falso."""
+
+    def test_os_tres_estados_existem_e_sao_fechados(self) -> None:
+        """O conjunto é lido da PRIMEIRA COLUNA da tabela de estados — não do
+        texto solto, senão `SENT` (evidência de label) entra como estado."""
+        linhas = [
+            linha
+            for linha in _secao_do_protocolo().splitlines()
+            if linha.startswith("| `")
+        ]
+        achados = [linha.split("|")[1].strip().strip("`") for linha in linhas]
+        self.assertEqual(
+            achados,
+            list(ESTADOS),
+            f"conjunto de estados deixou de ser fechado ou mudou de ordem: {achados}",
+        )
+
+    def test_cada_estado_tem_porta_de_entrada(self) -> None:
+        """Estado sem condição de entrada é estado inalcançável — ou pior,
+        alcançável por vontade própria do agente."""
+        flat = _flat(_secao_do_protocolo())
+        self.assertIn("prova o predicado por conta própria** | zero passa a ser confiável", flat)
+        self.assertIn("controle expôs **testemunha** que a query filtrada não devolveu", flat)
+        self.assertIn("todo o resto", flat)
+
+    def test_protocolo_tem_os_quatro_passos_na_ordem(self) -> None:
+        flat = _flat(_secao_do_protocolo())
+        passos = (
+            "rodar `B` sem `P`",
+            "procurar **testemunha**",
+            "testemunha existe e `B + P` não a devolveu → `FALHA`",
+            "sem testemunha, ou controle também vazio → `INCONCLUSIVO`",
+        )
+        pos = [flat.find(p) for p in passos]
+        for p, i in zip(passos, pos):
+            self.assertNotEqual(i, -1, f"passo do protocolo ausente: {p}")
+        self.assertEqual(pos, sorted(pos), "passos do protocolo fora de ordem")
+
+    def test_controle_vazio_nao_aprova_por_osmose(self) -> None:
+        flat = _flat(_secao_do_protocolo())
+        self.assertIn("controle também vazio → `INCONCLUSIVO`", flat)
+        self.assertIn("Nada é aprovado por osmose", flat)
+
+    def test_resultado_nao_vazio_sem_prova_segue_inconclusivo(self) -> None:
+        """Voltar mensagem não valida a assinatura: tem de vir prova."""
+        flat = _flat(_secao_do_protocolo())
+        self.assertIn("resultado não vazio sem prova independente", flat)
+
+
+class EscopoDaAssinaturaTest(unittest.TestCase):
+    def test_assinatura_nao_atravessa_host_nem_conta(self) -> None:
+        flat = _flat(_secao_do_protocolo())
+        self.assertIn("host/conector + conta ou caixa", flat)
+        self.assertIn("**não** atravessa host nem conta", flat)
+
+    def test_classe_do_argumento_separa_alias_de_endereco(self) -> None:
+        """`from:me` reprovado não reprova `from:<endereço>` — foi o risco de
+        canonizar o resultado em vez do protocolo."""
+        flat = _flat(_secao_do_protocolo())
+        self.assertIn("**classe** do argumento", flat)
+        self.assertIn("trocar `from:me` por `from:<endereço>` cria", flat)
+
+    def test_trocar_a_data_nao_cria_assinatura_nova(self) -> None:
+        flat = _flat(_secao_do_protocolo())
+        self.assertIn("Trocar a data não cria assinatura nova", flat)
+
+
+class ProvaTest(unittest.TestCase):
+    def test_query_nunca_e_testemunha_de_si_mesma(self) -> None:
+        flat = _flat(_secao_do_protocolo())
+        self.assertIn("query nunca é testemunha de si mesma", flat)
+
+    def test_prova_na_granularidade_da_mensagem(self) -> None:
+        flat = _flat(_secao_do_protocolo())
+        self.assertIn("granularidade da **mensagem**", flat)
+        self.assertIn("Agregado de thread não prova mensagem", flat)
+        self.assertIn("ID de label opaco não vira nome", flat)
+
+    def test_prova_declarada_por_operador(self) -> None:
+        """`SENT` cobre `in:sent` e mais nada — cada predicado tem sua prova."""
+        flat = _flat(_secao_do_protocolo())
+        for par in (
+            "`in:sent` ← `SENT` em `labelIds`",
+            "`from:<endereço>` ← header `From`",
+            "predicado temporal ← timestamp da mensagem",
+        ):
+            self.assertIn(par, flat, f"prova não declarada para: {par}")
+
+    def test_varredura_exaustiva_tem_definicao(self) -> None:
+        """"Li bastante" não é "li tudo": sem fim declarado pelo conector, o
+        zero continua inconclusivo."""
+        flat = _flat(_secao_do_protocolo())
+        self.assertIn("paginar até o conector declarar fim", flat)
+        self.assertIn("Limite oculto, cursor ausente ou paginação incerta → segue `INCONCLUSIVO`", flat)
+
+
+class OrcamentoTest(unittest.TestCase):
+    def test_teto_por_assinatura_e_teto_global(self) -> None:
+        """Só "uma por assinatura" ainda permite 4 contas × 4 assinaturas num
+        canal que mede 22–28s por chamada."""
+        flat = _flat(_secao_do_protocolo())
+        self.assertIn("**uma** validação por assinatura", flat)
+        self.assertIn("**três validações novas por briefing**", flat)
+
+    def test_o_que_estoura_o_teto_roda_depois(self) -> None:
+        flat = _flat(_secao_do_protocolo())
+        self.assertIn("rotação, não silêncio", flat)
+
+
+class DegradacaoVisivelTest(unittest.TestCase):
+    def test_braco_inconclusivo_e_nomeado_na_linha_de_cobertura(self) -> None:
+        flat = _flat(CANAIS.read_text(encoding="utf-8"))
+        self.assertIn("Braço em `INCONCLUSIVO` é nomeado na mesma linha", flat)
+        self.assertIn("nunca o que só foi tentado", flat)
+
+    def test_completude_e_dona_da_montagem_nao_dos_canais(self) -> None:
+        """Dois donos semânticos de `--mark-done` seria contrato novo em
+        silêncio — os canais declaram, a montagem decide."""
+        self.assertIn(
+            "Completude do briefing é decidida por `briefing-montagem.md`, nunca aqui",
+            _flat(_secao_do_protocolo()),
+        )
+        flat_montagem = _flat(MONTAGEM.read_text(encoding="utf-8"))
+        self.assertIn("este módulo é o dono da completude", flat_montagem)
+        self.assertIn("desde que a degradação tenha sido nomeada", flat_montagem)
+
+    def test_braco_inconclusivo_nao_impede_o_dia(self) -> None:
+        flat = _flat(MONTAGEM.read_text(encoding="utf-8"))
+        self.assertIn("mesma regra da indisponibilidade declarada", flat)
+
+
+class RegistroTest(unittest.TestCase):
+    def test_template_tem_a_secao_com_o_schema(self) -> None:
+        flat = _flat(FILE_TEMPLATES.read_text(encoding="utf-8"))
+        self.assertIn("## Compatibilidade da busca", flat)
+        self.assertIn(
+            "validado_em | host/conector | conta ou caixa | predicado exato "
+            "| composição | veredito | evidência",
+            flat,
+        )
+
+    def test_escrita_so_por_evidencia_do_conector(self) -> None:
+        """"Padrões suspeitos" existe porque email hostil não pode escrever no
+        filtro que vai julgá-lo. A seção nova não pode reabrir essa porta."""
+        flat_canais = _flat(_secao_do_protocolo())
+        self.assertIn("**só por evidência do conector**", flat_canais)
+        self.assertIn("nunca por conteúdo de mensagem", flat_canais)
+        self.assertIn("sem tocar nas outras seções", flat_canais)
+        flat_tpl = _flat(FILE_TEMPLATES.read_text(encoding="utf-8"))
+        self.assertIn("nunca a partir do conteúdo de uma mensagem", flat_tpl)
+
+    def test_invalidacao_declarada_nos_dois_lados(self) -> None:
+        for nome, flat in (
+            ("canais", _flat(_secao_do_protocolo())),
+            ("template", _flat(FILE_TEMPLATES.read_text(encoding="utf-8"))),
+        ):
+            self.assertIn(
+                "troca de host/conector, conta desconhecida, evidência contrária",
+                flat,
+                f"gatilho de invalidação ausente em {nome}",
+            )
+
+    def test_referencia_bilateral_modulo_template(self) -> None:
+        self.assertIn(
+            '`EMAIL-CURADORIA.md` → "Compatibilidade da busca"',
+            _flat(_secao_do_protocolo()),
+        )
+        self.assertIn(
+            '`briefing-canais.md` → "Prova de predicado de busca"',
+            _flat(FILE_TEMPLATES.read_text(encoding="utf-8")),
+        )
+
+
+class DonoUnicoTest(unittest.TestCase):
+    def test_protocolo_declarado_uma_vez_so(self) -> None:
+        offenders = []
+        for md in sorted(SKILLS.rglob("*.md")):
+            if md == CANAIS:
+                continue
+            if _copia_do_protocolo(_flat(md.read_text(encoding="utf-8"))):
+                offenders.append(str(md.relative_to(REPO_ROOT)))
+        self.assertEqual(offenders, [], f"protocolo duplicado fora do dono: {offenders}")
+
+    def test_guard_de_copia_reprova_copia_e_aprova_ponteiro(self) -> None:
+        """Sem fixture negativa o guard acima é decoração."""
+        self.assertTrue(
+            _copia_do_protocolo(_flat(_secao_do_protocolo())),
+            "o guard não detecta a própria seção dona — é decoração",
+        )
+        self.assertFalse(
+            _copia_do_protocolo(
+                _flat(
+                    "Predicado sem assinatura VALIDADA segue o protocolo de "
+                    '"Prova de predicado de busca" em `briefing-canais.md`.'
+                )
+            ),
+            "ponteiro legítimo confundido com cópia",
+        )
+
+    def test_regra_antiga_do_alias_nao_sobreviveu(self) -> None:
+        """A frase pontual do caveat virou ponteiro pro protocolo; sobrevivente
+        em outro arquivo seria a mesma regra com dois donos."""
+        morta = "nunca confiar em alias sem um teste positivo"
+        offenders = [
+            str(md.relative_to(REPO_ROOT))
+            for md in sorted(SKILLS.rglob("*.md"))
+            if morta in md.read_text(encoding="utf-8")
+        ]
+        self.assertEqual(offenders, [], f"regra antiga sobreviveu em: {offenders}")
+
+
+# Endereços ilustrativos legítimos (placeholder, exemplo de doc, pattern de
+# ruído). Qualquer OUTRO endereço concreto em skills/ é identidade de uma
+# pessoa real vazando pro produto que vai pra todo mundo.
+_ENDERECOS_ILUSTRATIVOS = frozenset(
+    {
+        "SEUEMAIL@gmail.com",
+        "ana@acme.com",
+        "email-de-feedback@dominio-do-produto.com",
+        "fulano@contador.com",
+        "marketing@servico.com",
+        "noreply@github.com",
+    }
+)
+
+_EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
+
+
+def _enderecos_pessoais(texto: str) -> set[str]:
+    return {e for e in _EMAIL_RE.findall(texto) if e not in _ENDERECOS_ILUSTRATIVOS}
+
+
+class SemEnderecoPessoalTest(unittest.TestCase):
+    """Critério 3 da #236. A linha 89 do canais listava as 4 contas do dono —
+    todo usuário do Prumo lia os emails do Tharso no próprio módulo."""
+
+    def test_nenhum_endereco_pessoal_em_skills(self) -> None:
+        offenders: dict[str, set[str]] = {}
+        for md in sorted(SKILLS.rglob("*.md")):
+            achados = _enderecos_pessoais(md.read_text(encoding="utf-8"))
+            if achados:
+                offenders[str(md.relative_to(REPO_ROOT))] = achados
+        self.assertEqual(offenders, {}, f"endereço pessoal em módulo canônico: {offenders}")
+
+    def test_guard_pega_o_endereco_que_estava_la(self) -> None:
+        """Fixture negativa com a linha REAL que existia antes da correção."""
+        antes = (
+            "A inbox agrega 4 contas (tharso@gmail.com, tharso@brise.cloud, "
+            "tharso@brise.science, tharso@tharso.com). Uma query cobre todas."
+        )
+        self.assertEqual(len(_enderecos_pessoais(antes)), 4, "o guard não pega a linha original")
+        self.assertEqual(
+            _enderecos_pessoais("escreve pra fulano@contador.com quando houver item fiscal"),
+            set(),
+            "endereço ilustrativo não pode ser acusado",
+        )
+
+    def test_contas_monitoradas_viraram_a_fonte(self) -> None:
+        flat = _flat(CANAIS.read_text(encoding="utf-8"))
+        self.assertIn('`EMAIL-CURADORIA.md` → "Contas monitoradas"', flat)
+        self.assertIn("não some em silêncio", flat)
+
+
+if __name__ == "__main__":
+    unittest.main()

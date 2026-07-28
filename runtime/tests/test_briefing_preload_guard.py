@@ -194,8 +194,15 @@ GUARDRAIL_OWNERS: dict[str, Path] = {
     "Respostas ao que o usuário enviou** desde o último briefing": CANAIS,
     "`htmlBody` de newsletter é descartado sem ler": CANAIS,
     "nas threads** selecionar as mensagens EXTERNAS recebidas": CANAIS,
-    "nunca confiar em alias sem um teste positivo": CANAIS,
     "Declarar a cobertura em uma linha": CANAIS,
+    # #236 — o protocolo mora nos CANAIS (é lá que a query roda); a completude
+    # do briefing segue dona da MONTAGEM. Dois donos semânticos de
+    # `--mark-done` foi o risco que o review do plano pegou.
+    "Prova de predicado de busca (#236)": CANAIS,
+    "query nunca é testemunha de si mesma": CANAIS,
+    "Nada é aprovado por osmose": CANAIS,
+    "três validações novas por briefing": CANAIS,
+    "Braço `INCONCLUSIVO` (#236) — este módulo é o dono da completude": MONTAGEM,
     "em Cowork/host containerizado, **WebFetch PRIMEIRO**": PREFLIGHT,
     '"não consegui checar" só depois de esgotar os dois': PREFLIGHT,
     # Preflight de versão (#174/#195/#215) → mini-módulo novo. O protocolo

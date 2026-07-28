@@ -1,6 +1,6 @@
 # Briefing — Montagem e fechamento (F3)
 
-> **module_version: 5.63.0**
+> **module_version: 5.73.0**
 >
 > Fase F3 da rota fásica do briefing (#180). Carregar **ao montar o
 > panorama** (o primeiro tempo já pode ser emitido a partir daqui; a
@@ -57,6 +57,8 @@ A proposta deve considerar deadlines de hoje, blockers, agenda disponível e ite
 | Resposta única / um tempo com oferta | a resposta única foi entregue (ela É o briefing inteiro daquele host) | sim |
 | Zero canais externos | o primeiro tempo + declaração de indisponibilidade foram entregues (é o briefing possível) | sim |
 | Escape do usuário (qualquer variante) | nunca — o briefing não aconteceu inteiro | **não** |
+
+**Braço `INCONCLUSIVO` (#236) — este módulo é o dono da completude, e decide: não impede.** Braço interno que não pôde ser provado (protocolo em `briefing-canais.md` → "Prova de predicado de busca") vale a mesma regra da indisponibilidade declarada: o briefing está completo e marca o dia, **desde que a degradação tenha sido nomeada** na linha de cobertura. Braço que morre calado não cumpre a condição — e aí não é completude, é o furo de 27/07 com outra roupa.
 
 ### Matriz por host (aceite por host, #205)
 

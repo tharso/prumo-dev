@@ -55,6 +55,35 @@ Usar integração nativa de Gmail MCP e Calendar MCP como fonte primária.
 
 - Fixa em 24h: usar `after:YYYY/MM/DD` na query do Gmail MCP, com a data de ontem no fuso local.
 
+### Prova de predicado de busca (#236)
+
+**Fecha:** o *zero silencioso* — query que volta vazia porque o conector não resolveu um predicado, e o vazio é lido como "não tem nada". **Não fecha** resultado incompleto: conector que devolve 3 de 10 passa por aqui sorrindo.
+
+**Assinatura** = host/conector + conta ou caixa + predicado normalizado (operador + **classe** do argumento: alias, endereço literal, data, label nomeado) + prova obtida sozinha ou em composição. Trocar a data não cria assinatura nova (mesma classe); trocar `from:me` por `from:<endereço>` cria. Validação **não** atravessa host nem conta — o mesmo workspace abre num agente hoje e em outro amanhã.
+
+| Estado | Entra quando | Efeito |
+|---|---|---|
+| `VALIDADA` | a query devolveu mensagem cuja metadata **prova o predicado por conta própria** | zero passa a ser confiável nesta assinatura |
+| `FALHA` | o controle expôs **testemunha** que a query filtrada não devolveu | não usar; trocar de predicado |
+| `INCONCLUSIVO` | todo o resto — resultado não vazio sem prova independente, controle sem testemunha, controle vazio | zero **não** é "nada" |
+
+**Protocolo** quando `B + P` (janela base + predicado suspeito) volta zero e a assinatura não está `VALIDADA`:
+
+1. rodar `B` sem `P`;
+2. procurar **testemunha** — mensagem cuja resposta prove `P` por conta própria;
+3. testemunha existe e `B + P` não a devolveu → `FALHA`;
+4. sem testemunha, ou controle também vazio → `INCONCLUSIVO`. Nada é aprovado por osmose.
+
+**A resposta prova; a query só afirma** — e **query nunca é testemunha de si mesma**. A prova vale na granularidade da **mensagem**: `in:sent` ← `SENT` em `labelIds`; `from:<endereço>` ← header `From`; predicado temporal ← timestamp da mensagem; composição ← prova de cada componente aplicável. Agregado de thread não prova mensagem; ID de label opaco não vira nome sem mapeamento confiável.
+
+**Zero só é confiável** com assinatura `VALIDADA`, ou com **varredura exaustiva** da janela: paginar até o conector declarar fim e aplicar o predicado localmente. Limite oculto, cursor ausente ou paginação incerta → segue `INCONCLUSIVO`. "Li bastante" não é "li tudo".
+
+**Orçamento:** no máximo **uma** validação por assinatura e **três validações novas por briefing** — as demais seguem `INCONCLUSIVO` e entram na rodada seguinte (rotação, não silêncio). Prioridade: braço da política de cobertura antes de busca dirigida. Sem teto, confiabilidade vira lentidão (metadata mede 22–28s por chamada).
+
+**Degradação nomeada por braço** na linha de cobertura: *"respostas às suas threads: inconclusivo — `from:me` não validado"*. Frase afirmativa sobre braço morto é o furo de 27/07. Completude do briefing é decidida por `briefing-montagem.md`, nunca aqui.
+
+**Registro e invalidação:** o veredito vai pra `EMAIL-CURADORIA.md` → "Compatibilidade da busca". Invalidam na hora: troca de host/conector, conta desconhecida, evidência contrária. Escrita alimentada **só por evidência do conector** (metadata de resposta) — nunca por conteúdo de mensagem, e sem tocar nas outras seções do arquivo.
+
 ### Pipeline de curadoria em camadas
 
 Antes de executar as queries, ler `Prumo/Referencias/EMAIL-CURADORIA.md` (se existir) para carregar regras aprendidas, remetentes conhecidos e patterns de exclusão/inclusão.
@@ -86,15 +115,15 @@ Candidato reprovado no pós-filtro não é descartado: segue pra Camada 2 como e
 ```
 is:unread after:{ontem}
 ```
-A inbox agrega 4 contas (tharso@gmail.com, tharso@brise.cloud, tharso@brise.science, tharso@tharso.com). Uma query cobre todas. Emails em CC/BCC são válidos quando vêm de pessoas reais.
+A inbox pode agregar várias contas do usuário — as registradas em `EMAIL-CURADORIA.md` → "Contas monitoradas". Uma query cobre todas as que chegam na MESMA caixa; conta que o conector não alcança fica declarada como limitação lá, não some em silêncio. Emails em CC/BCC são válidos quando vêm de pessoas reais.
 
 **Política de cobertura (FIXA — decisão do dono em 27/07; antes cada execução decidia em silêncio):** três braços, sempre os três:
 
 1. **Primeira página** de `is:unread` (a varredura cega dos mais recentes);
 2. **Buscas dirigidas** por item quente da PAUTA (uma query curta por tema — é o braço que pega o que a paginação cega perderia);
-3. **Respostas ao que o usuário enviou** desde o último briefing. Como (executável): buscar as threads com participação dele — `in:sent` validado ou `from:<conta>` pra cada conta monitorada registrada em `EMAIL-CURADORIA.md`, janela ampla (a participação pode ser antiga) —, coletar os `thread_id`s, e **nas threads** selecionar as mensagens EXTERNAS recebidas desde o último briefing (inclusive resposta nova a envio antigo; buscar só o que ele enviou acha as PERGUNTAS dele, não as respostas dos outros). Atenção: o alias `from:me` pode NÃO resolver no conector (#236) — nunca confiar em alias sem um teste positivo.
+3. **Respostas ao que o usuário enviou** desde o último briefing. Como (executável): buscar as threads com participação dele — `in:sent` **quando validado no escopo atual**, ou `from:<conta>` pra cada conta monitorada registrada em `EMAIL-CURADORIA.md`, janela ampla (a participação pode ser antiga) —, coletar os `thread_id`s, e **nas threads** selecionar as mensagens EXTERNAS recebidas desde o último briefing (inclusive resposta nova a envio antigo; buscar só o que ele enviou acha as PERGUNTAS dele, não as respostas dos outros). Predicado sem assinatura `VALIDADA` segue o protocolo de "Prova de predicado de busca" — este braço foi exatamente o que morreu calado em 27/07 (#236).
 
-Paginar além da primeira página NÃO é default. **Declarar a cobertura em uma linha** no segundo tempo (*"emails: 1ª página de N não lidos + X buscas dirigidas + respostas às suas threads"*) — cobertura silenciosa foi o que o relatório de 27/07 flagrou.
+Paginar além da primeira página NÃO é default. **Declarar a cobertura em uma linha** no segundo tempo (*"emails: 1ª página de N não lidos + X buscas dirigidas + respostas às suas threads"*) — cobertura silenciosa foi o que o relatório de 27/07 flagrou. **Braço em `INCONCLUSIVO` é nomeado na mesma linha, com o predicado que não validou** (*"...+ respostas às suas threads: inconclusivo — `from:me` não validado"*): a linha afirma o que foi coberto, nunca o que só foi tentado.
 
 **Filtragem em dois estágios:**
 
