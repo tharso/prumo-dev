@@ -21,11 +21,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import stat as stat_module
 from datetime import datetime, timezone
 from pathlib import Path
 
 from prumo_runtime import faxina_thresholds
-from prumo_runtime.backup import copy_to_backup, iter_backup_roots
+from prumo_runtime.backup import iter_backup_roots
 from prumo_runtime.projetos import PULSO_BEGIN, PULSO_END
 from prumo_runtime.workspace_paths import workspace_paths
 
@@ -40,14 +41,8 @@ FLOW = "fluxo"                 # existe pra ser drenado — encolher é o contra
 HYBRID = "hibrido"             # parte gerada, parte autoral
 ACCUMULATIVE = "acumulativo"   # catálogo: encolher brusco é suspeito
 
-# `PAUTA` esvazia pro REGISTRO, `INBOX` esvazia ao ser processado, `REGISTRO`
-# rotaciona pelo `max_items`, `IDEIAS` amadurece e sai. Alarmar aqui seria
-# ruído que ensina a ignorar o alarme.
-_FLOW_NAMES = frozenset({"PAUTA.md", "INBOX.md", "REGISTRO.md", "IDEIAS.md"})
-# `PROJETOS.md`: só o miolo dos blocos de pulso é reescrito pelo
-# `projetos --sync` (exceção cirúrgica da #201); todo byte fora deles é
-# autoral. O alerta mede só o autoral.
-_HYBRID_NAMES = frozenset({"PROJETOS.md"})
+# Os conjuntos de cada classe vêm de `WorkspacePaths` (paths completos,
+# cientes do layout nested/flat) — ver `curated_flow_paths`/`curated_hybrid_paths`.
 
 # Teto por arquivo: acima disso a cópia diária deixa de ser barata. O que passa
 # é REPORTADO, nunca descartado em silêncio.
@@ -57,13 +52,24 @@ MAX_FILE_BYTES = 512 * 1024
 MIN_ALERT_BYTES = 200
 # Sumiço completo é 100% de encolhimento — o caso mais grave, não o mais leve.
 GONE = "ausente"
+# Sumiu daqui, mas há gêmeo byte a byte no acervo: indício, não prova.
+ARCHIVED = "provavelmente-arquivado"
 
 
-def watch_class(relative_path: str) -> str:
-    name = relative_path.rsplit("/", 1)[-1]
-    if name in _FLOW_NAMES:
+def watch_class(
+    relative_path: str,
+    flow_paths: frozenset[str] = frozenset(),
+    hybrid_paths: frozenset[str] = frozenset(),
+) -> str:
+    """Classifica por PATH COMPLETO, nunca por basename.
+
+    Uma ficha chamada `Referencias/PAUTA.md` é catálogo do usuário: com
+    classificação por nome ela cairia em `fluxo` e sumiria sem alarme
+    (Codex, 262F-5).
+    """
+    if relative_path in flow_paths:
         return FLOW
-    if name in _HYBRID_NAMES:
+    if relative_path in hybrid_paths:
         return HYBRID
     return ACCUMULATIVE
 
@@ -155,8 +161,29 @@ def _has_symlink_ancestor(workspace: Path, relative: str) -> bool:
     return False
 
 
+def _check_roots(paths, errors: list[str]) -> None:
+    """Raiz que existe mas NÃO é diretório fura o inventário em silêncio:
+    `Referencias/` virado arquivo faz o glob devolver nada e todo `is_file()`
+    dos filhos dar `False`, então nada entrava em `coleta` e nascia uma
+    baseline "completa" sem referência nenhuma (Codex, 262F-2)."""
+    for root in paths.curated_roots():
+        try:
+            if root.exists() and not root.is_dir():
+                errors.append(
+                    f"{paths.relative(root)}: existe mas não é diretório — inventário furado"
+                )
+        except OSError as exc:
+            errors.append(f"{paths.relative(root)}: {exc}")
+
+
 def _read_current(paths, errors: list[str]) -> tuple[dict[str, str], list[str]]:
-    """Lê os curados existentes. Devolve (texto por path, oversized)."""
+    """Lê os curados existentes. Devolve (texto por path, oversized).
+
+    Ausência LEGÍTIMA (arquivo que nunca existiu) é silêncio; qualquer outra
+    falha de `stat` vira erro de coleta — distinguir as duas é o que impede o
+    retrato furado de se declarar completo.
+    """
+    _check_roots(paths, errors)
     current: dict[str, str] = {}
     oversized: list[str] = []
     for rel in paths.curated_relative_paths():
@@ -165,9 +192,17 @@ def _read_current(paths, errors: list[str]) -> tuple[dict[str, str], list[str]]:
             if _has_symlink_ancestor(paths.root, rel) or _under_backup_root(paths.root, source):
                 errors.append(f"{rel}: caminho atravessa link ou cai dentro do backup")
                 continue
-            if not source.is_file():
+            try:
+                st = source.stat()
+            except FileNotFoundError:
+                continue  # nunca existiu: ausência legítima
+            except NotADirectoryError as exc:
+                errors.append(f"{rel}: {exc}")
                 continue
-            if source.stat().st_size > MAX_FILE_BYTES:
+            if not stat_module.S_ISREG(st.st_mode):
+                errors.append(f"{rel}: existe mas não é arquivo regular")
+                continue
+            if st.st_size > MAX_FILE_BYTES:
                 oversized.append(rel)
                 continue
             current[rel] = source.read_text(encoding="utf-8")
@@ -194,6 +229,31 @@ def _manifest_of(stamp_dir: Path) -> dict | None:
     return raw
 
 
+def _validate_candidate(stamp_dir: Path, manifest: dict) -> tuple[dict[str, str], str | None]:
+    """Lê e CONFERE cada cópia declarada contra o digest do manifesto.
+
+    Manifesto que diz `complete: true` não prova que as cópias existem: se a
+    do índice sumisse e o original também, os dois lados ficariam sem ela,
+    `equivalente` daria verdadeiro e o sumiço passaria calado. Régua que não
+    se verifica é papel timbrado (Codex, 262F-1).
+    """
+    conteudo: dict[str, str] = {}
+    digests = manifest.get("digests", {})
+    for flat, rel in manifest["files"].items():
+        copy = stamp_dir / str(flat)
+        try:
+            if copy.parent != stamp_dir or copy.is_symlink() or not copy.is_file():
+                return {}, f"cópia `{flat}` ausente ou fora do carimbo"
+            texto = copy.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError) as exc:
+            return {}, f"cópia `{flat}` ilegível ({exc})"
+        esperado = digests.get(flat)
+        if not isinstance(esperado, str) or _digest(texto) != esperado:
+            return {}, f"cópia `{flat}` diverge do digest do manifesto"
+        conteudo[str(rel)] = texto
+    return conteudo, None
+
+
 def _latest_previous(scope_root: Path, degradacoes: list[str]) -> tuple[Path | None, dict | None]:
     """Baseline = carimbo COMPLETO mais recente, pelo instante UTC do manifesto.
 
@@ -217,7 +277,7 @@ def _latest_previous(scope_root: Path, degradacoes: list[str]) -> tuple[Path | N
     except OSError as exc:
         degradacoes.append(f"backups/{SCOPE}: {exc}")
         return None, None
-    melhor: tuple[str, Path, dict] | None = None
+    completos: list[tuple[str, Path, dict]] = []
     for stamp_dir in candidates:
         manifest = _manifest_of(stamp_dir)
         if manifest is None:
@@ -225,57 +285,48 @@ def _latest_previous(scope_root: Path, degradacoes: list[str]) -> tuple[Path | N
                 f"snapshot `{stamp_dir.name}` sem manifesto válido — ignorado como referência"
             )
             continue
-        if not manifest["complete"]:
-            continue
-        captured = manifest["captured_at_utc"]
-        if melhor is None or captured > melhor[0]:
-            melhor = (captured, stamp_dir, manifest)
-    if melhor is None:
-        return None, None
-    return melhor[1], melhor[2]
+        if manifest["complete"]:
+            completos.append((manifest["captured_at_utc"], stamp_dir, manifest))
+    # Do mais novo pro mais velho, aceitando o primeiro que se VERIFICA.
+    for captured, stamp_dir, manifest in sorted(completos, key=lambda c: c[0], reverse=True):
+        conteudo, problema = _validate_candidate(stamp_dir, manifest)
+        if problema is None:
+            manifest = {**manifest, "_conteudo": conteudo}
+            return stamp_dir, manifest
+        degradacoes.append(f"snapshot `{stamp_dir.name}`: {problema} — não serve de régua")
+    if candidates and not completos:
+        degradacoes.append(
+            "nenhum snapshot completo no histórico — detecção de encolhimento indisponível"
+        )
+    return None, None
 
 
-def _archived_twin(paths, relative: str, text: str) -> str | None:
-    """Ficha ausente que tem cópia BYTE A BYTE em `Arquivo/` foi arquivada
-    pelo acervo (`acervo_apply._archive_file` move pra `Arquivo/Acervo/`), não
-    perdida. Alarmar aqui seria o produto mandar arquivar e depois tocar a
-    sirene porque o usuário arquivou (Codex, 262E-3). Deleção permanente faz
-    `unlink()` e não deixa gêmeo — essa continua alarmando."""
-    arquivo_root = paths.arquivo_root
-    if not arquivo_root.is_dir():
-        return None
-    alvo = _digest(text)
-    nome = relative.rsplit("/", 1)[-1]
+def _acervo_index(paths) -> dict[str, str]:
+    """Índice `digest → path` de `Arquivo/Acervo/`, construído UMA vez.
+
+    Restrito ao destino real do acervo (`acervo_apply._quarantine_dir`), e por
+    CONTEÚDO em vez de nome: o acervo renomeia em colisão, então casar por
+    basename perderia arquivamento legítimo — e casaria com homônimo que não
+    tem nada a ver (Codex, 262F-3). Um `rglob` por ausente também transformava
+    o briefing em arqueólogo pago por hora.
+    """
+    raiz = paths.arquivo_root / "Acervo"
+    indice: dict[str, str] = {}
     try:
-        for candidate in arquivo_root.rglob(nome):
+        if not raiz.is_dir():
+            return indice
+        for candidate in sorted(raiz.rglob("*.md")):
             try:
-                if candidate.is_file() and _digest(
-                    candidate.read_text(encoding="utf-8")
-                ) == alvo:
-                    return paths.relative(candidate)
+                if candidate.is_file() and not candidate.is_symlink():
+                    indice.setdefault(
+                        _digest(candidate.read_text(encoding="utf-8")),
+                        paths.relative(candidate),
+                    )
             except (OSError, UnicodeDecodeError, ValueError):
                 continue
     except OSError:
-        return None
-    return None
-
-
-def _read_previous(stamp_dir: Path | None, manifest: dict | None) -> dict[str, str]:
-    """Inventário COMPLETO do snapshot anterior — não só os paths que existem
-    agora. Ler apenas a interseção com o presente fazia o arquivo apagado
-    sumir dos dois lados e o dedupe declarar "sem mudança" justamente no caso
-    mais grave (Codex, 262D-1)."""
-    if stamp_dir is None or manifest is None:
-        return {}
-    previous: dict[str, str] = {}
-    for flat, rel in manifest["files"].items():
-        copy = stamp_dir / str(flat)
-        try:
-            if copy.is_file():
-                previous[str(rel)] = copy.read_text(encoding="utf-8")
-        except (OSError, UnicodeDecodeError):
-            continue
-    return previous
+        return indice
+    return indice
 
 
 def _build_alerts(
@@ -285,28 +336,44 @@ def _build_alerts(
     previous_stamp: Path | None,
     shrink_pct: int,
 ) -> list[dict]:
+    flow, hybrid = paths.curated_flow_paths(), paths.curated_hybrid_paths()
+    ausentes = [
+        rel for rel in previous
+        if rel not in current and watch_class(rel, flow, hybrid) != FLOW
+    ]
+    # Índice do acervo só quando há ausente — quem nunca perdeu arquivo não
+    # paga varredura nenhuma.
+    acervo = _acervo_index(paths) if ausentes else {}
+
     alerts: list[dict] = []
     for rel in sorted(set(current) | set(previous)):
-        klass = watch_class(rel)
+        klass = watch_class(rel, flow, hybrid)
         if klass == FLOW or rel not in previous:
             # Sem cópia anterior não há delta — só ausência de história.
             continue
         before = measured_size(previous[rel], klass)
         if before < MIN_ALERT_BYTES:
             continue
+        base = {
+            "path": rel,
+            "watch_class": klass,
+            "before_bytes": before,
+            "previous_copy": str(previous_stamp) if previous_stamp else "",
+        }
         if rel not in current:
-            if _archived_twin(paths, rel, previous[rel]) is not None:
-                continue  # arquivado pelo acervo, não perdido
-            # Sumiu inteiro: o caso mais grave, não um caso a ignorar.
+            # Gêmeo byte a byte em `Arquivo/Acervo/` é indício FORTE de
+            # arquivamento, não prova: o produto não tem proveniência da
+            # operação. Então rebaixa o tom em vez de silenciar — chamar de
+            # arquivamento sem rastro seria o detector inventando história
+            # (Codex, 262F-3).
+            gemeo = acervo.get(_digest(previous[rel]))
             alerts.append(
                 {
-                    "path": rel,
-                    "watch_class": klass,
-                    "before_bytes": before,
+                    **base,
                     "after_bytes": 0,
                     "shrink_pct": 100,
-                    "state": GONE,
-                    "previous_copy": str(previous_stamp) if previous_stamp else "",
+                    "state": ARCHIVED if gemeo else GONE,
+                    "twin": gemeo or "",
                 }
             )
             continue
@@ -317,23 +384,16 @@ def _build_alerts(
         if shrink < shrink_pct:
             continue
         alerts.append(
-            {
-                "path": rel,
-                "watch_class": klass,
-                "before_bytes": before,
-                "after_bytes": after,
-                "shrink_pct": shrink,
-                "state": "encolheu",
-                "previous_copy": str(previous_stamp) if previous_stamp else "",
-            }
+            {**base, "after_bytes": after, "shrink_pct": shrink, "state": "encolheu", "twin": ""}
         )
     return alerts
 
 
-def _integrity_errors(current: dict[str, str]) -> list[str]:
+def _integrity_errors(paths, current: dict[str, str]) -> list[str]:
+    hybrid = paths.curated_hybrid_paths()
     problemas = []
     for rel, text in sorted(current.items()):
-        if watch_class(rel) != HYBRID:
+        if rel not in hybrid:
             continue
         _, erro = _pulso_partition(text)
         if erro:
@@ -417,10 +477,12 @@ def snapshot_curated(
         current, oversized = _read_current(paths, coleta)
         report["oversized"] = oversized
         errors.extend(coleta)
-        errors.extend(_integrity_errors(current))
+        errors.extend(_integrity_errors(paths, current))
 
+        # O conteúdo do baseline já vem VERIFICADO contra os digests do
+        # manifesto (`_validate_candidate`) — reler aqui reabriria a janela.
         previous_stamp, previous_manifest = _latest_previous(scope_root, errors)
-        previous = _read_previous(previous_stamp, previous_manifest)
+        previous = dict(previous_manifest.get("_conteudo", {})) if previous_manifest else {}
 
         if shrink_pct is None:
             shrink_pct = faxina_thresholds.effective(workspace)["values"][
@@ -447,11 +509,18 @@ def snapshot_curated(
         _require_clean_destination(workspace, scope_root)
         target_root = _reserve_stamp_dir(scope_root, stamp)
         gravados: dict[str, str] = {}
+        digests: dict[str, str] = {}
         for rel in sorted(current):
+            # Grava os BYTES QUE FORAM MEDIDOS, em vez de reabrir a origem.
+            # Reler abria janela entre medir e copiar: o alerta sairia sobre um
+            # conteúdo e a cópia guardaria outro, com o manifesto declarando
+            # completo o que ninguém conferiu (Codex, 262F-4).
+            flat = _flat_name(rel)
             try:
-                copy_to_backup(paths.root / rel, target_root / _flat_name(rel))
+                (target_root / flat).write_text(current[rel], encoding="utf-8")
                 report["copied"].append(rel)
-                gravados[_flat_name(rel)] = rel
+                gravados[flat] = rel
+                digests[flat] = _digest(current[rel])
             except (OSError, ValueError) as exc:
                 errors.append(f"{rel}: {exc}")
         report["stamp"] = target_root.name
@@ -462,6 +531,7 @@ def snapshot_curated(
                 "captured_at_utc": datetime.now(timezone.utc).isoformat(),
                 "complete": not coleta and len(gravados) == len(current),
                 "files": gravados,
+                "digests": digests,
                 "oversized": sorted(oversized),
             },
         )
@@ -478,11 +548,12 @@ def render_report(report: dict) -> str:
     NÃO ganharam cópia, o pior momento pra ficar calado (Codex, 262D-5).
     """
     linhas: list[str] = []
-    for a in report.get("alerts", []):
-        if not linhas:
-            linhas.append(
-                "[curado] mudança suspeita desde a última cópia — confira antes de seguir:"
-            )
+    graves = [a for a in report.get("alerts", []) if a.get("state") != ARCHIVED]
+    if graves:
+        linhas.append(
+            "[curado] mudança suspeita desde a última cópia — confira antes de seguir:"
+        )
+    for a in graves:
         if a.get("state") == GONE:
             linhas.append(
                 f"  - `{a['path']}`: SUMIU (tinha {a['before_bytes']} bytes). "
@@ -493,6 +564,12 @@ def render_report(report: dict) -> str:
                 f"  - `{a['path']}`: {a['before_bytes']} → {a['after_bytes']} bytes "
                 f"(−{a['shrink_pct']}%). Cópia anterior em `{a['previous_copy']}`."
             )
+    # Tom mais baixo, mas nunca silêncio: o produto não tem proveniência da
+    # operação do acervo, então relata o indício em vez de afirmar o fato.
+    arquivados = [a for a in report.get("alerts", []) if a.get("state") == ARCHIVED]
+    if arquivados:
+        linhas.append("[curado] saiu de lugar, com cópia idêntica no acervo:")
+        linhas.extend(f"  - `{a['path']}` → `{a['twin']}`" for a in arquivados)
     naocopiados = list(report.get("oversized", []))
     if naocopiados:
         linhas.append("[curado] acima do teto de tamanho, SEM cópia:")

@@ -207,6 +207,28 @@ class WorkspacePaths:
                     seen.add(relative)
         return tuple(items)
 
+    def curated_flow_paths(self) -> frozenset[str]:
+        """Curados que existem PRA SER drenados — encolher é o contrato deles.
+
+        Paths completos, nunca basename: uma ficha chamada `Referencias/PAUTA.md`
+        é catálogo do usuário e some sem alarme se a classificação olhar só o
+        nome do arquivo (Codex, 262F-5).
+        """
+        return frozenset(
+            self.relative(p) for p in (self.pauta, self.inbox, self.registro, self.ideias)
+        )
+
+    def curated_hybrid_paths(self) -> frozenset[str]:
+        """Parte gerada, parte autoral: só o miolo dos blocos de pulso é
+        reescrito pelo `projetos --sync` (#201)."""
+        return frozenset({self.relative(self.agente_root / "PROJETOS.md")})
+
+    def curated_roots(self) -> tuple[Path, ...]:
+        """Diretórios de onde os curados saem. Se um deles existir e NÃO for
+        diretório, o inventário nasce furado — e sem esta checagem ele se
+        declararia completo (Codex, 262F-2)."""
+        return (self.user_root, self.agente_root, self.referencias_root)
+
     def derived_relative_paths(self) -> tuple[str, ...]:
         return (
             self.relative(self.workspace_schema),

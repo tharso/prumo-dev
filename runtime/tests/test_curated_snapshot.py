@@ -111,11 +111,27 @@ class ClasseCuradaTest(BaseTest):
         self.assertNotIn("Prumo/Referencias/_rascunho.md", curados)
 
     def test_classificacao_de_vigilancia(self) -> None:
-        self.assertEqual(curated.watch_class("Prumo/REGISTRO.md"), curated.FLOW)
-        self.assertEqual(curated.watch_class("Prumo/Agente/PROJETOS.md"), curated.HYBRID)
+        paths = workspace_paths(self.ws)
+        flow, hybrid = paths.curated_flow_paths(), paths.curated_hybrid_paths()
+        self.assertEqual(curated.watch_class("Prumo/REGISTRO.md", flow, hybrid), curated.FLOW)
         self.assertEqual(
-            curated.watch_class("Prumo/Referencias/INDICE.md"), curated.ACCUMULATIVE
+            curated.watch_class("Prumo/Agente/PROJETOS.md", flow, hybrid), curated.HYBRID
         )
+        self.assertEqual(
+            curated.watch_class("Prumo/Referencias/INDICE.md", flow, hybrid),
+            curated.ACCUMULATIVE,
+        )
+
+    def test_ficha_homonima_nao_herda_classe_do_canonico(self) -> None:
+        """Uma ficha chamada `Referencias/PAUTA.md` é catálogo do usuário. Com
+        classificação por basename ela cairia em `fluxo` e sumiria sem alarme
+        (Codex, 262F-5)."""
+        paths = workspace_paths(self.ws)
+        flow, hybrid = paths.curated_flow_paths(), paths.curated_hybrid_paths()
+        for homonimo in ("Prumo/Referencias/PAUTA.md", "Prumo/Referencias/PROJETOS.md"):
+            self.assertEqual(
+                curated.watch_class(homonimo, flow, hybrid), curated.ACCUMULATIVE, homonimo
+            )
 
 
 class SnapshotTest(BaseTest):
@@ -533,18 +549,24 @@ class AcervoTest(BaseTest):
     def _ficha(self) -> Path:
         return self.ws / "Prumo" / "Referencias" / "artigo.md"
 
-    def test_ficha_arquivada_nao_alarma(self) -> None:
+    def test_ficha_arquivada_e_rebaixada_nao_silenciada(self) -> None:
+        """Gêmeo byte a byte no acervo é indício forte, não prova: o produto
+        não tem proveniência da operação. Então o tom cai — some da lista de
+        suspeitos e vira linha calma — mas não vira silêncio (Codex, 262F-3)."""
         self._ficha().write_text("# Artigo\n" + "conteúdo\n" * 60, encoding="utf-8")
         self.snapshot("2026-07-27T08-00-00")
 
         acervo = self.ws / "Prumo" / "Arquivo" / "Acervo"
         acervo.mkdir(parents=True)
-        shutil.move(str(self._ficha()), str(acervo / "artigo.md"))
+        shutil.move(str(self._ficha()), str(acervo / "artigo-2026-07-27.md"))
         report = self.snapshot("2026-07-27T20-00-00")
 
-        self.assertEqual(
-            [a for a in report["alerts"] if a["path"].endswith("artigo.md")], []
-        )
+        alerta = next(a for a in report["alerts"] if a["path"].endswith("artigo.md"))
+        self.assertEqual(alerta["state"], curated.ARCHIVED)
+        self.assertTrue(alerta["twin"], "não disse ONDE está a cópia")
+        texto = curated.render_report(report)
+        self.assertNotIn("SUMIU", texto)
+        self.assertIn("cópia idêntica no acervo", texto)
 
     def test_delecao_permanente_continua_alarmando(self) -> None:
         """Negativa: sem gêmeo em `Arquivo/`, sumiço é sumiço."""
@@ -556,6 +578,24 @@ class AcervoTest(BaseTest):
 
         alerta = next((a for a in report["alerts"] if a["path"].endswith("artigo.md")), None)
         self.assertIsNotNone(alerta, "deleção permanente passou calada")
+        self.assertEqual(alerta["state"], curated.GONE)
+        self.assertIn("SUMIU", curated.render_report(report))
+
+    def test_gemeo_fora_de_acervo_nao_conta(self) -> None:
+        """O índice é restrito a `Arquivo/Acervo/`, destino real do acervo.
+        Cópia idêntica em qualquer outro canto de `Arquivo/` é coincidência do
+        usuário, não rastro de arquivamento (Codex, 262F-3)."""
+        conteudo = "# Artigo\n" + "conteúdo\n" * 60
+        self._ficha().write_text(conteudo, encoding="utf-8")
+        self.snapshot("t1")
+
+        outro = self.ws / "Prumo" / "Arquivo" / "Rascunhos"
+        outro.mkdir(parents=True)
+        (outro / "artigo.md").write_text(conteudo, encoding="utf-8")
+        self._ficha().unlink()
+        report = self.snapshot("t2")
+
+        alerta = next(a for a in report["alerts"] if a["path"].endswith("Referencias/artigo.md"))
         self.assertEqual(alerta["state"], curated.GONE)
 
     def test_gemeo_diferente_nao_conta_como_arquivado(self) -> None:
@@ -762,3 +802,130 @@ class CarimboTest(BaseTest):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class BaselineVerificadaTest(BaseTest):
+    """Manifesto que se declara completo não prova que as cópias existem.
+    Régua que não se verifica é papel timbrado (Codex, 262F-1)."""
+
+    def test_copia_apagada_invalida_a_regua(self) -> None:
+        self.indice().write_text("a" * 1000, encoding="utf-8")
+        self.snapshot("t1")
+        (self.scope_root() / "t1" / "Prumo__Referencias__INDICE.md").unlink()
+
+        self.indice().unlink()
+        report = self.snapshot("t2")
+
+        self.assertIsNone(report["skipped"], "sumiço virou 'sem-mudanca'")
+        self.assertTrue(
+            any("não serve de régua" in e for e in report["errors"]),
+            "baseline furada foi usada em silêncio",
+        )
+
+    def test_copia_adulterada_invalida_a_regua(self) -> None:
+        self.indice().write_text("a" * 1000, encoding="utf-8")
+        self.snapshot("t1")
+        (self.scope_root() / "t1" / "Prumo__Referencias__INDICE.md").write_text(
+            "adulterado", encoding="utf-8"
+        )
+        self.indice().write_text("a" * 100, encoding="utf-8")
+        report = self.snapshot("t2")
+
+        self.assertTrue(any("digest" in e for e in report["errors"]))
+
+    def test_cai_no_completo_anterior_quando_o_recente_falha(self) -> None:
+        self.indice().write_text("a" * 1000, encoding="utf-8")
+        self.snapshot("t1")
+        self.indice().write_text("b" * 1000, encoding="utf-8")
+        self.snapshot("t2")
+        (self.scope_root() / "t2" / "Prumo__Referencias__INDICE.md").unlink()
+
+        self.indice().write_text("c" * 100, encoding="utf-8")
+        report = self.snapshot("t3")
+
+        alerta = next(
+            (a for a in report["alerts"] if a["path"] == "Prumo/Referencias/INDICE.md"), None
+        )
+        self.assertIsNotNone(alerta, "não caiu na régua anterior válida")
+        self.assertIn("t1", alerta["previous_copy"])
+
+    def test_sem_regua_completa_e_declarado(self) -> None:
+        self.snapshot("t1")
+        manifesto = json.loads(
+            (self.scope_root() / "t1" / curated.MANIFEST_NAME).read_text(encoding="utf-8")
+        )
+        manifesto["complete"] = False
+        (self.scope_root() / "t1" / curated.MANIFEST_NAME).write_text(
+            json.dumps(manifesto), encoding="utf-8"
+        )
+        self.indice().write_text("mudou", encoding="utf-8")
+        report = self.snapshot("t2")
+
+        self.assertTrue(
+            any("detecção de encolhimento indisponível" in e for e in report["errors"])
+        )
+
+
+class RaizQuebradaTest(BaseTest):
+    """`Referencias/` virado ARQUIVO fazia o glob devolver nada e todo
+    `is_file()` dos filhos dar False: nada entrava em coleta e nascia uma
+    baseline 'completa' sem referência nenhuma (Codex, 262F-2)."""
+
+    def test_raiz_virada_arquivo_fura_a_integridade(self) -> None:
+        shutil.rmtree(self.ws / "Prumo" / "Referencias")
+        (self.ws / "Prumo" / "Referencias").write_text("não sou pasta", encoding="utf-8")
+
+        report = self.snapshot("t1")
+        self.assertTrue(
+            any("não é diretório" in e for e in report["errors"]),
+            "raiz quebrada passou calada",
+        )
+        manifesto = json.loads(
+            (self.scope_root() / "t1" / curated.MANIFEST_NAME).read_text(encoding="utf-8")
+        )
+        self.assertFalse(manifesto["complete"], "retrato sem Referencias/ se disse completo")
+
+
+class JanelaDeEscritaTest(BaseTest):
+    """O alerta era calculado sobre os bytes lidos e a cópia reabria o arquivo:
+    se ele mudasse no meio, media um conteúdo e gravava outro, com o manifesto
+    declarando completo o que ninguém conferiu (Codex, 262F-4)."""
+
+    def test_grava_exatamente_os_bytes_medidos(self) -> None:
+        """Simula a origem mudando ENTRE medir e copiar: a primeira leitura
+        devolve o conteúdo íntegro, qualquer releitura devolve o mutilado. Uma
+        implementação que reabre o arquivo pra copiar gravaria o mutilado e o
+        declararia completo."""
+        integro = "# Índice\n" + "linha\n" * 200
+        mutilado = "mutilado\n"
+        self.indice().write_text(integro, encoding="utf-8")
+
+        alvo = self.indice().resolve()
+        real = Path.read_text
+        lido = {"ja": False}
+
+        def leitura_com_corrida(self, *a, **kw):
+            if self.resolve() == alvo:
+                if lido["ja"]:
+                    return mutilado
+                lido["ja"] = True
+                return integro
+            return real(self, *a, **kw)
+
+        with patch.object(Path, "read_text", leitura_com_corrida):
+            self.snapshot("t1")
+
+        copia = (self.scope_root() / "t1" / "Prumo__Referencias__INDICE.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertEqual(copia, integro, "gravou conteúdo diferente do que mediu")
+
+    def test_digest_do_manifesto_bate_com_a_copia(self) -> None:
+        self.indice().write_text("# Índice\nconteúdo\n", encoding="utf-8")
+        self.snapshot("t1")
+        manifesto = json.loads(
+            (self.scope_root() / "t1" / curated.MANIFEST_NAME).read_text(encoding="utf-8")
+        )
+        for flat, digest in manifesto["digests"].items():
+            texto = (self.scope_root() / "t1" / flat).read_text(encoding="utf-8")
+            self.assertEqual(curated._digest(texto), digest, flat)
