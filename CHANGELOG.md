@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.78.0] - 2026-07-29
+
+### Changed
+- **A Parte 2 do core parou de manter uma segunda lista do que os módulos cobrem (#269)** — três rituais (Briefing, Inbox, Update de versão) carregavam abaixo do ponteiro um bloco "Esse módulo cobre:" enumerando o escopo do módulo apontado. Enumeração sem dono e sem guarda só pode envelhecer: o ponteiro é atualizado quando o módulo muda, a lista abaixo não. **A do briefing já tinha envelhecido** — descrevia o escopo pré-#180, citando "curadoria em camadas" e a janela de 24h, que desde a rota fásica moram no `briefing-canais.md`. A convenção certa já era maioria no próprio arquivo (cinco dos oito rituais são só "Ler e seguir" + ponteiro) e já estava declarada na camada de módulos desde a #195/#180: *"a lista canônica virou o mapa; este módulo NÃO mantém segunda enumeração"*. Conferido bullet a bullet antes de apagar — todo o conteúdo está nos módulos apontados, e no caso do update **com mais precisão**: o core comprimia a regra em "Nunca usar WebFetch para aplicar update", enquanto o `version-update.md` distingue aplicar update (proibido) de comparar versão (legítimo e esperado). Apagar melhorou a exatidão, não só encurtou. Rota do briefing inalterada em 6.674 — a Parte 2 está fora do cesto sempre carregado, medido e não presumido.
+
 ## [5.77.0] - 2026-07-29
 
 ### Fixed
