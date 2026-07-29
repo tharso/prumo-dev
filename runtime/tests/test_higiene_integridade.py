@@ -51,9 +51,14 @@ class HigieneIntegridadeTests(unittest.TestCase):
         # Anti-zelo: ausência de convenção / estilo pessoal não é erro.
         self.assertIn("não é erro", text)
 
-    def test_fluxo_roda_os_oito_checks(self) -> None:
-        # O fluxo de execução não pode parar em 7 e deixar o check novo órfão.
-        self.assertIn("(1-8)", self._text())
+    def test_fluxo_roda_todos_os_checks(self) -> None:
+        """O fluxo não pode parar antes do último check e deixá-lo órfão.
+        Derivado da contagem real: fixar o número fazia o guard reprovar o
+        certo toda vez que um check novo entrasse."""
+        import re as _re
+        texto = self._text()
+        ultimo = max(int(m) for m in _re.findall(r"^### (\d+)\. ", texto, _re.M))
+        self.assertIn(f"(1-{ultimo})", texto)
 
 
 if __name__ == "__main__":

@@ -6,6 +6,20 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.75.0] - 2026-07-29
+
+### Fixed
+- **A faxina parou de "consertar" índice truncado por cima (#261)** — a seção 3 da faxina já comparava as fichas em disco com a tabela do `Referencias/INDICE.md`, mas o reflexo era **adicionar o que faltasse, sem teto e em silêncio**. Depois do truncamento de 27/07 (48 entradas viraram 5), qualquer briefing dos dois dias seguintes — ela roda automática no briefing e no `/fim` — teria reinserido 37 fichas com **IDs novos**, trocado as descrições autorais pelas derivadas do "Por que guardei" e reportado sucesso. A assimetria estava no mesmo parágrafo: entrada sem arquivo tinha cautela declarada ("não remover, marcar, deixar a higiene decidir"); arquivo sem entrada agia na hora. Agora vale a salvaguarda da #212 — estado inconsistente **sinaliza e para**. Duas travas, numa árvore de decisão única (truncamento dispara as duas, e duas sirenes pro mesmo incêndio treinam a ignorar alarme): **lacuna de ID** pelo rodapé `proximo-id` da #244 (`slots = N-1`; ID ≥ N não preenche lacuna porque o rodapé é sugestão; duplicata conta uma vez), acima de `referencias_id_gap_alert_pct` (default 50); e **volume**, a partir de `referencias_bulk_reindex_at` (default 5) fichas fora da tabela — N fichas fora de uma vez não são "N fichas novas". Índice sem rodapé pula só a primeira trava: **ausência de rodapé nunca é alarme por si**. Abaixo dos limiares a faxina reindexa e passa a **nomear** cada ficha adicionada, porque perder UMA linha é indistinguível de ficha nova pela diferença de conjuntos — mas trivial pro usuário, o único que sabe que aquilo é de fevereiro. E o texto diz **suspeito**, nunca "dano confirmado": nenhuma porcentagem lê intenção, e apagar uma seção de propósito produz o mesmo observável.
+- **A higiene ganhou o outro lado da fronteira (#261)** — a faxina detecta e para; quem resolve é a higiene, que até agora não sabia sequer detectar índice truncado. Novo check 9: refaz a conta, nomeia as fichas fora da tabela, consulta a cópia em `.prumo/backups/curated/` (#262) e oferece **restaurar preservando IDs e descrições originais**; sem cópia, avisa em voz alta que recriar dá IDs novos e descrições derivadas. Terceira saída sempre disponível: "a remoção foi deliberada". **Nunca reinsere sozinha** — foi exatamente o reflexo automático que teria cimentado o dano.
+
+### Added
+- **Regra de escrita em arquivo curado (#261)** — `references/escrita-curada.md`: acrescentar é a operação sancionada; reescrever o arquivo inteiro é exceção que exige ler a versão atual inteira na mesma sessão, e no `INDICE.md` acontece **sob o lock** da #244, adquirido durante a janela inteira (ler e escrever em momentos diferentes sem lock reabre a corrida que a #244 fechou). A #244 **continua valendo** onde ela nasceu: o append lê só a última linha. O documento declara também o que ele NÃO é — não há trava mecânica, porque o Prumo não tem gancho na ferramenta de escrita do agente hospedeiro.
+- **Gatilho na rota, com custo aprovado (#261)** — a regra 6 do core ganhou uma linha apontando a política. Política condicional sem gatilho não dispara: pra saber que precisa carregá-la, o agente teria de já conhecê-la. **Catraca 6.642 → 6.652 (+10)**, contrato novo aprovado pelo dono.
+- **`referencias_id_gap_alert_pct` (50) e `referencias_bulk_reindex_at` (5)** — nono e décimo thresholds, na disciplina da #258: fonte única, paridade travada por teste, transporte na semente, override com vocabulário controlado.
+
+### Changed
+- **A decisão do índice viaja pronta na semente (#261)** — `local_panorama.indice_referencias` carrega `proximo_id`, `lacunas_pct`, fichas sem entrada e a decisão (`ok` / `reindexar` / `bloquear`) com as razões. Sem isso o agente refaria a aritmética a cada briefing, e duas projeções do mesmo cálculo divergem — o bug da #195 em outra roupa. Sem runtime, o `faxina.md` replica o algoritmo em texto; limitação nomeada, não maquiada.
+
 ## [5.74.0] - 2026-07-29
 
 ### Added

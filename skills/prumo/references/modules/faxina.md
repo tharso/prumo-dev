@@ -67,20 +67,59 @@ vivo. O registro é a trilha.
 A biblioteca de referências precisa de índice. Sem índice, o usuário
 pergunta "onde guardei aquele artigo?" e Prumo não sabe.
 
-**Verificar:**
-- Listar arquivos em `Referencias/` (ignorar os operacionais: INDICE.md, WORKFLOWS.md, EMAIL-CURADORIA.md — mesma lista de exclusão do acervo)
-- Comparar com a tabela em INDICE.md
+**Verificar (uma leitura, uma decisão — com semente, tudo já vem pronto em
+`local_panorama.indice_referencias`):**
+- Rodapé `<!-- proximo-id: N -->` e os IDs distintos da tabela
+- Arquivos em `Referencias/` (ignorar os operacionais: INDICE.md, WORKFLOWS.md, EMAIL-CURADORIA.md — mesma lista de exclusão do acervo), comparados com a tabela
 
-**Executar se houver diferença:**
-- Adicionar arquivos novos à tabela com: #, título (do cabeçalho), arquivo, data, descrição, keywords. **O `#` vem da alocação de ID do `ficha-de-fonte.md` (#244)** — rodapé `proximo-id` + sonda do candidato, sob lock atômico; nunca chutar pelo que a leitura parcial mostrou
-- Ficha de fonte (ver `ficha-de-fonte.md` nas references do core): título = cabeçalho da ficha; data = campo Entrada; descrição = "Por que guardei" resumido; keywords = campo Keywords
-- Se a tabela passar de `referencias_subcategorize_at` (default 30): agrupar por tema e criar seções
+**Decidir nesta ordem, e parar na primeira que bater:**
+
+1. **Lacuna de ID (#261).** Com rodapé presente e `N > 1`: `slots = N-1`;
+   `ocupados` = IDs distintos em `1..slots` (ID ≥ N não preenche lacuna — o
+   rodapé é sugestão e pode estar atrasado; duplicata conta uma vez). Se
+   `lacunas ≥ referencias_id_gap_alert_pct` (default 50): **não alterar o
+   índice**, relatar e entregar pra higiene. Sem rodapé, ou malformado, este
+   passo é PULADO — ausência de rodapé nunca é alarme por si.
+2. **Volume (#261).** Se as fichas fora da tabela forem `≥ referencias_bulk_reindex_at`
+   (default 5): **não alterar o índice**, relatar e entregar pra higiene.
+   N fichas fora do índice de uma vez não são "N fichas novas" — são um
+   estado que precisa de explicação.
+3. **Reindexar.** Abaixo dos dois limiares: adicionar as fichas novas à
+   tabela **nomeando cada uma** no relato. O `#` vem da alocação de ID do
+   `ficha-de-fonte.md` (#244) — rodapé `proximo-id` + sonda do candidato, sob
+   lock atômico; nunca chutar pelo que a leitura parcial mostrou.
+   - Ficha de fonte (ver `ficha-de-fonte.md`): título = cabeçalho da ficha;
+     data = campo Entrada; descrição = "Por que guardei" resumido;
+     keywords = campo Keywords
+   - Se a tabela passar de `referencias_subcategorize_at` (default 30):
+     agrupar por tema e criar seções. Reagrupar é **reescrita integral** —
+     segue `escrita-curada.md` (lock adquirido durante a janela inteira, ler
+     tudo antes, preservar toda linha, ID e descrição).
+
+**Por que bloquear em vez de consertar:** até a #261 esta seção mandava
+adicionar o que faltasse, sem teto e em silêncio. Depois do truncamento de
+27/07 (48 entradas viraram 5), qualquer briefing dos dois dias seguintes teria
+reinserido 37 fichas com **IDs novos**, trocado as descrições autorais pelas
+derivadas do "Por que guardei" e reportado sucesso. É a salvaguarda da #212
+aplicada aqui: estado inconsistente sinaliza e para.
 
 **Não fazer:**
 - Não remover entradas cujo arquivo sumiu (pode ter sido movido)
   — marcar como "(arquivo não encontrado)" e deixar a higiene decidir
+- Não "consertar" índice suspeito. Bloqueio é o conserto.
+- Não emitir dois avisos pro mesmo estado: quando o passo 1 bloqueia, a
+  contagem de fichas fora entra como **evidência** na mesma linha, não como
+  segundo alarme.
 
-**Reportar:** "INDICE.md atualizado com X referência(s) nova(s)."
+**Reportar:**
+- Bloqueado: "Índice de referências inconsistente — {razões}. Não alterei o
+  índice; leve pra higiene." Nomear as fichas fora da tabela. Diga **suspeito**,
+  nunca "dano confirmado": nenhuma porcentagem lê intenção, e apagar uma seção
+  de propósito produz o mesmo observável.
+- Reindexado: "INDICE.md atualizado com: `a.md`, `b.md`." Nomear, não só contar
+  — perda de UMA linha é indistinguível de ficha nova pela diferença de
+  conjuntos, mas trivial pro usuário, que é o único que sabe que aquilo é de
+  fevereiro.
 
 ### 4. Inbox4Mobile — limpeza de processados
 

@@ -1,6 +1,6 @@
 # Prumo Core — Motor do sistema
 
-> **prumo_version: 5.74.0**
+> **prumo_version: 5.75.0**
 >
 > Núcleo estável do Prumo. Define regras, guardrails e localização dos módulos canônicos.
 > Procedimento detalhado não mora aqui.
@@ -88,6 +88,8 @@ Sem próxima ação concreta, vai para `Prumo/IDEIAS.md`, não para `Prumo/PAUTA
 ### 6. Registro antes do sumiço
 
 Se um item vai ser movido, arquivado ou deletado, isso precisa passar por `Prumo/REGISTRO.md`.
+
+Antes de **substituir integralmente** arquivo que já existe, leia `references/escrita-curada.md`.
 
 ### 9. Proatividade obrigatória
 
@@ -333,8 +335,8 @@ Histórico completo de versão vive em `CHANGELOG.md`.
 
 Versão atual deste core:
 
-- `5.74.0`
+- `5.75.0`
 
 ---
 
-*Prumo Core v5.74.0 — https://github.com/tharso/prumo*
+*Prumo Core v5.75.0 — https://github.com/tharso/prumo*

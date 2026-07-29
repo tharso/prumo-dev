@@ -302,6 +302,8 @@ def build_briefing_payload(workspace: Path) -> dict:
         preview=preview,
         today=today,
         thresholds=faxina_thresholds.effective(workspace),  # #258
+        referencias_root=paths.referencias_root,  # #261
+        indice_path=paths.referencias_index,
     )
     degradation = build_briefing_degradation(
         core_outdated=core_outdated,

@@ -142,6 +142,8 @@ def _build_once(workspace: Path, paths, timezone_name: str) -> dict:
         preview=preview,
         today=today,
         thresholds=faxina_thresholds.effective(workspace),  # #258
+        referencias_root=paths.referencias_root,  # #261
+        indice_path=paths.referencias_index,
     )
     return {
         "schema_version": SEED_SCHEMA_VERSION,

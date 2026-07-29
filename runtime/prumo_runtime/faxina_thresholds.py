@@ -37,6 +37,10 @@ DEFAULTS: dict[str, int] = {
     "curated_shrink_alert_pct": 40,
     # Índices
     "referencias_subcategorize_at": 30,
+    # #261: lacunas de ID acima disso = índice suspeito (pavio do rodapé)
+    "referencias_id_gap_alert_pct": 50,
+    # #261: fichas fora do índice a partir daqui não são "novas", são estado
+    "referencias_bulk_reindex_at": 5,
     # Diário
     "diario_expiry_days": 90,
 }
@@ -44,7 +48,10 @@ DEFAULTS: dict[str, int] = {
 # Teto por chave, pra chave cujo domínio não é "qualquer inteiro >= 0".
 # Percentual acima de 100 é inatingível: o alerta desligaria em silêncio, que
 # é pior que não existir (achado da rodada 6 do Codex na #262).
-MAXIMOS: dict[str, int] = {"curated_shrink_alert_pct": 100}
+MAXIMOS: dict[str, int] = {
+    "curated_shrink_alert_pct": 100,
+    "referencias_id_gap_alert_pct": 100,
+}
 
 # Candidato = qualquer `- chave: valor`. A gramática da CHAVE é validada
 # depois, pra que nome inválido (maiúscula, hífen) apareça em `ignored_keys`
