@@ -11,9 +11,15 @@ guard que não reprova o que proíbe é decoração (série #241/#248/#258).
 
 from __future__ import annotations
 
+import io
+import json
+import shutil
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 
 from prumo_runtime import curated
 from prumo_runtime.projetos import PULSO_BEGIN, PULSO_END
@@ -258,28 +264,58 @@ class HibridoTest(BaseTest):
 class GanchoTest(BaseTest):
     """O incidente aconteceu no Cowork, onde a rota é `prumo seed` (#216) e
     NÃO `prumo briefing`. Pendurar só no briefing deixaria o host do incidente
-    descoberto — o achado que reabriu o desenho na revisão."""
+    descoberto — o achado que reabriu o desenho na revisão.
 
-    def test_seed_dispara_o_snapshot(self) -> None:
+    Comportamental, não bytecode: procurar o nome em `co_names` passaria com a
+    chamada dentro de um `if False` ou depois da escrita (Codex, 262D-8).
+    """
+
+    def _args(self, **extra):
+        return SimpleNamespace(workspace=str(self.ws), format="json", **extra)
+
+    def test_seed_dispara_o_snapshot_antes_de_escrever(self) -> None:
         from prumo_runtime.commands import seed as seed_cmd
 
-        self.assertIn(
-            "snapshot_curated", seed_cmd.run_seed.__code__.co_names,
-            "a rota do Cowork (`prumo seed`) não dispara o snapshot",
-        )
+        ordem: list[str] = []
+        with patch.object(
+            seed_cmd, "snapshot_curated", side_effect=lambda *a, **k: ordem.append("snapshot") or {}
+        ) as spy, patch.object(
+            seed_cmd, "write_seed", side_effect=lambda *a, **k: ordem.append("escrita") or self._seed_falso()
+        ):
+            seed_cmd.run_seed(self._args())
 
-    def test_briefing_dispara_o_snapshot(self) -> None:
+        self.assertEqual(spy.call_count, 1, "a rota do Cowork não dispara o snapshot")
+        self.assertEqual(ordem, ["snapshot", "escrita"], "snapshot depois da escrita não protege")
+
+    def test_briefing_dispara_o_snapshot_antes_de_montar(self) -> None:
         from prumo_runtime.commands import briefing as briefing_cmd
 
-        self.assertIn(
-            "snapshot_curated", briefing_cmd.run_briefing.__code__.co_names,
-            "`prumo briefing` não dispara o snapshot",
-        )
+        ordem: list[str] = []
+        with patch.object(
+            briefing_cmd, "snapshot_curated",
+            side_effect=lambda *a, **k: ordem.append("snapshot") or {},
+        ) as spy, patch.object(
+            briefing_cmd, "build_briefing_payload",
+            side_effect=lambda *a, **k: ordem.append("payload") or {"message": "ok"},
+        ):
+            briefing_cmd.run_briefing(self._args())
+
+        self.assertEqual(spy.call_count, 1, "`prumo briefing` não dispara o snapshot")
+        self.assertEqual(ordem, ["snapshot", "payload"])
+
+    def test_mark_done_nao_dispara(self) -> None:
+        """`--mark-done` só carimba o dia; não é ritual de leitura."""
+        from prumo_runtime.commands import briefing as briefing_cmd
+
+        with patch.object(briefing_cmd, "snapshot_curated") as spy, patch.object(
+            briefing_cmd, "build_config_from_existing"
+        ), patch.object(briefing_cmd, "update_last_briefing"):
+            briefing_cmd.run_briefing(self._args(mark_done=True))
+        spy.assert_not_called()
 
     def test_construtores_de_payload_nao_escrevem(self) -> None:
-        """Codex r1: 'consulta com efeito colateral é casca de banana
-        arquitetural'. O snapshot é chamada explícita do comando, nunca efeito
-        escondido em função de construção."""
+        """Codex, design r1: 'consulta com efeito colateral é casca de banana
+        arquitetural'. O snapshot é chamada explícita do comando."""
         from prumo_runtime.commands import briefing as briefing_cmd
         from prumo_runtime.commands import seed as seed_cmd
 
@@ -288,6 +324,241 @@ class GanchoTest(BaseTest):
                 "snapshot_curated", fn.__code__.co_names,
                 f"{fn.__name__} ganhou escrita surpresa",
             )
+
+    def _seed_falso(self) -> Path:
+        alvo = self.ws / ".prumo" / "state" / "seed.json"
+        alvo.write_text(
+            json.dumps(
+                {"local_panorama": {"pauta": {"sections": [], "outras_secoes": []},
+                                    "generated_for": "2026-07-29"},
+                 "generated_at": "2026-07-29T08:00:00"}
+            ),
+            encoding="utf-8",
+        )
+        return alvo
+
+
+class SaidaJsonTest(BaseTest):
+    """Quando o alerta finalmente dispara, ele não pode quebrar quem consome a
+    saída — seria o alerta bloqueando o ritual pela porta dos fundos."""
+
+    def _com_alerta(self) -> None:
+        linhas = "".join(f"| {n} | ficha {n} | descrição |\n" for n in range(1, 49))
+        self.indice().write_text("# Índice\n" + linhas, encoding="utf-8")
+        self.snapshot("2026-07-27T08-00-00")
+        self.indice().write_text("| 45 | x | y |\n", encoding="utf-8")
+
+    def test_seed_json_continua_parseavel_com_alerta(self) -> None:
+        from prumo_runtime.commands import seed as seed_cmd
+
+        self._com_alerta()
+        buf = io.StringIO()
+        with patch.object(seed_cmd, "write_seed", side_effect=lambda *a, **k: self._seed_falso()):
+            with redirect_stdout(buf):
+                seed_cmd.run_seed(SimpleNamespace(workspace=str(self.ws), format="json"))
+
+        payload = json.loads(buf.getvalue())
+        self.assertTrue(payload["curated_snapshot"]["alerts"], "alerta sumiu do payload")
+
+    def test_briefing_json_continua_parseavel_com_alerta(self) -> None:
+        from prumo_runtime.commands import briefing as briefing_cmd
+
+        self._com_alerta()
+        buf = io.StringIO()
+        with patch.object(
+            briefing_cmd, "build_briefing_payload", return_value={"message": "ok"}
+        ):
+            with redirect_stdout(buf):
+                briefing_cmd.run_briefing(SimpleNamespace(workspace=str(self.ws), format="json"))
+
+        payload = json.loads(buf.getvalue())
+        self.assertTrue(payload["curated_snapshot"]["alerts"])
+
+    def _seed_falso(self) -> Path:
+        alvo = self.ws / ".prumo" / "state" / "seed.json"
+        alvo.write_text(
+            json.dumps(
+                {"local_panorama": {"pauta": {"sections": [], "outras_secoes": []},
+                                    "generated_for": "2026-07-29"},
+                 "generated_at": "2026-07-29T08:00:00"}
+            ),
+            encoding="utf-8",
+        )
+        return alvo
+
+
+class ColetaIncompletaTest(BaseTest):
+    """O dedupe lia do snapshot anterior só os paths que ainda existiam: o
+    arquivo apagado sumia dos dois lados e o resultado era 'sem-mudanca' —
+    silêncio no caso mais grave de todos (Codex, 262D-1)."""
+
+    def test_arquivo_apagado_alarma_e_nao_pula(self) -> None:
+        linhas = "".join(f"| {n} | ficha {n} | descrição |\n" for n in range(1, 49))
+        self.indice().write_text("# Índice\n" + linhas, encoding="utf-8")
+        self.snapshot("2026-07-27T08-00-00")
+
+        self.indice().unlink()
+        report = self.snapshot("2026-07-27T20-00-00")
+
+        self.assertIsNone(report["skipped"], "arquivo apagado virou 'sem-mudanca'")
+        alerta = next(
+            (a for a in report["alerts"] if a["path"] == "Prumo/Referencias/INDICE.md"), None
+        )
+        self.assertIsNotNone(alerta, "sumiço completo passou calado")
+        self.assertEqual(alerta["state"], curated.GONE)
+        self.assertEqual(alerta["shrink_pct"], 100)
+
+    def test_coleta_incompleta_nao_vira_baseline(self) -> None:
+        self.indice().write_text("x" * 500, encoding="utf-8")
+        self.snapshot("2026-07-27T08-00-00")
+
+        gorda = self.ws / "Prumo" / "Referencias" / "gorda.md"
+        gorda.write_text("x" * (curated.MAX_FILE_BYTES + 1), encoding="utf-8")
+        self.snapshot("2026-07-27T20-00-00")
+
+        manifesto = json.loads(
+            (self.scope_root() / "2026-07-27T20-00-00" / curated.MANIFEST_NAME).read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertFalse(manifesto["complete"], "retrato furado se declarou completo")
+
+    def test_incompleto_nunca_pula(self) -> None:
+        self.snapshot("2026-07-27T08-00-00")
+        (self.ws / "Prumo" / "Referencias" / "gorda.md").write_text(
+            "x" * (curated.MAX_FILE_BYTES + 1), encoding="utf-8"
+        )
+        report = self.snapshot("2026-07-27T20-00-00")
+        self.assertIsNone(report["skipped"])
+
+
+class BoundaryTest(BaseTest):
+    """A promessa é 'nunca derruba o ritual'. Capturar só OSError deixava
+    passar `UnicodeDecodeError` do override de thresholds (Codex, 262D-4)."""
+
+    def test_override_com_bytes_invalidos_nao_derruba(self) -> None:
+        rules = self.ws / "Prumo" / "Custom" / "rules"
+        rules.mkdir(parents=True)
+        (rules / "faxina-thresholds.md").write_bytes(b"- max_items: \xff\xfe10\n")
+
+        report = curated.snapshot_curated(self.ws, stamp="2026-07-27T08-00-00")
+        self.assertIsInstance(report, dict)
+        self.assertTrue(report["errors"])
+
+    def test_falha_de_threshold_nao_derruba(self) -> None:
+        with patch.object(
+            curated.faxina_thresholds, "effective", side_effect=ValueError("boom")
+        ):
+            report = curated.snapshot_curated(self.ws, stamp="2026-07-27T08-00-00")
+        self.assertTrue(any("ValueError" in e for e in report["errors"]))
+
+
+class PulsoInvalidoTest(BaseTest):
+    """Marcador órfão fazia todo o sufixo sumir da medição — conteúdo autoral
+    desaparecia da conta sem erro nem alerta (Codex, 262D-2)."""
+
+    def test_bloco_aberto_sem_fechar_conta_o_arquivo_inteiro(self) -> None:
+        texto = "# Projetos\n" + "autoral\n" * 50 + PULSO_BEGIN + "\n" + "pulso\n" * 50
+        medido = curated.measured_size(texto, curated.HYBRID)
+        self.assertEqual(medido, len(texto.encode("utf-8")), "sufixo órfão sumiu da conta")
+
+    def test_fim_sem_comeco_conta_o_arquivo_inteiro(self) -> None:
+        texto = "# Projetos\n" + "autoral\n" * 10 + PULSO_END + "\n"
+        self.assertEqual(
+            curated.measured_size(texto, curated.HYBRID), len(texto.encode("utf-8"))
+        )
+
+    def test_estrutura_invalida_vira_erro_reportado(self) -> None:
+        projetos = self.ws / "Prumo" / "Agente" / "PROJETOS.md"
+        projetos.write_text("# Projetos\n" + PULSO_BEGIN + "\nsem fim\n", encoding="utf-8")
+        report = self.snapshot("2026-07-27T08-00-00")
+        self.assertTrue(
+            any("PROJETOS.md" in e for e in report["errors"]),
+            "estrutura de pulso inválida passou calada",
+        )
+
+    def test_crlf_nao_quebra_o_parser(self) -> None:
+        texto = "# P\r\n" + PULSO_BEGIN + "\r\npulso\r\n" + PULSO_END + "\r\nautoral\r\n"
+        medido = curated.measured_size(texto, curated.HYBRID)
+        self.assertLess(medido, len(texto.encode("utf-8")), "bloco de pulso não foi excluído")
+
+
+class CercaDeCaminhoTest(BaseTest):
+    """`Referencias/` symlinkado pra dentro de `.prumo/backups/` copiaria
+    backup pra dentro de backup pelo arquivo final, que não é link
+    (Codex, 262D-7)."""
+
+    def test_pasta_symlinkada_pro_backup_e_recusada(self) -> None:
+        alvo = self.ws / ".prumo" / "backups" / "curated" / "antigo"
+        alvo.mkdir(parents=True)
+        (alvo / "INDICE.md").write_text("# de dentro do backup\n", encoding="utf-8")
+
+        referencias = self.ws / "Prumo" / "Referencias"
+        shutil.rmtree(referencias)
+        referencias.symlink_to(alvo, target_is_directory=True)
+
+        report = self.snapshot("2026-07-27T08-00-00")
+        self.assertNotIn("Prumo/Referencias/INDICE.md", report["copied"])
+        self.assertTrue(report["errors"])
+
+
+class RelatorioTest(BaseTest):
+    """`errors` e `oversized` são justamente os arquivos que NÃO ganharam
+    cópia — o pior momento pra o relatório ficar calado (Codex, 262D-5)."""
+
+    def test_oversized_aparece_no_texto(self) -> None:
+        report = {"alerts": [], "oversized": ["Prumo/Referencias/gorda.md"], "errors": []}
+        texto = curated.render_report(report)
+        self.assertIn("gorda.md", texto)
+        self.assertIn("SEM cópia", texto)
+
+    def test_erro_aparece_no_texto(self) -> None:
+        report = {"alerts": [], "oversized": [], "errors": ["INDICE.md: disco cheio"]}
+        self.assertIn("disco cheio", curated.render_report(report))
+
+    def test_relatorio_limpo_e_silencioso(self) -> None:
+        self.assertEqual(curated.render_report({"alerts": [], "oversized": [], "errors": []}), "")
+
+
+class CarimboTest(BaseTest):
+    """Ordem por nome quebra quando o relógio recua (fuso, DST); colisão de
+    segundo sobrescrevia a fotografia anterior (Codex, 262D-3)."""
+
+    def test_carimbo_colidido_nao_sobrescreve(self) -> None:
+        self.indice().write_text("primeiro\n", encoding="utf-8")
+        self.snapshot("mesmo-carimbo")
+        self.indice().write_text("segundo\n", encoding="utf-8")
+        report = self.snapshot("mesmo-carimbo")
+
+        self.assertNotEqual(report["stamp"], "mesmo-carimbo")
+        primeiro = self.scope_root() / "mesmo-carimbo" / "Prumo__Referencias__INDICE.md"
+        self.assertEqual(primeiro.read_text(encoding="utf-8"), "primeiro\n")
+
+    def test_anterior_vem_do_instante_e_nao_do_nome(self) -> None:
+        """Três carimbos, porque com dois qualquer ordenação escolhe o mesmo —
+        foi assim que a primeira versão deste teste passou com a mutação
+        aplicada (achado da bateria).
+
+        O carimbo capturado por ÚLTIMO tem o nome lexicograficamente MENOR,
+        que é o que um relógio recuado (fuso, DST) produz. Comparar contra ele
+        não dá alerta (300→250); comparar contra o de nome maior, porém mais
+        velho, daria (1000→250). Silêncio é o veredito correto.
+        """
+        self.indice().write_text("a" * 1000, encoding="utf-8")
+        self.snapshot("2026-06-01T00-00-00")          # nome MAIOR, mais VELHO
+        self.indice().write_text("b" * 300, encoding="utf-8")
+        self.snapshot("2025-01-01T00-00-00")          # nome MENOR, mais NOVO
+
+        self.indice().write_text("c" * 250, encoding="utf-8")
+        report = self.snapshot("2027-01-01T00-00-00")
+
+        alerta = next(
+            (a for a in report["alerts"] if a["path"] == "Prumo/Referencias/INDICE.md"), None
+        )
+        self.assertIsNone(
+            alerta,
+            "comparou com o carimbo de nome maior em vez do capturado por último",
+        )
 
 
 if __name__ == "__main__":
