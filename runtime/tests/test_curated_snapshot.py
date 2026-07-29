@@ -1121,5 +1121,91 @@ class CercaAntesDoAtalhoTest(BaseTest):
         self.assertTrue(any("symlink" in e for e in report["errors"]))
 
 
+class CresceuNaoSumiuTest(BaseTest):
+    """Arquivo que CRESCEU além do teto saía de `current` e era anunciado como
+    SUMIU — a sirene de perda tocando pra um arquivo que aumentou
+    (Codex, 262I-1)."""
+
+    def _ficha(self) -> Path:
+        return self.ws / "Prumo" / "Referencias" / "transcricao.md"
+
+    def test_crescer_alem_do_teto_nao_e_sumico(self) -> None:
+        self._ficha().write_text("a" * 1000, encoding="utf-8")
+        self.snapshot("t1")
+
+        self._ficha().write_text("a" * (curated.MAX_FILE_BYTES + 10), encoding="utf-8")
+        report = self.snapshot("t2")
+
+        alerta = next(a for a in report["alerts"] if a["path"].endswith("transcricao.md"))
+        self.assertEqual(alerta["state"], curated.UNMEASURABLE)
+        texto = curated.render_report(report)
+        self.assertNotIn("SUMIU", texto)
+
+    def test_falha_de_leitura_nao_e_sumico(self) -> None:
+        self._ficha().write_text("a" * 1000, encoding="utf-8")
+        self.snapshot("t1")
+
+        alvo = self._ficha().resolve()
+        real = Path.read_bytes
+
+        def falha(self, *a, **kw):
+            if self.resolve() == alvo:
+                raise OSError("disco pifou")
+            return real(self, *a, **kw)
+
+        with patch.object(Path, "read_bytes", falha):
+            report = self.snapshot("t2")
+
+        alerta = next(a for a in report["alerts"] if a["path"].endswith("transcricao.md"))
+        self.assertEqual(alerta["state"], curated.UNMEASURABLE)
+
+    def test_sumico_de_verdade_continua_sumico(self) -> None:
+        """Negativa: sem o arquivo em disco, é perda."""
+        self._ficha().write_text("a" * 1000, encoding="utf-8")
+        self.snapshot("t1")
+        self._ficha().unlink()
+        report = self.snapshot("t2")
+
+        alerta = next(a for a in report["alerts"] if a["path"].endswith("transcricao.md"))
+        self.assertEqual(alerta["state"], curated.GONE)
+
+
+class PisoDoSumicoTest(BaseTest):
+    """O piso protege contra ruído PROPORCIONAL. Sumiço não é proporção."""
+
+    def test_curado_pequeno_que_some_alarma(self) -> None:
+        self.snapshot("t1")  # SAUDE.md nasce com ~12 bytes
+        (self.ws / "Prumo" / "Agente" / "SAUDE.md").unlink()
+        report = self.snapshot("t2")
+
+        alerta = next((a for a in report["alerts"] if a["path"].endswith("SAUDE.md")), None)
+        self.assertIsNotNone(alerta, "curado pequeno sumiu sem alarme")
+        self.assertEqual(alerta["state"], curated.GONE)
+
+    def test_curado_pequeno_que_so_encolhe_nao_alarma(self) -> None:
+        """Negativa: encolher pouco em arquivo minúsculo continua silencioso."""
+        self.snapshot("t1")
+        (self.ws / "Prumo" / "Agente" / "SAUDE.md").write_text("#", encoding="utf-8")
+        report = self.snapshot("t2")
+        self.assertEqual(
+            [a for a in report["alerts"] if a["path"].endswith("SAUDE.md")], []
+        )
+
+
+class CaminhoDaCopiaTest(BaseTest):
+    def test_previous_copy_aponta_o_arquivo_restauravel(self) -> None:
+        """A mensagem promete 'a cópia está aqui' — tem de cumprir, não mandar
+        o usuário garimpar o diretório."""
+        self.indice().write_text("a" * 1000, encoding="utf-8")
+        self.snapshot("t1")
+        self.indice().write_text("a" * 100, encoding="utf-8")
+        report = self.snapshot("t2")
+
+        alerta = next(a for a in report["alerts"] if a["path"].endswith("INDICE.md"))
+        copia = Path(alerta["previous_copy"])
+        self.assertTrue(copia.is_file(), f"`previous_copy` não é arquivo: {copia}")
+        self.assertEqual(copia.read_text(encoding="utf-8"), "a" * 1000)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -52,6 +52,10 @@ MAX_FILE_BYTES = 512 * 1024
 MIN_ALERT_BYTES = 200
 # Sumiço completo é 100% de encolhimento — o caso mais grave, não o mais leve.
 GONE = "ausente"
+# Existe, mas ficou fora da medição (cresceu além do teto, ilegível, não-UTF-8).
+# Sem este estado, crescer virava "SUMIU" — a sirene de perda tocando pra um
+# arquivo que aumentou (Codex, 262I-1).
+UNMEASURABLE = "nao-mensuravel"
 # Sumiu daqui, mas há gêmeo byte a byte no acervo: indício, não prova.
 ARCHIVED = "provavelmente-arquivado"
 
@@ -176,7 +180,7 @@ def _check_roots(paths, errors: list[str]) -> None:
             errors.append(f"{paths.relative(root)}: {exc}")
 
 
-def _read_current(paths, errors: list[str]) -> tuple[dict[str, bytes], list[str]]:
+def _read_current(paths, errors: list[str]) -> tuple[dict[str, bytes], list[str], set[str]]:
     """Lê os curados existentes. Devolve (texto por path, oversized).
 
     Ausência LEGÍTIMA (arquivo que nunca existiu) é silêncio; qualquer outra
@@ -186,6 +190,8 @@ def _read_current(paths, errors: list[str]) -> tuple[dict[str, bytes], list[str]
     _check_roots(paths, errors)
     current: dict[str, bytes] = {}
     oversized: list[str] = []
+    # Presente em disco, porém fora de `current`: NÃO é sumiço.
+    presentes_sem_medida: set[str] = set()
     for rel in paths.curated_relative_paths():
         source = paths.root / rel
         try:
@@ -201,9 +207,11 @@ def _read_current(paths, errors: list[str]) -> tuple[dict[str, bytes], list[str]
                 continue
             if not stat_module.S_ISREG(st.st_mode):
                 errors.append(f"{rel}: existe mas não é arquivo regular")
+                presentes_sem_medida.add(rel)
                 continue
             if st.st_size > MAX_FILE_BYTES:
                 oversized.append(rel)
+                presentes_sem_medida.add(rel)
                 continue
             # BYTES, nunca `read_text`: o modo texto normaliza CRLF na leitura
             # e retraduz na escrita, então a "cópia" poderia diferir do
@@ -214,7 +222,8 @@ def _read_current(paths, errors: list[str]) -> tuple[dict[str, bytes], list[str]
             current[rel] = data
         except (OSError, UnicodeDecodeError) as exc:
             errors.append(f"{rel}: {exc}")
-    return current, oversized
+            presentes_sem_medida.add(rel)
+    return current, oversized, presentes_sem_medida
 
 
 def _manifest_of(stamp_dir: Path) -> dict | None:
@@ -389,11 +398,14 @@ def _build_alerts(
     previous: dict[str, bytes],
     previous_stamp: Path | None,
     shrink_pct: int,
+    presentes_sem_medida: set[str] = frozenset(),
 ) -> list[dict]:
     flow, hybrid = paths.curated_flow_paths(), paths.curated_hybrid_paths()
     ausentes = [
         rel for rel in previous
-        if rel not in current and watch_class(rel, flow, hybrid) != FLOW
+        if rel not in current
+        and rel not in presentes_sem_medida
+        and watch_class(rel, flow, hybrid) != FLOW
     ]
     # Índice do acervo só quando há ausente — quem nunca perdeu arquivo não
     # paga varredura nenhuma.
@@ -406,14 +418,27 @@ def _build_alerts(
             # Sem cópia anterior não há delta — só ausência de história.
             continue
         before = measured_size(previous[rel], klass)
-        if before < MIN_ALERT_BYTES:
+        # O piso existe contra ruído PROPORCIONAL (arquivo minúsculo em que
+        # qualquer edição é % enorme). Sumiço não é proporção: um curado que
+        # deixou de existir é perda, tenha 20 bytes ou 20 mil.
+        if before < MIN_ALERT_BYTES and rel in current:
             continue
         base = {
             "path": rel,
             "watch_class": klass,
             "before_bytes": before,
-            "previous_copy": str(previous_stamp) if previous_stamp else "",
+            # Caminho EXATO do arquivo restaurável, não só o diretório: a
+            # mensagem promete "a cópia está aqui" e tem de cumprir.
+            "previous_copy": (
+                str(previous_stamp / _flat_name(rel)) if previous_stamp else ""
+            ),
         }
+        if rel in presentes_sem_medida:
+            # Está lá; só não coube na régua. Anunciar sumiço aqui seria a
+            # sirene de perda tocando pra um arquivo que CRESCEU.
+            alerts.append({**base, "after_bytes": 0, "shrink_pct": 0,
+                           "state": UNMEASURABLE, "twin": ""})
+            continue
         if rel not in current:
             # Gêmeo byte a byte em `Arquivo/Acervo/` é indício FORTE de
             # arquivamento, não prova: o produto não tem proveniência da
@@ -536,7 +561,7 @@ def snapshot_curated(
         # pra fora, uma baseline externa "equivalente" devolvia `sem-mudanca`
         # e o atalho passava por baixo da cerca (Codex, 262H-2).
         _require_clean_destination(workspace, scope_root)
-        current, oversized = _read_current(paths, coleta)
+        current, oversized, sem_medida = _read_current(paths, coleta)
         report["oversized"] = oversized
         errors.extend(coleta)
         errors.extend(_integrity_errors(paths, current))
@@ -550,7 +575,9 @@ def snapshot_curated(
             shrink_pct = faxina_thresholds.effective(workspace)["values"][
                 "curated_shrink_alert_pct"
             ]
-        report["alerts"] = _build_alerts(paths, current, previous, previous_stamp, shrink_pct)
+        report["alerts"] = _build_alerts(
+            paths, current, previous, previous_stamp, shrink_pct, sem_medida
+        )
 
         # DOIS conceitos, antes espremidos num `complete` só (Codex, 262E-4):
         # integridade (serve de régua pro alerta) e equivalência (justifica

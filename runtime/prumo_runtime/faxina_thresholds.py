@@ -41,6 +41,11 @@ DEFAULTS: dict[str, int] = {
     "diario_expiry_days": 90,
 }
 
+# Teto por chave, pra chave cujo domínio não é "qualquer inteiro >= 0".
+# Percentual acima de 100 é inatingível: o alerta desligaria em silêncio, que
+# é pior que não existir (achado da rodada 6 do Codex na #262).
+MAXIMOS: dict[str, int] = {"curated_shrink_alert_pct": 100}
+
 # Candidato = qualquer `- chave: valor`. A gramática da CHAVE é validada
 # depois, pra que nome inválido (maiúscula, hífen) apareça em `ignored_keys`
 # em vez de sumir sem rastro (Codex, diff r1).
@@ -58,8 +63,9 @@ def read_override(workspace: Path) -> tuple[dict[str, int], list[str]]:
     """Lê o override do usuário. Devolve (válidos, ignorados).
 
     Vocabulário controlado (regra do próprio doc: "apelido novo não é override,
-    é dialeto"): chave fora do `DEFAULTS` e valor não-inteiro são **ignorados e
-    reportados** — nunca adivinhados.
+    é dialeto"): chave fora do `DEFAULTS`, valor não-inteiro e valor fora do
+    domínio da chave (ver `MAXIMOS`) são **ignorados e reportados** — nunca
+    adivinhados.
     """
     path = override_path(workspace)
     if not path.is_file():
@@ -80,7 +86,7 @@ def read_override(workspace: Path) -> tuple[dict[str, int], list[str]]:
         except ValueError:
             ignoradas.append(chave)
             continue
-        if valor < 0:
+        if valor < 0 or valor > MAXIMOS.get(chave, valor):
             ignoradas.append(chave)
             continue
         valores[chave] = valor
