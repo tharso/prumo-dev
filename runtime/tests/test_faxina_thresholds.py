@@ -431,5 +431,35 @@ class ContratoTest(unittest.TestCase):
         self.assertIn("sem semente", linha[0].lower(), "o doc voltou a carregar sempre")
 
 
+
+
+class DominioPorChaveTest(unittest.TestCase):
+    """Percentual acima de 100 é inatingível: o alerta da #262 desligaria em
+    silêncio, que é pior que não existir. Fora do domínio é ignorado E
+    reportado, como qualquer outro valor inválido do vocabulário controlado."""
+
+    def _override(self, texto: str):
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp)
+            rules = ws / "Prumo" / "Custom" / "rules"
+            rules.mkdir(parents=True)
+            (rules / "faxina-thresholds.md").write_text(texto, encoding="utf-8")
+            return faxina_thresholds.read_override(ws)
+
+    def test_percentual_acima_de_cem_e_ignorado_e_reportado(self) -> None:
+        valores, ignoradas = self._override("- curated_shrink_alert_pct: 150\n")
+        self.assertNotIn("curated_shrink_alert_pct", valores)
+        self.assertIn("curated_shrink_alert_pct", ignoradas)
+
+    def test_percentual_no_limite_e_aceito(self) -> None:
+        valores, ignoradas = self._override("- curated_shrink_alert_pct: 100\n")
+        self.assertEqual(valores["curated_shrink_alert_pct"], 100)
+        self.assertEqual(ignoradas, [])
+
+    def test_chave_sem_teto_nao_ganha_limite(self) -> None:
+        """Negativa: o teto é POR CHAVE, não global."""
+        valores, _ = self._override("- max_items: 5000\n")
+        self.assertEqual(valores["max_items"], 5000)
+
 if __name__ == "__main__":
     unittest.main()

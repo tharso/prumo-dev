@@ -20,6 +20,7 @@ from prumo_runtime import faxina_thresholds
 from prumo_runtime.local_panorama import build_local_panorama
 from prumo_runtime.pauta_parsing import extract_section, filter_by_due_date
 from prumo_runtime.version_check import compute_staleness, read_cached_remote_version
+from prumo_runtime.curated import render_report, snapshot_curated
 from prumo_runtime.workspace import (
     build_config_from_existing,
     load_json,
@@ -392,9 +393,19 @@ def run_briefing(args) -> int:
         update_last_briefing(workspace, config.timezone_name)
         print("Briefing do dia registrado.")
         return 0
+    # Snapshot dos curados (#262) ANTES de montar o painel: chamada explícita
+    # do comando, nunca efeito escondido em função de construção. Nunca
+    # levanta — falha entra no relatório e o briefing segue.
+    snapshot = snapshot_curated(workspace)
     payload = build_briefing_payload(workspace)
     if getattr(args, "format", "text") == "json":
+        # No modo JSON o relatório VAI NO PAYLOAD. Imprimi-lo antes tornaria o
+        # stdout imparseável exatamente no incidente que ele denuncia.
+        payload["curated_snapshot"] = snapshot
         print(json.dumps(payload, ensure_ascii=False, indent=2))
     else:
+        aviso = render_report(snapshot)
+        if aviso:
+            print(aviso)
         print(payload["message"])
     return 0

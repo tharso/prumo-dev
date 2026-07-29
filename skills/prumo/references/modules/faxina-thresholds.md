@@ -22,6 +22,7 @@ Limites ajustáveis em `Prumo/Custom/rules/` (ver "Customização").
 |-----------|-------------|----------------|
 | backup_expiry_days | 90 | Backups mais velhos que 90 dias são removidos |
 | cache_expiry_days | 30 | Cache além de 30 dias é limpo |
+| curated_shrink_alert_pct | 40 | Arquivo curado que encolheu mais que isso (%, teto 100) desde a última cópia vira alerta (#262) |
 
 ## Índices
 

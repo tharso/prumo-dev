@@ -180,6 +180,55 @@ class WorkspacePaths:
             self.relative(self.workflows_index),
         )
 
+    def curated_relative_paths(self) -> tuple[str, ...]:
+        """Arquivos que o snapshot da #262 copia: autoral + EMAIL-CURADORIA +
+        fichas.
+
+        COMPÕE `authorial_relative_paths()` em vez de estendê-lo: aquele método
+        alimenta `files.authorial` do `workspace-schema.json`, que é contrato
+        publicado, e uma segunda lista escrita à mão seria a "duas projeções do
+        mesmo dado" que a #195 e a #258 passaram meses corrigindo.
+
+        Fichas entram por REGRA, nunca por nome congelado — a ficha de amanhã
+        é justamente o arquivo insubstituível que uma lista manual perderia.
+        """
+        items = list(self.authorial_relative_paths())
+        items.append(self.relative(self.referencias_root / "EMAIL-CURADORIA.md"))
+        seen = set(items)
+        if self.referencias_root.is_dir():
+            for path in sorted(self.referencias_root.glob("*.md")):
+                # `_` e `.` são infraestrutura da pasta, não ficha (mesma
+                # convenção do acervo).
+                if path.name.startswith((".", "_")):
+                    continue
+                relative = self.relative(path)
+                if relative not in seen:
+                    items.append(relative)
+                    seen.add(relative)
+        return tuple(items)
+
+    def curated_flow_paths(self) -> frozenset[str]:
+        """Curados que existem PRA SER drenados — encolher é o contrato deles.
+
+        Paths completos, nunca basename: uma ficha chamada `Referencias/PAUTA.md`
+        é catálogo do usuário e some sem alarme se a classificação olhar só o
+        nome do arquivo (Codex, 262F-5).
+        """
+        return frozenset(
+            self.relative(p) for p in (self.pauta, self.inbox, self.registro, self.ideias)
+        )
+
+    def curated_hybrid_paths(self) -> frozenset[str]:
+        """Parte gerada, parte autoral: só o miolo dos blocos de pulso é
+        reescrito pelo `projetos --sync` (#201)."""
+        return frozenset({self.relative(self.agente_root / "PROJETOS.md")})
+
+    def curated_roots(self) -> tuple[Path, ...]:
+        """Diretórios de onde os curados saem. Se um deles existir e NÃO for
+        diretório, o inventário nasce furado — e sem esta checagem ele se
+        declararia completo (Codex, 262F-2)."""
+        return (self.user_root, self.agente_root, self.referencias_root)
+
     def derived_relative_paths(self) -> tuple[str, ...]:
         return (
             self.relative(self.workspace_schema),

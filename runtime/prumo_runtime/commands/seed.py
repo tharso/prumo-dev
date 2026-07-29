@@ -41,6 +41,7 @@ from prumo_runtime.constants import repo_root_from
 from prumo_runtime.inbox_preview import load_inbox_preview
 from prumo_runtime import faxina_thresholds
 from prumo_runtime.local_panorama import build_local_panorama
+from prumo_runtime.curated import render_report, snapshot_curated
 from prumo_runtime.workspace import build_config_from_existing
 from prumo_runtime.workspace_paths import workspace_paths
 
@@ -222,6 +223,11 @@ def run_seed(args: argparse.Namespace) -> int:
     if not (workspace / ".prumo").is_dir():
         print(f"workspace sem `.prumo/`: {workspace} — nada a semear aqui.")
         return 1
+    # Snapshot dos curados (#262). Fica AQUI, e não dentro de
+    # `build_seed_payload`, porque construtor de payload não ganha escrita
+    # surpresa. Esta é a rota do Cowork (#216) — o host onde o incidente de
+    # 27/07 aconteceu e que um gancho só no briefing deixaria descoberto.
+    snapshot = snapshot_curated(workspace)
     try:
         target = write_seed(workspace)
     except SeedError as exc:
@@ -232,8 +238,14 @@ def run_seed(args: argparse.Namespace) -> int:
     outras = payload["local_panorama"]["pauta"]["outras_secoes"]
     total = sum(s["count"] for s in sections) + sum(s["count"] for s in outras)
     if getattr(args, "format", "text") == "json":
+        # Relatório VAI NO PAYLOAD: texto solto antes do JSON tornaria o stdout
+        # imparseável exatamente no incidente que ele denuncia (Codex, 262D-6).
+        payload["curated_snapshot"] = snapshot
         print(json.dumps(payload, ensure_ascii=False, indent=2))
     else:
+        aviso = render_report(snapshot)
+        if aviso:
+            print(aviso)
         print(
             f"[seed] semente gravada em `{target.relative_to(workspace)}` — "
             f"{total} item(ns) da PAUTA ({len(sections)} seções canônicas + "
