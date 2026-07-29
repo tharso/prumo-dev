@@ -54,13 +54,23 @@ class BaseTest(unittest.TestCase):
 
 
 class ClasseCuradaTest(BaseTest):
-    def test_curada_cobre_todo_autoral_mais_email_curadoria(self) -> None:
+    def test_curada_cobre_todo_autoral(self) -> None:
         """Cobertura, não contagem: afirmar os PATHS. Contar deixaria a lista
         trocar de conteúdo mantendo o tamanho (armadilha da série #258)."""
         paths = workspace_paths(self.ws)
         curados = set(paths.curated_relative_paths())
         faltando = set(paths.authorial_relative_paths()) - curados
         self.assertEqual(faltando, set(), "curado perdeu arquivo autoral")
+
+    def test_email_curadoria_entra_mesmo_ausente_do_disco(self) -> None:
+        """O `append` explícito só compra algo quando o arquivo NÃO existe —
+        com ele em disco o glob de fichas o pegaria de qualquer jeito, e o
+        teste não distinguiria as duas implementações (achado da bateria de
+        mutação). A classe curada responde "este path é curado?" para arquivo
+        que ainda vai nascer, que é o que a #261 vai consultar antes de deixar
+        escrever."""
+        (self.ws / "Prumo" / "Referencias" / "EMAIL-CURADORIA.md").unlink()
+        curados = workspace_paths(self.ws).curated_relative_paths()
         self.assertIn("Prumo/Referencias/EMAIL-CURADORIA.md", curados)
 
     def test_ficha_nova_entra_sem_editar_lista(self) -> None:

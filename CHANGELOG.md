@@ -6,6 +6,15 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.74.0] - 2026-07-29
+
+### Added
+- **O insubstituível passa a ter cópia — snapshot de arquivo curado (#262)** — em 27/07 uma sessão reescreveu `Prumo/Referencias/INDICE.md` com escrita **integral** querendo acrescentar quatro linhas: 48 entradas viraram 5, e o dano ficou **invisível por dois dias**. As descrições eram autorais, escritas ao longo de cinco meses, e sobreviveram por acidente — vinte minutos antes, outra operação tinha copiado o conteúdo do índice pro frontmatter das fichas. A prioridade dos backups estava invertida: `.prumo/backups/` cobria `setup/`, `runtime-migrate/`, `repair-version-bump/`, `relocate-skills/`, `perfil-hygiene/` e `sanitize/` — **todos disparados por comando do runtime**, ou seja, tinha cópia justamente do que o produto sabe recriar sozinho. Agora existe o scope `curated/`: cópia integral de PAUTA, INBOX, REGISTRO, IDEIAS, dos módulos do `Agente/`, do `INDICE.md`, do `EMAIL-CURADORIA.md` e **das fichas**, com retenção pelo `backup_expiry_days` que já existia e poda pelo caminho da `sanitize`. A lista **compõe** `authorial_relative_paths()` em vez de duplicá-la, e as fichas entram por **regra**, não por nome congelado. O snapshot roda no `prumo seed` **e** no `prumo briefing` — são rotas independentes, e é a do `seed` que o Cowork usa (#216), o host onde o incidente aconteceu. Nunca levanta: falha de I/O é reportada e o ritual segue.
+- **Alerta de encolhimento por classe de vigilância (#262)** — no momento do snapshot, cada curado é comparado com a cópia anterior e o encolhimento além de `curated_shrink_alert_pct` (default 40) é **reportado nominalmente**, com os dois tamanhos e o caminho da cópia de onde restaurar. Reporta, não barra: nesse ponto a escrita já aconteceu, e o produto não tem gancho na ferramenta de escrita do agente hospedeiro — prometer bloqueio seria promessa que ele não pode cumprir. Para não virar ruído que ensina a ignorar alarme, a vigilância é por **natureza do arquivo**: `PAUTA`/`INBOX`/`REGISTRO`/`IDEIAS` são **de fluxo** (existem pra ser drenados — a rotação da faxina encolhe por contrato) e não alarmam; `PROJETOS.md` é **híbrido** e mede só fora dos blocos `prumo:pulso`, que o `projetos --sync` reescreve por desenho (#201); o resto é **acumulativo** e alarma.
+
+### Changed
+- **`curated_shrink_alert_pct` entra nos thresholds da faxina (#262)** — nono threshold, na mesma disciplina da #258: fonte única em `faxina_thresholds.py`, paridade travada por teste contra a tabela do `faxina-thresholds.md`, override do usuário em `Prumo/Custom/rules/` pelo vocabulário controlado.
+
 ## [5.73.0] - 2026-07-28
 
 ### Fixed
