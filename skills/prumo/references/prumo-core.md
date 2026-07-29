@@ -1,6 +1,6 @@
 # Prumo Core — Motor do sistema
 
-> **prumo_version: 5.77.0**
+> **prumo_version: 5.78.0**
 >
 > Núcleo estável do Prumo. Define regras, guardrails e localização dos módulos canônicos.
 > Procedimento detalhado não mora aqui.
@@ -252,27 +252,11 @@ Ler e seguir:
 
 - `.prumo/skills/prumo/references/modules/briefing-procedure.md`
 
-Esse módulo cobre:
-
-- Gmail MCP e Calendar MCP como fonte primária de email e calendário
-- curadoria em camadas (canal prioritário, emails diretos, roteamento de conteúdo)
-- numeração sequencial única entre seções
-- janela temporal de 24h para busca de emails novos
-
 ### Inbox processing
 
 Ler e seguir:
 
 - `.prumo/skills/prumo/references/modules/inbox-processing.md`
-
-Esse módulo cobre:
-
-- `Responder`, `Ver`, `Sem ação`
-- `P1/P2/P3`
-- `_preview-index.json`
-- `inbox-preview.html`
-- `_processed.json`
-- `| cobrar: DD/MM`
 
 ### Revisão semanal
 
@@ -285,13 +269,6 @@ Ler e seguir:
 Ler e seguir:
 
 - `.prumo/skills/prumo/references/modules/version-update.md`
-
-Esse módulo é a fonte canônica para:
-
-- transporte seguro de aplicação
-- Nunca usar WebFetch para aplicar update
-- fallback que não bloqueia o briefing quando o runtime não consegue baixar o core bruto com segurança
-- aviso como "nova versão do motor" quando não houver changelog local seguro
 
 ### Multiagente
 
@@ -335,8 +312,8 @@ Histórico completo de versão vive em `CHANGELOG.md`.
 
 Versão atual deste core:
 
-- `5.77.0`
+- `5.78.0`
 
 ---
 
-*Prumo Core v5.77.0 — https://github.com/tharso/prumo*
+*Prumo Core v5.78.0 — https://github.com/tharso/prumo*
