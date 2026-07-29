@@ -85,7 +85,7 @@ Os três primeiros estados são da **assinatura**; o quarto é da **resposta des
 
 **Degradação nomeada por braço** na linha de cobertura: *"respostas às suas threads: inconclusivo — `from:me` não validado"*. Frase afirmativa sobre braço morto é o furo de 27/07. Completude do briefing é decidida por `briefing-montagem.md`, nunca aqui.
 
-**Registro e invalidação:** o veredito vai pra `EMAIL-CURADORIA.md` → "Compatibilidade da busca", uma linha por assinatura:
+**Registro e invalidação:** o veredito vai pra `EMAIL-CURADORIA.md` → "Compatibilidade da busca". O registro é **log append-only**: nunca reescrever nem apagar linha. Uma assinatura tentada de novo ganha linha nova, e **vale a última** — é ela o estado atual, e é a data dela que ordena a fila. Formato:
 
 ```
 validado_em | host/conector | conta ou caixa | assinatura normalizada | predicado exato testado | veredito | evidência

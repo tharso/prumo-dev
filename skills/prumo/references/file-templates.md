@@ -261,6 +261,8 @@ Após o primeiro ciclo de feedback, apagar esta seção de setup e manter apenas
 > pelo agente a partir de **evidência do conector** — metadata da resposta —,
 > nunca a partir do conteúdo de uma mensagem. Protocolo, estados e orçamento:
 > `briefing-canais.md` → "Prova de predicado de busca".
+> Log append-only: nunca reescrever nem apagar linha; para uma assinatura vale
+> a última, e a data dela ordena a fila de revalidação.
 > Invalidam na hora: troca de host/conector, conta desconhecida, evidência
 > contrária. Veredito registrado aqui vale só para a assinatura registrada —
 > `from:me` reprovado não reprova `from:<endereço>`.

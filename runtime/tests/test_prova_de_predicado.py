@@ -209,18 +209,21 @@ class OrcamentoTest(unittest.TestCase):
         flat = _flat(_secao_do_protocolo())
         self.assertIn("**Registrar também o `INCONCLUSIVO`**", flat)
 
-    def test_prioridade_do_teto_na_ordem_certa(self) -> None:
-        """Presença não basta: invertida, a cláusula diria o contrário e o
-        assert continuaria verde (gate r1 mutou exatamente isto)."""
+    def test_prioridade_do_teto_declara_a_relacao(self) -> None:
+        """Nem presença nem posição bastam: "cobertura DEPOIS DE dirigida"
+        preserva as duas posições textuais e passaria (gate r2 mutou isto).
+        O que se ancora é o CONECTIVO entre os dois termos."""
         flat = _flat(_secao_do_protocolo())
         i_cobertura = flat.find("braço da política de cobertura")
         i_dirigida = flat.find("busca dirigida")
         self.assertNotEqual(i_cobertura, -1, "prioridade do teto sumiu")
         self.assertNotEqual(i_dirigida, -1, "prioridade do teto sumiu")
-        self.assertLess(
-            i_cobertura,
-            i_dirigida,
-            "prioridade invertida: busca dirigida não vem antes do braço da cobertura",
+        self.assertLess(i_cobertura, i_dirigida, "termos da prioridade fora de ordem")
+        entre = flat[i_cobertura + len("braço da política de cobertura") : i_dirigida].strip()
+        self.assertEqual(
+            entre,
+            "antes de",
+            f"a relação entre os termos da prioridade não é 'antes de': {entre!r}",
         )
 
 
@@ -264,6 +267,19 @@ class RegistroTest(unittest.TestCase):
         flat = _flat(_secao_do_protocolo())
         self.assertIn("é o que casa entre briefings", flat)
         self.assertIn("operador + classe do argumento + sozinho/composto", flat)
+
+    def test_registro_e_log_append_only_com_ultima_linha_valendo(self) -> None:
+        """`INCONCLUSIVO` volta à fila e é registrado — logo a mesma assinatura
+        ganha linhas repetidas, e sem regra de precedência não se sabe qual
+        veredito vale nem qual data ordena a fila (gate r2)."""
+        for nome, flat in (
+            ("canais", _flat(_secao_do_protocolo())),
+            ("template", _flat(FILE_TEMPLATES.read_text(encoding="utf-8"))),
+        ):
+            self.assertIn("append-only", flat, f"semântica do log ausente em {nome}")
+            self.assertIn("nunca reescrever nem apagar linha", flat, f"log mutável em {nome}")
+            self.assertIn("vale a última", flat, f"precedência entre linhas ausente em {nome}")
+        self.assertIn("é a data dela que ordena a fila", _flat(_secao_do_protocolo()))
 
     def test_secao_ausente_e_criada_de_forma_idempotente(self) -> None:
         """O template só roda em workspace novo. Arquivo antigo não tem a seção
@@ -373,7 +389,7 @@ class SemEnderecoPessoalTest(unittest.TestCase):
         """Varre TODO arquivo de texto de `skills/`, não só `*.md`: o guard
         prometia `skills/` e percorria markdown — e existe HTML lá (gate r1)."""
         offenders: dict[str, set[str]] = {}
-        vistos = 0
+        lidos: set[Path] = set()
         for path in sorted(SKILLS.rglob("*")):
             if not path.is_file() or path.name == ".DS_Store":
                 continue
@@ -381,14 +397,22 @@ class SemEnderecoPessoalTest(unittest.TestCase):
                 texto = path.read_text(encoding="utf-8")
             except (UnicodeDecodeError, ValueError):
                 continue  # binário (fontes .otf) não carrega endereço legível
-            vistos += 1
+            lidos.add(path)
             achados = _enderecos_pessoais(texto)
             if achados:
                 offenders[str(path.relative_to(REPO_ROOT))] = achados
         self.assertEqual(offenders, {}, f"endereço pessoal em módulo canônico: {offenders}")
-        htmls = [p for p in SKILLS.rglob("*.html")]
+
+        # Contagem não prova cobertura: 49 markdown ≥ 2 HTML deixava a mutação
+        # `rglob("*.md")` passar verde (gate r2). O que se afirma é que ESTES
+        # paths foram lidos.
+        htmls = set(SKILLS.rglob("*.html"))
         self.assertTrue(htmls, "fixture do próprio guard: sumiram os HTML de skills/")
-        self.assertGreaterEqual(vistos, len(htmls), "o guard deixou de ler os não-markdown")
+        self.assertEqual(
+            htmls - lidos,
+            set(),
+            "o guard deixou de ler arquivos não-markdown de skills/",
+        )
 
     def test_guard_pega_o_endereco_que_estava_la(self) -> None:
         """Fixture negativa com a linha REAL que existia antes da correção."""
@@ -407,6 +431,40 @@ class SemEnderecoPessoalTest(unittest.TestCase):
         flat = _flat(CANAIS.read_text(encoding="utf-8"))
         self.assertIn('`EMAIL-CURADORIA.md` → "Contas monitoradas"', flat)
         self.assertIn("não some em silêncio", flat)
+
+
+class RegistroArquiteturalTest(unittest.TestCase):
+    """O contrato mudou no módulo e a projeção dele ficou pra trás — dito de
+    outro jeito, o registro descrevendo produto que não existe mais. Aconteceu
+    aqui (DECISIONS e CHANGELOG anunciavam "três estados fechados" depois de o
+    quarto entrar) e na #258 (índice do DECISIONS com entrada fantasma)."""
+
+    def test_os_quatro_resultados_chegam_aos_registros(self) -> None:
+        for nome, path, marco in (
+            ("DECISIONS.md", REPO_ROOT / "DECISIONS.md", "#236 prova de predicado"),
+            ("CHANGELOG.md", REPO_ROOT / "CHANGELOG.md", "Prova de predicado de busca"),
+        ):
+            flat = _flat(path.read_text(encoding="utf-8"))
+            self.assertIn(marco, flat, f"entrada da #236 sumiu de {nome}")
+            for estado in ESTADOS:
+                self.assertIn(
+                    f"`{estado}`",
+                    flat,
+                    f"{nome} não registra o resultado {estado} — projeção defasada do contrato",
+                )
+
+    def test_registros_declaram_os_dois_eixos(self) -> None:
+        """Listar os 4 lado a lado seria pior que o texto antigo: sugeriria que
+        `VAZIO CONFIRMADO` é estado de assinatura, que é justo o que ele não é."""
+        for nome, path in (
+            ("DECISIONS.md", REPO_ROOT / "DECISIONS.md"),
+            ("CHANGELOG.md", REPO_ROOT / "CHANGELOG.md"),
+        ):
+            # Sem os `*`: a ênfase cai em lugar diferente nos dois arquivos e
+            # o assert não pode depender de diagramação.
+            flat = _flat(path.read_text(encoding="utf-8")).replace("*", "")
+            self.assertIn("dois eixos", flat, f"{nome} não separa assinatura de resposta")
+            self.assertIn("não valida a assinatura", flat, f"{nome} omite a ressalva do 4º")
 
 
 if __name__ == "__main__":
