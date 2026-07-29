@@ -242,5 +242,31 @@ class AplicacaoDeVerdadeTest(BaseTest):
         self.assertTrue(isca.exists(), "a sanitize encostou na quarentena do usuário")
 
 
+class PainelDoFimTest(BaseTest):
+    """O JSON dizia `rascunho_old=1` e `suggest.sanitize=true` enquanto o
+    painel mostrava tudo zero e caía no genérico "poeira técnica acumulada"
+    (Codex, r1)."""
+
+    def _texto(self) -> str:
+        from prumo_runtime.commands.fim import _render_text
+        return _render_text(accumulation_signals(self.ws, today=HOJE))
+
+    def test_painel_conta_o_rascunho(self) -> None:
+        self._arquivo("velho.md")
+        self.assertIn("rascunhos do agente", self._texto())
+
+    def test_recomendacao_cita_o_rascunho_quando_e_o_unico_sinal(self) -> None:
+        """Citar só o que tem contagem > 0 é contrato do #179 PR10 — com o
+        rascunho fora da lista, a recomendação virava genérica."""
+        self._arquivo("velho.md")
+        texto = self._texto()
+        self.assertIn("1 rascunhos do agente", texto)
+
+    def test_painel_limpo_mostra_zero_sem_inventar(self) -> None:
+        """Negativa: sem rascunho, o campo aparece zerado e nada é sugerido."""
+        texto = self._texto()
+        self.assertIn("rascunhos do agente (>14d): 0", texto)
+
+
 if __name__ == "__main__":
     unittest.main()
