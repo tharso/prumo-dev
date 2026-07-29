@@ -1441,7 +1441,33 @@ class TetoDoAcervoTest(BaseTest):
         """
         alvo = self._acervo() / "cresceu-no-meio.md"
         alvo.write_bytes(b"z" * (curated.MAX_FILE_BYTES * 3))
-        self.assertIsNone(curated._read_capped(alvo), "leu além do teto")
+
+        pedidos: list[int] = []
+        real_open = Path.open
+
+        class Espiao:
+            def __init__(self, fh):
+                self._fh = fh
+
+            def read(self, n=-1):
+                pedidos.append(n)
+                return self._fh.read(n)
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *exc):
+                return self._fh.__exit__(*exc)
+
+        with patch.object(curated.Path, "open", lambda p, *a, **kw: Espiao(real_open(p, *a, **kw))):
+            self.assertIsNone(curated._read_capped(alvo), "leu além do teto")
+
+        self.assertEqual(
+            pedidos,
+            [curated.MAX_FILE_BYTES + 1],
+            f"a leitura não foi limitada — pediu {pedidos}. Devolver None depois de "
+            "ler tudo não é teto, é descarte caro.",
+        )
 
         no_limite = self._acervo() / "no-limite.md"
         no_limite.write_bytes(b"y" * curated.MAX_FILE_BYTES)
