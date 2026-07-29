@@ -132,9 +132,8 @@ def render_files(config: WorkspaceConfig) -> dict[str, str]:
     core_relative = paths.relative(paths.core)
     state_relative = paths.relative(paths.state_root) + "/"
 
-    # Dispatch dinâmico de skills (#90): gerado a partir do filesystem,
-    # injetado nos wrappers pra que qualquer host descubra skills sem
-    # depender de plugin registry.
+    # Dispatch dinâmico de skills (#90): do filesystem, injetado nos wrappers
+    # pra que qualquer host descubra skills sem plugin registry.
     skills_dispatch = build_skills_dispatch_block(config.workspace)
 
     rendered: dict[str, str] = {}
@@ -148,10 +147,9 @@ def render_files(config: WorkspaceConfig) -> dict[str, str]:
         )
     else:
         rendered["AGENT.md"] = templates.render_agent_md(
-            user_name=config.user_name,
-            agent_name=config.agent_name,
-            timezone_name=config.timezone_name,
-            briefing_time=config.briefing_time,
+            user_name=config.user_name, agent_name=config.agent_name,
+            timezone_name=config.timezone_name, briefing_time=config.briefing_time,
+            nested_layout=False,
         )
     return {
         **rendered,
@@ -181,7 +179,8 @@ def render_files(config: WorkspaceConfig) -> dict[str, str]:
             briefing_time=config.briefing_time,
             core_path=core_relative,
             state_path=state_relative,
-            skills_path=paths.relative(paths.skills_root) + "/" if paths.nested_layout else None,
+            skills_path=(paths.relative(paths.skills_root) + "/") if paths.nested_layout else None,
+            nested_layout=paths.nested_layout,
         ),
         paths.relative(paths.agente_root / "PERFIL.md"): templates.render_perfil_md(),
         paths.relative(paths.agente_root / "MAPA-AUTORAL.md"): templates.render_mapa_autoral_md(),

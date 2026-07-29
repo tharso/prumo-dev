@@ -199,6 +199,7 @@ def render_agent_md(
     state_path: str = "_state/",
     skills_path: str | None = None,
     core_text: str | None = None,
+    nested_layout: bool | None = None,
 ) -> str:
     fallback_section = ""
     if skills_path:
@@ -254,8 +255,29 @@ def render_agent_md(
     ])
     workspace_map = "\n".join(map_items)
 
+    # Marcador de arquivo gerado (#279). O `repair` MOVE este arquivo pra
+    # backup e regenera do zero a cada bump de versão, enquanto os três
+    # wrappers da raiz — declaradamente descartáveis — são atualizados por
+    # mescla que preserva bloco custom. A assimetria estava invertida na
+    # superfície: o arquivo com mais chance de alguém querer ajustar era o
+    # único sem aviso. A saída de emergência (`MAPA-AUTORAL.md`, que sobrevive
+    # ao repair, #241) já existia; faltava a placa apontando pra ela.
+    # Layout resolvido UMA vez e usado em tudo que depende dele — marcador e
+    # perímetro. Antes cada ponto refazia `core_path.startswith(".prumo/")`,
+    # bússola improvisada que acerta nos fluxos reais e erra em combinação
+    # híbrida de parâmetros avulsos; pior, podia divergir DENTRO do mesmo
+    # documento — topo apontando `Prumo/Agente/...` e perímetro mandando ler
+    # `Agente/...` (Codex, r1 e r2). O fallback sobrevive só pra caller que
+    # não declara layout.
+    if nested_layout is None:
+        nested_layout = core_path.startswith(".prumo/")
+    autoral_map = "Prumo/Agente/MAPA-AUTORAL.md" if nested_layout else "Agente/MAPA-AUTORAL.md"
+
     return f"""# AGENT.md
 
+> **Arquivo gerado** por `prumo repair` — não edite à mão, o repair sobrescreve.
+> Caminhos seus vão em `{autoral_map}`, que sobrevive ao repair.
+>
 > Arquivo canônico de navegação do workspace de {user_name}.
 > Se você é um agente, comece aqui.
 
@@ -282,7 +304,7 @@ Fora disso, abertura não abre mais nada. A saudação vem proativa, com 2-4 op�
 
 {workspace_map}
 
-{_render_reading_perimeter(map_reference="do mapa acima", discovery_paths="`Prumo/` e `.prumo/`" if core_path.startswith(".prumo/") else None, autoral_map="Prumo/Agente/MAPA-AUTORAL.md" if core_path.startswith(".prumo/") else "Agente/MAPA-AUTORAL.md")}
+{_render_reading_perimeter(map_reference="do mapa acima", discovery_paths="`Prumo/` e `.prumo/`" if nested_layout else None, autoral_map=autoral_map)}
 
 ## Regras rápidas
 

@@ -22,6 +22,9 @@ INÍCIO DO TEMPLATE:
 
 # AGENT.md
 
+> **Arquivo gerado** por `prumo repair` — não edite à mão, o repair sobrescreve.
+> Caminhos seus vão em `Prumo/Agente/MAPA-AUTORAL.md`, que sobrevive ao repair.
+>
 > Arquivo canônico de navegação do workspace de {{USER_NAME}}.
 > Se você é um agente, comece aqui.
 
