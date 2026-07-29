@@ -57,6 +57,14 @@ from datetime import date, datetime
 from pathlib import Path
 
 from prumo_runtime import faxina_thresholds
+from prumo_runtime.scan_primitives import (
+    _age_days,
+    _clean_chain,
+    _mtime_ns,
+    _rel,
+    _usable_root,
+    _walk_tree,
+)
 from prumo_runtime.backup import iter_backup_roots
 
 SCHEMA_VERSION = "prumo_sanitize_report.v1"
@@ -96,39 +104,6 @@ class Thresholds:
         for name in ("ephemeral_days", "backup_expiry_days", "cache_days"):
             if getattr(self, name) < 0:
                 raise SanitizeError(f"threshold negativo: {name}={getattr(self, name)}")
-
-
-def _rel(workspace: Path, path: Path) -> str:
-    return path.relative_to(workspace).as_posix()
-
-
-def _age_days(path: Path, today: date) -> int:
-    return (today - date.fromtimestamp(path.lstat().st_mtime)).days
-
-
-def _mtime_ns(path: Path) -> int:
-    return path.lstat().st_mtime_ns
-
-
-def _walk_tree(root: Path) -> tuple[list[Path], list[Path]]:
-    """(dirs, files) sob `root`, ordem determinística, symlinks NUNCA
-    seguidos nem listados (`os.walk(followlinks=False)` + filtro)."""
-    dirs: list[Path] = []
-    files: list[Path] = []
-    for dirpath, dirnames, filenames in os.walk(root, followlinks=False):
-        base = Path(dirpath)
-        for name in sorted(dirnames):
-            child = base / name
-            if child.is_symlink():
-                dirnames.remove(name)
-                continue
-            dirs.append(child)
-        dirnames.sort()
-        for name in sorted(filenames):
-            child = base / name
-            if not child.is_symlink():
-                files.append(child)
-    return dirs, files
 
 
 def _tree_has_symlink(path: Path) -> bool:
@@ -183,33 +158,7 @@ def _under_backup_root(workspace: Path, path: Path) -> bool:
     )
 
 
-def _clean_chain(workspace: Path, path: Path) -> bool:
-    """True se nem `path` nem nenhum ancestral até o workspace é symlink.
-
-    Toda operação (listar no plano, ler, hashear, mover, apagar) exige cadeia
-    limpa: um diretório symlinkado no meio do caminho redireciona a operação
-    pra fora do território real — recusar é mais barato que auditar.
-    """
-    try:
-        rel = path.relative_to(workspace)
-    except ValueError:
-        return False
-    current = workspace
-    for part in rel.parts:
-        current = current / part
-        if current.is_symlink():
-            return False
-    return True
-
-
 # --- Detectores puros (reusados pelo /fim, read-only) -----------------------
-
-
-def _usable_root(workspace: Path, root: Path) -> bool:
-    """Root só é enumerável se existe, é diretório real e tem cadeia limpa —
-    validado ANTES de qualquer is_dir/walk (root symlinkado não é nem
-    atravessado pra descobrir filhos)."""
-    return _clean_chain(workspace, root) and not root.is_symlink() and root.is_dir()
 
 
 def iter_handover_files(workspace: Path) -> list[Path]:
