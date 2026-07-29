@@ -1278,5 +1278,53 @@ class RelatorioNaoMensuravelTest(BaseTest):
         self.assertNotIn("fora da medição", texto)
 
 
+
+class HistoricoLongoTest(BaseTest):
+    """Limitar a busca aos N carimbos mais recentes só adiava o esquecimento:
+    com o arquivo grande por N rituais seguidos, a cópia boa continuava retida
+    em disco e fora do alcance (Codex, rodada 8)."""
+
+    def _ficha(self) -> Path:
+        return self.ws / "Prumo" / "Referencias" / "transcricao.md"
+
+    def test_regua_atravessa_mais_de_oito_buracos(self) -> None:
+        self._ficha().write_text("a" * 2000, encoding="utf-8")
+        self.snapshot("t01")                                  # única cópia mensurável
+
+        self._ficha().write_text("a" * (curated.MAX_FILE_BYTES + 10), encoding="utf-8")
+        for n in range(2, 14):                                # 12 carimbos com o buraco
+            self.indice().write_text(f"volta {n}\n" * 40, encoding="utf-8")
+            self.snapshot(f"t{n:02d}")
+
+        self._ficha().write_text("a" * 100, encoding="utf-8")  # volta mutilado
+        report = self.snapshot("t99")
+
+        alerta = next(
+            (a for a in report["alerts"] if a["path"].endswith("transcricao.md")), None
+        )
+        self.assertIsNotNone(alerta, "a régua desenvolveu amnésia depois de 8 carimbos")
+        self.assertEqual(alerta["before_bytes"], 2000)
+        self.assertIn("t01", alerta["previous_copy"])
+
+    def test_caso_comum_le_um_carimbo_so(self) -> None:
+        """Negativa de custo: sem buraco, a caminhada para no primeiro."""
+        self.indice().write_text("a" * 1000, encoding="utf-8")
+        for n in range(1, 6):
+            self.indice().write_text(f"volta {n}\n" * 40, encoding="utf-8")
+            self.snapshot(f"t{n}")
+
+        lidos: list[str] = []
+        real = curated._validate_candidate
+
+        def espiao(stamp_dir, manifest):
+            lidos.append(stamp_dir.name)
+            return real(stamp_dir, manifest)
+
+        with patch.object(curated, "_validate_candidate", espiao):
+            self.indice().write_text("a" * 100, encoding="utf-8")
+            self.snapshot("t9")
+
+        self.assertEqual(len(lidos), 1, f"leu {len(lidos)} carimbos: {lidos}")
+
 if __name__ == "__main__":
     unittest.main()

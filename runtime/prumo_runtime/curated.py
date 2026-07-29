@@ -312,20 +312,25 @@ def _validate_candidate(stamp_dir: Path, manifest: dict) -> tuple[dict[str, byte
 
 
 def _collect_baseline(
-    scope_root: Path, degradacoes: list[str], limite: int = 8
+    scope_root: Path, degradacoes: list[str]
 ) -> tuple[dict[str, tuple[bytes, Path]], Path | None, dict | None]:
-    """Régua POR ARQUIVO: caminha os carimbos completos do mais novo pro mais
-    velho e fica com a primeira ocorrência de cada path.
+    """Régua POR ARQUIVO: para cada path, a cópia mensurável mais recente.
 
-    Um único carimbo como régua tinha um buraco: se o arquivo passou do teto
-    de tamanho num dia, ele sai do inventário daquele carimbo — e o carimbo
-    continua completo, porque oversized é estado conhecido, não falha. No dia
-    seguinte, com o arquivo mutilado de volta abaixo do teto, a comparação
-    achava que ele não tinha história e ficava calada, jogando fora a cópia
-    mensurável de antes de ontem (Codex, 262J-1).
+    Dois buracos que isto fecha. Um carimbo só como régua não bastava: arquivo
+    que passa do teto sai do inventário daquele carimbo, e o carimbo continua
+    COMPLETO (oversized é estado conhecido, não falha) — no dia seguinte, com o
+    arquivo mutilado de volta abaixo do teto, ele parecia não ter história
+    (Codex, 262J-1). E limitar a busca aos N carimbos mais recentes só adiava o
+    mesmo esquecimento: com o arquivo grande por N rituais seguidos, a cópia
+    boa continuava retida em disco e fora do alcance (Codex, rodada 8).
 
-    Devolve também o carimbo mais novo válido e seu manifesto — é ele que
-    responde "mudou alguma coisa?" pro dedupe.
+    A caminhada percorre TODO o histórico retido, mas só paga leitura no
+    carimbo que contribui com algum path ainda pendente — no caso comum, o
+    primeiro. Manifesto é barato; cópia é que custa.
+
+    Devolve também o carimbo VÁLIDO mais novo e seu manifesto: é ele que
+    responde "mudou alguma coisa?" pro dedupe, porque dedupe compara com um
+    instante, não com o retrato composto.
     """
     try:
         if not scope_root.is_dir():
@@ -337,6 +342,7 @@ def _collect_baseline(
         degradacoes.append(f"backups/{SCOPE}: {exc}")
         return {}, None, None
 
+    # Manifestos primeiro: são baratos e dizem QUEM tem o quê.
     completos: list[tuple[datetime, Path, dict]] = []
     for stamp_dir in candidates:
         manifest = _manifest_of(stamp_dir)
@@ -347,11 +353,20 @@ def _collect_baseline(
             continue
         if manifest["complete"]:
             completos.append((_parse_instant(manifest["captured_at_utc"]), stamp_dir, manifest))
+    completos.sort(key=lambda c: c[0], reverse=True)
+
+    pendentes: set[str] = set()
+    for _, _, manifest in completos:
+        pendentes |= {str(v) for v in manifest["files"].values()}
 
     baseline: dict[str, tuple[bytes, Path]] = {}
     topo_stamp: Path | None = None
     topo_manifest: dict | None = None
-    for _, stamp_dir, manifest in sorted(completos, key=lambda c: c[0], reverse=True)[:limite]:
+    for _, stamp_dir, manifest in completos:
+        declara = {str(v) for v in manifest["files"].values()}
+        precisa_ler = topo_stamp is None or bool(declara & pendentes)
+        if not precisa_ler:
+            continue
         conteudo, problema = _validate_candidate(stamp_dir, manifest)
         if problema is not None:
             degradacoes.append(f"snapshot `{stamp_dir.name}`: {problema} — não serve de régua")
@@ -360,6 +375,8 @@ def _collect_baseline(
             topo_stamp, topo_manifest = stamp_dir, {**manifest, "_conteudo": conteudo}
         for rel, data in conteudo.items():
             baseline.setdefault(rel, (data, stamp_dir))
+        pendentes -= set(baseline)
+
     if candidates and topo_stamp is None:
         degradacoes.append(
             "nenhum snapshot completo no histórico — detecção de encolhimento indisponível"
