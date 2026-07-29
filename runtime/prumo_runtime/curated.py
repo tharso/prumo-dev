@@ -28,12 +28,15 @@ from pathlib import Path
 from prumo_runtime import faxina_thresholds
 from prumo_runtime.backup import iter_backup_roots
 from prumo_runtime.projetos import PULSO_BEGIN, PULSO_END
-from prumo_runtime.workspace_paths import workspace_paths
+from prumo_runtime.workspace_paths import is_legacy_flat_workspace, workspace_paths
 
 SCOPE = "curated"
 # Código de `skipped` do bloqueio por layout antigo (#268). É CÓDIGO, igual a
 # `sem-mudanca` — a frase pro usuário nasce no `render_report`.
 SKIPPED_LEGACY_FLAT = "layout-antigo"
+# Não-nested que também não é workspace legado: pula igual, mas SEM oferecer
+# migração — pasta comum não tem pra onde migrar.
+SKIPPED_NOT_NESTED = "nao-nested"
 MANIFEST_NAME = "_manifest.json"
 MANIFEST_SCHEMA = "prumo_curated_snapshot.v1"
 
@@ -589,7 +592,17 @@ def snapshot_curated(
             # normal) já mora aqui. Enfiar uma sentença fazia o renderer tratar
             # os dois igual e alarmar "snapshot não rodou — sem-mudanca" em
             # todo briefing nested sem alteração (Codex, r4).
-            report["skipped"] = SKIPPED_LEGACY_FLAT
+            #
+            # E o código distingue as duas ausências de nested: só workspace
+            # flat LEGÍTIMO ganha o convite pra migrar. Pasta comum não é flat
+            # legado, e oferecer `migrate` a ela seria mentira solene (Codex,
+            # r5). A trava vale pros dois — tirá-la ressuscitaria a escrita
+            # de `.prumo/` dentro de pasta qualquer.
+            report["skipped"] = (
+                SKIPPED_LEGACY_FLAT
+                if is_legacy_flat_workspace(workspace)
+                else SKIPPED_NOT_NESTED
+            )
             return report
         scope_root = workspace / ".prumo" / "backups" / SCOPE
 

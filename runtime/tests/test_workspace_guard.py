@@ -283,6 +283,20 @@ class EscritaNoFlatParaTests(unittest.TestCase):
             self.assertFalse((ws / ".prumo").exists())
             self.assertIn("migrate", render_report(report))
 
+    def test_pasta_comum_nao_ganha_convite_pra_migrar(self) -> None:
+        """Pasta que nunca foi workspace também não é nested, mas oferecer
+        `migrate` a ela seria mentira solene: não há de onde migrar. A trava
+        vale igual (senão volta a escrita de `.prumo/` em pasta qualquer), o
+        código é que distingue (Codex, r5)."""
+        from prumo_runtime import curated
+        from prumo_runtime.curated import render_report, snapshot_curated
+
+        with tempfile.TemporaryDirectory() as tmp:
+            report = snapshot_curated(Path(tmp))
+            self.assertEqual(report["skipped"], curated.SKIPPED_NOT_NESTED)
+            self.assertFalse((Path(tmp) / ".prumo").exists())
+            self.assertEqual(render_report(report), "")
+
     def test_dedupe_normal_nao_vira_alarme(self) -> None:
         """`sem-mudanca` é o dedupe saudável e mora no MESMO campo `skipped`.
         Tratá-lo como bloqueio fazia todo briefing nested sem alteração
