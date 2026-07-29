@@ -262,12 +262,13 @@ def render_agent_md(
     # superfície: o arquivo com mais chance de alguém querer ajustar era o
     # único sem aviso. A saída de emergência (`MAPA-AUTORAL.md`, que sobrevive
     # ao repair, #241) já existia; faltava a placa apontando pra ela.
-    # Layout explícito quando o caller sabe (os dois chamadores de produção
-    # sabem: `render_files` tem `paths.nested_layout`). O fallback por
-    # `core_path` é bússola improvisada — acerta nos fluxos reais, mas erra em
-    # combinação híbrida de parâmetros avulsos, ex.: `state_path` nested com
-    # `core_path` default (Codex, r1). Fica só pra caller de teste que não
-    # declara layout.
+    # Layout resolvido UMA vez e usado em tudo que depende dele — marcador e
+    # perímetro. Antes cada ponto refazia `core_path.startswith(".prumo/")`,
+    # bússola improvisada que acerta nos fluxos reais e erra em combinação
+    # híbrida de parâmetros avulsos; pior, podia divergir DENTRO do mesmo
+    # documento — topo apontando `Prumo/Agente/...` e perímetro mandando ler
+    # `Agente/...` (Codex, r1 e r2). O fallback sobrevive só pra caller que
+    # não declara layout.
     if nested_layout is None:
         nested_layout = core_path.startswith(".prumo/")
     autoral_map = "Prumo/Agente/MAPA-AUTORAL.md" if nested_layout else "Agente/MAPA-AUTORAL.md"
@@ -303,7 +304,7 @@ Fora disso, abertura não abre mais nada. A saudação vem proativa, com 2-4 op�
 
 {workspace_map}
 
-{_render_reading_perimeter(map_reference="do mapa acima", discovery_paths="`Prumo/` e `.prumo/`" if core_path.startswith(".prumo/") else None, autoral_map="Prumo/Agente/MAPA-AUTORAL.md" if core_path.startswith(".prumo/") else "Agente/MAPA-AUTORAL.md")}
+{_render_reading_perimeter(map_reference="do mapa acima", discovery_paths="`Prumo/` e `.prumo/`" if nested_layout else None, autoral_map=autoral_map)}
 
 ## Regras rápidas
 
