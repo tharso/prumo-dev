@@ -331,5 +331,31 @@ class ContratoDaSanitizeTest(unittest.TestCase):
         self.assertIn("inteiro", linha)
 
 
+class ArvoreInteiraFriaTest(BaseTest):
+    """"Árvore inteira fria" checava só os ARQUIVOS descendentes. Uma
+    reconstrução criada hoje com arquivos antigos dentro — um `mv` basta — era
+    considerada fria e saía inteira, tirando trabalho ativo do rascunho
+    (Codex, r3)."""
+
+    def test_diretorio_raiz_quente_segura_a_arvore(self) -> None:
+        self._arquivo("recon/velho.md")          # arquivo antigo
+        # o diretório em si é de agora (mtime não envelhecido)
+        self.assertEqual(self._familias(self._plano()).get("agente_rascunho", []), [])
+
+    def test_subdiretorio_quente_segura_a_arvore(self) -> None:
+        self._arquivo("recon/sub/velho.md")
+        self._envelhecer(self.rascunho / "recon")
+        # `recon/sub` continua com mtime de agora
+        self.assertEqual(self._familias(self._plano()).get("agente_rascunho", []), [])
+
+    def test_arvore_toda_fria_sai(self) -> None:
+        """Negativa: a exigência não pode travar o caso legítimo."""
+        self._arquivo("recon/sub/velho.md")
+        self._envelhecer(self.rascunho / "recon" / "sub")
+        self._envelhecer(self.rascunho / "recon")
+        familia = self._familias(self._plano()).get("agente_rascunho", [])
+        self.assertEqual(familia, [".prumo/state/rascunho/recon"])
+
+
 if __name__ == "__main__":
     unittest.main()

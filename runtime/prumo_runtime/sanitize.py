@@ -279,7 +279,12 @@ def iter_agente_rascunho(workspace: Path, today: date, ephemeral_days: int) -> l
             # backup dentro de backup. Fica onde está — o usuário resolve
             # (Codex, r2).
             continue
-        if arquivos and all(_age_days(f, today) > ephemeral_days for f in arquivos):
+        # TODA a árvore, não só os arquivos: o próprio filho e os
+        # subdiretórios também contam. Sem isso, uma reconstrução criada HOJE
+        # com arquivos antigos dentro (um `mv` basta) era considerada fria e
+        # saía inteira — tirando trabalho ativo do rascunho (Codex, r3).
+        tudo = [filho, *subdirs, *arquivos]
+        if arquivos and all(_age_days(x, today) > ephemeral_days for x in tudo):
             frios.append(filho)
     return frios
 
