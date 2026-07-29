@@ -31,6 +31,9 @@ from prumo_runtime.projetos import PULSO_BEGIN, PULSO_END
 from prumo_runtime.workspace_paths import workspace_paths
 
 SCOPE = "curated"
+# Código de `skipped` do bloqueio por layout antigo (#268). É CÓDIGO, igual a
+# `sem-mudanca` — a frase pro usuário nasce no `render_report`.
+SKIPPED_LEGACY_FLAT = "layout-antigo"
 MANIFEST_NAME = "_manifest.json"
 MANIFEST_SCHEMA = "prumo_curated_snapshot.v1"
 
@@ -582,11 +585,11 @@ def snapshot_curated(
             # misturaria os dois arranjos. A trava mora nesta função, e não nos
             # dois chamadores (`seed` e `briefing`), pra que qualquer ritual
             # futuro que peça snapshot já nasça protegido (#268).
-            report["skipped"] = (
-                "layout antigo (flat): o snapshot gravaria em `.prumo/backups/` e "
-                "criaria um `.prumo/` dentro do workspace. Rode `prumo migrate` "
-                "pra ganhar a cópia de segurança dos arquivos curados."
-            )
+            # `skipped` carrega CÓDIGO, não frase: `sem-mudanca` (o dedupe
+            # normal) já mora aqui. Enfiar uma sentença fazia o renderer tratar
+            # os dois igual e alarmar "snapshot não rodou — sem-mudanca" em
+            # todo briefing nested sem alteração (Codex, r4).
+            report["skipped"] = SKIPPED_LEGACY_FLAT
             return report
         scope_root = workspace / ".prumo" / "backups" / SCOPE
 
@@ -678,11 +681,16 @@ def render_report(report: dict) -> str:
     NÃO ganharam cópia, o pior momento pra ficar calado (Codex, 262D-5).
     """
     linhas: list[str] = []
-    # `skipped` precisa CHEGAR ao usuário: no modo texto o snapshot era pulado
-    # em silêncio, e a função não mentia — o porta-voz é que engolia o bilhete
-    # (Codex, r3). Quem não ganhou cópia de segurança tem que saber disso.
-    if report.get("skipped"):
-        linhas.append(f"[curado] snapshot não rodou — {report['skipped']}")
+    # Só o bloqueio por layout vira linha: quem não ganhou cópia de segurança
+    # tem que saber (Codex, r3). `sem-mudanca` NÃO entra — é o dedupe normal,
+    # e alarmá-lo transformaria uma otimização saudável em aviso recorrente
+    # em todo briefing sem alteração (Codex, r4).
+    if report.get("skipped") == SKIPPED_LEGACY_FLAT:
+        linhas.append(
+            "[curado] snapshot não rodou — workspace no layout antigo (flat): a cópia "
+            "gravaria em `.prumo/backups/` e criaria um `.prumo/` dentro dele. Rode "
+            "`prumo migrate` pra ganhar a cópia de segurança dos arquivos curados."
+        )
     graves = [
         a for a in report.get("alerts", [])
         if a.get("state") not in {ARCHIVED, UNMEASURABLE}

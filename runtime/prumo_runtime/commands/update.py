@@ -381,10 +381,12 @@ def workspace_core_status(workspace: Path, remote_version: str | None) -> dict |
     except Exception:
         core_v = None
     if not core_v:
-        # Dict com versão vazia fazia a saída imprimir `Core do workspace: n/d
-        # (em dia)` — ausência virando saúde por decreto (Codex, r1).
+        # Versão vazia imprimia `Core do workspace: n/d (em dia)` — ausência virando saúde (Codex, r1).
         return None
     return {
+        # No flat a ação é `migrate`, nunca `repair` — sem esta marca o
+        # `--check` passaria a recomendar o híbrido (Codex, r4).
+        "workspace_layout_legacy_flat": is_legacy_flat_workspace(workspace),
         "workspace_core_version": core_v,
         "workspace_core_needs_update": bool(
             core_v
@@ -817,10 +819,9 @@ def _emit(payload: dict, output_format: str, exit_code: int = 0) -> int:
     if "workspace_core_version" in payload:
         core_v = payload["workspace_core_version"] or "n/d"
         if payload.get("workspace_core_needs_update"):
-            print(
-                f"⚠ Core do workspace: {core_v} — atrás da pública. Rode "
-                "`prumo repair --workspace .` após atualizar o runtime."
-            )
+            flat = payload.get("workspace_layout_legacy_flat")
+            acao = "`prumo migrate --workspace .` (layout antigo: o repair criaria um híbrido)" if flat else "`prumo repair --workspace .` após atualizar o runtime"
+            print(f"⚠ Core do workspace: {core_v} — atrás da pública. Rode {acao}.")
         else:
             print(f"Core do workspace: {core_v} (em dia)")
 

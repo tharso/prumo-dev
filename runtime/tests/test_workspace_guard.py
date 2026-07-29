@@ -273,15 +273,23 @@ class EscritaNoFlatParaTests(unittest.TestCase):
         chamam (`seed` e `briefing`). Sem teste próprio, removê-la deixaria a
         suíte verde (Codex, r3). E o aviso tem que CHEGAR no modo texto: no
         JSON aparecia e no texto o snapshot era pulado em silêncio."""
+        from prumo_runtime import curated
         from prumo_runtime.curated import render_report, snapshot_curated
 
         with tempfile.TemporaryDirectory() as tmp:
             ws = _flat_workspace(Path(tmp))
             report = snapshot_curated(ws)
-            self.assertIsNotNone(report["skipped"], "o snapshot gravaria dentro de um flat")
-            self.assertIn("migrate", report["skipped"])
+            self.assertEqual(report["skipped"], curated.SKIPPED_LEGACY_FLAT)
             self.assertFalse((ws / ".prumo").exists())
-            self.assertIn("snapshot não rodou", render_report(report))
+            self.assertIn("migrate", render_report(report))
+
+    def test_dedupe_normal_nao_vira_alarme(self) -> None:
+        """`sem-mudanca` é o dedupe saudável e mora no MESMO campo `skipped`.
+        Tratá-lo como bloqueio fazia todo briefing nested sem alteração
+        imprimir "snapshot não rodou — sem-mudanca" (Codex, r4)."""
+        from prumo_runtime.curated import render_report
+
+        self.assertEqual(render_report({"skipped": "sem-mudanca"}), "")
 
     def test_snapshot_dos_curados_continua_rodando_no_nested(self) -> None:
         from prumo_runtime.curated import snapshot_curated
