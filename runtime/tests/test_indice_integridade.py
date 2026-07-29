@@ -369,12 +369,31 @@ class FonteIndisponivelTest(BaseTest):
         self.assertFalse(r["fonte_completa"])
 
     def test_falha_de_listagem_bloqueia(self) -> None:
+        """`iterdir`, não `glob`: o glob engole erro POR ENTRADA, então uma
+        falha real de listagem passaria como pasta vazia — e o mock em `glob`
+        nem reproduzia o caso (Codex, r2)."""
         from unittest.mock import patch
         self.escrever(_tabela([1]) + "\n<!-- proximo-id: 2 -->\n")
-        with patch.object(Path, "glob", side_effect=OSError("boom")):
+        with patch.object(Path, "iterdir", side_effect=PermissionError("sem permissão")):
             r = self.avaliar()
         self.assertEqual(r["decisao"], indice_integridade.BLOQUEAR)
         self.assertFalse(r["fonte_completa"])
+
+    def test_indice_ausente_com_fichas_bloqueia(self) -> None:
+        """Índice sumido COM fichas em disco é a forma mais GRAVE do
+        incidente. Reindexar aqui recriaria o catálogo com IDs novos e
+        descrições derivadas — o reflexo que a #261 existe pra matar."""
+        self.fichas([1, 2])
+        r = self.avaliar()
+        self.assertEqual(r["decisao"], indice_integridade.BLOQUEAR)
+        self.assertFalse(r["fonte_completa"])
+        self.assertIn("ausente", " ".join(r["razoes"]))
+
+    def test_workspace_novo_sem_indice_e_sem_fichas_esta_ok(self) -> None:
+        """Negativa: pasta vazia é começo, não perda."""
+        r = self.avaliar()
+        self.assertEqual(r["decisao"], indice_integridade.OK)
+        self.assertTrue(r["fonte_completa"])
 
 
 class ConsumoNoBriefingTest(unittest.TestCase):
@@ -466,6 +485,24 @@ class FrescorDaSementeTest(unittest.TestCase):
         seria considerada fresca."""
         (self.paths.referencias_root / "artigo.md").write_text("x", encoding="utf-8")
         self.assertEqual(self._captura(), self._captura())
+
+
+class ParidadeDoTextoTest(unittest.TestCase):
+    """Sem runtime, o texto É o algoritmo. Comparar a contagem crua com um
+    percentual bloquearia 60 lacunas em 200 slots (30% real) só porque
+    `60 >= 50` — unidades diferentes na mesma comparação (Codex, r2)."""
+
+    def setUp(self) -> None:
+        raiz = Path(__file__).resolve().parents[2]
+        self.faxina = (raiz / "skills" / "prumo" / "references" / "modules"
+                       / "faxina.md").read_text(encoding="utf-8")
+
+    def test_o_texto_compara_taxa_e_nao_contagem(self) -> None:
+        self.assertIn("lacunas × 100 ≥ referencias_id_gap_alert_pct × slots", self.faxina)
+        self.assertNotIn("lacunas ≥ referencias_id_gap_alert_pct", self.faxina)
+
+    def test_o_texto_declara_a_definicao_de_slots(self) -> None:
+        self.assertIn("slots = N-1", self.faxina)
 
 
 if __name__ == "__main__":

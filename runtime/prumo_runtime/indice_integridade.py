@@ -125,7 +125,11 @@ def fichas_sem_entrada(referencias_root: Path, texto: str) -> list[str] | None:
     indexados = arquivos_indexados(texto)
     faltando: list[str] = []
     try:
-        candidatos = sorted(referencias_root.glob("*.md"))
+        # `iterdir`, não `glob`: o glob engole erro por entrada e a falha de
+        # listagem passaria como pasta vazia (Codex, r2).
+        candidatos = sorted(
+            p for p in referencias_root.iterdir() if p.suffix.lower() == ".md"
+        )
     except OSError:
         return None
     for path in candidatos:
@@ -163,8 +167,9 @@ def avaliar(
         "decisao": OK,
         "razoes": [],
     }
+    indice_existe = indice_path.is_file()
     try:
-        texto = indice_path.read_text(encoding="utf-8") if indice_path.is_file() else ""
+        texto = indice_path.read_text(encoding="utf-8") if indice_existe else ""
     except (OSError, UnicodeDecodeError) as exc:
         resultado["fonte_completa"] = False
         resultado["decisao"] = BLOQUEAR
@@ -184,6 +189,17 @@ def avaliar(
         resultado["razoes"] = ["não consegui listar `Referencias/` — inventário indisponível"]
         return resultado
     resultado["sem_entrada"] = sem_entrada
+
+    if not indice_existe and sem_entrada:
+        # Índice sumido COM fichas em disco é a forma mais grave do incidente,
+        # não um workspace novo. Reindexar aqui recriaria o catálogo com IDs
+        # novos e descrições derivadas — o reflexo que a #261 existe pra matar.
+        resultado["fonte_completa"] = False
+        resultado["decisao"] = BLOQUEAR
+        resultado["razoes"] = [
+            f"`INDICE.md` ausente com {len(sem_entrada)} ficha(s) em disco"
+        ]
+        return resultado
 
     fracao = lacunas_fracao(texto)
     # Comparação EXATA em inteiros: `lacunas/slots >= pct/100`.

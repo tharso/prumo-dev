@@ -77,8 +77,8 @@ pergunta "onde guardei aquele artigo?" e Prumo não sabe.
 1. **Lacuna de ID (#261).** Com rodapé presente e `N > 1`: `slots = N-1`;
    `ocupados` = IDs distintos em `1..slots` (ID ≥ N não preenche lacuna — o
    rodapé é sugestão e pode estar atrasado; duplicata conta uma vez). Se
-   `lacunas ≥ referencias_id_gap_alert_pct` (default 50): **não alterar o
-   índice**, relatar e entregar pra higiene. Sem rodapé, ou malformado, este
+   `lacunas × 100 ≥ referencias_id_gap_alert_pct × slots` (default 50 —
+   comparar TAXA, nunca a contagem crua): **não alterar o índice**, relatar e entregar pra higiene. Sem rodapé, ou malformado, este
    passo é PULADO — ausência de rodapé nunca é alarme por si.
 2. **Volume (#261).** Se as fichas fora da tabela forem `≥ referencias_bulk_reindex_at`
    (default 5): **não alterar o índice**, relatar e entregar pra higiene.
