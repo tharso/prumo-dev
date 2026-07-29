@@ -208,5 +208,39 @@ class ContratoTest(unittest.TestCase):
         self.assertIn("LAZY", linha)
 
 
+class AplicacaoDeVerdadeTest(BaseTest):
+    """Etiqueta dizendo "vai pro backup" não é prova de que o caminhão chegou
+    (Codex, r1). Estes rodam `apply_plan`."""
+
+    def test_rascunho_sai_da_origem_e_chega_no_backup(self) -> None:
+        alvo = self._arquivo("reconstrucao.md", conteudo="conteúdo do rascunho")
+        plano = self._plano()
+        sanitize.apply_plan(self.ws, plan=plano, today=HOJE)
+
+        self.assertFalse(alvo.exists(), "o rascunho continua na origem")
+        copias = list((self.ws / ".prumo" / "backups" / "sanitize").rglob("*reconstrucao.md"))
+        self.assertTrue(copias, "nada chegou no backup")
+        self.assertEqual(copias[0].read_text(encoding="utf-8"), "conteúdo do rascunho")
+
+    def test_nada_de_rm_no_rascunho(self) -> None:
+        """Sob a ponte do Cowork `rm` falha: se a ação virasse delete, o
+        mecanismo inteiro deixaria de funcionar lá."""
+        self._arquivo("qualquer.md")
+        acoes = {i["action"] for i in self._plano()["items"] if i["rule"] == "agente_rascunho"}
+        self.assertEqual(acoes, {"move-to-backup"})
+
+    def test_isca_no_to_delete_fica_intocada(self) -> None:
+        """A quarentena do usuário não entra em plano nenhum (#242/#263)."""
+        isca = self.ws / "_to_delete" / "coisa-do-usuario.md"
+        isca.parent.mkdir(parents=True)
+        isca.write_text("decisão do dono", encoding="utf-8")
+        self._envelhecer(isca, 400)
+
+        plano = self._plano()
+        self.assertEqual([i for i in plano["items"] if "_to_delete" in i["path"]], [])
+        sanitize.apply_plan(self.ws, plan=plano, today=HOJE)
+        self.assertTrue(isca.exists(), "a sanitize encostou na quarentena do usuário")
+
+
 if __name__ == "__main__":
     unittest.main()

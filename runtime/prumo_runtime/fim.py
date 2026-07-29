@@ -25,7 +25,7 @@ from prumo_runtime.workspace_paths import workspace_paths
 
 # 1.1 (#179 PR10): + handover_legacy e nested_backups (aditivo — consumidores
 # de 1.0 seguem lendo os campos antigos no mesmo lugar).
-SCHEMA_VERSION = "1.1"
+SCHEMA_VERSION = "1.2"
 
 # Thresholds reusados da faxina/sanitize (skills/prumo/references/modules/faxina-thresholds.md).
 PAUTA_STALLED_DAYS = 14   # item da pauta parado há mais de 14d → higiene

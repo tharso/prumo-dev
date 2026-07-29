@@ -19,6 +19,9 @@ def _tech_parts(s: dict) -> list[str]:
         parts.append(f"{s['handover_legacy']} arquivos de sessão aposentados")
     if s.get("nested_backups", 0):
         parts.append(f"{s['nested_backups']} backups aninhados")
+    # .get() de novo: schema 1.1 não tinha o rascunho (#263, aditivo).
+    if s.get("rascunho_old", 0):
+        parts.append(f"{s['rascunho_old']} rascunhos do agente")
     return parts
 
 
@@ -28,6 +31,7 @@ def _render_text(result: dict) -> str:
         f"1. Encerramento do workspace `{result['workspace_path']}`.",
         f"2. Pauta parada (>14d): {s['pauta_stalled']} · inbox pendente: {s['inbox_pending']} · registro: {s['registro_rows']} linhas.",
         f"3. Poeira técnica: backups velhos (>90d): {s['backups_old']} · arquivos efêmeros (>14d): {s['ephemeral_old']}"
+        f" · rascunhos do agente (>14d): {s.get('rascunho_old', 0)}"
         f" · handovers legados: {s.get('handover_legacy', 0)} · backups aninhados: {s.get('nested_backups', 0)}.",
     ]
     sug = result["suggest"]

@@ -102,9 +102,10 @@ determinísticos reusando os thresholds da faxina/sanitize:
   **conteúdo** (o *como*, depois do sim, é a revisão assistida — `/higiene`)
 - `backups_old` (> 90d), `ephemeral_old` (artefatos efêmeros do decidir/acervo
   — HTMLs e a fonte copiada — > 14d), `handover_legacy` (HANDOVERs do formato
-  aposentado, #68 — contam em qualquer idade) e `nested_backups` (backup
-  dentro de backup) → acúmulo **técnico** (o *como* é o módulo `sanitize.md`
-  do core; schema 1.1, #179)
+  aposentado, #68 — contam em qualquer idade), `nested_backups` (backup
+  dentro de backup) e `rascunho_old` (intermediários do agente em
+  `.prumo/state/rascunho/` > 14d, #263) → acúmulo **técnico** (o *como* é o
+  módulo `sanitize.md` do core; schema 1.2, #263)
 - `suggest.update` (o core do workspace — ou o runtime, na falta dele — atrás
   da versão pública em cache, #174) → **update pendente**
 
@@ -117,7 +118,7 @@ roda a sanitização.
 Se o runtime não estiver disponível, o agente calcula **só os sinais de leitura
 pontual** (`pauta_stalled`, `inbox_pending`, `registro_rows` — arquivos nomeados,
 mesmos thresholds). As famílias técnicas (`backups_old`, `ephemeral_old`,
-`handover_legacy`, `nested_backups`) exigem travessia que o perímetro proíbe
+`handover_legacy`, `nested_backups`, `rascunho_old`) exigem travessia que o perímetro proíbe
 (#213: backups nunca são listados; `.prumo/` é rasa por default) — sem runtime
 elas ficam **indeterminadas**: declarar isso em uma linha ("poeira técnica: sem
 runtime, não checada") e **nunca** concluir "workspace limpo" sem elas.

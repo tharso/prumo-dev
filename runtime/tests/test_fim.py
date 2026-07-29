@@ -168,7 +168,7 @@ class FimSanitizeSignalsTests(unittest.TestCase):
             nested.mkdir(parents=True)
             (nested / "dentro.tar").write_text("x", encoding="utf-8")
             result = accumulation_signals(ws, today=TODAY)
-            self.assertEqual(result["schema_version"], "1.1")
+            self.assertEqual(result["schema_version"], "1.2")
             self.assertEqual(result["signals"]["handover_legacy"], 1)
             self.assertEqual(result["signals"]["nested_backups"], 1)
             self.assertTrue(result["suggest"]["sanitize"])
