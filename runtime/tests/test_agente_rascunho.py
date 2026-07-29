@@ -476,5 +476,33 @@ class LayoutFlatTest(unittest.TestCase):
                 )
 
 
+class FingerprintDeDiretorioTest(BaseTest):
+    """O manifesto registrava diretório só pelo caminho, sem `mtime_ns`, mas a
+    elegibilidade depende dele: tocar `recon/sub/` entre a redetecção e o apply
+    passava na validação e movia árvore que deixou de estar fria — o trabalho
+    ativo arrancado da bancada (Codex, r7)."""
+
+    def test_tocar_subdiretorio_muda_a_identidade(self) -> None:
+        self._arquivo("recon/sub/nota.md")
+        self._envelhecer(self.rascunho / "recon" / "sub")
+        self._envelhecer(self.rascunho / "recon")
+
+        antes = sanitize._content_id(self.ws, self.rascunho / "recon")
+        import os, time
+        os.utime(self.rascunho / "recon" / "sub", (time.time(), time.time()))
+        depois = sanitize._content_id(self.ws, self.rascunho / "recon")
+
+        self.assertNotEqual(antes, depois, "mexer no subdiretório não mudou a identidade")
+
+    def test_arvore_parada_mantem_a_identidade(self) -> None:
+        """Negativa: sem mexer em nada, a identidade é estável — senão o apply
+        bloquearia sempre."""
+        self._arquivo("recon/sub/nota.md")
+        alvo = self.rascunho / "recon"
+        self.assertEqual(
+            sanitize._content_id(self.ws, alvo), sanitize._content_id(self.ws, alvo)
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

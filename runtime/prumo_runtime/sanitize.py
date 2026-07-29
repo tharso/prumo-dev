@@ -143,7 +143,8 @@ def _content_id(workspace: Path, path: Path) -> str:
     if path.is_file() and not path.is_symlink():
         return _sha256(path)
     dirs, files = _walk_tree(path)
-    lines = [f"{p.relative_to(path).as_posix()}|d" for p in dirs]
+    # `mtime_ns` do DIRETÓRIO também (#263): a elegibilidade depende dele.
+    lines = [f"{p.relative_to(path).as_posix()}|d|{p.lstat().st_mtime_ns}" for p in dirs]
     lines += [
         f"{p.relative_to(path).as_posix()}|f|{p.lstat().st_size}|{p.lstat().st_mtime_ns}|{_sha256(p)}"
         for p in files
