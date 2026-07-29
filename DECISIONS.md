@@ -79,11 +79,23 @@ O recorte é estreito de propósito, e o que fica **fora** dele importa tanto qu
 - **desambiguação de nome enganoso** — a nota do `higiene/SKILL.md` dizendo que `claude-hygiene.md` é nome histórico e cobre `PERFIL.md` e os módulos do `Agente/` existe porque o nome mente; apagá-la reintroduz a confusão que ela resolve;
 - **invariante repetida no ponto de execução, com dono declarado** — as "Regras que não podem ser puladas" do `briefing/SKILL.md` foram criadas pela própria #180 e existem pra impedir que o hot path pule contrato (carregar `briefing-canais.md` antes do Gmail, declarar a faxina, gerar o despacho visual). Elas nomeiam o dono de cada regra e vivem onde o pulo aconteceria.
 
-O que distingue as três do que esta decisão apaga: elas **declaram o dono** e existem pra **agir**, não pra descrever. Os blocos removidos da Parte 2 não faziam nem uma coisa nem outra — respondiam "o que este módulo cobre?" e não tinham dono, que é exatamente por que envelheceram.
+As três são exemplos, não a régua. A régua é um **teste contrafactual**, porque "existe pra agir" exige telepatia e dois agentes de boa-fé chegariam a respostas opostas:
+
+> **Remover este trecho muda qual fonte carregar, quando carregá-la, ou qual invariante executar?**
+> **Sim → fica. Não, só some uma prévia do que está atrás do ponteiro → sai.**
+
+O teste resolve os casos ambíguos sem precisar de categoria nova. O cabeçalho do `version-preflight.md` descreve o escopo do `version-update.md` **e** estabelece a fronteira de lazy-load ("só carrega quando a oferta aciona") — apagá-lo mudaria *quando* carregar o manual, então fica. Os blocos removidos da Parte 2 não passavam no teste em nenhum bullet: apagá-los não mudou fonte, momento nem invariante — só tirou uma prévia desatualizada.
 
 **Antes de apagar, conferir bullet a bullet** contra o **módulo apontado ou o dono canônico que ele alcança explicitamente**. Essa segunda metade não é detalhe: no caso do Briefing, "curadoria em camadas" e a janela de 24h moram em `briefing-canais.md`, alcançado pelo `briefing-procedure.md` — conferir só a espinha faria o agente julgá-los ausentes e **migrá-los para dentro dela**, recriando a duplicação que a #180 eliminou. Integridade referencial aqui é grafo, não estrela.
 
-**Bullet órfão não é contrato perdido por default.** A premissa desta decisão é que esses resumos envelhecem — então conteúdo que não aparece em lugar nenhum da cadeia é, com mais frequência, comportamento **abolido** que sobreviveu no resumo do que contrato que sumiu do dono. Classificar antes de agir: vigente **migra** para o dono; obsoleto **é removido**, com a evidência de que foi abolido (a issue ou decisão que o removeu) citada no PR. Sem evidência para nenhum dos dois lados, **não adivinhar** — perguntar ao dono do projeto.
+**Bullet órfão não é contrato perdido por default.** A premissa desta decisão é que esses resumos envelhecem — então conteúdo que não aparece em lugar nenhum da cadeia é, com mais frequência, comportamento **abolido** que sobreviveu no resumo do que contrato que sumiu do dono.
+
+A prova é **simétrica**, e nenhum dos dois lados vence por omissão:
+
+- **migra** com prova de vigência: decisão ou issue ativa, teste explicitamente contratual, ou confirmação do dono;
+- **é removido** com prova de obsolescência: a issue ou decisão que o aboliu.
+
+**Implementação atual não é prova de vigência.** O runtime fazer aquilo hoje pode ser resíduo tão bem quanto contrato — foi assim que a faxina §3 passou meses com o reflexo invertido (#261). Nos dois casos a evidência vai **citada no PR**. Sem evidência para nenhum lado, **não adivinhar**: perguntar ao dono do projeto.
 
 **Alternativas consideradas:** regra de varredura retroativa no `CLAUDE.md`, obrigando a varrer o core ao mudar um módulo (rejeitada — é prosa de julgamento consertando falha de prosa de julgamento, a mesma camada que falhou); teste casando os bullets com o módulo nomeado (rejeitado — casamento por palavra-chave, frágil, e criaria manutenção nova para um bloco que não deveria existir). Estrutura no lugar de processo: deletar remove a superfície de drift e a necessidade da regra no mesmo golpe.
 
