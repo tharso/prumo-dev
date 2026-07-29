@@ -18,6 +18,9 @@ aprovado + `--yes`.
 
 Regras (cada path pertence a NO MÁXIMO uma, na ordem daqui):
 
+- `agente_rascunho`      → move pro backup (filho direto frio de
+                           `.prumo/state/rascunho/`, #263). Subtree EXCLUSIVA:
+                           nenhuma outra regra a reivindica, mesmo isolada.
 - `handover_legacy`      → move pro backup (formato aposentado, #68)
 - `decidir_ephemeral`    → move pro backup (HTML/fonte >14d, contrato #102)
 - `nested_backups`       → delete (backup dentro de backup é redundância;
@@ -59,6 +62,7 @@ from prumo_runtime.backup import iter_backup_roots
 SCHEMA_VERSION = "prumo_sanitize_report.v1"
 
 RULES = (
+    "agente_rascunho",
     "handover_legacy",
     "decidir_ephemeral",
     "nested_backups",
@@ -275,6 +279,50 @@ def _iter_old_cache(workspace: Path, today: date, cache_days: int) -> list[Path]
     return [path for path in files if _age_days(path, today) > cache_days]
 
 
+RASCUNHO_REL = ".prumo/state/rascunho"
+
+
+def _sob_rascunho(workspace: Path, path: Path) -> bool:
+    """Subtree do rascunho do agente é EXCLUSIVA (#263).
+
+    Ordem de regra só garante disjunção quando todas rodam: com `--rules`
+    isolado, uma fonte recente ali cairia em `asset_dedupe` e seria DELETADA,
+    e um `HANDOVER*` cairia em `handover_legacy` — a mesma coisa mudando de
+    família e de ação conforme a seleção (Codex, 263-3).
+    """
+    return _rel(workspace, path).startswith(RASCUNHO_REL + "/")
+
+
+def iter_agente_rascunho(workspace: Path, today: date, ephemeral_days: int) -> list[Path]:
+    """Filhos DIRETOS frios de `.prumo/state/rascunho/`.
+
+    A unidade é o filho direto, não o arquivo solto: reconstrução parcial em
+    diretório seria desmontada aos pedaços e deixaria casca vazia. Diretório
+    só entra quando a árvore INTEIRA está fria (Codex, 263-5).
+    """
+    root = workspace / ".prumo" / "state" / "rascunho"
+    if not _usable_root(workspace, root):
+        return []
+    frios: list[Path] = []
+    try:
+        filhos = sorted(root.iterdir())
+    except OSError:
+        return []
+    for filho in filhos:
+        if filho.is_symlink():
+            continue
+        if filho.is_file():
+            if _age_days(filho, today) > ephemeral_days:
+                frios.append(filho)
+            continue
+        if not filho.is_dir():
+            continue
+        _, arquivos = _walk_tree(filho)
+        if arquivos and all(_age_days(f, today) > ephemeral_days for f in arquivos):
+            frios.append(filho)
+    return frios
+
+
 def _iter_old_ephemerals(workspace: Path, today: date, ephemeral_days: int) -> list[Path]:
     found: list[Path] = []
     for sub in ("decidir", "acervo"):
@@ -336,8 +384,17 @@ def _iter_duplicate_assets(workspace: Path, claimed: set[str]) -> list[tuple[Pat
 # --- Plano e execução --------------------------------------------------------
 
 
-def _preserved(path: Path) -> bool:
-    return path.name in _PRESERVED_NAMES or "logs" in path.parts
+def _preserved(workspace: Path, path: Path) -> bool:
+    """Preservação por CAMINHO canônico, não por basename global.
+
+    Antes, um rascunho chamado `agent-lock.json` ou guardado sob qualquer
+    pasta `logs/` nunca seria limpo — contrariando "sem filtro de sufixo"
+    (Codex, 263-6).
+    """
+    rel = _rel(workspace, path)
+    if rel.startswith(".prumo/logs/") or rel == ".prumo/logs":
+        return True
+    return rel in {f".prumo/state/{nome}" for nome in _PRESERVED_NAMES}
 
 
 def build_plan(
@@ -371,7 +428,7 @@ def build_plan(
 
     def _claim(rule: str, path: Path, action: str, reason: str, sha256: str | None = None) -> None:
         rel = _rel(workspace, path)
-        if rel in claimed or _preserved(path):
+        if rel in claimed or _preserved(workspace, path):
             return
         if path.is_symlink() or _tree_has_symlink(path):
             return  # symlink (no item ou descendente) nunca entra no plano
@@ -389,8 +446,16 @@ def build_plan(
             "reason": reason,
         })
 
+    if "agente_rascunho" in wanted:
+        for path in iter_agente_rascunho(workspace, today, t.ephemeral_days):
+            _claim(
+                "agente_rascunho", path, "move-to-backup",
+                f"rascunho do agente >{t.ephemeral_days}d (descartável por contrato)",
+            )
     if "handover_legacy" in wanted:
         for path in iter_handover_files(workspace):
+            if _sob_rascunho(workspace, path):
+                continue  # subtree exclusiva do agente_rascunho (#263)
             _claim("handover_legacy", path, "move-to-backup", "formato HANDOVER aposentado (#68)")
     if "decidir_ephemeral" in wanted:
         for path in _iter_old_ephemerals(workspace, today, t.ephemeral_days):
@@ -420,6 +485,8 @@ def build_plan(
             _claim("workspace_cache", path, "delete", f"cache >{t.cache_days}d (reproduzível)")
     if "asset_dedupe" in wanted:
         for path, digest in _iter_duplicate_assets(workspace, claimed):
+            if _sob_rascunho(workspace, path):
+                continue  # subtree exclusiva do agente_rascunho (#263)
             _claim(
                 "asset_dedupe", path, "delete",
                 "hash idêntico à vendored em `.prumo/skills/**/assets/` e sem HTML vivo referenciando",

@@ -1,0 +1,212 @@
+"""Caminho sancionado pro efêmero do agente (#263, P12 do relatório).
+
+No Cowork com ponte de dispositivo, `rm` falha com `Operation not permitted`.
+A #242 resolveu isso pro fluxo do usuário — quarentena `_to_delete/`, que ele
+esvazia à mão. O que só ficou visível depois: **o agente também não consegue
+limpar os próprios artefatos**, e cada tentativa de conserto deixa lixo na
+quarentena DO USUÁRIO, obrigando o dono a garimpar o que ele descartou no meio
+do que a máquina sujou.
+
+O produto já tinha a resposta certa pra efêmero de máquina (`decidir_ephemeral`
+→ `move-to-backup`, nunca `rm`). Faltava estendê-la ao rascunho do agente.
+"""
+
+from __future__ import annotations
+
+import tempfile
+import unittest
+from datetime import date, timedelta
+from pathlib import Path
+
+from prumo_runtime import sanitize
+from prumo_runtime.fim import accumulation_signals
+
+HOJE = date(2026, 7, 29)
+VELHO = HOJE - timedelta(days=40)
+
+
+class BaseTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self._tmp = tempfile.TemporaryDirectory()
+        self.ws = Path(self._tmp.name)
+        (self.ws / "Prumo").mkdir(parents=True)
+        self.rascunho = self.ws / ".prumo" / "state" / "rascunho"
+        self.rascunho.mkdir(parents=True)
+        self.addCleanup(self._tmp.cleanup)
+
+    def _envelhecer(self, path: Path, dias: int = 40) -> None:
+        import os
+        quando = (HOJE - timedelta(days=dias))
+        stamp = __import__("time").mktime(quando.timetuple())
+        os.utime(path, (stamp, stamp))
+
+    def _arquivo(self, nome: str, dias: int = 40, conteudo: str = "x") -> Path:
+        alvo = self.rascunho / nome
+        alvo.parent.mkdir(parents=True, exist_ok=True)
+        alvo.write_text(conteudo, encoding="utf-8")
+        self._envelhecer(alvo, dias)
+        return alvo
+
+    def _plano(self, rules=None) -> dict:
+        return sanitize.build_plan(self.ws, today=HOJE, rules=rules)
+
+    def _familias(self, plano: dict) -> dict[str, list[str]]:
+        agrupado: dict[str, list[str]] = {}
+        for item in plano["items"]:
+            agrupado.setdefault(item["rule"], []).append(item["path"])
+        return agrupado
+
+
+class VarreduraTest(BaseTest):
+    def test_rascunho_velho_vai_pro_backup_nunca_pro_rm(self) -> None:
+        self._arquivo("reconstrucao.md")
+        familia = self._familias(self._plano()).get("agente_rascunho", [])
+        self.assertEqual(familia, [".prumo/state/rascunho/reconstrucao.md"])
+        acao = next(
+            i["action"] for i in self._plano()["items"] if i["rule"] == "agente_rascunho"
+        )
+        self.assertEqual(acao, "move-to-backup", "rm não funciona sob a ponte do Cowork")
+
+    def test_rascunho_novo_fica(self) -> None:
+        """Negativa: efêmero é por IDADE, não por estar na pasta."""
+        self._arquivo("de-hoje.md", dias=0)
+        self.assertEqual(self._familias(self._plano()).get("agente_rascunho", []), [])
+
+    def test_sem_filtro_de_sufixo(self) -> None:
+        """Rascunho de agente é qualquer coisa — diferente do HTML/fonte do
+        despacho. A cerca é o PATH exclusivo, não o sufixo."""
+        for nome in ("a.md", "b.json", "c.txt", "d.sem-extensao"):
+            self._arquivo(nome)
+        familia = self._familias(self._plano()).get("agente_rascunho", [])
+        self.assertEqual(len(familia), 4, familia)
+
+    def test_diretorio_e_movido_inteiro(self) -> None:
+        """A unidade é o filho DIRETO: varrer arquivo a arquivo desmontaria
+        uma reconstrução parcial e deixaria casca vazia (Codex, 263-5)."""
+        self._arquivo("recon/parte-1.md")
+        self._arquivo("recon/parte-2.md")
+        self._envelhecer(self.rascunho / "recon")
+        familia = self._familias(self._plano()).get("agente_rascunho", [])
+        self.assertEqual(familia, [".prumo/state/rascunho/recon"])
+
+    def test_diretorio_com_arquivo_quente_nao_e_movido(self) -> None:
+        """Negativa: um só arquivo novo segura a pasta inteira."""
+        self._arquivo("recon/velho.md")
+        self._arquivo("recon/agora.md", dias=0)
+        self.assertEqual(self._familias(self._plano()).get("agente_rascunho", []), [])
+
+    def test_pasta_ausente_e_zero_candidatos(self) -> None:
+        """Criação é LAZY: o setup não pré-cria e ausência não é erro."""
+        import shutil
+        shutil.rmtree(self.rascunho)
+        self.assertEqual(self._familias(self._plano()).get("agente_rascunho", []), [])
+
+
+class SubtreeExclusivaTest(BaseTest):
+    """Ordem de regra só garante disjunção quando todas rodam. Com `--rules`
+    isolado, a MESMA coisa mudava de família e de ação — e num dos casos a
+    ação era `delete` de verdade (Codex, 263-3)."""
+
+    def test_handover_no_rascunho_nao_vira_handover_legacy(self) -> None:
+        self._arquivo("HANDOVER-antigo.md")
+        familias = self._familias(self._plano(rules=["handover_legacy"]))
+        self.assertEqual(familias.get("handover_legacy", []), [])
+
+    def test_handover_fora_do_rascunho_continua_sendo_pego(self) -> None:
+        """Negativa: a exclusão é da subtree, não da família."""
+        alvo = self.ws / ".prumo" / "state" / "HANDOVER-antigo.md"
+        alvo.write_text("x", encoding="utf-8")
+        familias = self._familias(self._plano(rules=["handover_legacy"]))
+        self.assertTrue(familias.get("handover_legacy"))
+
+    def test_fonte_duplicada_no_rascunho_nunca_e_deletada(self) -> None:
+        """O pior caso: `asset_dedupe` faz DELETE de verdade."""
+        vendored = self.ws / ".prumo" / "skills" / "decidir" / "assets" / "Boliand.otf"
+        vendored.parent.mkdir(parents=True)
+        vendored.write_bytes(b"fonte")
+        alvo = self.rascunho / "Boliand.otf"
+        alvo.write_bytes(b"fonte")
+        self._envelhecer(alvo)
+
+        for rules in (None, ["asset_dedupe"]):
+            with self.subTest(rules=rules):
+                familias = self._familias(self._plano(rules=rules))
+                self.assertNotIn(
+                    ".prumo/state/rascunho/Boliand.otf", familias.get("asset_dedupe", [])
+                )
+
+
+class PreservacaoPorCaminhoTest(BaseTest):
+    """`_preserved` protegia por basename e por qualquer componente `logs`:
+    um rascunho chamado `agent-lock.json` nunca seria limpo, contrariando
+    "sem filtro" (Codex, 263-6)."""
+
+    def test_nome_reservado_dentro_do_rascunho_e_limpo(self) -> None:
+        self._arquivo("agent-lock.json")
+        familia = self._familias(self._plano()).get("agente_rascunho", [])
+        self.assertEqual(familia, [".prumo/state/rascunho/agent-lock.json"])
+
+    def test_pasta_logs_dentro_do_rascunho_e_limpa(self) -> None:
+        self._arquivo("logs/saida.txt")
+        self._envelhecer(self.rascunho / "logs")
+        familia = self._familias(self._plano()).get("agente_rascunho", [])
+        self.assertEqual(familia, [".prumo/state/rascunho/logs"])
+
+    def test_o_lock_canonico_continua_protegido(self) -> None:
+        """Negativa: a preservação real não pode ter sido perdida."""
+        lock = self.ws / ".prumo" / "state" / "agent-lock.json"
+        lock.write_text("{}", encoding="utf-8")
+        self._envelhecer(lock)
+        todos = [i["path"] for i in self._plano()["items"]]
+        self.assertNotIn(".prumo/state/agent-lock.json", todos)
+
+
+class FimDetectaTest(BaseTest):
+    """Sem entrar no `/fim`, rascunho envelheceria pra sempre sem NUNCA
+    disparar a superfície que oferece a sanitize (Codex, 263-2)."""
+
+    def test_rascunho_sozinho_dispara_sanitize(self) -> None:
+        self._arquivo("velho.md")
+        s = accumulation_signals(self.ws, today=HOJE)["signals"]
+        self.assertEqual(s["rascunho_old"], 1)
+        self.assertTrue(accumulation_signals(self.ws, today=HOJE)["suggest"]["sanitize"])
+
+    def test_workspace_limpo_nao_sugere(self) -> None:
+        s = accumulation_signals(self.ws, today=HOJE)
+        self.assertEqual(s["signals"]["rascunho_old"], 0)
+        self.assertFalse(s["suggest"]["sanitize"])
+
+
+class ContratoTest(unittest.TestCase):
+    def setUp(self) -> None:
+        raiz = Path(__file__).resolve().parents[2]
+        self.protecao = (raiz / "skills" / "prumo" / "references"
+                         / "file-protection-rules.md").read_text(encoding="utf-8")
+        self.porta = (raiz / "skills" / "prumo" / "references"
+                      / "agent-md-template.md").read_text(encoding="utf-8")
+
+    def test_a_porta_ensina_o_caminho(self) -> None:
+        """Regra que depende de lembrar de abrir o manual já perdeu a briga:
+        o gatilho tem de estar na superfície SEMPRE carregada (Codex, 263-1)."""
+        self.assertIn("rascunho/", self.porta)
+        self.assertIn("descartáveis", self.porta)
+
+    def test_to_delete_e_so_do_usuario(self) -> None:
+        linha = next(l for l in self.protecao.splitlines() if "`_to_delete/`" in l and "|" in l)
+        self.assertIn("nunca subproduto ou rascunho do agente", linha)
+
+    def test_rascunho_declara_o_carve_out_da_214(self) -> None:
+        """Estende a #214 (o agente não escreve estado do runtime) em vez de
+        revogá-la: aqui nada é fonte de verdade (Codex, 263-4)."""
+        linha = next(
+            l for l in self.protecao.splitlines()
+            if l.startswith("| `.prumo/state/rascunho/`")
+        )
+        self.assertIn("#214", linha)
+        self.assertIn("estende", linha)
+        self.assertIn("descartável", linha)
+        self.assertIn("LAZY", linha)
+
+
+if __name__ == "__main__":
+    unittest.main()

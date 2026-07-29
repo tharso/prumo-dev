@@ -18,7 +18,7 @@ from datetime import date
 from pathlib import Path
 
 from prumo_runtime import __version__, faxina_thresholds
-from prumo_runtime.sanitize import iter_handover_files, iter_nested_backup_dirs
+from prumo_runtime.sanitize import iter_agente_rascunho, iter_handover_files, iter_nested_backup_dirs
 from prumo_runtime.version_check import compute_staleness, read_cached_remote_version
 from prumo_runtime.workspace import parse_core_version, read_text
 from prumo_runtime.workspace_paths import workspace_paths
@@ -153,12 +153,19 @@ def accumulation_signals(workspace: Path, *, today: date | None = None) -> dict:
     # do formato aposentado (#68) e backups aninhados. Os iterators públicos
     # da sanitize são read-only e symlink-safe (cadeia limpa validada antes
     # de qualquer travessia) — aqui só contamos o que eles listam.
+    # #263: sem isto, rascunho do agente envelhece pra sempre sem NUNCA
+    # disparar a superfície que oferece a sanitize.
+    rascunho_old = len(iter_agente_rascunho(workspace, today, EPHEMERAL_DAYS))
     handover_legacy = len(iter_handover_files(workspace))
     nested_backups = len(iter_nested_backup_dirs(workspace))
 
     suggest_higiene = pauta_stalled > 0 or inbox_pending > 0
     suggest_sanitize = (
-        backups_old > 0 or ephemeral_old > 0 or handover_legacy > 0 or nested_backups > 0
+        backups_old > 0
+        or ephemeral_old > 0
+        or rascunho_old > 0
+        or handover_legacy > 0
+        or nested_backups > 0
     )
 
     # Update pendente (#174): o /fim é a última chance da sessão de cobrar um
@@ -179,6 +186,7 @@ def accumulation_signals(workspace: Path, *, today: date | None = None) -> dict:
             "registro_rows": registro_rows,
             "backups_old": backups_old,
             "ephemeral_old": ephemeral_old,
+            "rascunho_old": rascunho_old,
             "handover_legacy": handover_legacy,
             "nested_backups": nested_backups,
             "installed_version": installed_version,
