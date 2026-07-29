@@ -32,12 +32,19 @@ SCHEMA = "prumo_indice_integridade.v1"
 OPERACIONAIS = frozenset({"INDICE.md", "WORKFLOWS.md", "EMAIL-CURADORIA.md"})
 
 _RODAPE = re.compile(r"<!--\s*proximo-id:\s*(\d+)\s*-->")
-# Marca de conferência (#261): a higiene grava aqui o nível de lacuna que o
-# usuário declarou DELIBERADO. Sem isto, "a remoção foi deliberada" não mudava
-# nada e o mesmo estado bloqueava na rodada seguinte — saída cenográfica
-# (Codex, r3). Mora no próprio índice: é curado, então entra no snapshot da
-# #262 e viaja com o arquivo.
-_CONFERIDA = re.compile(r"<!--\s*lacunas-conferidas:\s*(\d+)\s*-->")
+# Marcas de conferência (#261): a higiene grava aqui o que o usuário declarou
+# DELIBERADO. Sem isto, "a remoção foi deliberada" não mudava nada e o mesmo
+# estado bloqueava na rodada seguinte — saída cenográfica (Codex, r3). Moram no
+# próprio índice: é arquivo curado, então entram no snapshot da #262 e viajam
+# com ele.
+#
+# A lacuna é guardada como FRAÇÃO EXATA `L/S`, nunca como percentual
+# arredondado: 101/200 vira 50% no arredondamento, e `101*100 > 50*200` faria o
+# mesmo estado bloquear de novo sem ter crescido (Codex, r4). O volume é
+# guardado POR NOME — contar não distingue "a ficha que o usuário aceitou
+# deixar de fora" de "a ficha nova de amanhã", e a segunda deve ser indexada.
+_CONFERIDA = re.compile(r"<!--\s*lacunas-conferidas:\s*(\d+)\s*/\s*(\d+)\s*-->")
+_FORA_CONFERIDAS = re.compile(r"<!--\s*fichas-fora-conferidas:\s*([^>]*?)\s*-->")
 # Linha de tabela cujo primeiro campo é o ID.
 _LINHA_ID = re.compile(r"^\s*\|\s*(\d+)\s*\|", re.M)
 # Linha de dados da tabela: `| # | Título | Arquivo | ...`. A COLUNA importa —
@@ -61,15 +68,33 @@ def proximo_id(texto: str) -> int | None:
         return None
 
 
-def lacunas_conferidas(texto: str) -> int:
-    """Nível de lacuna que o usuário já declarou deliberado. 0 = nada aceito.
+def lacunas_conferidas(texto: str) -> tuple[int, int] | None:
+    """Fração `(lacunas, slots)` que o usuário declarou deliberada.
 
-    A regex só casa dígitos, então marca malformada simplesmente não casa e
-    cai em 0 — sem `try/except`, que aqui seria ramo inalcançável (achado da
-    bateria de mutação: nenhuma mutação dele mudava comportamento).
+    A regex só casa dígitos, então marca malformada não casa e vira `None` —
+    sem `try/except`, que aqui seria ramo inalcançável (achado da bateria).
     """
     achados = _CONFERIDA.findall(texto)
-    return min(100, int(achados[-1])) if achados else 0
+    if not achados:
+        return None
+    lacunas, slots = int(achados[-1][0]), int(achados[-1][1])
+    return (lacunas, slots) if slots > 0 else None
+
+
+def fichas_fora_conferidas(texto: str) -> set[str]:
+    """Fichas que o usuário aceitou manter FORA do índice, por nome.
+
+    Por nome e não por contagem: contagem não distingue a ficha aceita da
+    ficha nova de amanhã, e a nova precisa ser indexada (Codex, r4).
+    """
+    achados = _FORA_CONFERIDAS.findall(texto)
+    if not achados:
+        return set()
+    return {
+        parte.strip().strip("`")
+        for parte in achados[-1].split(",")
+        if parte.strip().strip("`")
+    }
 
 
 def ids_da_tabela(texto: str) -> set[int]:
@@ -189,7 +214,8 @@ def avaliar(
         "ids_distintos": 0,
         "lacunas_pct": None,
         "sem_entrada": [],
-        "lacunas_conferidas": 0,
+        "lacunas_conferidas": None,
+        "fichas_fora_conferidas": [],
         "fonte_completa": True,
         "decisao": OK,
         "razoes": [],
@@ -207,7 +233,12 @@ def avaliar(
     resultado["ids_distintos"] = len(ids_da_tabela(texto))
     resultado["lacunas_pct"] = lacunas_pct(texto)
 
-    sem_entrada = fichas_sem_entrada(referencias_root, texto)
+    sem_entrada_bruto = fichas_sem_entrada(referencias_root, texto)
+    conferidas_fora = fichas_fora_conferidas(texto)
+    sem_entrada = (
+        None if sem_entrada_bruto is None
+        else [n for n in sem_entrada_bruto if n not in conferidas_fora]
+    )
     if sem_entrada is None:
         # Não é "nenhuma ficha fora": é "não consegui olhar". Chamar isso de
         # casa em ordem seria o silêncio confiante que a #236 já nomeou.
@@ -230,14 +261,20 @@ def avaliar(
 
     fracao = lacunas_fracao(texto)
     conferido = lacunas_conferidas(texto)
-    resultado["lacunas_conferidas"] = conferido
+    resultado["lacunas_conferidas"] = list(conferido) if conferido else None
+    resultado["fichas_fora_conferidas"] = sorted(conferidas_fora)
     # Comparação EXATA em inteiros: `lacunas/slots >= pct/100`. E só alarma o
     # que CRESCEU além do que o usuário já aceitou — senão a confirmação dele
     # não muda o predicado e o alarme volta amanhã.
+    # `lacunas/slots > L/S` por multiplicação cruzada — comparar a fração
+    # EXATA que foi aceita, nunca o percentual exibido.
+    cresceu = conferido is None or fracao is not None and (
+        fracao[0] * conferido[1] > conferido[0] * fracao[1]
+    )
     if (
         fracao is not None
         and fracao[0] * 100 >= gap_alert_pct * fracao[1]
-        and fracao[0] * 100 > conferido * fracao[1]
+        and cresceu
     ):
         resultado["decisao"] = BLOQUEAR
         resultado["razoes"] = [

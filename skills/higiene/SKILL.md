@@ -220,10 +220,14 @@ bombeiro chegando e discordando do alarme.
   fichas, mas os IDs serão novos e as descrições virão do 'Por que guardei' —
   as originais não voltam. Faço assim, ou você prefere reescrever à mão?"
 - Sempre oferecer a terceira saída: **"a remoção foi deliberada"**. Nada é
-  reinserido, e a higiene grava `<!-- lacunas-conferidas: P -->` no índice com
-  a lacuna atual — é isso que faz a faxina parar de bloquear. Sem gravar,
-  a confirmação não muda o estado observável e o mesmo alarme volta na próxima
-  rodada: saída cenográfica. Só o que CRESCER além de `P` alarma de novo.
+  reinserido, e a higiene grava no índice as DUAS marcas do que foi aceito —
+  `<!-- lacunas-conferidas: L/S -->` (fração exata, nunca percentual
+  arredondado) e `<!-- fichas-fora-conferidas: a.md, b.md -->` (por NOME).
+  É isso que faz a faxina parar de bloquear. Sem gravar, a confirmação não
+  muda o estado observável e o mesmo alarme volta na rodada seguinte: saída
+  cenográfica. Gravar só uma das duas também não fecha — a outra dimensão
+  bloqueia em seguida. Só o que CRESCER além do aceito alarma de novo, e ficha
+  nova continua sendo indexada normalmente.
 
 **Intenção:** tratar como estado a explicar, não como erro a corrigir — nenhuma porcentagem lê intenção, e apagar uma seção de propósito produz o mesmo observável de um truncamento.
 Exemplo (voz Equilibrada — não é script): "Isso aqui tá estranho, mas pode ser

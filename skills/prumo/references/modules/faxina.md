@@ -84,12 +84,14 @@ pergunta "onde guardei aquele artigo?" e Prumo não sabe.
    `lacunas × 100 ≥ referencias_id_gap_alert_pct × slots` (default 50 —
    comparar TAXA, nunca a contagem crua): **não alterar o índice**, relatar e entregar pra higiene. Sem rodapé, ou malformado, este
    passo é PULADO — ausência de rodapé nunca é alarme por si. Lacuna já
-   declarada deliberada pelo usuário (`<!-- lacunas-conferidas: P -->`) não
-   volta a alarmar: só o que CRESCEU além de `P` conta.
+   declarada deliberada (`<!-- lacunas-conferidas: L/S -->`, fração exata) não
+   volta a alarmar: só o que CRESCEU além dela conta.
 2. **Volume (#261).** Se as fichas fora da tabela forem `≥ referencias_bulk_reindex_at`
    (default 5): **não alterar o índice**, relatar e entregar pra higiene.
    N fichas fora do índice de uma vez não são "N fichas novas" — são um
-   estado que precisa de explicação.
+   estado que precisa de explicação. Ficha já declarada deliberada
+   (`<!-- fichas-fora-conferidas: a.md, b.md -->`) sai da conta: a marca é
+   por NOME, então a ficha nova de amanhã continua sendo indexada.
 3. **Reindexar.** Abaixo dos dois limiares: adicionar as fichas novas à
    tabela **nomeando cada uma** no relato. O `#` vem da alocação de ID do
    `ficha-de-fonte.md` (#244) — rodapé `proximo-id` + sonda do candidato, sob

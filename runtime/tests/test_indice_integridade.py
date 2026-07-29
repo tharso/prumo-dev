@@ -520,29 +520,75 @@ class ConferenciaTest(BaseTest):
     def test_marca_de_conferencia_silencia(self) -> None:
         self._indice_com_lacuna_grande()
         with self.indice().open("a", encoding="utf-8") as fh:
-            fh.write("<!-- lacunas-conferidas: 92 -->\n")
+            fh.write("<!-- lacunas-conferidas: 44/48 -->\n")
         r = self.avaliar()
         self.assertEqual(r["decisao"], indice_integridade.OK)
-        self.assertEqual(r["lacunas_conferidas"], 92)
+        self.assertEqual(r["lacunas_conferidas"], [44, 48])
+
+    def test_fracao_exata_nao_arredonda_pra_bloquear_de_novo(self) -> None:
+        """Mesmo estado, mesma fração: não pode voltar a bloquear."""
+        self.escrever(
+            _tabela(range(1, 100)) + "\n<!-- proximo-id: 201 -->\n"
+            "<!-- lacunas-conferidas: 101/200 -->\n"
+        )
+        self.assertEqual(self.avaliar()["decisao"], indice_integridade.OK)
+
+    def test_crescimento_dentro_do_mesmo_percentual_arredondado_alarma(self) -> None:
+        """O caso que separa fração exata de percentual arredondado: 100/200
+        (50%) aceito, estado atual 101/200 (50,5%). Cresceu — mas os dois
+        arredondam pra 50, então comparar percentual ficaria calado
+        (Codex, r4). Sem este caso, as duas implementações empatam."""
+        self.escrever(
+            _tabela(range(1, 100)) + "\n<!-- proximo-id: 201 -->\n"
+            "<!-- lacunas-conferidas: 100/200 -->\n"
+        )
+        self.assertEqual(self.avaliar()["decisao"], indice_integridade.BLOQUEAR)
+
+    def test_volume_conferido_por_nome_silencia(self) -> None:
+        """A marca silenciava a lacuna e o volume bloqueava logo em seguida —
+        a confirmação não encerrava o alarme (Codex, r4)."""
+        self.escrever(
+            _tabela([1]) + "\n<!-- proximo-id: 2 -->\n"
+            "<!-- fichas-fora-conferidas: ficha-2.md, ficha-3.md, ficha-4.md, "
+            "ficha-5.md, ficha-6.md -->\n"
+        )
+        self.fichas(range(1, 7))
+        self.assertEqual(self.avaliar()["decisao"], indice_integridade.OK)
+
+    def test_ficha_nova_alem_da_conferida_ainda_reindexa(self) -> None:
+        """Negativa: por NOME, não por contagem.
+
+        A conferida é a ÚLTIMA na ordem alfabética de propósito — com a
+        primeira, remover-por-nome e cortar-N-do-início dão o mesmo resultado
+        e o teste não distinguiria as duas implementações (achado da bateria).
+        """
+        self.escrever(
+            _tabela([1]) + "\n<!-- proximo-id: 2 -->\n"
+            "<!-- fichas-fora-conferidas: ficha-3.md -->\n"
+        )
+        self.fichas([1, 2, 3])
+        r = self.avaliar()
+        self.assertEqual(r["decisao"], indice_integridade.REINDEXAR)
+        self.assertEqual(r["sem_entrada"], ["ficha-2.md"])
 
     def test_lacuna_que_cresce_alem_do_conferido_volta_a_alarmar(self) -> None:
         """Negativa central: conferir não é cheque em branco."""
         self.escrever(
             _tabela(range(1, 26)) + "\n<!-- proximo-id: 49 -->\n"
-            "<!-- lacunas-conferidas: 50 -->\n"
+            "<!-- lacunas-conferidas: 24/48 -->\n"
         )
         self.assertEqual(self.avaliar()["decisao"], indice_integridade.OK)
 
         self.escrever(
             _tabela([45, 46, 47, 48]) + "\n<!-- proximo-id: 49 -->\n"
-            "<!-- lacunas-conferidas: 50 -->\n"
+            "<!-- lacunas-conferidas: 24/48 -->\n"
         )
         self.assertEqual(self.avaliar()["decisao"], indice_integridade.BLOQUEAR)
 
     def test_marca_malformada_nao_silencia(self) -> None:
         self._indice_com_lacuna_grande()
         with self.indice().open("a", encoding="utf-8") as fh:
-            fh.write("<!-- lacunas-conferidas: sei la -->\n")
+            fh.write("<!-- lacunas-conferidas: sei/la -->\n")
         self.assertEqual(self.avaliar()["decisao"], indice_integridade.BLOQUEAR)
 
 
@@ -588,12 +634,19 @@ class ParidadeHigieneTest(unittest.TestCase):
         self.assertIn("EFETIVOS", c9)
         self.assertIn("Custom/rules/", c9)
 
-    def test_higiene_grava_a_marca_de_conferencia(self) -> None:
-        self.assertIn("lacunas-conferidas", self._check9())
+    def test_higiene_grava_as_DUAS_marcas(self) -> None:
+        """Gravar só uma não fecha: a outra dimensão bloqueia em seguida
+        (Codex, r4)."""
+        c9 = self._check9()
+        self.assertIn("lacunas-conferidas", c9)
+        self.assertIn("fichas-fora-conferidas", c9)
+        self.assertIn("fração exata", c9)
+        self.assertIn("por NOME", c9)
 
-    def test_faxina_le_a_marca_de_conferencia(self) -> None:
+    def test_faxina_le_as_duas_marcas(self) -> None:
         """Os dois lados: quem grava e quem respeita."""
         self.assertIn("lacunas-conferidas", self.faxina)
+        self.assertIn("fichas-fora-conferidas", self.faxina)
 
     def test_faxina_bloqueia_indice_ausente_com_ficha(self) -> None:
         self.assertIn("Índice ausente com ficha em disco", self.faxina)
