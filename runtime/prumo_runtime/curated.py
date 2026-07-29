@@ -401,6 +401,20 @@ def _collect_baseline(
     return baseline, topo_stamp, topo_manifest
 
 
+def _read_capped(path: Path) -> bytes | None:
+    """Lê no máximo `MAX_FILE_BYTES`; acima disso devolve None.
+
+    O teto é por CONSTRUÇÃO, não por medição prévia: `stat().st_size` antes de
+    `read_bytes()` é fotografia, e o arquivo pode engordar entre a medida e a
+    leitura — o custo que o teto existe pra evitar seria pago mesmo assim
+    (Codex, r1). Pedindo `MAX+1`, o excedente prova o estouro sem materializar
+    o arquivo inteiro.
+    """
+    with path.open("rb") as fh:
+        data = fh.read(MAX_FILE_BYTES + 1)
+    return None if len(data) > MAX_FILE_BYTES else data
+
+
 def _acervo_index(paths) -> dict[str, str]:
     """Índice `digest → path` de `Arquivo/Acervo/`, construído UMA vez.
 
@@ -425,18 +439,19 @@ def _acervo_index(paths) -> dict[str, str]:
                 if (
                     candidate.is_file()
                     and not candidate.is_symlink()
+                    and not _has_symlink_ancestor(paths.root, paths.relative(candidate))
+                ):
                     # Mesmo teto por arquivo da coleta (#265): sem ele, um
                     # acervo com arquivos grandes fazia o ritual pagar leitura
                     # integral deles só pra decidir se um sumiço foi
                     # arquivamento. Acima do teto não entra no índice — e por
-                    # isso não rebaixa alerta, que é o comportamento seguro.
-                    and candidate.stat().st_size <= MAX_FILE_BYTES
-                    and not _has_symlink_ancestor(paths.root, paths.relative(candidate))
-                ):
-                    indice.setdefault(
-                        _digest(candidate.read_bytes()),
-                        paths.relative(candidate),
-                    )
+                    # isso NÃO rebaixa alerta: sem digest comparável não há
+                    # evidência de arquivamento, e rebaixar transformaria
+                    # ignorância em álibi.
+                    dados = _read_capped(candidate)
+                    if dados is None:
+                        continue
+                    indice.setdefault(_digest(dados), paths.relative(candidate))
             except (OSError, ValueError):
                 continue
     except OSError:

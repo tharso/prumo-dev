@@ -1386,6 +1386,27 @@ class ManifestoMapeamentoTest(BaseTest):
             "sem régua válida o encolhimento passou calado",
         )
 
+    def test_nome_legitimo_com_underscore_duplo_continua_servindo(self) -> None:
+        """`_flat_name` troca `/` por `__`, então um nome que JÁ contém `__`
+        parece achatado sem ter sido. A checagem nova não pode confundir os
+        dois e recusar ficha legítima (Codex, r1)."""
+        ficha = self.ws / "Prumo" / "Referencias" / "a__b.md"
+        ficha.write_text("x" * 1000, encoding="utf-8")
+        self.snapshot("t1")
+
+        ficha.write_text("x" * 50, encoding="utf-8")
+        report = self.snapshot("t2")
+
+        self.assertEqual(
+            [e for e in report["errors"] if "mapeamento do manifesto" in e],
+            [],
+            "nome com `__` legítimo foi tratado como adulteração",
+        )
+        self.assertTrue(
+            any(a["path"].endswith("a__b.md") for a in report["alerts"]),
+            "a ficha com `__` no nome perdeu a régua",
+        )
+
 
 class TetoDoAcervoTest(BaseTest):
     """#265, item 2: a coleta dos curados respeita `MAX_FILE_BYTES`, mas o
@@ -1407,11 +1428,26 @@ class TetoDoAcervoTest(BaseTest):
 
         indice = curated._acervo_index(workspace_paths(self.ws))
 
-        self.assertNotIn(
-            curated._digest(conteudo),
-            indice,
-            "arquivo acima do teto entrou no índice — o custo de leitura foi pago",
-        )
+        self.assertNotIn(curated._digest(conteudo), indice, "arquivo acima do teto entrou no índice")
+
+    def test_leitura_e_limitada_por_construcao_nao_por_medicao(self) -> None:
+        """O teste acima prova que o arquivo não entra — não prova que a
+        leitura não foi paga. Uma implementação que lesse tudo e descartasse
+        depois passaria nele (Codex, r1).
+
+        Aqui a prova é direta: `_read_capped` nunca devolve mais que o teto, e
+        recusa o excedente sem medir antes — então não existe janela entre a
+        medição e a leitura pra um arquivo crescer.
+        """
+        alvo = self._acervo() / "cresceu-no-meio.md"
+        alvo.write_bytes(b"z" * (curated.MAX_FILE_BYTES * 3))
+        self.assertIsNone(curated._read_capped(alvo), "leu além do teto")
+
+        no_limite = self._acervo() / "no-limite.md"
+        no_limite.write_bytes(b"y" * curated.MAX_FILE_BYTES)
+        lido = curated._read_capped(no_limite)
+        self.assertIsNotNone(lido, "arquivo exatamente no teto foi recusado")
+        self.assertEqual(len(lido), curated.MAX_FILE_BYTES)
 
     def test_arquivo_dentro_do_teto_continua_entrando(self) -> None:
         """Negativa: o teto não pode cegar o índice pro caso normal, senão
