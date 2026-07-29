@@ -274,6 +274,25 @@ def workspace_paths(workspace: Path, *, layout_mode: str | None = None) -> Works
     return WorkspacePaths(root=root, nested_layout=nested_layout)
 
 
+def _real_marker_inside(root: Path, candidate: Path) -> bool:
+    """Marcador vale como identidade só se for arquivo REAL dentro da raiz.
+
+    `.exists()` segue symlink e `.exists()` também é True para diretório. Um
+    `_state/workspace-schema.json` que fosse symlink para fora faria o guard
+    aceitar a pasta, e o `repair` que o `prumo update` dispara sozinho passaria
+    a escrever pelo symlink, sobrescrevendo arquivo fora do workspace. A
+    sanitize já trata symlink como fronteira de segurança; o guard não pode
+    reabrir a janela por outra porta (Codex, r1).
+    """
+    try:
+        if candidate.is_symlink() or not candidate.is_file():
+            return False
+        candidate.resolve().relative_to(root.resolve())
+    except (OSError, ValueError):
+        return False
+    return True
+
+
 def is_prumo_workspace(workspace: Path) -> bool:
     """A pasta é um workspace do Prumo, em QUALQUER layout (#268).
 
@@ -281,28 +300,30 @@ def is_prumo_workspace(workspace: Path) -> bool:
     perguntava "isto é um workspace?" olhando um caminho exclusivo do NESTED e
     por isso recusava todo workspace flat legítimo.
 
-    O critério é marcador canônico do runtime resolvido pelo layout detectado —
-    `workspace-schema.json` no `state_root` (`.prumo/state/` ou `_state/`) ou o
-    core em um dos `core_candidates`. A proteção original é preservada: pasta
-    que apenas contém uma subpasta `Prumo/` (repo alheio) não passa, porque
-    nome não é marcador.
+    Identidade é marcador canônico — `workspace-schema.json` do layout ou o
+    core — como arquivo real dentro da raiz. As posições aceitas do core são as
+    do layout DETECTADO: `core_candidates` inclui a posição flat (raiz) como
+    fallback de leitura, e aceitá-la aqui deixaria entrar um flat quebrado que
+    os consumidores tratariam como nested — porteiro que aceita e manda o
+    visitante pro prédio errado (Codex, r1).
     """
     root = Path(workspace).expanduser()
     if not root.is_dir():
         return False
     paths = workspace_paths(root)
-    if paths.workspace_schema.exists():
-        return True
-    if any(candidate.exists() for candidate in paths.core_candidates):
-        return True
-    # Workspace meio-construído (infra criada, core ainda não) continua sendo
-    # workspace: o atalho histórico aceitava `.prumo/` existir e ponto. Exigir
-    # marcador canônico aqui transformaria conserto de bug em mudança de
-    # comportamento — a sanitize passaria a recusar workspace que ela aceita
-    # hoje. O nível de aceitação é preservado e só estendido ao flat.
-    infra = [paths.state_root, paths.logs_root]
+    markers = [paths.workspace_schema]
     if paths.nested_layout:
-        # `system_root` é `.prumo/` no nested. No flat ele É a raiz, e incluí-lo
-        # faria QUALQUER pasta passar — a proteção morreria em silêncio.
-        infra.append(paths.system_root)
-    return any(marker.is_dir() for marker in infra)
+        markers.append(paths.system_root / "system" / "PRUMO-CORE.md")
+        markers.append(paths.system_root / "PRUMO-CORE.md")
+    else:
+        markers.append(root / "PRUMO-CORE.md")
+    if any(_real_marker_inside(root, marker) for marker in markers):
+        return True
+    # Workspace meio-construído (infra criada, core ainda não) continua valendo
+    # — mas SÓ no nested, e não por compatibilidade: `.prumo/` é nome exclusivo
+    # do Prumo, então encontrá-lo já é identidade. No flat a infra se chama
+    # `_state/`/`_logs/`, nomes que qualquer projeto pode ter; aceitá-los como
+    # identidade faria `prumo update` rodar `repair` automático (update.py:742)
+    # dentro de projeto alheio que só tivesse um `_logs/`. A assimetria não é
+    # descuido: é o flat não ter namespace próprio (Codex, r1).
+    return paths.nested_layout and paths.system_root.is_dir() and not paths.system_root.is_symlink()

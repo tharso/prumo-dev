@@ -380,8 +380,14 @@ def workspace_core_status(workspace: Path, remote_version: str | None) -> dict |
         core_v = parse_core_version(workspace)
     except Exception:
         core_v = None
+    if not core_v:
+        # Sem core legível não há o que reportar SOBRE o core. Devolver o dict
+        # com versão vazia fazia a saída humana imprimir `Core do workspace:
+        # n/d (em dia)` — ausência virando saúde por decreto, exatamente o que
+        # este report existe pra impedir (Codex, r1).
+        return None
     return {
-        "workspace_core_version": core_v or "",
+        "workspace_core_version": core_v,
         "workspace_core_needs_update": bool(
             core_v
             and remote_version

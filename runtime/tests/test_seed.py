@@ -234,7 +234,7 @@ class SeedCliTests(unittest.TestCase):
             self.assertIn("local-panorama.json", out)
             self.assertTrue(seed_file_path(ws).exists())
 
-    def test_run_seed_without_prumo_dir_fails_politely(self) -> None:
+    def test_run_seed_without_workspace_markers_fails_politely(self) -> None:
         import io
         from contextlib import redirect_stdout
 

@@ -102,6 +102,83 @@ class WorkspaceMarkerTests(unittest.TestCase):
             self.assertFalse(is_prumo_workspace(Path(tmp)))
 
 
+class MarcadorDiscriminaTests(unittest.TestCase):
+    """Um marcador POR VEZ (Codex, r1).
+
+    A fixture completa de `_flat_workspace` tem `_state`, `_logs`, schema, core,
+    AGENT e PAUTA — com ela, uma implementação que olhasse só `_logs/` passaria
+    em todos os testes positivos. Aqui cada caso isola exatamente um marcador,
+    e os negativos provam o que NÃO pode bastar.
+    """
+
+    def test_flat_so_com_schema_e_workspace(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "_state").mkdir()
+            (root / "_state" / "workspace-schema.json").write_text(_SCHEMA, encoding="utf-8")
+            self.assertTrue(is_prumo_workspace(root))
+
+    def test_flat_so_com_core_e_workspace(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "PRUMO-CORE.md").write_text(_CORE, encoding="utf-8")
+            self.assertTrue(is_prumo_workspace(root))
+
+    def test_flat_so_com_logs_NAO_e_workspace(self) -> None:
+        """O buraco crítico da rodada 1: `_logs/` é nome que qualquer projeto
+        tem. Aceitá-lo faria `prumo update` rodar `repair` automático
+        (update.py:742) dentro de projeto alheio."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "_logs").mkdir()
+            self.assertFalse(is_prumo_workspace(root))
+
+    def test_flat_so_com_state_NAO_e_workspace(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "_state").mkdir()
+            self.assertFalse(is_prumo_workspace(root))
+
+    def test_nested_so_com_prumo_dir_e_workspace(self) -> None:
+        """A tolerância a infra parcial sobrevive SÓ no nested, porque
+        `.prumo/` é nome exclusivo do Prumo. É comportamento herdado do atalho
+        antigo e preservado de propósito."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / ".prumo").mkdir()
+            self.assertTrue(is_prumo_workspace(root))
+
+    def test_marcador_que_e_symlink_nao_vale(self) -> None:
+        """Symlink pra fora faria o repair disparado pelo update escrever fora
+        do workspace."""
+        with tempfile.TemporaryDirectory() as tmp, tempfile.TemporaryDirectory() as fora:
+            alvo = Path(fora) / "schema-de-fora.json"
+            alvo.write_text(_SCHEMA, encoding="utf-8")
+            root = Path(tmp)
+            (root / "_state").mkdir()
+            (root / "_state" / "workspace-schema.json").symlink_to(alvo)
+            self.assertFalse(is_prumo_workspace(root))
+
+    def test_marcador_que_e_diretorio_nao_vale(self) -> None:
+        """`.exists()` é True pra diretório: o critério precisa validar
+        artefato, não nome."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "PRUMO-CORE.md").mkdir()
+            self.assertFalse(is_prumo_workspace(root))
+
+    def test_core_na_posicao_flat_nao_vale_quando_o_layout_e_nested(self) -> None:
+        """Porteiro que aceita e manda pro prédio errado: com uma subpasta
+        `Prumo/` incidental o layout detectado é nested, e os consumidores vão
+        usar caminhos nested. Aceitar o core na posição flat deixaria entrar um
+        workspace que ninguém consegue ler direito."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "Prumo").mkdir()
+            (root / "PRUMO-CORE.md").write_text(_CORE, encoding="utf-8")
+            self.assertFalse(is_prumo_workspace(root))
+
+
 class SanitizeCliDoorTests(unittest.TestCase):
     """Critério 1 e 2 da #268, pela porta pública."""
 
@@ -159,13 +236,28 @@ class UpdateCoreStatusTests(unittest.TestCase):
     evitar (#170)."""
 
     def test_enxerga_core_do_workspace_flat(self) -> None:
+        """Afirmar só `is not None` seria prova de atletismo sentado: um
+        retorno `{}` fixo passaria (Codex, r1). O teste cobra a versão LIDA do
+        core flat e o veredito de defasagem."""
         with tempfile.TemporaryDirectory() as tmp:
             ws = _flat_workspace(Path(tmp))
-            self.assertIsNotNone(workspace_core_status(ws, "5.99.0"))
+            got = workspace_core_status(ws, "5.99.0")
+        self.assertIsNotNone(got)
+        self.assertEqual(got["workspace_core_version"], "5.0.0")
+        self.assertTrue(got["workspace_core_needs_update"])
 
     def test_ignora_pasta_que_nao_e_workspace(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             self.assertIsNone(workspace_core_status(Path(tmp), "5.99.0"))
+
+    def test_infra_sem_core_nao_vira_core_em_dia(self) -> None:
+        """`.prumo/` sem core devolvia dict com versão vazia, e a saída humana
+        imprimia `Core do workspace: n/d (em dia)` — ausência virando saúde por
+        decreto (Codex, r1)."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / ".prumo").mkdir()
+            self.assertIsNone(workspace_core_status(root, "5.99.0"))
 
 
 if __name__ == "__main__":
