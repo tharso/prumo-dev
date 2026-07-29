@@ -33,6 +33,8 @@ DEFAULTS: dict[str, int] = {
     # Cache e backups (consumidos pela sanitize, declarados no mesmo doc)
     "backup_expiry_days": 90,
     "cache_expiry_days": 30,
+    # Snapshot de arquivo curado (#262): encolhimento acima disso vira alerta
+    "curated_shrink_alert_pct": 40,
     # Índices
     "referencias_subcategorize_at": 30,
     # Diário

@@ -180,6 +180,33 @@ class WorkspacePaths:
             self.relative(self.workflows_index),
         )
 
+    def curated_relative_paths(self) -> tuple[str, ...]:
+        """Arquivos que o snapshot da #262 copia: autoral + EMAIL-CURADORIA +
+        fichas.
+
+        COMPÕE `authorial_relative_paths()` em vez de estendê-lo: aquele método
+        alimenta `files.authorial` do `workspace-schema.json`, que é contrato
+        publicado, e uma segunda lista escrita à mão seria a "duas projeções do
+        mesmo dado" que a #195 e a #258 passaram meses corrigindo.
+
+        Fichas entram por REGRA, nunca por nome congelado — a ficha de amanhã
+        é justamente o arquivo insubstituível que uma lista manual perderia.
+        """
+        items = list(self.authorial_relative_paths())
+        items.append(self.relative(self.referencias_root / "EMAIL-CURADORIA.md"))
+        seen = set(items)
+        if self.referencias_root.is_dir():
+            for path in sorted(self.referencias_root.glob("*.md")):
+                # `_` e `.` são infraestrutura da pasta, não ficha (mesma
+                # convenção do acervo).
+                if path.name.startswith((".", "_")):
+                    continue
+                relative = self.relative(path)
+                if relative not in seen:
+                    items.append(relative)
+                    seen.add(relative)
+        return tuple(items)
+
     def derived_relative_paths(self) -> tuple[str, ...]:
         return (
             self.relative(self.workspace_schema),

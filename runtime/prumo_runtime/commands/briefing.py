@@ -20,10 +20,12 @@ from prumo_runtime import faxina_thresholds
 from prumo_runtime.local_panorama import build_local_panorama
 from prumo_runtime.pauta_parsing import extract_section, filter_by_due_date
 from prumo_runtime.version_check import compute_staleness, read_cached_remote_version
+from prumo_runtime.curated import render_alerts, snapshot_curated
 from prumo_runtime.workspace import (
     build_config_from_existing,
     load_json,
     migrate_briefing_state_to_last_briefing,
+    now_stamp,
     parse_core_version,
     read_text,
     semantic_version_key,
@@ -392,6 +394,16 @@ def run_briefing(args) -> int:
         update_last_briefing(workspace, config.timezone_name)
         print("Briefing do dia registrado.")
         return 0
+    # Snapshot dos curados (#262) ANTES de montar o painel: chamada explícita
+    # do comando, nunca efeito escondido em função de construção. Nunca
+    # levanta — falha entra no relatório e o briefing segue.
+    alertas = render_alerts(
+        snapshot_curated(
+            workspace, stamp=now_stamp(build_config_from_existing(workspace).timezone_name)
+        )
+    )
+    if alertas:
+        print(alertas)
     payload = build_briefing_payload(workspace)
     if getattr(args, "format", "text") == "json":
         print(json.dumps(payload, ensure_ascii=False, indent=2))
