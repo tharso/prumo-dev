@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.77.0] - 2026-07-29
+
+### Fixed
+- **A CLI parou de recusar workspace no layout flat (#268)** — o guard que pergunta "isto é um workspace do Prumo?" olhava `.prumo/`, um caminho que **só existe no layout nested**. No flat a infra mora em `_state/`/`_logs/` e o core na raiz, então a resposta era sempre "não" e `prumo sanitize` saía com erro em workspace perfeitamente legítimo. O defeito vem da #179 e ficou dois releases invisível porque nenhum teste atravessava a porta pública: os testes de flat chamam `build_plan()` direto. A #263 o tornou visível ao fazer o `/fim` contar rascunho nos dois roots e **recomendar a `sanitize`** — o painel passou a recomendar o que a ferramenta recusava executar. O mesmo atalho estava em `prumo seed` (a rota do Cowork que carrega o snapshot dos curados da #262 — no flat o snapshot simplesmente nunca acontecia) e em duas posições do `prumo update` (o `--check` escondia workspace defasado atrás de runtime em dia, que é justamente o que ele existe pra evitar). Todos corrigidos pelo mesmo critério, agora resolvido pelo layout detectado. **A proteção original é preservada**: pasta que não é workspace continua recusada, e pasta que só tem uma subpasta `Prumo/` dentro (repo alheio) não passa a valer por causa do nome. A mensagem de recusa deixou de citar `.prumo/` — num workspace flat ela mandava o usuário procurar pasta que o layout dele não tem.
+
 ## [5.76.0] - 2026-07-29
 
 ### Fixed

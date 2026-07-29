@@ -37,7 +37,10 @@ _SCHEMA = json.dumps(
     }
 )
 
-_CORE = "> **prumo_version: 5.76.0**\n"
+# Fixture deliberadamente antiga e fixa: estes testes checam se o core é
+# ENXERGADO, não qual versão ele declara. Casar com a versão real do repo
+# criaria manutenção a cada bump sem cobrir nada a mais.
+_CORE = "> **prumo_version: 5.0.0**\n"
 
 
 def _flat_workspace(root: Path) -> Path:
