@@ -21,6 +21,7 @@ from prumo_runtime.local_panorama import build_local_panorama
 from prumo_runtime.pauta_parsing import extract_section, filter_by_due_date
 from prumo_runtime.version_check import compute_staleness, read_cached_remote_version
 from prumo_runtime.curated import render_report, snapshot_curated
+from prumo_runtime.indice_integridade import render as render_indice
 from prumo_runtime.workspace import (
     build_config_from_existing,
     load_json,
@@ -409,5 +410,8 @@ def run_briefing(args) -> int:
         aviso = render_report(snapshot)
         if aviso:
             print(aviso)
+        indice = render_indice(payload.get("local_panorama", {}).get("indice_referencias", {}))
+        if indice:
+            print(f"[indice] {indice}")
         print(payload["message"])
     return 0

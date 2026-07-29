@@ -85,7 +85,9 @@ pergunta "onde guardei aquele artigo?" e Prumo não sabe.
    comparar TAXA, nunca a contagem crua): **não alterar o índice**, relatar e entregar pra higiene. Sem rodapé, ou malformado, este
    passo é PULADO — ausência de rodapé nunca é alarme por si. Lacuna já
    declarada deliberada (`<!-- lacunas-conferidas: L/S -->`, fração exata) não
-   volta a alarmar: só o que CRESCEU além dela conta.
+   volta a alarmar: só o que CRESCEU além dela conta — comparar por
+   `lacunas × S ≥ L × slots`. Marca só vale com `0 < S` e `0 ≤ L ≤ S`:
+   fração impossível (`999/1`, `0/0`) é ignorada, nunca silencia.
 2. **Volume (#261).** Se as fichas fora da tabela forem `≥ referencias_bulk_reindex_at`
    (default 5): **não alterar o índice**, relatar e entregar pra higiene.
    N fichas fora do índice de uma vez não são "N fichas novas" — são um

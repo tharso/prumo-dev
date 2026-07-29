@@ -248,6 +248,14 @@ def avaliar(
         "decisao": OK,
         "razoes": [],
     }
+    if indice_path.is_symlink():
+        # Mesma assimetria da raiz: o manifesto da semente exclui symlink, e
+        # seguir aqui deixaria a decisão velha valendo depois de o alvo mudar
+        # (Codex, r6).
+        resultado["fonte_completa"] = False
+        resultado["decisao"] = BLOQUEAR
+        resultado["razoes"] = ["`INDICE.md` é symlink — fonte fora do território"]
+        return resultado
     indice_existe = indice_path.is_file()
     try:
         texto = indice_path.read_text(encoding="utf-8") if indice_existe else ""
@@ -338,6 +346,11 @@ def render(resultado: dict) -> str:
             linha += " Fora da tabela: " + ", ".join(f"`{n}`" for n in nomes[:10])
             if len(nomes) > 10:
                 linha += f" (+{len(nomes) - 10})"
+        orfas = resultado.get("entradas_sem_arquivo", [])
+        if orfas:
+            linha += " Sem arquivo: " + ", ".join(f"`{n}`" for n in orfas[:10])
+            if len(orfas) > 10:
+                linha += f" (+{len(orfas) - 10})"
         return linha
     if decisao == REINDEXAR:
         partes = []

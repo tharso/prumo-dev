@@ -724,5 +724,91 @@ class MarcaImpossivelTest(BaseTest):
         self.assertEqual(self.avaliar()["decisao"], indice_integridade.OK)
 
 
+class RelatoProdutivoTest(BaseTest):
+    """`render()` não tinha chamador produtivo: nomear a órfã só acontecia no
+    teste (Codex, r6). Agora os dois comandos imprimem no modo texto."""
+
+    def _rodar(self, comando, **extra):
+        import io
+        from contextlib import redirect_stdout
+        from types import SimpleNamespace
+        from unittest.mock import patch
+        buf = io.StringIO()
+        with patch.object(comando, "snapshot_curated", return_value={}), \
+             redirect_stdout(buf):
+            comando.run_briefing(SimpleNamespace(workspace=str(self.ws), format="text"))
+        return buf.getvalue()
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.ws = self.root.parent
+        (self.ws / ".prumo" / "state").mkdir(parents=True, exist_ok=True)
+
+    def test_briefing_nomeia_a_orfa_no_texto(self) -> None:
+        from unittest.mock import patch
+        from prumo_runtime.commands import briefing as cmd
+        self.escrever(_tabela([1]) + "\n<!-- proximo-id: 2 -->\n")
+        payload = {
+            "message": "painel",
+            "local_panorama": {"indice_referencias": self.avaliar()},
+        }
+        with patch.object(cmd, "build_briefing_payload", return_value=payload):
+            saida = self._rodar(cmd)
+        self.assertIn("ficha-1.md", saida)
+        self.assertIn("[indice]", saida)
+
+    def test_briefing_silencioso_com_indice_limpo(self) -> None:
+        """Negativa: casa em ordem não imprime linha nenhuma."""
+        from unittest.mock import patch
+        from prumo_runtime.commands import briefing as cmd
+        self.escrever_coerente([1], "\n<!-- proximo-id: 2 -->\n")
+        payload = {
+            "message": "painel",
+            "local_panorama": {"indice_referencias": self.avaliar()},
+        }
+        with patch.object(cmd, "build_briefing_payload", return_value=payload):
+            saida = self._rodar(cmd)
+        self.assertNotIn("[indice]", saida)
+
+    def test_bloqueio_nomeia_orfa_tambem(self) -> None:
+        """No ramo `bloquear` o render omitia as órfãs (Codex, r6)."""
+        self.escrever(_tabela([45, 46, 47, 48]) + "\n<!-- proximo-id: 49 -->\n")
+        self.fichas(range(1, 40))
+        texto = indice_integridade.render(self.avaliar())
+        self.assertIn("Sem arquivo:", texto)
+
+
+class IndiceSymlinkadoTest(BaseTest):
+    def test_indice_symlinkado_e_fonte_indisponivel(self) -> None:
+        """Corrigi a raiz na r5 e deixei o ARQUIVO passar (Codex, r6)."""
+        alvo = Path(self._tmp.name) / "fora.md"
+        alvo.write_text(_tabela([1]) + "\n<!-- proximo-id: 2 -->\n", encoding="utf-8")
+        self.indice().symlink_to(alvo)
+        r = self.avaliar()
+        self.assertEqual(r["decisao"], indice_integridade.BLOQUEAR)
+        self.assertFalse(r["fonte_completa"])
+
+
+class EspinhaEModuloTest(unittest.TestCase):
+    """A espinha declarava o gate ANTIGO enquanto o módulo detalhado exigia o
+    bloco novo — contradição que deixaria runtime velho passar (Codex, r6)."""
+
+    def setUp(self) -> None:
+        raiz = Path(__file__).resolve().parents[2] / "skills" / "prumo" / "references" / "modules"
+        self.espinha = (raiz / "briefing-procedure.md").read_text(encoding="utf-8")
+        self.estado = (raiz / "briefing-estado.md").read_text(encoding="utf-8")
+        self.faxina = (raiz / "faxina.md").read_text(encoding="utf-8")
+
+    def test_espinha_e_modulo_pedem_o_mesmo_gate(self) -> None:
+        self.assertIn("indice_referencias.schema", self.espinha)
+        self.assertIn("indice_referencias.schema", self.estado)
+
+    def test_fallback_textual_valida_a_marca(self) -> None:
+        """O Python rejeita `999/1`; o texto aceitava qualquer fração e
+        silenciaria o pavio no caminho skills-first."""
+        self.assertIn("0 < S", self.faxina)
+        self.assertIn("0 ≤ L ≤ S", self.faxina)
+
+
 if __name__ == "__main__":
     unittest.main()

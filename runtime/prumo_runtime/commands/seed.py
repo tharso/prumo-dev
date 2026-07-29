@@ -42,6 +42,7 @@ from prumo_runtime.inbox_preview import load_inbox_preview
 from prumo_runtime import faxina_thresholds
 from prumo_runtime.local_panorama import build_local_panorama
 from prumo_runtime.curated import render_report, snapshot_curated
+from prumo_runtime.indice_integridade import render as render_indice
 from prumo_runtime.workspace import build_config_from_existing
 from prumo_runtime.workspace_paths import workspace_paths
 
@@ -288,6 +289,9 @@ def run_seed(args: argparse.Namespace) -> int:
         aviso = render_report(snapshot)
         if aviso:
             print(aviso)
+        indice = render_indice(payload.get("local_panorama", {}).get("indice_referencias", {}))
+        if indice:
+            print(f"[indice] {indice}")
         print(
             f"[seed] semente gravada em `{target.relative_to(workspace)}` — "
             f"{total} item(ns) da PAUTA ({len(sections)} seções canônicas + "
