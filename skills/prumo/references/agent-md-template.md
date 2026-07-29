@@ -88,7 +88,7 @@ Fora disso, abertura não abre mais nada. A saudação vem proativa, com 2-4 op�
 - `Diario/`: diários do dia gerados pelo `/fim` (a pasta nasce no primeiro uso)
 - `.prumo/skills/`: skills do Prumo (fallback quando CLI não existe)
 - `.prumo/system/PRUMO-CORE.md`: regras do motor e guardrails do sistema
-- `.prumo/state/`: estado técnico e metadados do runtime
+- `.prumo/state/`: estado e metadados do runtime (`rascunho/`: seus intermediários, descartáveis)
 - `.prumo/logs/`: registros de revisão
 
 ## Perímetro de leitura

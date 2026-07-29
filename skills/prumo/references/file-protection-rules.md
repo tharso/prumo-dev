@@ -19,7 +19,8 @@ Antes de gerar QUALQUER arquivo, verificar se ele já existe na pasta do usuári
 | Prumo/Agente/INDEX.md (legado) | **NÃO sobrescrever.** Aposentado (#97): não é mais gerado, mas workspaces antigos têm um tombstone aqui — preservar. |
 | [Area]/README.md | **NÃO sobrescrever.** Informar: "A pasta [Area] já tem um README com contexto. Mantendo." |
 | Pastas (.prumo/logs/, .prumo/state/, Prumo/Inbox4Mobile/, Prumo/Referencias/) | **Criar apenas se não existirem.** |
-| `_to_delete/` (raiz do workspace) | **Quarentena do USUÁRIO (#242).** Não é gerada no setup: nasce quando a máquina de remoção move o primeiro item. O Prumo escreve lá APENAS movendo itens em commit confirmado — nunca lista, indexa, conta, apresenta em briefing/faxina/acervo, nem esvazia. Quem esvazia é o usuário, à mão. |
+| `_to_delete/` (raiz do workspace) | **Quarentena do USUÁRIO (#242).** Não é gerada no setup: nasce quando a máquina de remoção move o primeiro item. O Prumo escreve lá APENAS movendo itens em commit confirmado — nunca lista, indexa, conta, apresenta em briefing/faxina/acervo, nem esvazia. Quem esvazia é o usuário, à mão. **Destino de decisão do usuário; nunca subproduto ou rascunho do agente (#263)** — rascunho de máquina ali obriga o dono a garimpar o que ele descartou no meio do que a máquina sujou. Intermediário do agente vai pra `.prumo/state/rascunho/`. |
+| `.prumo/state/rascunho/` (flat: `_state/rascunho/`) | **Território do agente (#263).** Subterritório declarado dentro de `state/` — **estende** a #214 (o agente não escreve estado do runtime) em vez de revogá-la: aqui nada é fonte de verdade, tudo é descartável e nada é autoral. Criado LAZY, no primeiro uso; o setup não pré-cria e ausência = zero candidatos. Varrido pela `sanitize` (família `agente_rascunho`, `move-to-backup` depois de `ephemeral_days`), nunca por `rm` — funciona sob a ponte do Cowork. |
 
 ## Resumo pós-geração
 

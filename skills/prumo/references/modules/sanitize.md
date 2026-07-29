@@ -35,6 +35,7 @@ O motor determinístico é o subcomando do runtime. Sempre em três passos:
 |---|---|---|
 | `handover_legacy` | `HANDOVER*` sob `.prumo/state/**` e `_state/**` (formato aposentado, #68) | move → backup |
 | `decidir_ephemeral` | HTML/fonte em `.prumo/state/decidir` e `.prumo/state/acervo` com idade > 14d (#102: reproduzíveis) | move → backup |
+| `agente_rascunho` | Filho DIRETO de `.prumo/state/rascunho/` — no layout flat, `_state/rascunho/` — com idade > 14d (#263). Diretório sai inteiro, e só com a árvore toda fria — varrer arquivo a arquivo desmontaria uma reconstrução parcial. Subtree **exclusiva**: nenhuma outra regra a reivindica, nem quando rodada isolada. Árvore que carrega `backup(s)` fica onde está (regra de ouro da #178) | move → backup |
 | `nested_backups` | diretório de backup DENTRO de um backup root (`.prumo/`, `backups/`, `backup/`) | remove (redundância) |
 | `expired_backups` | backup com idade > 90d (canônico e legados) | remove (expirado não ganha backup) |
 | `legacy_backup_consolidation` | sobreviventes de `.prumo/backup/` singular (pré-#81) | move → `.prumo/backups/legacy/` |

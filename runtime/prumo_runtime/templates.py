@@ -248,7 +248,8 @@ def render_agent_md(
         map_items.append(f"- `{skills_path}`: skills do Prumo (fallback quando CLI não existe)")
     map_items.extend([
         f"- `{core_path}`: regras do motor e guardrails do sistema",
-        f"- `{state_path}`: estado técnico e metadados do runtime",
+        f"- `{state_path}`: estado e metadados do runtime"
+        f" (`rascunho/`: seus intermediários, descartáveis)",
         f"- `{logs_path}`: registros de revisão",
     ])
     workspace_map = "\n".join(map_items)

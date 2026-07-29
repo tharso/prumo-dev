@@ -6,6 +6,16 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.76.0] - 2026-07-29
+
+### Fixed
+- **Rascunho de máquina parou de sujar a quarentena do usuário (#263)** — no Cowork com ponte de dispositivo, `rm` falha com `Operation not permitted`. A #242 resolveu isso pro fluxo do usuário: o destino terminal é `_to_delete/`, que **ele** esvazia à mão. O que só ficou visível depois: **o agente também não consegue limpar os próprios artefatos intermediários**, então cada tentativa de conserto deixava lixo ali — obrigando o dono a garimpar o que ele descartou conscientemente no meio do que a máquina sujou trabalhando. O incidente do índice, sozinho, produziu mais uma pasta desse tipo. Agora existe `.prumo/state/rascunho/`, território declarado do agente: criado **lazy** no primeiro uso, fora do perímetro de leitura (#194/#213), e varrido pela `sanitize` na família nova `agente_rascunho` — `move-to-backup` depois de `ephemeral_days`, **nunca `rm`**, exatamente o padrão que o `decidir_ephemeral` já usava e que funciona sob a ponte. `_to_delete/` passa a declarar no contrato que é **destino de decisão do usuário, nunca subproduto do agente**. O gatilho fica na porta canônica (mapa do workspace): regra que depende de lembrar de abrir o manual já perdeu a briga — **catraca 6.671 → 6.674 (+3)**, aprovado pelo dono.
+
+### Changed
+- **A subtree do rascunho é exclusiva (#263)** — ordem de regra só garante disjunção quando todas rodam: com `--rules` isolado, uma fonte duplicada ali cairia em `asset_dedupe` e seria **deletada de verdade**, e um `HANDOVER*` cairia em `handover_legacy`. As duas famílias agora excluem a subtree explicitamente. A unidade de limpeza é o **filho direto**, e diretório só sai quando a árvore inteira está fria — varrer arquivo a arquivo desmontaria uma reconstrução parcial e deixaria casca vazia.
+- **`_preserved` passou a proteger por caminho canônico (#263)** — antes protegia por basename e por qualquer componente chamado `logs`, então um rascunho chamado `agent-lock.json` nunca seria limpo, contrariando o contrato de que ali tudo é descartável. Agora só `.prumo/state/agent-lock.json`, `.prumo/state/workspace-schema.json` e `.prumo/logs/**` são preservados.
+- **O `/fim` detecta o acúmulo novo (#263)** — sem isso, rascunho envelheceria para sempre sem nunca disparar a superfície que oferece a `sanitize`.
+
 ## [5.75.0] - 2026-07-29
 
 ### Fixed

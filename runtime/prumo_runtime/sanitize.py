@@ -18,6 +18,9 @@ aprovado + `--yes`.
 
 Regras (cada path pertence a NO MÁXIMO uma, na ordem daqui):
 
+- `agente_rascunho`      → move pro backup (filho direto frio de
+                           `.prumo/state/rascunho/`, #263). Subtree EXCLUSIVA:
+                           nenhuma outra regra a reivindica, mesmo isolada.
 - `handover_legacy`      → move pro backup (formato aposentado, #68)
 - `decidir_ephemeral`    → move pro backup (HTML/fonte >14d, contrato #102)
 - `nested_backups`       → delete (backup dentro de backup é redundância;
@@ -43,7 +46,6 @@ existir, então ele nunca se lista.
 
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import re
@@ -54,11 +56,28 @@ from datetime import date, datetime
 from pathlib import Path
 
 from prumo_runtime import faxina_thresholds
+from prumo_runtime.agente_rascunho import (
+    _sob_rascunho,
+    iter_agente_rascunho,
+)
+from prumo_runtime.scan_primitives import (
+    _age_days,
+    _clean_chain,
+    _content_id,
+    _mtime_ns,
+    _rel,
+    _sha256,
+    _size_bytes,
+    _tree_has_symlink,
+    _usable_root,
+    _walk_tree,
+)
 from prumo_runtime.backup import iter_backup_roots
 
 SCHEMA_VERSION = "prumo_sanitize_report.v1"
 
 RULES = (
+    "agente_rascunho",
     "handover_legacy",
     "decidir_ephemeral",
     "nested_backups",
@@ -94,131 +113,33 @@ class Thresholds:
                 raise SanitizeError(f"threshold negativo: {name}={getattr(self, name)}")
 
 
-def _rel(workspace: Path, path: Path) -> str:
-    return path.relative_to(workspace).as_posix()
-
-
-def _age_days(path: Path, today: date) -> int:
-    return (today - date.fromtimestamp(path.lstat().st_mtime)).days
-
-
-def _mtime_ns(path: Path) -> int:
-    return path.lstat().st_mtime_ns
-
-
-def _walk_tree(root: Path) -> tuple[list[Path], list[Path]]:
-    """(dirs, files) sob `root`, ordem determinística, symlinks NUNCA
-    seguidos nem listados (`os.walk(followlinks=False)` + filtro)."""
-    dirs: list[Path] = []
-    files: list[Path] = []
-    for dirpath, dirnames, filenames in os.walk(root, followlinks=False):
-        base = Path(dirpath)
-        for name in sorted(dirnames):
-            child = base / name
-            if child.is_symlink():
-                dirnames.remove(name)
-                continue
-            dirs.append(child)
-        dirnames.sort()
-        for name in sorted(filenames):
-            child = base / name
-            if not child.is_symlink():
-                files.append(child)
-    return dirs, files
-
-
-def _tree_has_symlink(path: Path) -> bool:
-    """True se o próprio path ou QUALQUER descendente é symlink. Candidato
-    assim nunca entra no plano; se o link surgir depois da aprovação, a
-    revalidação na fronteira da mutação bloqueia."""
-    if path.is_symlink():
-        return True
-    if not path.is_dir():
-        return False
-    for dirpath, dirnames, filenames in os.walk(path, followlinks=False):
-        base = Path(dirpath)
-        for name in dirnames + filenames:
-            if (base / name).is_symlink():
-                return True
-    return False
-
-
-def _size_bytes(path: Path) -> int:
-    if path.is_symlink() or path.is_file():
-        return path.lstat().st_size
-    _, files = _walk_tree(path)
-    return sum(p.lstat().st_size for p in files)
-
-
-def _sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
-def _content_id(workspace: Path, path: Path) -> str:
-    """Identidade forte do candidato pro fingerprint do plano.
-
-    Arquivo → SHA-256 do conteúdo. Diretório → SHA-256 de um manifesto
-    determinístico da árvore (path relativo, tipo, tamanho, mtime_ns e
-    hash de conteúdo por arquivo) — mudou qualquer coisa lá dentro, muda a
-    identidade e o apply bloqueia."""
-    if path.is_file() and not path.is_symlink():
-        return _sha256(path)
-    dirs, files = _walk_tree(path)
-    lines = [f"{p.relative_to(path).as_posix()}|d" for p in dirs]
-    lines += [
-        f"{p.relative_to(path).as_posix()}|f|{p.lstat().st_size}|{p.lstat().st_mtime_ns}|{_sha256(p)}"
-        for p in files
-    ]
-    manifest = "\n".join(sorted(lines))
-    return hashlib.sha256(manifest.encode("utf-8")).hexdigest()
-
-
 def _under_backup_root(workspace: Path, path: Path) -> bool:
     return any(
         root in path.parents for root in iter_backup_roots(workspace)
     )
 
 
-def _clean_chain(workspace: Path, path: Path) -> bool:
-    """True se nem `path` nem nenhum ancestral até o workspace é symlink.
-
-    Toda operação (listar no plano, ler, hashear, mover, apagar) exige cadeia
-    limpa: um diretório symlinkado no meio do caminho redireciona a operação
-    pra fora do território real — recusar é mais barato que auditar.
-    """
-    try:
-        rel = path.relative_to(workspace)
-    except ValueError:
-        return False
-    current = workspace
-    for part in rel.parts:
-        current = current / part
-        if current.is_symlink():
-            return False
-    return True
-
-
 # --- Detectores puros (reusados pelo /fim, read-only) -----------------------
-
-
-def _usable_root(workspace: Path, root: Path) -> bool:
-    """Root só é enumerável se existe, é diretório real e tem cadeia limpa —
-    validado ANTES de qualquer is_dir/walk (root symlinkado não é nem
-    atravessado pra descobrir filhos)."""
-    return _clean_chain(workspace, root) and not root.is_symlink() and root.is_dir()
 
 
 def iter_handover_files(workspace: Path) -> list[Path]:
     """Arquivos HANDOVER* sob `.prumo/state/**` e `_state/**` (formato
     aposentado, #68). Nunca dentro dos backup roots (lá é território das
-    regras de backup) e nunca através de symlink."""
+    regras de backup), **nunca dentro do rascunho do agente** (#263 — a
+    exclusão precisa morar AQUI, não só no `build_plan`: o `/fim` consome o
+    iterator direto, e um rascunho chamado `HANDOVER-x.md` disparava
+    `handover_legacy` no painel) e nunca através de symlink."""
     found: list[Path] = []
     for root in (workspace / ".prumo" / "state", workspace / "_state"):
         if not _usable_root(workspace, root):
             continue
         _, files = _walk_tree(root)
         for path in files:
-            if path.name.startswith("HANDOVER") and not _under_backup_root(workspace, path):
+            if (
+                path.name.startswith("HANDOVER")
+                and not _under_backup_root(workspace, path)
+                and not _sob_rascunho(workspace, path)
+            ):
                 found.append(path)
     return found
 
@@ -336,8 +257,17 @@ def _iter_duplicate_assets(workspace: Path, claimed: set[str]) -> list[tuple[Pat
 # --- Plano e execução --------------------------------------------------------
 
 
-def _preserved(path: Path) -> bool:
-    return path.name in _PRESERVED_NAMES or "logs" in path.parts
+def _preserved(workspace: Path, path: Path) -> bool:
+    """Preservação por CAMINHO canônico, não por basename global.
+
+    Antes, um rascunho chamado `agent-lock.json` ou guardado sob qualquer
+    pasta `logs/` nunca seria limpo — contrariando "sem filtro de sufixo"
+    (Codex, 263-6).
+    """
+    rel = _rel(workspace, path)
+    if rel.startswith(".prumo/logs/") or rel == ".prumo/logs":
+        return True
+    return rel in {f".prumo/state/{nome}" for nome in _PRESERVED_NAMES}
 
 
 def build_plan(
@@ -371,7 +301,7 @@ def build_plan(
 
     def _claim(rule: str, path: Path, action: str, reason: str, sha256: str | None = None) -> None:
         rel = _rel(workspace, path)
-        if rel in claimed or _preserved(path):
+        if rel in claimed or _preserved(workspace, path):
             return
         if path.is_symlink() or _tree_has_symlink(path):
             return  # symlink (no item ou descendente) nunca entra no plano
@@ -389,8 +319,16 @@ def build_plan(
             "reason": reason,
         })
 
+    if "agente_rascunho" in wanted:
+        for path in iter_agente_rascunho(workspace, today, t.ephemeral_days):
+            _claim(
+                "agente_rascunho", path, "move-to-backup",
+                f"rascunho do agente >{t.ephemeral_days}d (descartável por contrato)",
+            )
     if "handover_legacy" in wanted:
         for path in iter_handover_files(workspace):
+            if _sob_rascunho(workspace, path):
+                continue  # subtree exclusiva do agente_rascunho (#263)
             _claim("handover_legacy", path, "move-to-backup", "formato HANDOVER aposentado (#68)")
     if "decidir_ephemeral" in wanted:
         for path in _iter_old_ephemerals(workspace, today, t.ephemeral_days):
@@ -420,6 +358,8 @@ def build_plan(
             _claim("workspace_cache", path, "delete", f"cache >{t.cache_days}d (reproduzível)")
     if "asset_dedupe" in wanted:
         for path, digest in _iter_duplicate_assets(workspace, claimed):
+            if _sob_rascunho(workspace, path):
+                continue  # subtree exclusiva do agente_rascunho (#263)
             _claim(
                 "asset_dedupe", path, "delete",
                 "hash idêntico à vendored em `.prumo/skills/**/assets/` e sem HTML vivo referenciando",
