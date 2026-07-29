@@ -327,3 +327,36 @@ def is_prumo_workspace(workspace: Path) -> bool:
     # dentro de projeto alheio que só tivesse um `_logs/`. A assimetria não é
     # descuido: é o flat não ter namespace próprio (Codex, r1).
     return paths.nested_layout and paths.system_root.is_dir() and not paths.system_root.is_symlink()
+
+
+def is_legacy_flat_workspace(workspace: Path) -> bool:
+    """Workspace do Prumo no layout ANTIGO (flat), onde escrever é proibido.
+
+    Decisão do dono (29/07, #268): no flat a LEITURA funciona — diagnóstico,
+    panorama, status de versão — e a ESCRITA para, oferecendo `prumo migrate`.
+
+    A razão não é preguiça de suportar dois layouts: é que os destinos de
+    escrita do runtime (archive, backups, journal, semente, snapshot dos
+    curados) são `.prumo/` literal em 39 pontos, e o `setup` não cria flat
+    desde a era skills-first. Gravar num flat criaria uma árvore `.prumo/`
+    DENTRO dele — os dois layouts misturados na mesma pasta, que é pior que
+    recusar. O caminho do produto pra quem está no layout antigo é `migrate`.
+    """
+    return is_prumo_workspace(workspace) and not workspace_paths(workspace).nested_layout
+
+
+LEGACY_FLAT_POST_UPDATE_NOTE = (
+    "workspace no layout antigo (flat): o repair pós-update não roda aqui porque "
+    "converteria o layout sem você pedir. Rode `prumo migrate --workspace .` "
+    "quando quiser migrar."
+)
+
+
+def legacy_flat_refusal(workspace: Path, verbo: str) -> str:
+    """Recado único da recusa de escrita no flat — mesmo texto em todo comando."""
+    return (
+        f"workspace no layout antigo (flat): {workspace} — nada a {verbo} aqui até migrar. "
+        f"Gravar agora criaria um `.prumo/` dentro dele e misturaria os dois layouts. "
+        f"Rode `prumo migrate --workspace {workspace}` primeiro; o diagnóstico "
+        f"(`prumo sanitize` sem `--apply`) já funciona sem migrar."
+    )

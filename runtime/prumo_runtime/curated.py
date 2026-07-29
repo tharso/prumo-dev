@@ -576,6 +576,18 @@ def snapshot_curated(
     try:
         workspace = Path(workspace).expanduser().resolve()
         paths = workspace_paths(workspace)
+        if not paths.nested_layout:
+            # Layout antigo (flat): o destino é `.prumo/backups/` literal, então
+            # gravar aqui criaria um `.prumo/` DENTRO do workspace flat e
+            # misturaria os dois arranjos. A trava mora nesta função, e não nos
+            # dois chamadores (`seed` e `briefing`), pra que qualquer ritual
+            # futuro que peça snapshot já nasça protegido (#268).
+            report["skipped"] = (
+                "layout antigo (flat): o snapshot gravaria em `.prumo/backups/` e "
+                "criaria um `.prumo/` dentro do workspace. Rode `prumo migrate` "
+                "pra ganhar a cópia de segurança dos arquivos curados."
+            )
+            return report
         scope_root = workspace / ".prumo" / "backups" / SCOPE
 
         # Três origens de mensagem, com pesos DIFERENTES. Só a primeira decide

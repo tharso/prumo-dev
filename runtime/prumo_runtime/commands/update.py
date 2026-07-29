@@ -25,7 +25,7 @@ from pathlib import Path
 from typing import Any
 
 from prumo_runtime import __version__
-from prumo_runtime.workspace_paths import is_prumo_workspace
+from prumo_runtime.workspace_paths import LEGACY_FLAT_POST_UPDATE_NOTE, is_legacy_flat_workspace, is_prumo_workspace
 
 
 REMOTE_VERSION_URL = "https://raw.githubusercontent.com/tharso/prumo/main/VERSION"
@@ -381,10 +381,8 @@ def workspace_core_status(workspace: Path, remote_version: str | None) -> dict |
     except Exception:
         core_v = None
     if not core_v:
-        # Sem core legível não há o que reportar SOBRE o core. Devolver o dict
-        # com versão vazia fazia a saída humana imprimir `Core do workspace:
-        # n/d (em dia)` — ausência virando saúde por decreto, exatamente o que
-        # este report existe pra impedir (Codex, r1).
+        # Dict com versão vazia fazia a saída imprimir `Core do workspace: n/d
+        # (em dia)` — ausência virando saúde por decreto (Codex, r1).
         return None
     return {
         "workspace_core_version": core_v,
@@ -729,13 +727,19 @@ def run_update(args) -> int:
         # comparando a versão velha com ela própria (review Codex, #232).
         expected = artifact_version or remote_version
         workspace_detected = is_prumo_workspace(Path.cwd())
+        # O repair pós-update GRAVA, e grava nested (`install_skills` força
+        # layout_mode="nested"): dispará-lo num flat converteria o layout do
+        # usuário como efeito colateral de um update de runtime (#268).
+        legacy_flat = is_legacy_flat_workspace(Path.cwd())
         payload["post_update"] = {
             "new_version": new_version,
             "expected_version": expected,
             "version_confirmed": bool(expected) and new_version == expected,
             "workspace_detected": workspace_detected,
-            "repair_suggested": workspace_detected,
+            "repair_suggested": workspace_detected and not legacy_flat,
         }
+        if legacy_flat:
+            payload["post_update"]["workspace_note"] = LEGACY_FLAT_POST_UPDATE_NOTE
         if expected and new_version != expected:
             payload["post_update"]["warning"] = (
                 f"binário reporta {new_version}, artefato instalado era {expected} — "
@@ -743,7 +747,7 @@ def run_update(args) -> int:
             )
         # Propaga o update pro workspace (#146): sem isto, o runtime atualiza
         # mas as skills do workspace ficam velhas e comandos novos "não existem".
-        elif workspace_detected:
+        elif workspace_detected and not legacy_flat:
             payload["post_update"].update(
                 _run_post_update_repair(Path.cwd(), expected_version=expected)
             )

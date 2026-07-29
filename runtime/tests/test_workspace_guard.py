@@ -25,7 +25,7 @@ from pathlib import Path
 
 from prumo_runtime.cli import main
 from prumo_runtime.commands.update import workspace_core_status
-from prumo_runtime.workspace_paths import is_prumo_workspace
+from prumo_runtime.workspace_paths import is_legacy_flat_workspace, is_prumo_workspace
 
 _SCHEMA = json.dumps(
     {
@@ -212,22 +212,75 @@ class SanitizeCliDoorTests(unittest.TestCase):
         self.assertNotIn("`.prumo/`", out)
 
 
-class SeedCliDoorTests(unittest.TestCase):
-    """`prumo seed` carrega o snapshot dos curados (#262) e tinha o MESMO
-    atalho: no flat o snapshot simplesmente nunca acontecia."""
+class EscritaNoFlatParaTests(unittest.TestCase):
+    """Decisão do dono (29/07, #268): no flat a LEITURA funciona e a ESCRITA
+    para, oferecendo `prumo migrate`.
 
-    def test_seed_nao_recusa_workspace_flat(self) -> None:
+    O motivo é concreto: os destinos de escrita do runtime — archive, backups,
+    journal, semente, snapshot dos curados — são `.prumo/` literal. Deixar
+    gravar num flat criaria uma árvore `.prumo/` DENTRO dele, misturando os
+    dois layouts na mesma pasta. Recusar é melhor que corromper o arranjo.
+    """
+
+    def test_dry_run_da_sanitize_funciona_no_flat(self) -> None:
+        """A metade read-only continua valendo — é o `produz plano` da issue."""
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = _flat_workspace(Path(tmp))
+            rc, out = _run(["sanitize", "--workspace", str(ws)])
+        self.assertEqual(rc, 0, f"o diagnóstico não deveria exigir migração:\n{out}")
+        self.assertNotIn("layout antigo", out)
+
+    def test_apply_da_sanitize_para_no_flat_e_oferece_migrate(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = _flat_workspace(Path(tmp))
+            rc, out = _run(["sanitize", "--apply", "--workspace", str(ws)])
+        self.assertEqual(rc, 1)
+        self.assertIn("layout antigo", out)
+        self.assertIn("prumo migrate", out)
+
+    def test_apply_no_flat_nao_cria_arvore_prumo(self) -> None:
+        """O observável que importa: a recusa tem que ser ANTES de qualquer
+        escrita, senão ela chega tarde."""
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = _flat_workspace(Path(tmp))
+            _run(["sanitize", "--apply", "--workspace", str(ws)])
+            self.assertFalse((ws / ".prumo").exists(), "a recusa deixou nascer um `.prumo/` no flat")
+
+    def test_seed_para_no_flat_e_oferece_migrate(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             ws = _flat_workspace(Path(tmp))
             rc, out = _run(["seed", "--workspace", str(ws)])
-        self.assertEqual(rc, 0, f"seed recusou workspace flat legítimo:\n{out}")
-        self.assertNotIn("nada a semear aqui", out)
+            self.assertEqual(rc, 1)
+            self.assertIn("layout antigo", out)
+            self.assertIn("prumo migrate", out)
+            self.assertFalse((ws / ".prumo").exists(), "o seed deixou nascer um `.prumo/` no flat")
+
+    def test_seed_continua_semeando_no_nested(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = _nested_workspace(Path(tmp))
+            rc, out = _run(["seed", "--workspace", str(ws)])
+        self.assertEqual(rc, 0, f"regressão no nested:\n{out}")
 
     def test_seed_recusa_pasta_que_nao_e_workspace(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             rc, out = _run(["seed", "--workspace", tmp])
         self.assertEqual(rc, 1)
         self.assertIn("nada a semear aqui", out)
+        self.assertNotIn("prumo migrate", out, "pasta qualquer não é caso de migração")
+
+    def test_flat_legitimo_e_reconhecido_como_legado(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertTrue(is_legacy_flat_workspace(_flat_workspace(Path(tmp))))
+
+    def test_nested_nao_e_legado(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertFalse(is_legacy_flat_workspace(_nested_workspace(Path(tmp))))
+
+    def test_pasta_qualquer_nao_e_flat_legado(self) -> None:
+        """Sem isto, `is_legacy_flat_workspace` viraria 'não é nested', e
+        qualquer pasta do disco receberia o convite pra migrar."""
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertFalse(is_legacy_flat_workspace(Path(tmp)))
 
 
 class UpdateCoreStatusTests(unittest.TestCase):
