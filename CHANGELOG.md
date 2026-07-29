@@ -6,6 +6,12 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.79.0] - 2026-07-29
+
+### Fixed
+- **O manifesto do snapshot passou a provar o próprio mapeamento (#265)** — `_validate_candidate` conferia existência da cópia, digest e UTF-8, mas nunca que o nome achatado correspondia ao caminho original. Uma adulteração **coerente** — `files` e `digests` consistentes entre si, com o nome trocado — passava na validação e fazia o campo `previous_copy` apontar para um arquivo inexistente. Não é vetor prático de dano (exige editar o backup à mão), mas `previous_copy` é a promessa "a cópia está aqui", e promessa tem que ser verificável, não só plausível.
+- **O índice do acervo ganhou o mesmo teto por arquivo da coleta (#265)** — quando havia curado ausente, o índice calculava o digest de **todo** `*.md` sob `Arquivo/Acervo/` sem limite de tamanho, enquanto a coleta dos curados respeitava `MAX_FILE_BYTES` desde sempre. Um acervo com arquivos grandes fazia o ritual pagar leitura integral deles só para decidir se um sumiço tinha sido arquivamento. Acima do teto o arquivo não entra no índice — e portanto não rebaixa alerta, que é o comportamento seguro.
+
 ## [5.78.0] - 2026-07-29
 
 ### Changed
