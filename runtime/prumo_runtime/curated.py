@@ -121,7 +121,7 @@ def measured_size(data: bytes, klass: str) -> int:
     """
     if klass != HYBRID:
         return len(data)
-    kept, _ = _pulso_partition(data.decode("utf-8", errors="replace"))
+    kept, _ = _pulso_partition(data.decode("utf-8"))
     return len(kept.encode("utf-8"))
 
 
@@ -241,7 +241,13 @@ def _manifest_of(stamp_dir: Path) -> dict | None:
         return None
     if not isinstance(raw.get("complete"), bool):
         return None
-    if not isinstance(raw.get("oversized", []), list):
+    oversized = raw.get("oversized", [])
+    if not isinstance(oversized, list) or not all(isinstance(v, str) for v in oversized):
+        # `oversized: [{}]` passava aqui e estourava `TypeError` no `set()` lá
+        # na frente — e, como o boundary só registra, o MESMO manifesto
+        # repetia a pane em todo ritual (Codex, 262H-1).
+        return None
+    if len(set(oversized)) != len(oversized) or set(oversized) & set(files.values()):
         return None
     if _parse_instant(raw.get("captured_at_utc")) is None:
         return None
@@ -281,6 +287,14 @@ def _validate_candidate(stamp_dir: Path, manifest: dict) -> tuple[dict[str, byte
             return {}, f"cópia `{flat}` ilegível ({exc})"
         if _digest(data) != digests.get(flat):
             return {}, f"cópia `{flat}` diverge do digest do manifesto"
+        try:
+            # Digest confere bytes, não prova que continuam sendo texto. Sem
+            # isto, uma cópia com bytes inválidos e digest coerente virava
+            # régua e o `errors="replace"` fabricava uma medição falsa
+            # (Codex, 262H-3).
+            data.decode("utf-8")
+        except UnicodeDecodeError:
+            return {}, f"cópia `{flat}` não é UTF-8 válido"
         conteudo[str(rel)] = data
     return conteudo, None
 
@@ -435,7 +449,7 @@ def _integrity_errors(paths, current: dict[str, bytes]) -> list[str]:
     for rel, data in sorted(current.items()):
         if rel not in hybrid:
             continue
-        _, erro = _pulso_partition(data.decode("utf-8", errors="replace"))
+        _, erro = _pulso_partition(data.decode("utf-8"))
         if erro:
             problemas.append(f"{rel}: {erro} — alerta medido sobre o arquivo inteiro")
     return problemas
@@ -518,6 +532,10 @@ def snapshot_curated(
         # copiado inteiro), e manifesto velho corrompido é história perdida lá
         # atrás — nenhum dos dois pode desligar o dedupe pra sempre.
         coleta: list[str] = []
+        # A cerca vem ANTES de ler histórico: com `.prumo/backups` symlinkado
+        # pra fora, uma baseline externa "equivalente" devolvia `sem-mudanca`
+        # e o atalho passava por baixo da cerca (Codex, 262H-2).
+        _require_clean_destination(workspace, scope_root)
         current, oversized = _read_current(paths, coleta)
         report["oversized"] = oversized
         errors.extend(coleta)
@@ -550,7 +568,6 @@ def snapshot_curated(
             report["skipped"] = "sem-mudanca"
             return report
 
-        _require_clean_destination(workspace, scope_root)
         target_root = _reserve_stamp_dir(scope_root, stamp)
         gravados: dict[str, str] = {}
         digests: dict[str, str] = {}

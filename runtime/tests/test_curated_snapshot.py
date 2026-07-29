@@ -1045,5 +1045,81 @@ class AcervoSymlinkTest(BaseTest):
         self.assertEqual(alerta["state"], curated.GONE, "gêmeo externo rebaixou deleção real")
 
 
+class ManifestoVenenosoTest(BaseTest):
+    """Manifesto malformado não pode DESLIGAR o mecanismo: o boundary só
+    registra, então uma pane repetida trava o snapshot em todo ritual
+    (Codex, 262H-1)."""
+
+    def _corromper(self, stamp: str, **campos) -> None:
+        alvo = self.scope_root() / stamp / curated.MANIFEST_NAME
+        manifesto = json.loads(alvo.read_text(encoding="utf-8"))
+        manifesto.update(campos)
+        alvo.write_text(json.dumps(manifesto), encoding="utf-8")
+
+    def test_oversized_com_item_nao_string_nao_trava(self) -> None:
+        self.snapshot("t1")
+        self._corromper("t1", oversized=[{}])
+        self.indice().write_text("mudou", encoding="utf-8")
+        report = self.snapshot("t2")
+
+        self.assertTrue((self.scope_root() / "t2").is_dir(), "parou de gravar snapshot")
+        self.assertTrue(any("sem manifesto válido" in e for e in report["errors"]))
+
+    def test_oversized_repetido_e_recusado(self) -> None:
+        self.snapshot("t1")
+        self._corromper("t1", oversized=["a.md", "a.md"])
+        self.indice().write_text("mudou", encoding="utf-8")
+        report = self.snapshot("t2")
+        self.assertTrue(any("sem manifesto válido" in e for e in report["errors"]))
+
+
+class BaselineNaoTextoTest(BaseTest):
+    """Digest confere bytes, não prova que continuam sendo texto. Cópia com
+    bytes inválidos e digest coerente virava régua (Codex, 262H-3)."""
+
+    def test_copia_nao_utf8_nao_serve_de_regua(self) -> None:
+        self.indice().write_text("a" * 1000, encoding="utf-8")
+        self.snapshot("t1")
+
+        copia = self.scope_root() / "t1" / "Prumo__Referencias__INDICE.md"
+        veneno = b"\xff\xfe" + b"a" * 998
+        copia.write_bytes(veneno)
+        manifesto_path = self.scope_root() / "t1" / curated.MANIFEST_NAME
+        manifesto = json.loads(manifesto_path.read_text(encoding="utf-8"))
+        manifesto["digests"]["Prumo__Referencias__INDICE.md"] = curated._digest(veneno)
+        manifesto_path.write_text(json.dumps(manifesto), encoding="utf-8")
+
+        self.indice().write_text("a" * 100, encoding="utf-8")
+        report = self.snapshot("t2")
+
+        self.assertTrue(
+            any("não é UTF-8 válido" in e for e in report["errors"]),
+            "régua com bytes inválidos foi aceita",
+        )
+        self.assertTrue((self.scope_root() / "t2").is_dir())
+
+
+class CercaAntesDoAtalhoTest(BaseTest):
+    """A cerca do destino rodava DEPOIS do dedupe: com `.prumo/backups`
+    symlinkado pra fora e uma baseline externa equivalente, o atalho
+    `sem-mudanca` passava por baixo dela (Codex, 262H-2)."""
+
+    def test_baseline_externa_equivalente_nao_vira_atalho(self) -> None:
+        # Snapshot legítimo primeiro, pra ter uma baseline equivalente.
+        self.snapshot("t1")
+        externo = Path(self._tmp.name).parent / f"ext-{Path(self._tmp.name).name}"
+        shutil.move(str(self.ws / ".prumo" / "backups"), str(externo))
+        self.addCleanup(shutil.rmtree, externo, True)
+        (self.ws / ".prumo" / "backups").symlink_to(externo, target_is_directory=True)
+
+        report = self.snapshot("t2")
+
+        self.assertNotEqual(
+            report["skipped"], "sem-mudanca",
+            "atalho passou por baixo da cerca do destino",
+        )
+        self.assertTrue(any("symlink" in e for e in report["errors"]))
+
+
 if __name__ == "__main__":
     unittest.main()
