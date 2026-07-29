@@ -274,17 +274,16 @@ def iter_agente_rascunho(workspace: Path, today: date, ephemeral_days: int) -> l
         if not filho.is_dir():
             continue
         subdirs, arquivos = _walk_tree(filho)
-        if any(d.name in _BACKUP_DIR_NAMES for d in subdirs):
-            # Regra de ouro da #178: mover isto INTEIRO pro backup criaria
-            # backup dentro de backup. Fica onde está — o usuário resolve
-            # (Codex, r2).
+        # Regra de ouro da #178: mover isto INTEIRO criaria backup dentro de
+        # backup. O PRÓPRIO filho entra na checagem — `rascunho/backups/`
+        # escapava. Fica onde está; o usuário resolve.
+        if any(d.name in _BACKUP_DIR_NAMES for d in (filho, *subdirs)):
             continue
-        # TODA a árvore, não só os arquivos: o próprio filho e os
-        # subdiretórios também contam. Sem isso, uma reconstrução criada HOJE
-        # com arquivos antigos dentro (um `mv` basta) era considerada fria e
-        # saía inteira — tirando trabalho ativo do rascunho (Codex, r3).
+        # TODA a árvore, não só os arquivos: reconstrução criada HOJE com
+        # arquivos antigos dentro (um `mv` basta) parecia fria. E sem exigir
+        # arquivos, senão carcaça vazia nunca sai.
         tudo = [filho, *subdirs, *arquivos]
-        if arquivos and all(_age_days(x, today) > ephemeral_days for x in tudo):
+        if all(_age_days(x, today) > ephemeral_days for x in tudo):
             frios.append(filho)
     return frios
 

@@ -357,5 +357,44 @@ class ArvoreInteiraFriaTest(BaseTest):
         self.assertEqual(familia, [".prumo/state/rascunho/recon"])
 
 
+class BordasDaArvoreTest(BaseTest):
+    """Duas bordas da própria regra "árvore inteira fria" (Codex, r4)."""
+
+    def test_pasta_vazia_fria_sai(self) -> None:
+        """Exigir arquivos fazia carcaça vazia nunca sair."""
+        vazia = self.rascunho / "carcaca"
+        vazia.mkdir()
+        self._envelhecer(vazia)
+        familia = self._familias(self._plano()).get("agente_rascunho", [])
+        self.assertEqual(familia, [".prumo/state/rascunho/carcaca"])
+
+    def test_arvore_so_de_pastas_vazias_frias_sai(self) -> None:
+        alvo = self.rascunho / "casca" / "dentro"
+        alvo.mkdir(parents=True)
+        self._envelhecer(alvo)
+        self._envelhecer(self.rascunho / "casca")
+        familia = self._familias(self._plano()).get("agente_rascunho", [])
+        self.assertEqual(familia, [".prumo/state/rascunho/casca"])
+
+    def test_pasta_vazia_quente_fica(self) -> None:
+        """Negativa: vazia não é sinônimo de descartável — idade ainda manda."""
+        (self.rascunho / "de-hoje").mkdir()
+        self.assertEqual(self._familias(self._plano()).get("agente_rascunho", []), [])
+
+    def test_filho_chamado_backups_nunca_e_movido(self) -> None:
+        """O próprio filho direto com nome de backup ia pra dentro do backup."""
+        alvo = self.rascunho / "backups"
+        alvo.mkdir()
+        (alvo / "coisa.md").write_text("x", encoding="utf-8")
+        self._envelhecer(alvo / "coisa.md")
+        self._envelhecer(alvo)
+
+        plano = self._plano()
+        self.assertEqual(self._familias(plano).get("agente_rascunho", []), [])
+        sanitize.apply_plan(self.ws, plan=plano, today=HOJE)
+        aninhado = list((self.ws / ".prumo" / "backups" / "sanitize").rglob("backups"))
+        self.assertEqual(aninhado, [], "backup dentro de backup")
+
+
 if __name__ == "__main__":
     unittest.main()
