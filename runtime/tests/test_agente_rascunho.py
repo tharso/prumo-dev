@@ -268,5 +268,68 @@ class PainelDoFimTest(BaseTest):
         self.assertIn("rascunhos do agente (>14d): 0", texto)
 
 
+class RegraDeOuroTest(BaseTest):
+    """Mover INTEIRO um rascunho que carrega `backups/` criaria backup dentro
+    de backup — a regra de ouro da #178 (Codex, r2)."""
+
+    def test_arvore_com_backups_fica_onde_esta(self) -> None:
+        self._arquivo("recon/backups/copia.md")
+        self._arquivo("recon/nota.md")
+        self._envelhecer(self.rascunho / "recon" / "backups")
+        self._envelhecer(self.rascunho / "recon")
+
+        plano = self._plano()
+        familia = self._familias(plano).get("agente_rascunho", [])
+        self.assertEqual(familia, [], "moveu árvore que carrega backup")
+
+        sanitize.apply_plan(self.ws, plan=plano, today=HOJE)
+        aninhado = list((self.ws / ".prumo" / "backups" / "sanitize").rglob("backups"))
+        self.assertEqual(aninhado, [], "backup dentro de backup")
+
+    def test_arvore_sem_backups_continua_saindo(self) -> None:
+        """Negativa: a recusa é do vetor, não da funcionalidade."""
+        self._arquivo("recon/nota.md")
+        self._envelhecer(self.rascunho / "recon")
+        familia = self._familias(self._plano()).get("agente_rascunho", [])
+        self.assertEqual(familia, [".prumo/state/rascunho/recon"])
+
+
+class ExclusividadeNoFimTest(BaseTest):
+    """A exclusão aplicada só no `build_plan` não corrigia o painel: o `/fim`
+    consome `iter_handover_files` direto (Codex, r2)."""
+
+    def test_handover_no_rascunho_nao_conta_como_legado(self) -> None:
+        self._arquivo("HANDOVER-x.md", dias=0)  # recente: só o handover contaria
+        s = accumulation_signals(self.ws, today=HOJE)["signals"]
+        self.assertEqual(s["handover_legacy"], 0, "rascunho disparou handover_legacy no painel")
+
+    def test_handover_velho_no_rascunho_conta_uma_familia_so(self) -> None:
+        self._arquivo("HANDOVER-y.md")
+        s = accumulation_signals(self.ws, today=HOJE)["signals"]
+        self.assertEqual(s["handover_legacy"], 0)
+        self.assertEqual(s["rascunho_old"], 1)
+
+    def test_handover_fora_do_rascunho_continua_contando(self) -> None:
+        """Negativa: a exclusão é da subtree, não da família."""
+        alvo = self.ws / ".prumo" / "state" / "HANDOVER-z.md"
+        alvo.write_text("x", encoding="utf-8")
+        s = accumulation_signals(self.ws, today=HOJE)["signals"]
+        self.assertEqual(s["handover_legacy"], 1)
+
+
+class ContratoDaSanitizeTest(unittest.TestCase):
+    """Sem runtime, o `/fim` encaminha pro manual — que precisa saber executar
+    a família nova (Codex, r2)."""
+
+    def test_a_tabela_canonica_conhece_a_familia(self) -> None:
+        raiz = Path(__file__).resolve().parents[2]
+        doc = (raiz / "skills" / "prumo" / "references" / "modules"
+               / "sanitize.md").read_text(encoding="utf-8")
+        linha = next(l for l in doc.splitlines() if "`agente_rascunho`" in l)
+        self.assertIn("move → backup", linha)
+        self.assertIn("exclusiva", linha)
+        self.assertIn("inteiro", linha)
+
+
 if __name__ == "__main__":
     unittest.main()

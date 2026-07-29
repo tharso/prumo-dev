@@ -161,17 +161,38 @@ def _under_backup_root(workspace: Path, path: Path) -> bool:
 # --- Detectores puros (reusados pelo /fim, read-only) -----------------------
 
 
+RASCUNHO_REL = ".prumo/state/rascunho"
+
+
+def _sob_rascunho(workspace: Path, path: Path) -> bool:
+    """Subtree do rascunho do agente é EXCLUSIVA (#263).
+
+    Ordem de regra só garante disjunção quando todas rodam: com `--rules`
+    isolado, uma fonte recente ali cairia em `asset_dedupe` e seria DELETADA,
+    e um `HANDOVER*` cairia em `handover_legacy` — a mesma coisa mudando de
+    família e de ação conforme a seleção (Codex, 263-3).
+    """
+    return _rel(workspace, path).startswith(RASCUNHO_REL + "/")
+
+
 def iter_handover_files(workspace: Path) -> list[Path]:
     """Arquivos HANDOVER* sob `.prumo/state/**` e `_state/**` (formato
     aposentado, #68). Nunca dentro dos backup roots (lá é território das
-    regras de backup) e nunca através de symlink."""
+    regras de backup), **nunca dentro do rascunho do agente** (#263 — a
+    exclusão precisa morar AQUI, não só no `build_plan`: o `/fim` consome o
+    iterator direto, e um rascunho chamado `HANDOVER-x.md` disparava
+    `handover_legacy` no painel) e nunca através de symlink."""
     found: list[Path] = []
     for root in (workspace / ".prumo" / "state", workspace / "_state"):
         if not _usable_root(workspace, root):
             continue
         _, files = _walk_tree(root)
         for path in files:
-            if path.name.startswith("HANDOVER") and not _under_backup_root(workspace, path):
+            if (
+                path.name.startswith("HANDOVER")
+                and not _under_backup_root(workspace, path)
+                and not _sob_rascunho(workspace, path)
+            ):
                 found.append(path)
     return found
 
@@ -228,20 +249,6 @@ def _iter_old_cache(workspace: Path, today: date, cache_days: int) -> list[Path]
     return [path for path in files if _age_days(path, today) > cache_days]
 
 
-RASCUNHO_REL = ".prumo/state/rascunho"
-
-
-def _sob_rascunho(workspace: Path, path: Path) -> bool:
-    """Subtree do rascunho do agente é EXCLUSIVA (#263).
-
-    Ordem de regra só garante disjunção quando todas rodam: com `--rules`
-    isolado, uma fonte recente ali cairia em `asset_dedupe` e seria DELETADA,
-    e um `HANDOVER*` cairia em `handover_legacy` — a mesma coisa mudando de
-    família e de ação conforme a seleção (Codex, 263-3).
-    """
-    return _rel(workspace, path).startswith(RASCUNHO_REL + "/")
-
-
 def iter_agente_rascunho(workspace: Path, today: date, ephemeral_days: int) -> list[Path]:
     """Filhos DIRETOS frios de `.prumo/state/rascunho/`.
 
@@ -266,7 +273,12 @@ def iter_agente_rascunho(workspace: Path, today: date, ephemeral_days: int) -> l
             continue
         if not filho.is_dir():
             continue
-        _, arquivos = _walk_tree(filho)
+        subdirs, arquivos = _walk_tree(filho)
+        if any(d.name in _BACKUP_DIR_NAMES for d in subdirs):
+            # Regra de ouro da #178: mover isto INTEIRO pro backup criaria
+            # backup dentro de backup. Fica onde está — o usuário resolve
+            # (Codex, r2).
+            continue
         if arquivos and all(_age_days(f, today) > ephemeral_days for f in arquivos):
             frios.append(filho)
     return frios
