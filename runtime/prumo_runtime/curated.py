@@ -561,8 +561,14 @@ def snapshot_curated(
 
     O carimbo nasce AQUI, em UTC, e não do fuso configurado: ele é só rótulo
     de diretório — a ordem cronológica vem do `captured_at_utc` do manifesto.
-    Assim o snapshot não depende de `build_config_from_existing`, e workspace
-    sem identidade canônica ganha cópia em vez de exceção.
+    Assim o snapshot não depende de `build_config_from_existing`.
+
+    Só copia em workspace NESTED (#268). Workspace no layout antigo devolve
+    `skipped=SKIPPED_LEGACY_FLAT` — gravar criaria um `.prumo/` dentro do flat
+    — e pasta sem identidade de workspace devolve `SKIPPED_NOT_NESTED`, sem
+    convite pra migrar. A tolerância antiga ("sem identidade canônica ganha
+    cópia") acabou aqui: `nested_layout` detectado não prova identidade, e uma
+    pasta alheia com subpasta `Prumo/` incidental receberia backup dentro dela.
 
     NUNCA levanta: qualquer falha entra em `errors` e o ritual segue. Backup
     que derruba o briefing é pior que o problema que ele resolve.
