@@ -185,30 +185,79 @@ def _manifest_of(stamp_dir: Path) -> dict | None:
         return None
     if not isinstance(raw.get("files"), dict):
         return None
+    if not isinstance(raw.get("captured_at_utc"), str) or not raw["captured_at_utc"]:
+        return None
+    if not isinstance(raw.get("complete"), bool):
+        return None
+    if not isinstance(raw.get("oversized", []), list):
+        return None
     return raw
 
 
-def _latest_previous(scope_root: Path) -> tuple[Path | None, dict | None]:
-    """Escolhe o carimbo anterior pelo instante UTC do manifesto, NUNCA pela
-    ordem lexicográfica do nome: relógio que recua (fuso, DST) produziria nome
-    menor que o de um snapshot mais velho (Codex, 262D-3)."""
+def _latest_previous(scope_root: Path, degradacoes: list[str]) -> tuple[Path | None, dict | None]:
+    """Baseline = carimbo COMPLETO mais recente, pelo instante UTC do manifesto.
+
+    Duas coisas que a rodada 1 errava. Ordenar por nome quebra com relógio que
+    recua (fuso, DST). E aceitar carimbo INCOMPLETO como baseline apagava a
+    comparação: um snapshot que falhou em ler o índice não o tem no inventário,
+    então o índice mutilado no dia seguinte não teria contra o que alarmar
+    (Codex, 262E-1). Incompleto continua no disco como história — só não serve
+    de régua.
+
+    Candidato ilegível ou corrompido é DECLARADO em `degradacoes`: perder
+    história em silêncio é o defeito que este módulo existe pra combater
+    (Codex, 262E-2).
+    """
     try:
         if not scope_root.is_dir():
             return None, None
-        candidates = [p for p in scope_root.iterdir() if p.is_dir() and not p.is_symlink()]
-    except OSError:
+        candidates = sorted(
+            p for p in scope_root.iterdir() if p.is_dir() and not p.is_symlink()
+        )
+    except OSError as exc:
+        degradacoes.append(f"backups/{SCOPE}: {exc}")
         return None, None
     melhor: tuple[str, Path, dict] | None = None
     for stamp_dir in candidates:
         manifest = _manifest_of(stamp_dir)
         if manifest is None:
+            degradacoes.append(
+                f"snapshot `{stamp_dir.name}` sem manifesto válido — ignorado como referência"
+            )
             continue
-        captured = str(manifest.get("captured_at_utc", ""))
+        if not manifest["complete"]:
+            continue
+        captured = manifest["captured_at_utc"]
         if melhor is None or captured > melhor[0]:
             melhor = (captured, stamp_dir, manifest)
     if melhor is None:
         return None, None
     return melhor[1], melhor[2]
+
+
+def _archived_twin(paths, relative: str, text: str) -> str | None:
+    """Ficha ausente que tem cópia BYTE A BYTE em `Arquivo/` foi arquivada
+    pelo acervo (`acervo_apply._archive_file` move pra `Arquivo/Acervo/`), não
+    perdida. Alarmar aqui seria o produto mandar arquivar e depois tocar a
+    sirene porque o usuário arquivou (Codex, 262E-3). Deleção permanente faz
+    `unlink()` e não deixa gêmeo — essa continua alarmando."""
+    arquivo_root = paths.arquivo_root
+    if not arquivo_root.is_dir():
+        return None
+    alvo = _digest(text)
+    nome = relative.rsplit("/", 1)[-1]
+    try:
+        for candidate in arquivo_root.rglob(nome):
+            try:
+                if candidate.is_file() and _digest(
+                    candidate.read_text(encoding="utf-8")
+                ) == alvo:
+                    return paths.relative(candidate)
+            except (OSError, UnicodeDecodeError, ValueError):
+                continue
+    except OSError:
+        return None
+    return None
 
 
 def _read_previous(stamp_dir: Path | None, manifest: dict | None) -> dict[str, str]:
@@ -230,6 +279,7 @@ def _read_previous(stamp_dir: Path | None, manifest: dict | None) -> dict[str, s
 
 
 def _build_alerts(
+    paths,
     current: dict[str, str],
     previous: dict[str, str],
     previous_stamp: Path | None,
@@ -245,6 +295,8 @@ def _build_alerts(
         if before < MIN_ALERT_BYTES:
             continue
         if rel not in current:
+            if _archived_twin(paths, rel, previous[rel]) is not None:
+                continue  # arquivado pelo acervo, não perdido
             # Sumiu inteiro: o caso mais grave, não um caso a ignorar.
             alerts.append(
                 {
@@ -289,14 +341,41 @@ def _integrity_errors(current: dict[str, str]) -> list[str]:
     return problemas
 
 
-def _unique_stamp_dir(scope_root: Path, stamp: str) -> Path:
-    """Carimbo colidido não sobrescreve fotografia anterior: ganha sufixo."""
-    candidate = scope_root / stamp
-    suffix = 2
-    while candidate.exists():
-        candidate = scope_root / f"{stamp}-{suffix}"
-        suffix += 1
-    return candidate
+def _reserve_stamp_dir(scope_root: Path, stamp: str) -> Path:
+    """Reserva o diretório ATOMICAMENTE: `mkdir` sem `exist_ok` é a própria
+    trava. Checar `exists()` antes e criar depois é corrida — dois `prumo seed`
+    simultâneos escolheriam o mesmo nome e um perderia o snapshot inteiro no
+    boundary (Codex, 262E-5)."""
+    scope_root.mkdir(parents=True, exist_ok=True)
+    for suffix in range(0, 100):
+        candidate = scope_root / (stamp if suffix == 0 else f"{stamp}-{suffix + 1}")
+        try:
+            candidate.mkdir()
+            return candidate
+        except FileExistsError:
+            continue
+    raise OSError(f"cem carimbos colididos em {scope_root}")
+
+
+def _require_clean_destination(workspace: Path, target: Path) -> None:
+    """Cerca da ESCRITA (#189, molde do `_require_clean_target` da semente):
+    nenhum componente até o destino pode ser symlink. A `prune_expired_backups`
+    já recusa raiz symlinkada; o writer novo precisa da mesma disciplina, senão
+    `.prumo/backups` apontando pra fora grava o snapshot fora do território
+    (Codex, 262E-6)."""
+    probe = workspace
+    for part in target.relative_to(workspace).parts:
+        probe = probe / part
+        if probe.is_symlink():
+            raise OSError(f"`{probe.relative_to(workspace)}` é symlink — escrita recusada")
+
+
+def _write_manifest(target_root: Path, payload: dict) -> None:
+    """Escrita atômica: manifesto truncado por crash seria ignorado depois e a
+    história sumiria em silêncio."""
+    tmp = target_root / f"{MANIFEST_NAME}.tmp"
+    tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    tmp.replace(target_root / MANIFEST_NAME)
 
 
 def snapshot_curated(
@@ -329,32 +408,44 @@ def snapshot_curated(
         paths = workspace_paths(workspace)
         scope_root = workspace / ".prumo" / "backups" / SCOPE
 
-        current, oversized = _read_current(paths, errors)
+        # Três origens de mensagem, com pesos DIFERENTES. Só a primeira decide
+        # se este retrato serve de régua: falha de leitura/cópia é buraco no
+        # inventário. Pulso malformado é aviso de medição (o arquivo foi
+        # copiado inteiro), e manifesto velho corrompido é história perdida lá
+        # atrás — nenhum dos dois pode desligar o dedupe pra sempre.
+        coleta: list[str] = []
+        current, oversized = _read_current(paths, coleta)
         report["oversized"] = oversized
+        errors.extend(coleta)
         errors.extend(_integrity_errors(current))
 
-        previous_stamp, previous_manifest = _latest_previous(scope_root)
+        previous_stamp, previous_manifest = _latest_previous(scope_root, errors)
         previous = _read_previous(previous_stamp, previous_manifest)
 
         if shrink_pct is None:
             shrink_pct = faxina_thresholds.effective(workspace)["values"][
                 "curated_shrink_alert_pct"
             ]
-        report["alerts"] = _build_alerts(current, previous, previous_stamp, shrink_pct)
+        report["alerts"] = _build_alerts(paths, current, previous, previous_stamp, shrink_pct)
 
-        # Coleta incompleta nunca vira baseline nem justifica pular: promover
-        # um retrato furado apagaria a comparação futura (Codex, 262D-1).
-        complete = not errors and not oversized
-        previous_complete = bool(previous_manifest and previous_manifest.get("complete"))
-        unchanged = set(current) == set(previous) and all(
-            _digest(current[r]) == _digest(previous.get(r, "")) for r in current
+        # DOIS conceitos, antes espremidos num `complete` só (Codex, 262E-4):
+        # integridade (serve de régua pro alerta) e equivalência (justifica
+        # pular). Arquivo grande demais NÃO fura a integridade — ele é
+        # conhecido e declarado no manifesto; furar faria um único .md de
+        # 512 KiB desligar o dedupe pra sempre e copiar tudo em todo ritual.
+        integro = not coleta
+        previous_oversized = set(previous_manifest.get("oversized", [])) if previous_manifest else set()
+        equivalente = (
+            set(current) == set(previous)
+            and set(oversized) == previous_oversized
+            and all(_digest(current[r]) == _digest(previous.get(r, "")) for r in current)
         )
-        if previous_stamp is not None and complete and previous_complete and unchanged:
+        if previous_stamp is not None and integro and equivalente:
             report["skipped"] = "sem-mudanca"
             return report
 
-        target_root = _unique_stamp_dir(scope_root, stamp)
-        target_root.mkdir(parents=True)
+        _require_clean_destination(workspace, scope_root)
+        target_root = _reserve_stamp_dir(scope_root, stamp)
         gravados: dict[str, str] = {}
         for rel in sorted(current):
             try:
@@ -364,18 +455,15 @@ def snapshot_curated(
             except (OSError, ValueError) as exc:
                 errors.append(f"{rel}: {exc}")
         report["stamp"] = target_root.name
-        (target_root / MANIFEST_NAME).write_text(
-            json.dumps(
-                {
-                    "schema": MANIFEST_SCHEMA,
-                    "captured_at_utc": datetime.now(timezone.utc).isoformat(),
-                    "complete": complete and len(gravados) == len(current),
-                    "files": gravados,
-                },
-                ensure_ascii=False,
-                indent=2,
-            ),
-            encoding="utf-8",
+        _write_manifest(
+            target_root,
+            {
+                "schema": MANIFEST_SCHEMA,
+                "captured_at_utc": datetime.now(timezone.utc).isoformat(),
+                "complete": not coleta and len(gravados) == len(current),
+                "files": gravados,
+                "oversized": sorted(oversized),
+            },
         )
     except Exception as exc:  # noqa: BLE001 — boundary: o ritual nunca cai por causa do backup
         errors.append(f"{type(exc).__name__}: {exc}")

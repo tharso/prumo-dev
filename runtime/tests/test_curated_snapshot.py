@@ -58,6 +58,20 @@ class BaseTest(unittest.TestCase):
     def scope_root(self) -> Path:
         return self.ws / ".prumo" / "backups" / "curated"
 
+    def _seed_falso(self) -> Path:
+        """Semente mínima. Path RESOLVIDO: os comandos resolvem o workspace e
+        fazem `relative_to` contra ele."""
+        alvo = self.ws.resolve() / ".prumo" / "state" / "seed.json"
+        alvo.write_text(
+            json.dumps(
+                {"local_panorama": {"pauta": {"sections": [], "outras_secoes": []},
+                                    "generated_for": "2026-07-29"},
+                 "generated_at": "2026-07-29T08:00:00"}
+            ),
+            encoding="utf-8",
+        )
+        return alvo
+
 
 class ClasseCuradaTest(BaseTest):
     def test_curada_cobre_todo_autoral(self) -> None:
@@ -313,6 +327,43 @@ class GanchoTest(BaseTest):
             briefing_cmd.run_briefing(self._args(mark_done=True))
         spy.assert_not_called()
 
+    def test_dispara_no_modo_texto_tambem(self) -> None:
+        """Os dois testes de ordem usavam só JSON: um mutante que chamasse o
+        snapshot apenas quando `format == "json"` passaria (Codex, 262E-7)."""
+        from prumo_runtime.commands import briefing as briefing_cmd
+        from prumo_runtime.commands import seed as seed_cmd
+
+        with patch.object(briefing_cmd, "snapshot_curated", return_value={}) as spy, patch.object(
+            briefing_cmd, "build_briefing_payload", return_value={"message": "ok"}
+        ):
+            with redirect_stdout(io.StringIO()):
+                briefing_cmd.run_briefing(SimpleNamespace(workspace=str(self.ws), format="text"))
+        spy.assert_called_once_with(self.ws.resolve())
+
+        with patch.object(seed_cmd, "snapshot_curated", return_value={}) as spy, patch.object(
+            seed_cmd, "write_seed", side_effect=lambda *a, **k: self._seed_falso()
+        ):
+            with redirect_stdout(io.StringIO()):
+                seed_cmd.run_seed(SimpleNamespace(workspace=str(self.ws), format="text"))
+        spy.assert_called_once_with(self.ws.resolve())
+
+    def test_relatorio_de_texto_chega_ao_stdout(self) -> None:
+        """Integração: `render_report` ligado na rota de texto, não só testado
+        como unidade (Codex, 262E-7)."""
+        from prumo_runtime.commands import briefing as briefing_cmd
+
+        buf = io.StringIO()
+        with patch.object(
+            briefing_cmd, "snapshot_curated",
+            return_value={"alerts": [], "oversized": ["Prumo/Referencias/gorda.md"], "errors": []},
+        ), patch.object(briefing_cmd, "build_briefing_payload", return_value={"message": "painel"}):
+            with redirect_stdout(buf):
+                briefing_cmd.run_briefing(SimpleNamespace(workspace=str(self.ws), format="text"))
+
+        saida = buf.getvalue()
+        self.assertIn("gorda.md", saida)
+        self.assertIn("painel", saida)
+
     def test_construtores_de_payload_nao_escrevem(self) -> None:
         """Codex, design r1: 'consulta com efeito colateral é casca de banana
         arquitetural'. O snapshot é chamada explícita do comando."""
@@ -324,18 +375,6 @@ class GanchoTest(BaseTest):
                 "snapshot_curated", fn.__code__.co_names,
                 f"{fn.__name__} ganhou escrita surpresa",
             )
-
-    def _seed_falso(self) -> Path:
-        alvo = self.ws / ".prumo" / "state" / "seed.json"
-        alvo.write_text(
-            json.dumps(
-                {"local_panorama": {"pauta": {"sections": [], "outras_secoes": []},
-                                    "generated_for": "2026-07-29"},
-                 "generated_at": "2026-07-29T08:00:00"}
-            ),
-            encoding="utf-8",
-        )
-        return alvo
 
 
 class SaidaJsonTest(BaseTest):
@@ -374,18 +413,6 @@ class SaidaJsonTest(BaseTest):
         payload = json.loads(buf.getvalue())
         self.assertTrue(payload["curated_snapshot"]["alerts"])
 
-    def _seed_falso(self) -> Path:
-        alvo = self.ws / ".prumo" / "state" / "seed.json"
-        alvo.write_text(
-            json.dumps(
-                {"local_panorama": {"pauta": {"sections": [], "outras_secoes": []},
-                                    "generated_for": "2026-07-29"},
-                 "generated_at": "2026-07-29T08:00:00"}
-            ),
-            encoding="utf-8",
-        )
-        return alvo
-
 
 class ColetaIncompletaTest(BaseTest):
     """O dedupe lia do snapshot anterior só os paths que ainda existiam: o
@@ -408,28 +435,177 @@ class ColetaIncompletaTest(BaseTest):
         self.assertEqual(alerta["state"], curated.GONE)
         self.assertEqual(alerta["shrink_pct"], 100)
 
-    def test_coleta_incompleta_nao_vira_baseline(self) -> None:
-        self.indice().write_text("x" * 500, encoding="utf-8")
-        self.snapshot("2026-07-27T08-00-00")
+    def _manifesto(self, stamp: str) -> dict:
+        return json.loads(
+            (self.scope_root() / stamp / curated.MANIFEST_NAME).read_text(encoding="utf-8")
+        )
 
+    def test_falha_de_leitura_nao_vira_baseline(self) -> None:
+        """Buraco no inventário: retrato furado não pode virar régua."""
+        self.indice().write_text("x" * 500, encoding="utf-8")
+        with patch.object(
+            curated.Path, "read_text", side_effect=OSError("disco pifou")
+        ):
+            self.snapshot("2026-07-27T08-00-00")
+        self.assertFalse(
+            self._manifesto("2026-07-27T08-00-00")["complete"],
+            "retrato furado se declarou completo",
+        )
+
+    def test_baseline_pula_o_incompleto_e_usa_o_completo(self) -> None:
+        """O cenário exato do Codex (262E-1): completo → incompleto sem o
+        índice → índice mutilado. A régua tem de ser o COMPLETO, senão o
+        arquivo que faltou no meio nunca tem contra o que alarmar."""
+        self.indice().write_text("a" * 1000, encoding="utf-8")
+        self.snapshot("t1")  # completo, com o índice
+
+        manifesto = self._manifesto("t1")
+        (self.scope_root() / "t2").mkdir()
+        (self.scope_root() / "t2" / curated.MANIFEST_NAME).write_text(
+            json.dumps(
+                {
+                    "schema": curated.MANIFEST_SCHEMA,
+                    "captured_at_utc": manifesto["captured_at_utc"][:-1] + "9",
+                    "complete": False,       # incompleto e MAIS NOVO
+                    "files": {},             # sem o índice no inventário
+                    "oversized": [],
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        self.indice().write_text("a" * 50, encoding="utf-8")
+        report = self.snapshot("t3")
+
+        alerta = next(
+            (a for a in report["alerts"] if a["path"] == "Prumo/Referencias/INDICE.md"), None
+        )
+        self.assertIsNotNone(alerta, "comparou contra o snapshot incompleto e ficou cego")
+
+    def test_oversized_estavel_nao_desliga_o_dedupe(self) -> None:
+        """Um único .md acima do teto não pode virar assinatura vitalícia de
+        cópia integral em todo ritual (Codex, 262E-4)."""
         gorda = self.ws / "Prumo" / "Referencias" / "gorda.md"
         gorda.write_text("x" * (curated.MAX_FILE_BYTES + 1), encoding="utf-8")
-        self.snapshot("2026-07-27T20-00-00")
+        self.snapshot("2026-07-27T08-00-00")
+        report = self.snapshot("2026-07-27T20-00-00")
 
-        manifesto = json.loads(
-            (self.scope_root() / "2026-07-27T20-00-00" / curated.MANIFEST_NAME).read_text(
-                encoding="utf-8"
-            )
-        )
-        self.assertFalse(manifesto["complete"], "retrato furado se declarou completo")
+        self.assertEqual(report["skipped"], "sem-mudanca")
+        self.assertEqual(report["oversized"], ["Prumo/Referencias/gorda.md"])
 
-    def test_incompleto_nunca_pula(self) -> None:
+    def test_oversized_novo_quebra_o_dedupe(self) -> None:
+        """Negativa da anterior: o conjunto MUDOU, então há o que registrar."""
         self.snapshot("2026-07-27T08-00-00")
         (self.ws / "Prumo" / "Referencias" / "gorda.md").write_text(
             "x" * (curated.MAX_FILE_BYTES + 1), encoding="utf-8"
         )
         report = self.snapshot("2026-07-27T20-00-00")
         self.assertIsNone(report["skipped"])
+
+    def test_manifesto_corrompido_e_declarado(self) -> None:
+        """História perdida em silêncio é o defeito que o módulo combate."""
+        self.snapshot("2026-07-27T08-00-00")
+        (self.scope_root() / "2026-07-27T08-00-00" / curated.MANIFEST_NAME).write_text(
+            "{ truncado", encoding="utf-8"
+        )
+        self.indice().write_text("mudou\n", encoding="utf-8")
+        report = self.snapshot("2026-07-27T20-00-00")
+
+        self.assertTrue(
+            any("sem manifesto válido" in e for e in report["errors"]),
+            "candidato corrompido foi ignorado sem avisar",
+        )
+
+    def test_manifesto_corrompido_nao_desliga_o_dedupe_futuro(self) -> None:
+        """Degradação de história antiga não é buraco no retrato de hoje."""
+        self.snapshot("t1")
+        (self.scope_root() / "t1" / curated.MANIFEST_NAME).write_text("{", encoding="utf-8")
+        self.snapshot("t2")
+        report = self.snapshot("t3")
+        self.assertEqual(report["skipped"], "sem-mudanca")
+
+
+class AcervoTest(BaseTest):
+    """Ficha arquivada pelo acervo vai pra `Arquivo/Acervo/` com cópia
+    idêntica. Alarmar seria o produto mandar arquivar e depois tocar a sirene
+    porque o usuário arquivou (Codex, 262E-3)."""
+
+    def _ficha(self) -> Path:
+        return self.ws / "Prumo" / "Referencias" / "artigo.md"
+
+    def test_ficha_arquivada_nao_alarma(self) -> None:
+        self._ficha().write_text("# Artigo\n" + "conteúdo\n" * 60, encoding="utf-8")
+        self.snapshot("2026-07-27T08-00-00")
+
+        acervo = self.ws / "Prumo" / "Arquivo" / "Acervo"
+        acervo.mkdir(parents=True)
+        shutil.move(str(self._ficha()), str(acervo / "artigo.md"))
+        report = self.snapshot("2026-07-27T20-00-00")
+
+        self.assertEqual(
+            [a for a in report["alerts"] if a["path"].endswith("artigo.md")], []
+        )
+
+    def test_delecao_permanente_continua_alarmando(self) -> None:
+        """Negativa: sem gêmeo em `Arquivo/`, sumiço é sumiço."""
+        self._ficha().write_text("# Artigo\n" + "conteúdo\n" * 60, encoding="utf-8")
+        self.snapshot("2026-07-27T08-00-00")
+
+        self._ficha().unlink()
+        report = self.snapshot("2026-07-27T20-00-00")
+
+        alerta = next((a for a in report["alerts"] if a["path"].endswith("artigo.md")), None)
+        self.assertIsNotNone(alerta, "deleção permanente passou calada")
+        self.assertEqual(alerta["state"], curated.GONE)
+
+    def test_gemeo_diferente_nao_conta_como_arquivado(self) -> None:
+        """Negativa fina: mesmo nome em `Arquivo/`, conteúdo outro."""
+        self._ficha().write_text("# Artigo\n" + "original\n" * 60, encoding="utf-8")
+        self.snapshot("2026-07-27T08-00-00")
+
+        acervo = self.ws / "Prumo" / "Arquivo" / "Acervo"
+        acervo.mkdir(parents=True)
+        (acervo / "artigo.md").write_text("# Artigo\noutra coisa\n", encoding="utf-8")
+        self._ficha().unlink()
+        report = self.snapshot("2026-07-27T20-00-00")
+
+        self.assertTrue([a for a in report["alerts"] if a["path"].endswith("artigo.md")])
+
+
+class DestinoTest(BaseTest):
+    def test_backups_symlinkado_recusa_escrita(self) -> None:
+        """`prune_expired_backups` já recusa raiz symlinkada; o writer novo
+        precisa da mesma disciplina (Codex, 262E-6)."""
+        fora = Path(self._tmp.name).parent / f"fora-{Path(self._tmp.name).name}"
+        fora.mkdir()
+        self.addCleanup(shutil.rmtree, fora, True)
+        (self.ws / ".prumo" / "backups").symlink_to(fora, target_is_directory=True)
+
+        report = self.snapshot("2026-07-27T08-00-00")
+        self.assertTrue(any("symlink" in e for e in report["errors"]))
+        self.assertEqual(list(fora.iterdir()), [], "gravou fora do território")
+
+    def test_carimbo_sobrevive_a_corrida(self) -> None:
+        """Simula o outro `prumo seed` vencendo entre a decisão e a criação:
+        `mkdir` estoura `FileExistsError` na primeira tentativa. Implementação
+        que checa `exists()` antes e cria depois perderia o snapshot inteiro no
+        boundary (Codex, 262E-5); a reserva atômica avança o sufixo."""
+        scope = self.scope_root()
+        scope.mkdir(parents=True)
+        real = Path.mkdir
+        estado = {"primeira": True}
+
+        def mkdir_com_corrida(self, *a, **kw):
+            if self.parent == scope and estado["primeira"]:
+                estado["primeira"] = False
+                raise FileExistsError(self)
+            return real(self, *a, **kw)
+
+        with patch.object(Path, "mkdir", mkdir_com_corrida):
+            destino = curated._reserve_stamp_dir(scope, "carimbo")
+
+        self.assertTrue(destino.is_dir())
+        self.assertEqual(destino.name, "carimbo-2")
 
 
 class BoundaryTest(BaseTest):
@@ -477,6 +653,18 @@ class PulsoInvalidoTest(BaseTest):
             "estrutura de pulso inválida passou calada",
         )
 
+    def test_bloco_aninhado_conta_o_arquivo_inteiro(self) -> None:
+        """Caso positivo do `BEGIN` aninhado, que não existia (Codex, 262E-7)."""
+        texto = (
+            "# Projetos\n" + "autoral\n" * 10
+            + PULSO_BEGIN + "\n" + PULSO_BEGIN + "\npulso\n" + PULSO_END + "\n"
+        )
+        self.assertEqual(
+            curated.measured_size(texto, curated.HYBRID), len(texto.encode("utf-8"))
+        )
+        _, erro = curated._pulso_partition(texto)
+        self.assertEqual(erro, "bloco de pulso aninhado")
+
     def test_crlf_nao_quebra_o_parser(self) -> None:
         texto = "# P\r\n" + PULSO_BEGIN + "\r\npulso\r\n" + PULSO_END + "\r\nautoral\r\n"
         medido = curated.measured_size(texto, curated.HYBRID)
@@ -487,6 +675,17 @@ class CercaDeCaminhoTest(BaseTest):
     """`Referencias/` symlinkado pra dentro de `.prumo/backups/` copiaria
     backup pra dentro de backup pelo arquivo final, que não é link
     (Codex, 262D-7)."""
+
+    def test_under_backup_root_isolado(self) -> None:
+        """No fluxo, `_has_symlink_ancestor` curto-circuita e esta cerca nunca
+        roda — ou se testa isolada, ou ela cobra pedágio sem prestar serviço
+        (Codex, 262E-7). Testada isolada: é a defesa que sobra se a primeira
+        deixar passar um caminho já resolvido."""
+        dentro = self.ws / ".prumo" / "backups" / "curated" / "x" / "INDICE.md"
+        dentro.parent.mkdir(parents=True)
+        dentro.write_text("x", encoding="utf-8")
+        self.assertTrue(curated._under_backup_root(self.ws, dentro))
+        self.assertFalse(curated._under_backup_root(self.ws, self.indice()))
 
     def test_pasta_symlinkada_pro_backup_e_recusada(self) -> None:
         alvo = self.ws / ".prumo" / "backups" / "curated" / "antigo"
