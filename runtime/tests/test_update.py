@@ -457,6 +457,76 @@ class PostUpdateTests(unittest.TestCase):
             self.assertTrue(payload["post_update"]["workspace_detected"])
             self.assertTrue(payload["post_update"]["repair_suggested"])
 
+    def test_saida_textual_no_flat_oferece_migrate_e_nunca_repair(self) -> None:
+        """O teste do guard usa `--format json` e não protegia a IMPRESSÃO:
+        apagar o print de `workspace_note` o deixaria verde (Codex, r4).
+
+        E o pior cenário é a contradição — recomendar `repair` (que cria o
+        híbrido) e logo depois oferecer `migrate` na mesma saída.
+        """
+        with tempfile.TemporaryDirectory() as tmpdir:
+            marker = Path(tmpdir) / "install-method.json"
+            _write_marker_v1(marker, package_manager="pip-user", source_kind="archive", launcher="manual")
+            ws = Path(tmpdir)
+            (ws / "_state").mkdir()
+            (ws / "_state" / "workspace-schema.json").write_text("{}", encoding="utf-8")
+            (ws / "PRUMO-CORE.md").write_text("> **prumo_version: 5.0.0**\n", encoding="utf-8")
+            with patch(
+                "prumo_runtime.commands.update.install_marker_path",
+                return_value=marker,
+            ), patch(
+                "prumo_runtime.commands.update.fetch_remote_version",
+                return_value="5.99.0",
+            ), patch(
+                "prumo_runtime.commands.update.Path.cwd",
+                return_value=ws,
+            ):
+                rc, output = self._run_main_capturing(["update", "--check"])
+        self.assertIn("migrate", output)
+        self.assertNotIn("prumo repair", output, "o --check recomendou o comando que cria o híbrido")
+
+    def test_workspace_flat_nao_dispara_repair_automatico(self) -> None:
+        """#268: o repair pós-update força `layout_mode="nested"`. Rodá-lo num
+        workspace flat converteria o layout do usuário como efeito colateral de
+        um update de RUNTIME — dano silencioso e difícil de desfazer.
+
+        Sem este teste, remover a supressão deixava a suíte verde (Codex, r3).
+        """
+        with tempfile.TemporaryDirectory() as tmpdir:
+            marker = Path(tmpdir) / "install-method.json"
+            _write_marker_v1(marker, package_manager="pip-user", source_kind="archive", launcher="manual")
+            ws = Path(tmpdir)
+            (ws / "_state").mkdir()
+            (ws / "_state" / "workspace-schema.json").write_text("{}", encoding="utf-8")
+            (ws / "PRUMO-CORE.md").write_text("> **prumo_version: 5.0.0**\n", encoding="utf-8")
+            with patch(
+                "prumo_runtime.commands.update.install_marker_path",
+                return_value=marker,
+            ), patch(
+                "prumo_runtime.commands.update.fetch_remote_version",
+                return_value="5.99.0",
+            ), patch(
+                "prumo_runtime.commands.update._execute_plan",
+                return_value=(0, "5.99.0"),
+            ), patch(
+                "prumo_runtime.commands.update._confirm_update",
+                return_value=True,
+            ), patch(
+                "prumo_runtime.commands.update._get_post_update_version",
+                return_value="5.99.0",
+            ), patch(
+                "prumo_runtime.commands.update._run_post_update_repair",
+                side_effect=AssertionError("o repair NÃO pode rodar em workspace flat"),
+            ), patch(
+                "prumo_runtime.commands.update.Path.cwd",
+                return_value=ws,
+            ):
+                rc, output = self._run_main_capturing(["update", "--yes", "--format", "json"])
+            payload = json.loads(output)
+            self.assertTrue(payload["post_update"]["workspace_detected"])
+            self.assertFalse(payload["post_update"]["repair_suggested"])
+            self.assertIn("migrate", payload["post_update"]["workspace_note"])
+
 
 class CurlSecureTests(unittest.TestCase):
     """Testa que o caminho curl baixa pra temp file e não usa process substitution."""

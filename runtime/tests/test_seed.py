@@ -56,6 +56,49 @@ def _build_workspace(tmpdir: str) -> Path:
     return workspace
 
 
+def _build_nested_workspace(tmpdir: str) -> Path:
+    """Mesmo conteúdo do `_build_workspace`, no layout NESTED.
+
+    Existe porque a #268 decidiu que `prumo seed` não grava em workspace flat
+    — gravar lá criaria um `.prumo/` dentro dele e misturaria os dois arranjos.
+    O teste da escrita precisa, portanto, de um workspace onde escrever é
+    legítimo. O `_build_workspace` (flat) segue servindo aos testes de payload,
+    que só leem.
+    """
+    workspace = Path(tmpdir)
+    user = workspace / "Prumo"
+    (user / "Inbox4Mobile").mkdir(parents=True)
+    (workspace / ".prumo" / "state").mkdir(parents=True)
+    (workspace / ".prumo" / "system").mkdir(parents=True)
+    (user / "PAUTA.md").write_text(
+        "# Pauta\n\n## Quente\n\n- **Item A** | cobrar: 26/07\n\n"
+        "## Em andamento\n\n- Projeto X\n\n## Agendado\n\n- Revisão\n\n"
+        "## Hibernando\n\n- Ideia\n\n## Horizonte\n\n- Aposta\n",
+        encoding="utf-8",
+    )
+    (user / "INBOX.md").write_text("# Inbox\n\n- um\n", encoding="utf-8")
+    (user / "REGISTRO.md").write_text(
+        "# Registro\n\n| Data | Item |\n|---|---|\n| 01/07 | linha |\n",
+        encoding="utf-8",
+    )
+    (workspace / ".prumo" / "state" / "workspace-schema.json").write_text(
+        json.dumps(
+            {
+                "user_name": "Batata",
+                "agent_name": "Prumo",
+                "timezone": "America/Sao_Paulo",
+                "briefing_time": "09:00",
+                "files": {"generated": [], "authorial": [], "derived": []},
+            }
+        ),
+        encoding="utf-8",
+    )
+    (workspace / ".prumo" / "system" / "PRUMO-CORE.md").write_text(
+        f"> **prumo_version: {__version__}**\n", encoding="utf-8"
+    )
+    return workspace
+
+
 class SeedPayloadTests(unittest.TestCase):
     def setUp(self) -> None:
         self._tmp = tempfile.TemporaryDirectory(prefix="prumo-seed-")
@@ -224,7 +267,7 @@ class SeedCliTests(unittest.TestCase):
         from contextlib import redirect_stdout
 
         with tempfile.TemporaryDirectory(prefix="prumo-seed-cli-") as tmp:
-            ws = _build_workspace(tmp)
+            ws = _build_nested_workspace(tmp)
             buffer = io.StringIO()
             with redirect_stdout(buffer):
                 code = run_seed(Namespace(workspace=str(ws), format="text"))
@@ -234,7 +277,22 @@ class SeedCliTests(unittest.TestCase):
             self.assertIn("local-panorama.json", out)
             self.assertTrue(seed_file_path(ws).exists())
 
-    def test_run_seed_without_prumo_dir_fails_politely(self) -> None:
+    def test_run_seed_recusa_workspace_flat_e_oferece_migrate(self) -> None:
+        """O `_build_workspace` é flat — e era ele que passava antes, gravando
+        um `.prumo/state/` dentro de um workspace flat. A #268 fechou isso."""
+        import io
+        from contextlib import redirect_stdout
+
+        with tempfile.TemporaryDirectory(prefix="prumo-seed-flat-") as tmp:
+            ws = _build_workspace(tmp)
+            buffer = io.StringIO()
+            with redirect_stdout(buffer):
+                code = run_seed(Namespace(workspace=str(ws), format="text"))
+            self.assertEqual(code, 1)
+            self.assertIn("layout antigo", buffer.getvalue())
+            self.assertIn("prumo migrate", buffer.getvalue())
+
+    def test_run_seed_without_workspace_markers_fails_politely(self) -> None:
         import io
         from contextlib import redirect_stdout
 
@@ -243,7 +301,10 @@ class SeedCliTests(unittest.TestCase):
             with redirect_stdout(buffer):
                 code = run_seed(Namespace(workspace=tmp, format="text"))
             self.assertEqual(code, 1)
-            self.assertIn("sem `.prumo/`", buffer.getvalue())
+            # #268: a mensagem deixou de citar `.prumo/` — num workspace flat
+            # ela mandava o usuário procurar pasta que o layout dele não tem.
+            self.assertIn("não parece um workspace do Prumo", buffer.getvalue())
+            self.assertIn("nada a semear aqui", buffer.getvalue())
 
 
 if __name__ == "__main__":

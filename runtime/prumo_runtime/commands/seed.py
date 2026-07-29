@@ -44,7 +44,12 @@ from prumo_runtime.local_panorama import build_local_panorama
 from prumo_runtime.curated import render_report, snapshot_curated
 from prumo_runtime.indice_integridade import render as render_indice
 from prumo_runtime.workspace import build_config_from_existing
-from prumo_runtime.workspace_paths import workspace_paths
+from prumo_runtime.workspace_paths import (
+    is_legacy_flat_workspace,
+    is_prumo_workspace,
+    legacy_flat_refusal,
+    workspace_paths,
+)
 
 SEED_SCHEMA_VERSION = "prumo_local_panorama_file.v1"
 SEED_FILENAME = "local-panorama.json"
@@ -263,8 +268,13 @@ def write_seed(workspace: Path) -> Path:
 
 def run_seed(args: argparse.Namespace) -> int:
     workspace = Path(args.workspace).expanduser().resolve()
-    if not (workspace / ".prumo").is_dir():
-        print(f"workspace sem `.prumo/`: {workspace} — nada a semear aqui.")
+    if not is_prumo_workspace(workspace):
+        print(f"não parece um workspace do Prumo: {workspace} — nada a semear aqui.")
+        return 1
+    # `seed` só existe pra GRAVAR (semente + snapshot dos curados), e ambos os
+    # destinos são `.prumo/` literal. Não há metade read-only pra salvar aqui.
+    if is_legacy_flat_workspace(workspace):
+        print(legacy_flat_refusal(workspace, "semear"))
         return 1
     # Snapshot dos curados (#262). Fica AQUI, e não dentro de
     # `build_seed_payload`, porque construtor de payload não ganha escrita

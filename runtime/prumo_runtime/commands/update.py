@@ -25,6 +25,7 @@ from pathlib import Path
 from typing import Any
 
 from prumo_runtime import __version__
+from prumo_runtime.workspace_paths import LEGACY_FLAT_POST_UPDATE_NOTE, is_legacy_flat_workspace, is_prumo_workspace
 
 
 REMOTE_VERSION_URL = "https://raw.githubusercontent.com/tharso/prumo/main/VERSION"
@@ -370,8 +371,8 @@ def workspace_core_status(workspace: Path, remote_version: str | None) -> dict |
     Update do runtime ≠ update do core do workspace: o core sincroniza via
     `prumo repair` (rodado no pós-update). Este report evita que o `--check`
     esconda um workspace defasado atrás de um runtime em dia. Retorna None se o
-    CWD não é um workspace (sem `.prumo`)."""
-    if not (workspace / ".prumo").is_dir():
+    CWD não é um workspace (em qualquer layout, #268)."""
+    if not is_prumo_workspace(workspace):
         return None
     try:
         from prumo_runtime.workspace import parse_core_version
@@ -379,8 +380,14 @@ def workspace_core_status(workspace: Path, remote_version: str | None) -> dict |
         core_v = parse_core_version(workspace)
     except Exception:
         core_v = None
+    if not core_v:
+        # Versão vazia imprimia `Core do workspace: n/d (em dia)` — ausência virando saúde (Codex, r1).
+        return None
     return {
-        "workspace_core_version": core_v or "",
+        # No flat a ação é `migrate`, nunca `repair` — sem esta marca o
+        # `--check` passaria a recomendar o híbrido (Codex, r4).
+        "workspace_layout_legacy_flat": is_legacy_flat_workspace(workspace),
+        "workspace_core_version": core_v,
         "workspace_core_needs_update": bool(
             core_v
             and remote_version
@@ -721,14 +728,20 @@ def run_update(args) -> int:
         # binário diz de si mesmo — senão um update que não pegou "valida"
         # comparando a versão velha com ela própria (review Codex, #232).
         expected = artifact_version or remote_version
-        workspace_detected = (Path.cwd() / ".prumo").is_dir()
+        workspace_detected = is_prumo_workspace(Path.cwd())
+        # O repair pós-update GRAVA, e grava nested (`install_skills` força
+        # layout_mode="nested"): dispará-lo num flat converteria o layout do
+        # usuário como efeito colateral de um update de runtime (#268).
+        legacy_flat = is_legacy_flat_workspace(Path.cwd())
         payload["post_update"] = {
             "new_version": new_version,
             "expected_version": expected,
             "version_confirmed": bool(expected) and new_version == expected,
             "workspace_detected": workspace_detected,
-            "repair_suggested": workspace_detected,
+            "repair_suggested": workspace_detected and not legacy_flat,
         }
+        if legacy_flat:
+            payload["post_update"]["workspace_note"] = LEGACY_FLAT_POST_UPDATE_NOTE
         if expected and new_version != expected:
             payload["post_update"]["warning"] = (
                 f"binário reporta {new_version}, artefato instalado era {expected} — "
@@ -736,7 +749,7 @@ def run_update(args) -> int:
             )
         # Propaga o update pro workspace (#146): sem isto, o runtime atualiza
         # mas as skills do workspace ficam velhas e comandos novos "não existem".
-        elif workspace_detected:
+        elif workspace_detected and not legacy_flat:
             payload["post_update"].update(
                 _run_post_update_repair(Path.cwd(), expected_version=expected)
             )
@@ -806,10 +819,9 @@ def _emit(payload: dict, output_format: str, exit_code: int = 0) -> int:
     if "workspace_core_version" in payload:
         core_v = payload["workspace_core_version"] or "n/d"
         if payload.get("workspace_core_needs_update"):
-            print(
-                f"⚠ Core do workspace: {core_v} — atrás da pública. Rode "
-                "`prumo repair --workspace .` após atualizar o runtime."
-            )
+            flat = payload.get("workspace_layout_legacy_flat")
+            acao = "`prumo migrate --workspace .` (layout antigo: o repair criaria um híbrido)" if flat else "`prumo repair --workspace .` após atualizar o runtime"
+            print(f"⚠ Core do workspace: {core_v} — atrás da pública. Rode {acao}.")
         else:
             print(f"Core do workspace: {core_v} (em dia)")
 
@@ -843,6 +855,8 @@ def _emit(payload: dict, output_format: str, exit_code: int = 0) -> int:
     if post:
         if post.get("new_version"):
             print(f"Versão pós-update: {post['new_version']}")
+        if post.get("workspace_note"):
+            print(f"⚠ {post['workspace_note']}")
         if post.get("repair_executed"):
             print("Workspace detectado no CWD — `prumo repair` executado automaticamente (skills propagadas).")
         elif post.get("repair_suggested"):

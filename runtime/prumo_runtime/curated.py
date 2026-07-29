@@ -28,9 +28,19 @@ from pathlib import Path
 from prumo_runtime import faxina_thresholds
 from prumo_runtime.backup import iter_backup_roots
 from prumo_runtime.projetos import PULSO_BEGIN, PULSO_END
-from prumo_runtime.workspace_paths import workspace_paths
+from prumo_runtime.workspace_paths import (
+    is_legacy_flat_workspace,
+    is_prumo_workspace,
+    workspace_paths,
+)
 
 SCOPE = "curated"
+# Código de `skipped` do bloqueio por layout antigo (#268). É CÓDIGO, igual a
+# `sem-mudanca` — a frase pro usuário nasce no `render_report`.
+SKIPPED_LEGACY_FLAT = "layout-antigo"
+# Não-nested que também não é workspace legado: pula igual, mas SEM oferecer
+# migração — pasta comum não tem pra onde migrar.
+SKIPPED_NOT_NESTED = "nao-nested"
 MANIFEST_NAME = "_manifest.json"
 MANIFEST_SCHEMA = "prumo_curated_snapshot.v1"
 
@@ -551,8 +561,14 @@ def snapshot_curated(
 
     O carimbo nasce AQUI, em UTC, e não do fuso configurado: ele é só rótulo
     de diretório — a ordem cronológica vem do `captured_at_utc` do manifesto.
-    Assim o snapshot não depende de `build_config_from_existing`, e workspace
-    sem identidade canônica ganha cópia em vez de exceção.
+    Assim o snapshot não depende de `build_config_from_existing`.
+
+    Só copia em workspace NESTED (#268). Workspace no layout antigo devolve
+    `skipped=SKIPPED_LEGACY_FLAT` — gravar criaria um `.prumo/` dentro do flat
+    — e pasta sem identidade de workspace devolve `SKIPPED_NOT_NESTED`, sem
+    convite pra migrar. A tolerância antiga ("sem identidade canônica ganha
+    cópia") acabou aqui: `nested_layout` detectado não prova identidade, e uma
+    pasta alheia com subpasta `Prumo/` incidental receberia backup dentro dela.
 
     NUNCA levanta: qualquer falha entra em `errors` e o ritual segue. Backup
     que derruba o briefing é pior que o problema que ele resolve.
@@ -576,6 +592,25 @@ def snapshot_curated(
     try:
         workspace = Path(workspace).expanduser().resolve()
         paths = workspace_paths(workspace)
+        # Duas recusas, códigos diferentes, mesma trava (#268). Ela mora AQUI e
+        # não nos dois chamadores (`seed` e `briefing`) pra que qualquer ritual
+        # futuro que peça snapshot já nasça protegido. `skipped` carrega CÓDIGO,
+        # nunca frase — `sem-mudanca`, o dedupe normal, mora no mesmo campo, e
+        # confundir os dois fazia todo briefing sem alteração alarmar (Codex, r4).
+        if is_legacy_flat_workspace(workspace):
+            # Workspace legítimo no layout antigo: o destino é `.prumo/backups/`
+            # literal, então gravar criaria um `.prumo/` DENTRO do flat e
+            # misturaria os dois arranjos. Este ganha o convite pra migrar.
+            report["skipped"] = SKIPPED_LEGACY_FLAT
+            return report
+        if not is_prumo_workspace(workspace):
+            # `nested_layout` sozinho NÃO é identidade: pasta alheia com uma
+            # subpasta `Prumo/` incidental é detectada como nested, e o snapshot
+            # gravaria `.prumo/backups/curated/` dentro do projeto de outra
+            # pessoa — e o briefing chama isto antes de montar o painel
+            # (Codex, r6). Sem convite pra migrar: não há de onde.
+            report["skipped"] = SKIPPED_NOT_NESTED
+            return report
         scope_root = workspace / ".prumo" / "backups" / SCOPE
 
         # Três origens de mensagem, com pesos DIFERENTES. Só a primeira decide
@@ -666,6 +701,16 @@ def render_report(report: dict) -> str:
     NÃO ganharam cópia, o pior momento pra ficar calado (Codex, 262D-5).
     """
     linhas: list[str] = []
+    # Só o bloqueio por layout vira linha: quem não ganhou cópia de segurança
+    # tem que saber (Codex, r3). `sem-mudanca` NÃO entra — é o dedupe normal,
+    # e alarmá-lo transformaria uma otimização saudável em aviso recorrente
+    # em todo briefing sem alteração (Codex, r4).
+    if report.get("skipped") == SKIPPED_LEGACY_FLAT:
+        linhas.append(
+            "[curado] snapshot não rodou — workspace no layout antigo (flat): a cópia "
+            "gravaria em `.prumo/backups/` e criaria um `.prumo/` dentro dele. Rode "
+            "`prumo migrate` pra ganhar a cópia de segurança dos arquivos curados."
+        )
     graves = [
         a for a in report.get("alerts", [])
         if a.get("state") not in {ARCHIVED, UNMEASURABLE}

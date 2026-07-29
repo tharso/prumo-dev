@@ -6,6 +6,14 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.77.0] - 2026-07-29
+
+### Fixed
+- **O diagnóstico voltou a funcionar no layout antigo, e a escrita lá passou a mandar migrar (#268)** — o guard que pergunta "isto é um workspace do Prumo?" olhava `.prumo/`, caminho que **só existe no layout nested**. No flat a infra mora em `_state/`/`_logs/` e o core na raiz, então a resposta era sempre "não" e `prumo sanitize` saía com erro em workspace legítimo — enquanto o `/fim`, depois da #263, passou a **recomendar** justamente essa sanitize. O painel recomendando o que a ferramenta recusava. O defeito vem da #179 e ficou invisível porque nenhum teste atravessava a porta pública: os testes de flat chamam `build_plan()` direto. Consertar o guard revelou o resto: **39 pontos do runtime escrevem em `.prumo/` literal** (archive, backups, journal, semente, snapshot dos curados), então abrir a porta faria `prumo seed` criar uma árvore `.prumo/` **dentro** de um workspace flat — os dois arranjos misturados na mesma pasta. Pior, o `prumo update` dispara `repair` sozinho no diretório atual, e o repair força nested: um update de runtime converteria o layout do usuário como efeito colateral. A decisão foi separar as duas metades: **ler funciona, escrever manda migrar**. Diagnóstico da sanitize, status de versão do core e panorama passam a operar no flat; `sanitize --apply`, `prumo seed` e o snapshot dos curados param com uma linha oferecendo `prumo migrate`, e o repair pós-update não roda lá. A trava do snapshot mora dentro da função que grava, não nos dois chamadores, pra que ritual futuro que peça snapshot já nasça protegido.
+
+### Changed
+- **O critério de identidade de workspace é assimétrico entre layouts, de propósito (#268)** — no nested, encontrar `.prumo/` basta: é nome exclusivo do Prumo. No flat, marcador canônico é obrigatório, porque `_state/` e `_logs/` são nomes que qualquer projeto pode ter — sem essa assimetria, um `prumo update` rodaria `repair` automático dentro de projeto alheio que tivesse uma pasta `_logs/`. Marcador só vale como arquivo real dentro da raiz: symlink não conta, porque o repair escreveria por ele pra fora do workspace. E `prumo update --check` deixou de imprimir `Core do workspace: n/d (em dia)` quando o core está ausente ou ilegível — ausência não é saúde.
+
 ## [5.76.0] - 2026-07-29
 
 ### Fixed
