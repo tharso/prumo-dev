@@ -46,6 +46,13 @@ class BaseTest(unittest.TestCase):
     def escrever(self, texto: str) -> None:
         self.indice().write_text(texto, encoding="utf-8")
 
+    def escrever_coerente(self, ids, extra: str = "") -> None:
+        """Tabela + as fichas que ela declara. Sem isto, toda linha viraria
+        entrada órfã e a decisão nunca seria `ok` — o check de órfã é novo
+        (Codex, r5)."""
+        self.escrever(_tabela(ids) + extra)
+        self.fichas(ids)
+
     def fichas(self, ids) -> None:
         for n in ids:
             (self.root / f"ficha-{n}.md").write_text(f"# Ficha {n}\n", encoding="utf-8")
@@ -76,7 +83,7 @@ class PavioTest(BaseTest):
 
     def test_o_truncamento_real_bloqueia(self) -> None:
         """48 entradas viram 4: 91,7% de lacuna."""
-        self.escrever(_tabela([45, 46, 47, 48]) + "\n<!-- proximo-id: 49 -->\n")
+        self.escrever_coerente([45, 46, 47, 48], "\n<!-- proximo-id: 49 -->\n")
         self.fichas(range(1, 49))
 
         r = self.avaliar()
@@ -85,13 +92,13 @@ class PavioTest(BaseTest):
 
     def test_fronteira_abaixo_do_limiar(self) -> None:
         """49,x% não dispara — o limiar é `>=`."""
-        self.escrever(_tabela(range(1, 51)) + "\n<!-- proximo-id: 100 -->\n")
+        self.escrever_coerente(range(1, 51), "\n<!-- proximo-id: 100 -->\n")
         r = self.avaliar()
         self.assertEqual(r["lacunas_pct"], 49)
         self.assertEqual(r["decisao"], indice_integridade.OK)
 
     def test_fronteira_no_limiar(self) -> None:
-        self.escrever(_tabela(range(1, 50)) + "\n<!-- proximo-id: 99 -->\n")
+        self.escrever_coerente(range(1, 50), "\n<!-- proximo-id: 99 -->\n")
         r = self.avaliar()
         self.assertEqual(r["lacunas_pct"], 50)
         self.assertEqual(r["decisao"], indice_integridade.BLOQUEAR)
@@ -99,24 +106,24 @@ class PavioTest(BaseTest):
     def test_sem_rodape_pavio_indisponivel(self) -> None:
         """Negativa: workspace legado não tem rodapé, e ausência NUNCA é
         alarme por si."""
-        self.escrever(_tabela([1, 2, 3]))
+        self.escrever_coerente([1, 2, 3])
         r = self.avaliar()
         self.assertIsNone(r["lacunas_pct"])
         self.assertEqual(r["decisao"], indice_integridade.OK)
 
     def test_rodape_malformado_nao_alarma(self) -> None:
-        self.escrever(_tabela([1, 2, 3]) + "\n<!-- proximo-id: abacaxi -->\n")
+        self.escrever_coerente([1, 2, 3], "\n<!-- proximo-id: abacaxi -->\n")
         self.assertIsNone(self.avaliar()["lacunas_pct"])
 
     def test_rodape_atrasado_nao_conta_id_acima(self) -> None:
         """IDs >= N não preenchem lacuna: o rodapé é sugestão (#244). Com
         rodapé 3 e IDs 1,2,50, os slots são {1,2} e estão cheios."""
-        self.escrever(_tabela([1, 2, 50]) + "\n<!-- proximo-id: 3 -->\n")
+        self.escrever_coerente([1, 2, 50], "\n<!-- proximo-id: 3 -->\n")
         r = self.avaliar()
         self.assertEqual(r["lacunas_pct"], 0)
 
     def test_id_duplicado_conta_uma_vez(self) -> None:
-        self.escrever(_tabela([1, 1, 2]) + "\n<!-- proximo-id: 4 -->\n")
+        self.escrever_coerente([1, 1, 2], "\n<!-- proximo-id: 4 -->\n")
         # slots = 3, ocupados = {1,2} → 1 lacuna em 3
         self.assertEqual(self.avaliar()["lacunas_pct"], 33)
 
@@ -163,7 +170,7 @@ class ArvoreUnicaTest(BaseTest):
     exclusiva e o volume entra como EVIDÊNCIA (Codex, 261-5)."""
 
     def test_truncamento_da_um_alerta_so(self) -> None:
-        self.escrever(_tabela([45, 46, 47, 48]) + "\n<!-- proximo-id: 49 -->\n")
+        self.escrever_coerente([45, 46, 47, 48], "\n<!-- proximo-id: 49 -->\n")
         self.fichas(range(1, 49))
 
         r = self.avaliar()
@@ -191,8 +198,7 @@ class ArvoreUnicaTest(BaseTest):
         self.assertIn("ficha-2.md", texto)
 
     def test_casa_em_ordem_e_silencio(self) -> None:
-        self.escrever(_tabela([1, 2]) + "\n<!-- proximo-id: 3 -->\n")
-        self.fichas([1, 2])
+        self.escrever_coerente([1, 2], "\n<!-- proximo-id: 3 -->\n")
         r = self.avaliar()
         self.assertEqual(r["decisao"], indice_integridade.OK)
         self.assertEqual(indice_integridade.render(r), "")
@@ -221,7 +227,7 @@ class SementeTest(BaseTest):
         return panorama
 
     def test_semente_transporta_a_decisao(self) -> None:
-        self.escrever(_tabela([45, 46, 47, 48]) + "\n<!-- proximo-id: 49 -->\n")
+        self.escrever_coerente([45, 46, 47, 48], "\n<!-- proximo-id: 49 -->\n")
         self.fichas(range(1, 49))
 
         bloco = self._panorama()["indice_referencias"]
@@ -342,7 +348,7 @@ class FronteiraExataTest(BaseTest):
 
     def test_49_5_por_cento_nao_bloqueia_no_limiar_50(self) -> None:
         # 101 slots, 51 ocupados → 50 lacunas = 49,50%
-        self.escrever(_tabela(range(1, 52)) + "\n<!-- proximo-id: 102 -->\n")
+        self.escrever_coerente(range(1, 52), "\n<!-- proximo-id: 102 -->\n")
         r = self.avaliar()
         self.assertEqual(r["lacunas_pct"], 50, "a exibição arredonda, e tudo bem")
         self.assertEqual(r["decisao"], indice_integridade.OK, "arredondou para DECIDIR")
@@ -511,7 +517,7 @@ class ConferenciaTest(BaseTest):
     seguinte — saída cenográfica (Codex, r3)."""
 
     def _indice_com_lacuna_grande(self) -> None:
-        self.escrever(_tabela([45, 46, 47, 48]) + "\n<!-- proximo-id: 49 -->\n")
+        self.escrever_coerente([45, 46, 47, 48], "\n<!-- proximo-id: 49 -->\n")
 
     def test_sem_marca_bloqueia(self) -> None:
         self._indice_com_lacuna_grande()
@@ -527,9 +533,8 @@ class ConferenciaTest(BaseTest):
 
     def test_fracao_exata_nao_arredonda_pra_bloquear_de_novo(self) -> None:
         """Mesmo estado, mesma fração: não pode voltar a bloquear."""
-        self.escrever(
-            _tabela(range(1, 100)) + "\n<!-- proximo-id: 201 -->\n"
-            "<!-- lacunas-conferidas: 101/200 -->\n"
+        self.escrever_coerente(
+            range(1, 100), "\n<!-- proximo-id: 201 -->\n<!-- lacunas-conferidas: 101/200 -->\n"
         )
         self.assertEqual(self.avaliar()["decisao"], indice_integridade.OK)
 
@@ -538,9 +543,8 @@ class ConferenciaTest(BaseTest):
         (50%) aceito, estado atual 101/200 (50,5%). Cresceu — mas os dois
         arredondam pra 50, então comparar percentual ficaria calado
         (Codex, r4). Sem este caso, as duas implementações empatam."""
-        self.escrever(
-            _tabela(range(1, 100)) + "\n<!-- proximo-id: 201 -->\n"
-            "<!-- lacunas-conferidas: 100/200 -->\n"
+        self.escrever_coerente(
+            range(1, 100), "\n<!-- proximo-id: 201 -->\n<!-- lacunas-conferidas: 100/200 -->\n"
         )
         self.assertEqual(self.avaliar()["decisao"], indice_integridade.BLOQUEAR)
 
@@ -573,15 +577,13 @@ class ConferenciaTest(BaseTest):
 
     def test_lacuna_que_cresce_alem_do_conferido_volta_a_alarmar(self) -> None:
         """Negativa central: conferir não é cheque em branco."""
-        self.escrever(
-            _tabela(range(1, 26)) + "\n<!-- proximo-id: 49 -->\n"
-            "<!-- lacunas-conferidas: 24/48 -->\n"
+        self.escrever_coerente(
+            range(1, 26), "\n<!-- proximo-id: 49 -->\n<!-- lacunas-conferidas: 24/48 -->\n"
         )
         self.assertEqual(self.avaliar()["decisao"], indice_integridade.OK)
 
-        self.escrever(
-            _tabela([45, 46, 47, 48]) + "\n<!-- proximo-id: 49 -->\n"
-            "<!-- lacunas-conferidas: 24/48 -->\n"
+        self.escrever_coerente(
+            [45, 46, 47, 48], "\n<!-- proximo-id: 49 -->\n<!-- lacunas-conferidas: 24/48 -->\n"
         )
         self.assertEqual(self.avaliar()["decisao"], indice_integridade.BLOQUEAR)
 
@@ -651,6 +653,75 @@ class ParidadeHigieneTest(unittest.TestCase):
     def test_faxina_bloqueia_indice_ausente_com_ficha(self) -> None:
         self.assertIn("Índice ausente com ficha em disco", self.faxina)
         self.assertIn("não criar o índice", self.faxina.lower())
+
+
+class OrfasTest(BaseTest):
+    """O outro sentido da integridade. Sem ele, `decisao: ok` declarava a
+    família limpa e suprimia o contrato que a §3 preserva desde sempre —
+    marcar "(arquivo não encontrado)" e deixar a higiene decidir
+    (Codex, r5)."""
+
+    def test_entrada_sem_arquivo_nao_deixa_a_familia_limpa(self) -> None:
+        self.escrever(_tabela([1]) + "\n<!-- proximo-id: 2 -->\n")  # sem criar a ficha
+        r = self.avaliar()
+        self.assertEqual(r["entradas_sem_arquivo"], ["ficha-1.md"])
+        self.assertNotEqual(r["decisao"], indice_integridade.OK, "família limpa com órfã")
+
+    def test_orfa_aparece_nomeada_no_relato(self) -> None:
+        self.escrever(_tabela([1]) + "\n<!-- proximo-id: 2 -->\n")
+        self.assertIn("ficha-1.md", indice_integridade.render(self.avaliar()))
+        self.assertIn("sem arquivo", indice_integridade.render(self.avaliar()))
+
+    def test_indice_coerente_nao_tem_orfa(self) -> None:
+        """Negativa: entrada com arquivo em disco não é órfã."""
+        self.escrever_coerente([1, 2], "\n<!-- proximo-id: 3 -->\n")
+        r = self.avaliar()
+        self.assertEqual(r["entradas_sem_arquivo"], [])
+        self.assertEqual(r["decisao"], indice_integridade.OK)
+
+
+class SimetriaComASementeTest(BaseTest):
+    """O manifesto da semente EXCLUI symlink. Seguir aqui criava assimetria: o
+    produtor lia o alvo pra dizer `ok`, e mudanças nele não mexiam no
+    manifesto — a semente seguiria 'fresca' depois de um truncamento, o bug
+    original de bigode postiço (Codex, r5)."""
+
+    def test_referencias_symlinkado_e_fonte_indisponivel(self) -> None:
+        import shutil
+        alvo = Path(self._tmp.name) / "outro-lugar"
+        alvo.mkdir()
+        (alvo / "INDICE.md").write_text(
+            _tabela([1]) + "\n<!-- proximo-id: 2 -->\n", encoding="utf-8"
+        )
+        shutil.rmtree(self.root)
+        self.root.symlink_to(alvo, target_is_directory=True)
+
+        r = self.avaliar()
+        self.assertEqual(r["decisao"], indice_integridade.BLOQUEAR)
+        self.assertFalse(r["fonte_completa"])
+
+
+class MarcaImpossivelTest(BaseTest):
+    def test_fracao_impossivel_nao_silencia(self) -> None:
+        """`999/1` fazia a multiplicação cruzada concluir eternamente que a
+        lacuna não cresceu (Codex, r5)."""
+        self.escrever_coerente(
+            [45, 46, 47, 48], "\n<!-- proximo-id: 49 -->\n<!-- lacunas-conferidas: 999/1 -->\n"
+        )
+        self.assertEqual(self.avaliar()["decisao"], indice_integridade.BLOQUEAR)
+
+    def test_fracao_com_zero_slots_nao_silencia(self) -> None:
+        self.escrever_coerente(
+            [45, 46, 47, 48], "\n<!-- proximo-id: 49 -->\n<!-- lacunas-conferidas: 0/0 -->\n"
+        )
+        self.assertEqual(self.avaliar()["decisao"], indice_integridade.BLOQUEAR)
+
+    def test_fracao_valida_continua_silenciando(self) -> None:
+        """Negativa: o guard não pode reprovar marca legítima."""
+        self.escrever_coerente(
+            [45, 46, 47, 48], "\n<!-- proximo-id: 49 -->\n<!-- lacunas-conferidas: 44/48 -->\n"
+        )
+        self.assertEqual(self.avaliar()["decisao"], indice_integridade.OK)
 
 
 if __name__ == "__main__":

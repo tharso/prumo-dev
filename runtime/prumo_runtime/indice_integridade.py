@@ -78,7 +78,10 @@ def lacunas_conferidas(texto: str) -> tuple[int, int] | None:
     if not achados:
         return None
     lacunas, slots = int(achados[-1][0]), int(achados[-1][1])
-    return (lacunas, slots) if slots > 0 else None
+    # `999/1` fazia a multiplicação cruzada concluir eternamente que a lacuna
+    # não cresceu — marca numericamente impossível não pode desligar a trava
+    # (Codex, r5).
+    return (lacunas, slots) if 0 < slots and 0 <= lacunas <= slots else None
 
 
 def fichas_fora_conferidas(texto: str) -> set[str]:
@@ -162,7 +165,11 @@ def fichas_sem_entrada(referencias_root: Path, texto: str) -> list[str] | None:
     Distinguir "nenhuma ficha" de "não consegui olhar" é o que impede raiz
     inacessível de virar casa em ordem (Codex, 261D-5).
     """
-    if not referencias_root.is_dir():
+    # O manifesto da semente EXCLUI symlink; seguir aqui criaria assimetria:
+    # o produtor leria o alvo pra dizer `ok` e mudanças nele não mexeriam no
+    # manifesto — a semente seguiria "fresca" depois de um truncamento, que é
+    # o bug original de bigode postiço (Codex, r5).
+    if referencias_root.is_symlink() or not referencias_root.is_dir():
         return None
     import stat as stat_module
 
@@ -194,6 +201,26 @@ def fichas_sem_entrada(referencias_root: Path, texto: str) -> list[str] | None:
     return faltando
 
 
+def entradas_sem_arquivo(referencias_root: Path, texto: str) -> list[str]:
+    """Linhas do índice cujo arquivo não existe mais.
+
+    O outro sentido da integridade. Sem isto, `decisao: ok` declarava a família
+    limpa e suprimia o contrato que a §3 preserva desde sempre — marcar
+    "(arquivo não encontrado)" e deixar a higiene decidir (Codex, r5).
+    """
+    if referencias_root.is_symlink() or not referencias_root.is_dir():
+        return []
+    faltando = []
+    for nome in sorted(arquivos_indexados(texto)):
+        alvo = referencias_root / nome
+        try:
+            if not alvo.exists() or alvo.is_symlink():
+                faltando.append(nome)
+        except OSError:
+            faltando.append(nome)
+    return faltando
+
+
 def avaliar(
     referencias_root: Path,
     indice_path: Path,
@@ -214,6 +241,7 @@ def avaliar(
         "ids_distintos": 0,
         "lacunas_pct": None,
         "sem_entrada": [],
+        "entradas_sem_arquivo": [],
         "lacunas_conferidas": None,
         "fichas_fora_conferidas": [],
         "fonte_completa": True,
@@ -247,6 +275,8 @@ def avaliar(
         resultado["razoes"] = ["não consegui listar `Referencias/` — inventário indisponível"]
         return resultado
     resultado["sem_entrada"] = sem_entrada
+    orfas = entradas_sem_arquivo(referencias_root, texto)
+    resultado["entradas_sem_arquivo"] = orfas
 
     if not indice_existe and sem_entrada:
         # Índice sumido COM fichas em disco é a forma mais grave do incidente,
@@ -287,7 +317,10 @@ def avaliar(
         resultado["razoes"] = [
             f"{len(sem_entrada)} ficha(s) em disco fora do índice de uma vez"
         ]
-    elif sem_entrada:
+    elif sem_entrada or orfas:
+        # Órfã não é dano silencioso, é manutenção declarada: a §3 marca
+        # "(arquivo não encontrado)" e a higiene decide. Mas a família NÃO
+        # pode ser declarada limpa com ela pendente.
         resultado["decisao"] = REINDEXAR
     return resultado
 
@@ -307,5 +340,11 @@ def render(resultado: dict) -> str:
                 linha += f" (+{len(nomes) - 10})"
         return linha
     if decisao == REINDEXAR:
-        return "Índice: " + ", ".join(f"`{n}`" for n in nomes) + " sem entrada — reindexar e nomear."
+        partes = []
+        if nomes:
+            partes.append(", ".join(f"`{n}`" for n in nomes) + " sem entrada")
+        orfas = resultado.get("entradas_sem_arquivo", [])
+        if orfas:
+            partes.append(", ".join(f"`{n}`" for n in orfas) + " sem arquivo")
+        return "Índice: " + "; ".join(partes) + " — reindexar e nomear."
     return ""
