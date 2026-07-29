@@ -810,5 +810,46 @@ class EspinhaEModuloTest(unittest.TestCase):
         self.assertIn("0 ≤ L ≤ S", self.faxina)
 
 
+class PipeEscapadoTest(BaseTest):
+    """Título com `\\|` empurrava a coluna e a ficha ÍNTEGRA era acusada de
+    ausente — virando reindexação com ID novo, o reparo no escuro que esta
+    issue existe pra impedir (Codex, r7)."""
+
+    def test_titulo_com_pipe_escapado_nao_desloca_a_coluna(self) -> None:
+        texto = (
+            "# Índice\n\n| # | Título | Arquivo | Data | Descrição | Keywords |\n"
+            "|---|---|---|---|---|---|\n"
+            "| 1 | A \\| B | ficha-1.md | 01/02/2026 | desc | tag |\n"
+            "\n<!-- proximo-id: 2 -->\n"
+        )
+        self.escrever(texto)
+        self.fichas([1])
+        r = self.avaliar()
+        self.assertEqual(r["sem_entrada"], [], "ficha íntegra acusada de ausente")
+        self.assertEqual(r["entradas_sem_arquivo"], [])
+
+    def test_linha_curta_nao_quebra(self) -> None:
+        """Negativa: tabela sem a terceira coluna não pode estourar."""
+        self.escrever("# Índice\n\n| 1 | só duas |\n\n<!-- proximo-id: 2 -->\n")
+        self.assertIsInstance(self.avaliar(), dict)
+
+
+class SinalDoTextoTest(unittest.TestCase):
+    """Igualdade não é crescimento: com `≥`, uma conferência `44/48` voltava a
+    bloquear no briefing seguinte pelo caminho skills-first (Codex, r7)."""
+
+    def setUp(self) -> None:
+        raiz = Path(__file__).resolve().parents[2]
+        self.faxina = (raiz / "skills" / "prumo" / "references" / "modules"
+                       / "faxina.md").read_text(encoding="utf-8")
+
+    def test_texto_usa_estritamente_maior(self) -> None:
+        self.assertIn("lacunas × S > L × slots", self.faxina)
+        self.assertNotIn("lacunas × S ≥ L × slots", self.faxina)
+
+    def test_texto_diz_que_igualdade_nao_conta(self) -> None:
+        self.assertIn("igualdade NÃO é crescimento", self.faxina)
+
+
 if __name__ == "__main__":
     unittest.main()

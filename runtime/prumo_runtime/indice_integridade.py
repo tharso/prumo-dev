@@ -47,9 +47,12 @@ _CONFERIDA = re.compile(r"<!--\s*lacunas-conferidas:\s*(\d+)\s*/\s*(\d+)\s*-->")
 _FORA_CONFERIDAS = re.compile(r"<!--\s*fichas-fora-conferidas:\s*([^>]*?)\s*-->")
 # Linha de tabela cujo primeiro campo é o ID.
 _LINHA_ID = re.compile(r"^\s*\|\s*(\d+)\s*\|", re.M)
-# Linha de dados da tabela: `| # | Título | Arquivo | ...`. A COLUNA importa —
-# nome citado numa descrição não é entrada de índice (Codex, 261D-3).
-_LINHA_DADOS = re.compile(r"^\s*\|\s*\d+\s*\|([^|]*)\|([^|]*)\|", re.M)
+# Linha de dados da tabela: começa com `| <id> |`. As células saem do split
+# que respeita `\|` escapado — sem isso, um título com pipe escapado
+# (`| 1 | A \| B | ficha.md |`) empurrava a coluna e a ficha ÍNTEGRA era
+# acusada de ausente, virando reindexação com ID novo: o reparo no escuro que
+# esta issue existe pra impedir (Codex, r7).
+_LINHA_TABELA = re.compile(r"^\s*\|\s*\d+\s*\|.*$", re.M)
 
 OK = "ok"
 REINDEXAR = "reindexar"
@@ -140,16 +143,42 @@ def lacunas_pct(texto: str) -> int | None:
     return round(100 * lacunas / slots)  # SÓ pra exibição
 
 
+def _celulas(linha: str) -> list[str]:
+    """Divide a linha em células respeitando `\|` escapado."""
+    celulas: list[str] = []
+    atual: list[str] = []
+    i = 0
+    while i < len(linha):
+        c = linha[i]
+        if c == "\\" and i + 1 < len(linha) and linha[i + 1] == "|":
+            atual.append("|")
+            i += 2
+            continue
+        if c == "|":
+            celulas.append("".join(atual))
+            atual = []
+            i += 1
+            continue
+        atual.append(c)
+        i += 1
+    celulas.append("".join(atual))
+    # A linha abre e fecha com `|`: as pontas viram strings vazias.
+    return [c for c in celulas[1:-1]] if len(celulas) > 2 else []
+
+
 def arquivos_indexados(texto: str) -> set[str]:
-    """Nomes na COLUNA `Arquivo` das linhas de dados.
+    """Nomes na COLUNA `Arquivo` (a terceira) das linhas de dados.
 
     Buscar o nome no texto inteiro fazia uma ficha citada numa descrição
     contar como indexada — a linha perdida ficava invisível justamente no
     detector feito pra achá-la (Codex, 261D-3).
     """
     nomes: set[str] = set()
-    for _, coluna_arquivo in _LINHA_DADOS.findall(texto):
-        alvo = coluna_arquivo.strip().strip("`").strip()
+    for linha in _LINHA_TABELA.findall(texto):
+        celulas = _celulas(linha.rstrip())
+        if len(celulas) < 3:
+            continue
+        alvo = celulas[2].strip().strip("`").strip()
         # A célula pode vir como link markdown `[texto](arquivo.md)`.
         link = re.search(r"\(([^)]+)\)\s*$", alvo)
         if link:
