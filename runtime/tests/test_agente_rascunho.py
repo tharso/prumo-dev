@@ -459,7 +459,7 @@ class LayoutFlatTest(unittest.TestCase):
         """A propriedade que faltava: o que a porta ENSINA tem de ser o que a
         varredura OLHA — nos dois layouts."""
         import re
-        from prumo_runtime.sanitize import RASCUNHO_RELS
+        from prumo_runtime.agente_rascunho import RASCUNHO_RELS
         from prumo_runtime.templates import render_agent_md
 
         for state_path in ("_state/", ".prumo/state/"):
@@ -502,6 +502,34 @@ class FingerprintDeDiretorioTest(BaseTest):
         self.assertEqual(
             sanitize._content_id(self.ws, alvo), sanitize._content_id(self.ws, alvo)
         )
+
+
+class ArvoreIlegivelTest(BaseTest):
+    """`os.walk` engole falha de leitura: subpasta inacessível vira vazia, e um
+    arquivo editado hoje sumiria da checagem de frieza enquanto o `move`
+    levaria a árvore inteira pelo pai. Falha FECHADA (Codex, r8)."""
+
+    def test_subpasta_ilegivel_segura_a_arvore(self) -> None:
+        import os
+        if os.geteuid() == 0:
+            self.skipTest("root ignora permissão de leitura")
+        self._arquivo("recon/sub/nota.md")
+        sub = self.rascunho / "recon" / "sub"
+        self._envelhecer(sub)
+        self._envelhecer(self.rascunho / "recon")
+        os.chmod(sub, 0o000)
+        self.addCleanup(os.chmod, sub, 0o755)
+
+        familia = self._familias(self._plano()).get("agente_rascunho", [])
+        self.assertEqual(familia, [], "moveu árvore que não conseguiu ler inteira")
+
+    def test_arvore_legivel_continua_saindo(self) -> None:
+        """Negativa: a recusa é da falha, não da funcionalidade."""
+        self._arquivo("recon/sub/nota.md")
+        self._envelhecer(self.rascunho / "recon" / "sub")
+        self._envelhecer(self.rascunho / "recon")
+        familia = self._familias(self._plano()).get("agente_rascunho", [])
+        self.assertEqual(familia, [".prumo/state/rascunho/recon"])
 
 
 if __name__ == "__main__":

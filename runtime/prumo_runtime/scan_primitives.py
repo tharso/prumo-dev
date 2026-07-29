@@ -13,6 +13,7 @@ só stdlib.
 
 from __future__ import annotations
 
+import hashlib
 import os
 from datetime import date
 from pathlib import Path
@@ -75,3 +76,50 @@ def _usable_root(workspace: Path, root: Path) -> bool:
     validado ANTES de qualquer is_dir/walk (root symlinkado não é nem
     atravessado pra descobrir filhos)."""
     return _clean_chain(workspace, root) and not root.is_symlink() and root.is_dir()
+
+
+def _tree_has_symlink(path: Path) -> bool:
+    """True se o próprio path ou QUALQUER descendente é symlink. Candidato
+    assim nunca entra no plano; se o link surgir depois da aprovação, a
+    revalidação na fronteira da mutação bloqueia."""
+    if path.is_symlink():
+        return True
+    if not path.is_dir():
+        return False
+    for dirpath, dirnames, filenames in os.walk(path, followlinks=False):
+        base = Path(dirpath)
+        for name in dirnames + filenames:
+            if (base / name).is_symlink():
+                return True
+    return False
+
+
+def _size_bytes(path: Path) -> int:
+    if path.is_symlink() or path.is_file():
+        return path.lstat().st_size
+    _, files = _walk_tree(path)
+    return sum(p.lstat().st_size for p in files)
+
+
+def _sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _content_id(workspace: Path, path: Path) -> str:
+    """Identidade forte do candidato pro fingerprint do plano.
+
+    Arquivo → SHA-256 do conteúdo. Diretório → SHA-256 de um manifesto
+    determinístico da árvore (path relativo, tipo, tamanho, mtime_ns e
+    hash de conteúdo por arquivo) — mudou qualquer coisa lá dentro, muda a
+    identidade e o apply bloqueia."""
+    if path.is_file() and not path.is_symlink():
+        return _sha256(path)
+    dirs, files = _walk_tree(path)
+    # `mtime_ns` do DIRETÓRIO também (#263): a elegibilidade depende dele.
+    lines = [f"{p.relative_to(path).as_posix()}|d|{p.lstat().st_mtime_ns}" for p in dirs]
+    lines += [
+        f"{p.relative_to(path).as_posix()}|f|{p.lstat().st_size}|{p.lstat().st_mtime_ns}|{_sha256(p)}"
+        for p in files
+    ]
+    manifest = "\n".join(sorted(lines))
+    return hashlib.sha256(manifest.encode("utf-8")).hexdigest()

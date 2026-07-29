@@ -46,7 +46,6 @@ existir, então ele nunca se lista.
 
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import re
@@ -57,11 +56,19 @@ from datetime import date, datetime
 from pathlib import Path
 
 from prumo_runtime import faxina_thresholds
+from prumo_runtime.agente_rascunho import (
+    _sob_rascunho,
+    iter_agente_rascunho,
+)
 from prumo_runtime.scan_primitives import (
     _age_days,
     _clean_chain,
+    _content_id,
     _mtime_ns,
     _rel,
+    _sha256,
+    _size_bytes,
+    _tree_has_symlink,
     _usable_root,
     _walk_tree,
 )
@@ -106,53 +113,6 @@ class Thresholds:
                 raise SanitizeError(f"threshold negativo: {name}={getattr(self, name)}")
 
 
-def _tree_has_symlink(path: Path) -> bool:
-    """True se o próprio path ou QUALQUER descendente é symlink. Candidato
-    assim nunca entra no plano; se o link surgir depois da aprovação, a
-    revalidação na fronteira da mutação bloqueia."""
-    if path.is_symlink():
-        return True
-    if not path.is_dir():
-        return False
-    for dirpath, dirnames, filenames in os.walk(path, followlinks=False):
-        base = Path(dirpath)
-        for name in dirnames + filenames:
-            if (base / name).is_symlink():
-                return True
-    return False
-
-
-def _size_bytes(path: Path) -> int:
-    if path.is_symlink() or path.is_file():
-        return path.lstat().st_size
-    _, files = _walk_tree(path)
-    return sum(p.lstat().st_size for p in files)
-
-
-def _sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
-def _content_id(workspace: Path, path: Path) -> str:
-    """Identidade forte do candidato pro fingerprint do plano.
-
-    Arquivo → SHA-256 do conteúdo. Diretório → SHA-256 de um manifesto
-    determinístico da árvore (path relativo, tipo, tamanho, mtime_ns e
-    hash de conteúdo por arquivo) — mudou qualquer coisa lá dentro, muda a
-    identidade e o apply bloqueia."""
-    if path.is_file() and not path.is_symlink():
-        return _sha256(path)
-    dirs, files = _walk_tree(path)
-    # `mtime_ns` do DIRETÓRIO também (#263): a elegibilidade depende dele.
-    lines = [f"{p.relative_to(path).as_posix()}|d|{p.lstat().st_mtime_ns}" for p in dirs]
-    lines += [
-        f"{p.relative_to(path).as_posix()}|f|{p.lstat().st_size}|{p.lstat().st_mtime_ns}|{_sha256(p)}"
-        for p in files
-    ]
-    manifest = "\n".join(sorted(lines))
-    return hashlib.sha256(manifest.encode("utf-8")).hexdigest()
-
-
 def _under_backup_root(workspace: Path, path: Path) -> bool:
     return any(
         root in path.parents for root in iter_backup_roots(workspace)
@@ -160,16 +120,6 @@ def _under_backup_root(workspace: Path, path: Path) -> bool:
 
 
 # --- Detectores puros (reusados pelo /fim, read-only) -----------------------
-
-
-RASCUNHO_RELS = (".prumo/state/rascunho", "_state/rascunho")
-
-
-def _sob_rascunho(workspace: Path, path: Path) -> bool:
-    """Subtree do rascunho é EXCLUSIVA (#263): ordem de regra só garante
-    disjunção quando todas rodam, e isolada a fonte ali seria DELETADA."""
-    rel = _rel(workspace, path)
-    return any(rel == r or rel.startswith(r + "/") for r in RASCUNHO_RELS)
 
 
 def iter_handover_files(workspace: Path) -> list[Path]:
@@ -244,51 +194,6 @@ def _iter_old_cache(workspace: Path, today: date, cache_days: int) -> list[Path]
         return []
     _, files = _walk_tree(cache_root)
     return [path for path in files if _age_days(path, today) > cache_days]
-
-
-def iter_agente_rascunho(workspace: Path, today: date, ephemeral_days: int) -> list[Path]:
-    """Filhos DIRETOS frios do rascunho do agente (#263).
-
-    A unidade é o filho direto: arquivo a arquivo desmontaria reconstrução
-    parcial. Diretório entra só com a árvore INTEIRA fria.
-    """
-    # Os DOIS roots, como o handover: no flat não existe `.prumo/`.
-    frios: list[Path] = []
-    filhos: list[Path] = []
-    for rel in RASCUNHO_RELS:
-        root = workspace / rel
-        if not _usable_root(workspace, root):
-            continue
-        try:
-            filhos.extend(sorted(root.iterdir()))
-        except OSError:
-            continue
-    for filho in filhos:
-        if filho.is_symlink():
-            continue
-        if filho.is_file():
-            if _age_days(filho, today) > ephemeral_days:
-                frios.append(filho)
-            continue
-        if not filho.is_dir():
-            continue
-        subdirs, arquivos = _walk_tree(filho)
-        # Regra de ouro da #178: mover isto INTEIRO criaria backup dentro de
-        # backup. O PRÓPRIO filho entra na checagem — `rascunho/backups/`
-        # escapava. Fica onde está; o usuário resolve.
-        if any(d.name in _BACKUP_DIR_NAMES for d in (filho, *subdirs)):
-            continue
-        # Symlink faz o `build_plan` recusar depois: contar aqui daria alarme
-        # eterno no `/fim` com plano vazio na sanitize (Codex, r5).
-        if _tree_has_symlink(filho):
-            continue
-        # TODA a árvore, não só os arquivos: reconstrução criada HOJE com
-        # arquivos antigos dentro (um `mv` basta) parecia fria. E sem exigir
-        # arquivos, senão carcaça vazia nunca sai.
-        tudo = [filho, *subdirs, *arquivos]
-        if all(_age_days(x, today) > ephemeral_days for x in tudo):
-            frios.append(filho)
-    return frios
 
 
 def _iter_old_ephemerals(workspace: Path, today: date, ephemeral_days: int) -> list[Path]:

@@ -18,7 +18,8 @@ from datetime import date
 from pathlib import Path
 
 from prumo_runtime import __version__, faxina_thresholds
-from prumo_runtime.sanitize import iter_agente_rascunho, iter_handover_files, iter_nested_backup_dirs
+from prumo_runtime.agente_rascunho import iter_agente_rascunho
+from prumo_runtime.sanitize import iter_handover_files, iter_nested_backup_dirs
 from prumo_runtime.version_check import compute_staleness, read_cached_remote_version
 from prumo_runtime.workspace import parse_core_version, read_text
 from prumo_runtime.workspace_paths import workspace_paths
