@@ -256,9 +256,6 @@ class SementeTest(BaseTest):
         self.assertEqual(bloco["decisao"], indice_integridade.BLOQUEAR)
 
 
-if __name__ == "__main__":
-    unittest.main()
-
 
 class ContratoDaFaxinaTest(unittest.TestCase):
     """A decisão vive em dois lugares por construção (runtime e texto, pro host
@@ -305,3 +302,171 @@ class ContratoDaFaxinaTest(unittest.TestCase):
         """Restaurar do snapshot preserva IDs e descrições; recriar da ficha
         não. A higiene tem de oferecer a boa primeiro."""
         self.assertIn(".prumo/backups/curated/", self.higiene)
+
+
+class ColunaArquivoTest(BaseTest):
+    """Buscar o nome no texto inteiro fazia ficha citada numa descrição contar
+    como indexada — a linha perdida ficava invisível no detector feito pra
+    achá-la (Codex, 261D-3)."""
+
+    def test_mencao_na_descricao_nao_conta_como_entrada(self) -> None:
+        texto = (
+            "# Índice\n\n| # | Título | Arquivo | Data | Descrição | Keywords |\n"
+            "|---|---|---|---|---|---|\n"
+            "| 1 | Outra | outra.md | 01/02/2026 | conversa com ficha-2.md | tag |\n"
+            "\n<!-- proximo-id: 2 -->\n"
+        )
+        self.escrever(texto)
+        (self.root / "outra.md").write_text("x", encoding="utf-8")
+        (self.root / "ficha-2.md").write_text("x", encoding="utf-8")
+
+        r = self.avaliar()
+        self.assertEqual(r["sem_entrada"], ["ficha-2.md"], "menção na descrição virou entrada")
+
+    def test_celula_com_link_markdown_conta(self) -> None:
+        """Negativa: a coluna pode vir como link — isso É entrada."""
+        texto = (
+            "# Índice\n\n| # | Título | Arquivo | Data | Descrição | Keywords |\n"
+            "|---|---|---|---|---|---|\n"
+            "| 1 | Ficha | [Ficha](ficha-1.md) | 01/02/2026 | desc | tag |\n"
+            "\n<!-- proximo-id: 2 -->\n"
+        )
+        self.escrever(texto)
+        (self.root / "ficha-1.md").write_text("x", encoding="utf-8")
+        self.assertEqual(self.avaliar()["sem_entrada"], [])
+
+
+class FronteiraExataTest(BaseTest):
+    """Arredondar antes de comparar movia a fronteira configurada: 49,5% em
+    101 slots virava 50 e bloqueava no limiar 50 (Codex, 261D-4)."""
+
+    def test_49_5_por_cento_nao_bloqueia_no_limiar_50(self) -> None:
+        # 101 slots, 51 ocupados → 50 lacunas = 49,50%
+        self.escrever(_tabela(range(1, 52)) + "\n<!-- proximo-id: 102 -->\n")
+        r = self.avaliar()
+        self.assertEqual(r["lacunas_pct"], 50, "a exibição arredonda, e tudo bem")
+        self.assertEqual(r["decisao"], indice_integridade.OK, "arredondou para DECIDIR")
+
+
+class FonteIndisponivelTest(BaseTest):
+    """Raiz inacessível virava lista vazia e podia dar casa em ordem — o
+    silêncio confiante que a #236 já nomeou (Codex, 261D-5)."""
+
+    def test_raiz_ausente_bloqueia_em_vez_de_atestar_limpeza(self) -> None:
+        self.escrever(_tabela([1]) + "\n<!-- proximo-id: 2 -->\n")
+        import shutil
+        indice = self.indice().read_text(encoding="utf-8")
+        shutil.rmtree(self.root)
+        self.root.parent.mkdir(parents=True, exist_ok=True)
+        # índice existe fora da raiz removida
+        alt = self.root.parent / "INDICE.md"
+        alt.write_text(indice, encoding="utf-8")
+
+        r = indice_integridade.avaliar(
+            self.root, alt, gap_alert_pct=GAP, bulk_reindex_at=BULK
+        )
+        self.assertEqual(r["decisao"], indice_integridade.BLOQUEAR)
+        self.assertFalse(r["fonte_completa"])
+
+    def test_falha_de_listagem_bloqueia(self) -> None:
+        from unittest.mock import patch
+        self.escrever(_tabela([1]) + "\n<!-- proximo-id: 2 -->\n")
+        with patch.object(Path, "glob", side_effect=OSError("boom")):
+            r = self.avaliar()
+        self.assertEqual(r["decisao"], indice_integridade.BLOQUEAR)
+        self.assertFalse(r["fonte_completa"])
+
+
+class ConsumoNoBriefingTest(unittest.TestCase):
+    """Transportar não basta: o contrato do briefing tem de LER a decisão.
+    A família 3 mandava só comparar conjuntos, que deixa passar índice
+    truncado sem ficha órfã (Codex, 261D-2)."""
+
+    def setUp(self) -> None:
+        raiz = Path(__file__).resolve().parents[2]
+        self.estado = (raiz / "skills" / "prumo" / "references" / "modules"
+                       / "briefing-estado.md").read_text(encoding="utf-8")
+
+    def _familia3(self) -> str:
+        ini = self.estado.index("3. **`Referencias/INDICE.md`**")
+        return self.estado[ini:self.estado.index("4. **Processados", ini)]
+
+    def test_gate_de_capacidade_exige_o_bloco(self) -> None:
+        """Runtime anterior traz o MESMO schema_version sem o bloco novo —
+        sem isto ele fingiria vigilância."""
+        self.assertIn("indice_referencias.schema", self.estado)
+
+    def test_frescor_cobre_indice_e_fichas(self) -> None:
+        self.assertIn("`INDICE.md` + manifesto de `Referencias/`", self.estado)
+
+    def test_familia_3_le_a_decisao(self) -> None:
+        f3 = self._familia3()
+        self.assertIn("indice_referencias.decisao", f3)
+        for estado in ("bloquear", "reindexar", "ok"):
+            self.assertIn(estado, f3, f"a família 3 não trata `{estado}`")
+
+    def test_familia_3_proibe_reindexar_no_bloqueio(self) -> None:
+        self.assertIn("proibido reindexar", self._familia3())
+
+    def test_fallback_sem_bloco_nao_e_so_diferenca_de_conjuntos(self) -> None:
+        """O ponto cego: índice truncado SEM ficha órfã. Sem a lacuna do
+        rodapé no fallback, ele volta."""
+        f3 = self._familia3()
+        self.assertIn("coluna `Arquivo`", f3)
+        self.assertIn("lacuna do rodapé", f3)
+
+
+class FrescorDaSementeTest(unittest.TestCase):
+    """Sem o índice e as fichas no retrato de frescor, truncar depois do
+    `prumo seed` deixava a semente 'fresca' carregando `decisao: ok` — o
+    incidente reencenado com JSON e gravata (Codex, 261D-1)."""
+
+    def setUp(self) -> None:
+        import tempfile as _tf
+        from prumo_runtime.workspace_paths import workspace_paths
+        self._tmp = _tf.TemporaryDirectory()
+        self.ws = Path(self._tmp.name)
+        (self.ws / "Prumo" / "Referencias").mkdir(parents=True)
+        (self.ws / ".prumo" / "state").mkdir(parents=True)
+        self.addCleanup(self._tmp.cleanup)
+        self.paths = workspace_paths(self.ws)
+
+    def _captura(self) -> dict:
+        from prumo_runtime.commands.seed import _capture_sources
+        return _capture_sources(self.paths)
+
+    def test_truncar_o_indice_muda_o_retrato(self) -> None:
+        self.paths.referencias_index.write_text("a" * 2000, encoding="utf-8")
+        antes = self._captura()
+        self.paths.referencias_index.write_text("a" * 20, encoding="utf-8")
+        self.assertNotEqual(antes, self._captura(), "truncamento passou como semente fresca")
+
+    def test_remover_ficha_muda_o_retrato(self) -> None:
+        ficha = self.paths.referencias_root / "artigo.md"
+        ficha.write_text("x", encoding="utf-8")
+        antes = self._captura()
+        ficha.unlink()
+        self.assertNotEqual(antes, self._captura())
+
+    def test_adicionar_ficha_muda_o_retrato(self) -> None:
+        antes = self._captura()
+        (self.paths.referencias_root / "novo.md").write_text("x", encoding="utf-8")
+        self.assertNotEqual(antes, self._captura())
+
+    def test_editar_ficha_muda_o_retrato(self) -> None:
+        """Só o mtime da PASTA não bastaria: editar não mexe no diretório."""
+        ficha = self.paths.referencias_root / "artigo.md"
+        ficha.write_text("x", encoding="utf-8")
+        antes = self._captura()
+        ficha.write_text("conteúdo bem maior", encoding="utf-8")
+        self.assertNotEqual(antes, self._captura())
+
+    def test_workspace_parado_nao_muda(self) -> None:
+        """Negativa: sem edição, o retrato é estável — senão a semente nunca
+        seria considerada fresca."""
+        (self.paths.referencias_root / "artigo.md").write_text("x", encoding="utf-8")
+        self.assertEqual(self._captura(), self._captura())
+
+
+if __name__ == "__main__":
+    unittest.main()

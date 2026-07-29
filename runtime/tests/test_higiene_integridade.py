@@ -51,14 +51,45 @@ class HigieneIntegridadeTests(unittest.TestCase):
         # Anti-zelo: ausência de convenção / estilo pessoal não é erro.
         self.assertIn("não é erro", text)
 
-    def test_fluxo_roda_todos_os_checks(self) -> None:
-        """O fluxo não pode parar antes do último check e deixá-lo órfão.
-        Derivado da contagem real: fixar o número fazia o guard reprovar o
-        certo toda vez que um check novo entrasse."""
+    @staticmethod
+    def _problemas_de_numeracao(texto: str) -> list[str]:
+        """Função pura pra o guard poder ser provado com entrada sintética.
+        Contra o arquivo REAL (que está correto) nenhuma mutação do código o
+        faria falhar — guard sem fixture negativa é decoração (achado da
+        bateria de mutação)."""
         import re as _re
-        texto = self._text()
-        ultimo = max(int(m) for m in _re.findall(r"^### (\d+)\. ", texto, _re.M))
-        self.assertIn(f"(1-{ultimo})", texto)
+        ids = [int(m) for m in _re.findall(r"^### (\d+)\. ", texto, _re.M)]
+        problemas = []
+        if ids != sorted(set(ids)):
+            problemas.append(f"heading repetido ou fora de ordem: {ids}")
+        elif ids != list(range(1, len(ids) + 1)):
+            problemas.append(f"numeração das detecções tem buraco: {ids}")
+        if ids and f"(1-{ids[-1]})" not in texto:
+            problemas.append(f"fluxo não cobre até a detecção {ids[-1]}")
+        return problemas
+
+    def test_fluxo_roda_todos_os_checks(self) -> None:
+        self.assertEqual(self._problemas_de_numeracao(self._text()), [])
+
+    def test_o_guard_pega_secao_removida_do_meio(self) -> None:
+        """Olhar só o MAIOR heading deixava passar remoção do meio: apagar a
+        seção 8 e manter a 9 preservava `(1-9)` e o guard ficava verde
+        (Codex, 261D-7)."""
+        sintetico = "### 1. a\n### 2. b\n### 9. c\n\n1. Rodar todos os checks (1-9)\n"
+        self.assertTrue(self._problemas_de_numeracao(sintetico))
+
+    def test_o_guard_pega_heading_duplicado(self) -> None:
+        sintetico = "### 1. a\n### 1. b\n\n1. Rodar todos os checks (1-1)\n"
+        self.assertTrue(self._problemas_de_numeracao(sintetico))
+
+    def test_o_guard_pega_fluxo_curto(self) -> None:
+        sintetico = "### 1. a\n### 2. b\n\n1. Rodar todos os checks (1-1)\n"
+        self.assertTrue(self._problemas_de_numeracao(sintetico))
+
+    def test_o_guard_aceita_numeracao_correta(self) -> None:
+        """Negativa da negativa: entrada boa não pode reprovar."""
+        sintetico = "### 1. a\n### 2. b\n\n1. Rodar todos os checks (1-2)\n"
+        self.assertEqual(self._problemas_de_numeracao(sintetico), [])
 
 
 if __name__ == "__main__":

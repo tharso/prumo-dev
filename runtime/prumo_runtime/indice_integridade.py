@@ -34,6 +34,9 @@ OPERACIONAIS = frozenset({"INDICE.md", "WORKFLOWS.md", "EMAIL-CURADORIA.md"})
 _RODAPE = re.compile(r"<!--\s*proximo-id:\s*(\d+)\s*-->")
 # Linha de tabela cujo primeiro campo é o ID.
 _LINHA_ID = re.compile(r"^\s*\|\s*(\d+)\s*\|", re.M)
+# Linha de dados da tabela: `| # | Título | Arquivo | ...`. A COLUNA importa —
+# nome citado numa descrição não é entrada de índice (Codex, 261D-3).
+_LINHA_DADOS = re.compile(r"^\s*\|\s*\d+\s*\|([^|]*)\|([^|]*)\|", re.M)
 
 OK = "ok"
 REINDEXAR = "reindexar"
@@ -56,6 +59,20 @@ def ids_da_tabela(texto: str) -> set[int]:
     return {int(m) for m in _LINHA_ID.findall(texto)}
 
 
+def lacunas_fracao(texto: str) -> tuple[int, int] | None:
+    """(lacunas, slots) — números INTEIROS, sem arredondar.
+
+    Arredondar antes de comparar move a fronteira que o usuário configurou:
+    49,5% em 101 slots virava 50 e bloqueava no limiar 50 (Codex, 261D-4).
+    """
+    n = proximo_id(texto)
+    if n is None or n <= 1:
+        return None
+    slots = n - 1
+    ocupados = len({i for i in ids_da_tabela(texto) if 1 <= i <= slots})
+    return slots - ocupados, slots
+
+
 def lacunas_pct(texto: str) -> int | None:
     """Percentual de IDs ausentes no intervalo que o rodapé declara já usado.
 
@@ -71,36 +88,53 @@ def lacunas_pct(texto: str) -> int | None:
     11 ausentes em 48 (22,9%), e o truncamento real deu 91,7%. Há folga larga
     entre os dois, e é por isso que o limiar default fica no meio.
     """
-    n = proximo_id(texto)
-    if n is None or n <= 1:
+    fracao = lacunas_fracao(texto)
+    if fracao is None:
         return None
-    slots = n - 1
-    ocupados = len({i for i in ids_da_tabela(texto) if 1 <= i <= slots})
-    return round(100 * (slots - ocupados) / slots)
+    lacunas, slots = fracao
+    return round(100 * lacunas / slots)  # SÓ pra exibição
 
 
-def fichas_sem_entrada(referencias_root: Path, texto: str) -> list[str]:
-    """Fichas em disco que a tabela não menciona.
+def arquivos_indexados(texto: str) -> set[str]:
+    """Nomes na COLUNA `Arquivo` das linhas de dados.
 
-    Comparação por MENÇÃO do nome do arquivo, que é o que o contrato textual
-    manda fazer. Erra pro lado do silêncio (nome citado numa descrição conta
-    como presente) — num detector, falso-negativo aqui custa menos que acusar
-    o usuário de perder o que ele tem.
+    Buscar o nome no texto inteiro fazia uma ficha citada numa descrição
+    contar como indexada — a linha perdida ficava invisível justamente no
+    detector feito pra achá-la (Codex, 261D-3).
+    """
+    nomes: set[str] = set()
+    for _, coluna_arquivo in _LINHA_DADOS.findall(texto):
+        alvo = coluna_arquivo.strip().strip("`").strip()
+        # A célula pode vir como link markdown `[texto](arquivo.md)`.
+        link = re.search(r"\(([^)]+)\)\s*$", alvo)
+        if link:
+            alvo = link.group(1).strip()
+        if alvo:
+            nomes.add(alvo.rsplit("/", 1)[-1])
+    return nomes
+
+
+def fichas_sem_entrada(referencias_root: Path, texto: str) -> list[str] | None:
+    """Fichas em disco fora da coluna `Arquivo`. `None` = fonte indisponível.
+
+    Distinguir "nenhuma ficha" de "não consegui olhar" é o que impede raiz
+    inacessível de virar casa em ordem (Codex, 261D-5).
     """
     if not referencias_root.is_dir():
-        return []
+        return None
+    indexados = arquivos_indexados(texto)
     faltando: list[str] = []
     try:
         candidatos = sorted(referencias_root.glob("*.md"))
     except OSError:
-        return []
+        return None
     for path in candidatos:
         nome = path.name
         if nome in OPERACIONAIS or nome.startswith((".", "_")):
             continue
         if not path.is_file() or path.is_symlink():
             continue
-        if nome not in texto:
+        if nome not in indexados:
             faltando.append(nome)
     return faltando
 
@@ -125,12 +159,14 @@ def avaliar(
         "ids_distintos": 0,
         "lacunas_pct": None,
         "sem_entrada": [],
+        "fonte_completa": True,
         "decisao": OK,
         "razoes": [],
     }
     try:
         texto = indice_path.read_text(encoding="utf-8") if indice_path.is_file() else ""
     except (OSError, UnicodeDecodeError) as exc:
+        resultado["fonte_completa"] = False
         resultado["decisao"] = BLOQUEAR
         resultado["razoes"] = [f"índice ilegível ({exc})"]
         return resultado
@@ -138,14 +174,24 @@ def avaliar(
     resultado["proximo_id"] = proximo_id(texto)
     resultado["ids_distintos"] = len(ids_da_tabela(texto))
     resultado["lacunas_pct"] = lacunas_pct(texto)
+
     sem_entrada = fichas_sem_entrada(referencias_root, texto)
+    if sem_entrada is None:
+        # Não é "nenhuma ficha fora": é "não consegui olhar". Chamar isso de
+        # casa em ordem seria o silêncio confiante que a #236 já nomeou.
+        resultado["fonte_completa"] = False
+        resultado["decisao"] = BLOQUEAR
+        resultado["razoes"] = ["não consegui listar `Referencias/` — inventário indisponível"]
+        return resultado
     resultado["sem_entrada"] = sem_entrada
 
-    pct = resultado["lacunas_pct"]
-    if pct is not None and pct >= gap_alert_pct:
+    fracao = lacunas_fracao(texto)
+    # Comparação EXATA em inteiros: `lacunas/slots >= pct/100`.
+    if fracao is not None and fracao[0] * 100 >= gap_alert_pct * fracao[1]:
         resultado["decisao"] = BLOQUEAR
         resultado["razoes"] = [
-            f"{pct}% dos IDs até {resultado['proximo_id']} estão ausentes da tabela",
+            f"{resultado['lacunas_pct']}% dos IDs até {resultado['proximo_id']} "
+            "estão ausentes da tabela",
             f"{len(sem_entrada)} ficha(s) em disco fora do índice",
         ]
     elif len(sem_entrada) >= bulk_reindex_at:

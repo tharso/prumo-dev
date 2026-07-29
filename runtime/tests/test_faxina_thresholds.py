@@ -461,5 +461,41 @@ class DominioPorChaveTest(unittest.TestCase):
         valores, _ = self._override("- max_items: 5000\n")
         self.assertEqual(valores["max_items"], 5000)
 
+
+
+class PisoPorChaveTest(unittest.TestCase):
+    """Zero nestas chaves viraria bloqueio PERMANENTE: `bulk` zero bloqueia até
+    com lista vazia; `gap` zero bloqueia índice com 0% de lacuna
+    (Codex, 261D-6)."""
+
+    def _override(self, texto: str):
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = Path(tmp)
+            rules = ws / "Prumo" / "Custom" / "rules"
+            rules.mkdir(parents=True)
+            (rules / "faxina-thresholds.md").write_text(texto, encoding="utf-8")
+            return faxina_thresholds.read_override(ws)
+
+    def test_zero_no_bulk_e_ignorado_e_reportado(self) -> None:
+        valores, ignoradas = self._override("- referencias_bulk_reindex_at: 0\n")
+        self.assertNotIn("referencias_bulk_reindex_at", valores)
+        self.assertIn("referencias_bulk_reindex_at", ignoradas)
+
+    def test_zero_no_gap_e_ignorado(self) -> None:
+        valores, ignoradas = self._override("- referencias_id_gap_alert_pct: 0\n")
+        self.assertNotIn("referencias_id_gap_alert_pct", valores)
+        self.assertIn("referencias_id_gap_alert_pct", ignoradas)
+
+    def test_um_e_aceito(self) -> None:
+        """Negativa: o piso é 1, não 'qualquer número pequeno é suspeito'."""
+        valores, ignoradas = self._override("- referencias_bulk_reindex_at: 1\n")
+        self.assertEqual(valores["referencias_bulk_reindex_at"], 1)
+        self.assertEqual(ignoradas, [])
+
+    def test_chave_sem_piso_aceita_zero(self) -> None:
+        """Negativa: o piso é POR CHAVE. `max_items: 0` continua válido."""
+        valores, _ = self._override("- max_items: 0\n")
+        self.assertEqual(valores["max_items"], 0)
+
 if __name__ == "__main__":
     unittest.main()
