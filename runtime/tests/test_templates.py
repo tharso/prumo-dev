@@ -128,6 +128,34 @@ class TemplateAdapterTests(unittest.TestCase):
         for anchor in RUNTIME_CONSUMO_ANCHORS:
             self.assertIn(anchor, module)
 
+    def test_agent_md_se_declara_gerado_e_aponta_a_saida(self) -> None:
+        """#279: o `repair` MOVE este arquivo pra backup e regenera do zero a
+        cada bump, enquanto os wrappers da raiz — declaradamente descartáveis —
+        ganham mescla que preserva bloco custom. O arquivo com mais chance de
+        alguém editar era o único sem aviso.
+
+        Anti-regressão do contrato que subiu a catraca pra 6.699: avisar sem
+        dizer PARA ONDE levar o que é do usuário faz a pessoa parar sem saída
+        e editar mesmo assim — por isso o ponteiro pro mapa autoral é parte do
+        contrato, não enfeite.
+        """
+        nested = templates.render_agent_md(
+            user_name="Batata", agent_name="Prumo", timezone_name="America/Sao_Paulo",
+            briefing_time="09:00", core_path=".prumo/system/PRUMO-CORE.md",
+            state_path=".prumo/state/", skills_path=".prumo/skills/",
+        )
+        self.assertIn("Arquivo gerado", nested)
+        self.assertIn("prumo repair", nested)
+        self.assertIn("Prumo/Agente/MAPA-AUTORAL.md", nested)
+
+        flat = templates.render_agent_md(
+            user_name="Batata", agent_name="Prumo", timezone_name="America/Sao_Paulo",
+            briefing_time="09:00",
+        )
+        self.assertIn("Arquivo gerado", flat)
+        self.assertIn("`Agente/MAPA-AUTORAL.md`", flat)
+        self.assertNotIn("`Prumo/Agente/MAPA-AUTORAL.md`", flat)
+
     def test_workflows_template_exposes_structure_only_phase(self) -> None:
         rendered = templates.render_workflows_md("22/03/2026")
         self.assertIn("structure-only", rendered)

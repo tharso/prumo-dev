@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.80.0] - 2026-07-29
+
+### Added
+- **O `Prumo/AGENT.md` passou a declarar que é gerado (#279)** — a porta canônica do workspace, primeiro arquivo que qualquer agente lê, não avisava que o `prumo repair` a **move para backup e regenera do zero** a cada troca de versão. A assimetria estava invertida na superfície: os três ponteiros da raiz (`CLAUDE.md`, `AGENT.md`, `AGENTS.md`) — declaradamente descartáveis — são atualizados por mescla que **preserva bloco custom**, enquanto o arquivo canônico, o mais provável de alguém querer ajustar à mão, era o único sem proteção e sem aviso. Agora o topo diz que é gerado, por qual comando, e **para onde levar o que é seu**: o `MAPA-AUTORAL.md`, que sobrevive ao repair (#241). Avisar do perigo sem dar alternativa faria a pessoa parar sem saída e editar mesmo assim — por isso o ponteiro é parte do contrato, não enfeite, e a variante curta (que custaria 12 palavras em vez de 25) foi recusada com o número na mão. **Catraca 6.674 → 6.699 (+25)**, contrato novo aprovado pelo dono com o custo medido antes da decisão, não estimado.
+
 ## [5.79.0] - 2026-07-29
 
 ### Fixed

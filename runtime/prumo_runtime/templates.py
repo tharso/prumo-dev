@@ -254,8 +254,22 @@ def render_agent_md(
     ])
     workspace_map = "\n".join(map_items)
 
+    # Marcador de arquivo gerado (#279). O `repair` MOVE este arquivo pra
+    # backup e regenera do zero a cada bump de versão, enquanto os três
+    # wrappers da raiz — declaradamente descartáveis — são atualizados por
+    # mescla que preserva bloco custom. A assimetria estava invertida na
+    # superfície: o arquivo com mais chance de alguém querer ajustar era o
+    # único sem aviso. A saída de emergência (`MAPA-AUTORAL.md`, que sobrevive
+    # ao repair, #241) já existia; faltava a placa apontando pra ela.
+    autoral_map = (
+        "Prumo/Agente/MAPA-AUTORAL.md" if core_path.startswith(".prumo/") else "Agente/MAPA-AUTORAL.md"
+    )
+
     return f"""# AGENT.md
 
+> **Arquivo gerado** por `prumo repair` — não edite à mão, o repair sobrescreve.
+> Caminhos seus vão em `{autoral_map}`, que sobrevive ao repair.
+>
 > Arquivo canônico de navegação do workspace de {user_name}.
 > Se você é um agente, comece aqui.
 
