@@ -112,7 +112,7 @@ def _pulso_partition(text: str) -> tuple[str, str | None]:
     return "".join(kept), None
 
 
-def measured_size(text: str, klass: str) -> int:
+def measured_size(data: bytes, klass: str) -> int:
     """Bytes que o alerta vigia.
 
     No híbrido, o miolo dos blocos de pulso sai da conta: ele encolhe por
@@ -120,13 +120,13 @@ def measured_size(text: str, klass: str) -> int:
     justamente no comando que o produto oferece.
     """
     if klass != HYBRID:
-        return len(text.encode("utf-8"))
-    kept, _ = _pulso_partition(text)
+        return len(data)
+    kept, _ = _pulso_partition(data.decode("utf-8", errors="replace"))
     return len(kept.encode("utf-8"))
 
 
-def _digest(text: str) -> str:
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+def _digest(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
 
 
 def _under_backup_root(workspace: Path, source: Path) -> bool:
@@ -176,7 +176,7 @@ def _check_roots(paths, errors: list[str]) -> None:
             errors.append(f"{paths.relative(root)}: {exc}")
 
 
-def _read_current(paths, errors: list[str]) -> tuple[dict[str, str], list[str]]:
+def _read_current(paths, errors: list[str]) -> tuple[dict[str, bytes], list[str]]:
     """Lê os curados existentes. Devolve (texto por path, oversized).
 
     Ausência LEGÍTIMA (arquivo que nunca existiu) é silêncio; qualquer outra
@@ -184,7 +184,7 @@ def _read_current(paths, errors: list[str]) -> tuple[dict[str, str], list[str]]:
     retrato furado de se declarar completo.
     """
     _check_roots(paths, errors)
-    current: dict[str, str] = {}
+    current: dict[str, bytes] = {}
     oversized: list[str] = []
     for rel in paths.curated_relative_paths():
         source = paths.root / rel
@@ -205,7 +205,13 @@ def _read_current(paths, errors: list[str]) -> tuple[dict[str, str], list[str]]:
             if st.st_size > MAX_FILE_BYTES:
                 oversized.append(rel)
                 continue
-            current[rel] = source.read_text(encoding="utf-8")
+            # BYTES, nunca `read_text`: o modo texto normaliza CRLF na leitura
+            # e retraduz na escrita, então a "cópia" poderia diferir do
+            # original e o digest autenticaria o texto, não o arquivo
+            # (Codex, 262G-1). Backup que não devolve os bytes não é backup.
+            data = source.read_bytes()
+            data.decode("utf-8")  # curado é texto; binário aqui é erro
+            current[rel] = data
         except (OSError, UnicodeDecodeError) as exc:
             errors.append(f"{rel}: {exc}")
     return current, oversized
@@ -218,18 +224,44 @@ def _manifest_of(stamp_dir: Path) -> dict | None:
         return None
     if not isinstance(raw, dict) or raw.get("schema") != MANIFEST_SCHEMA:
         return None
-    if not isinstance(raw.get("files"), dict):
+    files, digests = raw.get("files"), raw.get("digests")
+    if not isinstance(files, dict) or not isinstance(digests, dict):
         return None
-    if not isinstance(raw.get("captured_at_utc"), str) or not raw["captured_at_utc"]:
+    # Estrutura frouxa aqui explodia lá na frente: `digests: []` chegava em
+    # `_validate_candidate`, estourava `AttributeError` no boundary global e
+    # o snapshot abortava PRA SEMPRE — despertador tocando enquanto a casa
+    # queima (Codex, 262G-2).
+    if not all(isinstance(k, str) and isinstance(v, str) for k, v in files.items()):
+        return None
+    if not all(isinstance(k, str) and isinstance(v, str) for k, v in digests.items()):
+        return None
+    if set(files) != set(digests) or len(set(files.values())) != len(files):
+        return None
+    if any("/" in k or "\\" in k or k in {"", ".", ".."} for k in files):
         return None
     if not isinstance(raw.get("complete"), bool):
         return None
     if not isinstance(raw.get("oversized", []), list):
         return None
+    if _parse_instant(raw.get("captured_at_utc")) is None:
+        return None
     return raw
 
 
-def _validate_candidate(stamp_dir: Path, manifest: dict) -> tuple[dict[str, str], str | None]:
+def _parse_instant(value) -> datetime | None:
+    """`captured_at_utc` tem de ser INSTANTE, não string qualquer: ordenar
+    lexicalmente um campo malformado poderia eleger a régua errada
+    (Codex, 262G-5)."""
+    if not isinstance(value, str):
+        return None
+    try:
+        parsed = datetime.fromisoformat(value)
+    except ValueError:
+        return None
+    return parsed if parsed.tzinfo is not None else None
+
+
+def _validate_candidate(stamp_dir: Path, manifest: dict) -> tuple[dict[str, bytes], str | None]:
     """Lê e CONFERE cada cópia declarada contra o digest do manifesto.
 
     Manifesto que diz `complete: true` não prova que as cópias existem: se a
@@ -237,20 +269,19 @@ def _validate_candidate(stamp_dir: Path, manifest: dict) -> tuple[dict[str, str]
     `equivalente` daria verdadeiro e o sumiço passaria calado. Régua que não
     se verifica é papel timbrado (Codex, 262F-1).
     """
-    conteudo: dict[str, str] = {}
-    digests = manifest.get("digests", {})
+    conteudo: dict[str, bytes] = {}
+    digests = manifest["digests"]
     for flat, rel in manifest["files"].items():
         copy = stamp_dir / str(flat)
         try:
             if copy.parent != stamp_dir or copy.is_symlink() or not copy.is_file():
                 return {}, f"cópia `{flat}` ausente ou fora do carimbo"
-            texto = copy.read_text(encoding="utf-8")
-        except (OSError, UnicodeDecodeError) as exc:
+            data = copy.read_bytes()
+        except OSError as exc:
             return {}, f"cópia `{flat}` ilegível ({exc})"
-        esperado = digests.get(flat)
-        if not isinstance(esperado, str) or _digest(texto) != esperado:
+        if _digest(data) != digests.get(flat):
             return {}, f"cópia `{flat}` diverge do digest do manifesto"
-        conteudo[str(rel)] = texto
+        conteudo[str(rel)] = data
     return conteudo, None
 
 
@@ -277,7 +308,7 @@ def _latest_previous(scope_root: Path, degradacoes: list[str]) -> tuple[Path | N
     except OSError as exc:
         degradacoes.append(f"backups/{SCOPE}: {exc}")
         return None, None
-    completos: list[tuple[str, Path, dict]] = []
+    completos: list[tuple[datetime, Path, dict]] = []
     for stamp_dir in candidates:
         manifest = _manifest_of(stamp_dir)
         if manifest is None:
@@ -286,9 +317,9 @@ def _latest_previous(scope_root: Path, degradacoes: list[str]) -> tuple[Path | N
             )
             continue
         if manifest["complete"]:
-            completos.append((manifest["captured_at_utc"], stamp_dir, manifest))
+            completos.append((_parse_instant(manifest["captured_at_utc"]), stamp_dir, manifest))
     # Do mais novo pro mais velho, aceitando o primeiro que se VERIFICA.
-    for captured, stamp_dir, manifest in sorted(completos, key=lambda c: c[0], reverse=True):
+    for _, stamp_dir, manifest in sorted(completos, key=lambda c: c[0], reverse=True):
         conteudo, problema = _validate_candidate(stamp_dir, manifest)
         if problema is None:
             manifest = {**manifest, "_conteudo": conteudo}
@@ -313,16 +344,25 @@ def _acervo_index(paths) -> dict[str, str]:
     raiz = paths.arquivo_root / "Acervo"
     indice: dict[str, str] = {}
     try:
+        # Cerca de ancestral também aqui: `Acervo/` symlinkado pra fora leria
+        # conteúdo externo e rebaixaria uma deleção REAL a "arquivado"
+        # (Codex, 262G-3).
+        if _has_symlink_ancestor(paths.root, paths.relative(raiz)):
+            return indice
         if not raiz.is_dir():
             return indice
         for candidate in sorted(raiz.rglob("*.md")):
             try:
-                if candidate.is_file() and not candidate.is_symlink():
+                if (
+                    candidate.is_file()
+                    and not candidate.is_symlink()
+                    and not _has_symlink_ancestor(paths.root, paths.relative(candidate))
+                ):
                     indice.setdefault(
-                        _digest(candidate.read_text(encoding="utf-8")),
+                        _digest(candidate.read_bytes()),
                         paths.relative(candidate),
                     )
-            except (OSError, UnicodeDecodeError, ValueError):
+            except (OSError, ValueError):
                 continue
     except OSError:
         return indice
@@ -331,8 +371,8 @@ def _acervo_index(paths) -> dict[str, str]:
 
 def _build_alerts(
     paths,
-    current: dict[str, str],
-    previous: dict[str, str],
+    current: dict[str, bytes],
+    previous: dict[str, bytes],
     previous_stamp: Path | None,
     shrink_pct: int,
 ) -> list[dict]:
@@ -389,13 +429,13 @@ def _build_alerts(
     return alerts
 
 
-def _integrity_errors(paths, current: dict[str, str]) -> list[str]:
+def _integrity_errors(paths, current: dict[str, bytes]) -> list[str]:
     hybrid = paths.curated_hybrid_paths()
     problemas = []
-    for rel, text in sorted(current.items()):
+    for rel, data in sorted(current.items()):
         if rel not in hybrid:
             continue
-        _, erro = _pulso_partition(text)
+        _, erro = _pulso_partition(data.decode("utf-8", errors="replace"))
         if erro:
             problemas.append(f"{rel}: {erro} — alerta medido sobre o arquivo inteiro")
     return problemas
@@ -453,6 +493,10 @@ def snapshot_curated(
     """
     if stamp is None:
         stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    if "/" in stamp or "\\" in stamp or stamp in {"", ".", ".."}:
+        # Carimbo é NOME de diretório, não caminho: absoluto ou `../` reservaria
+        # e gravaria fora do scope, furando a cerca (Codex, 262G-4).
+        stamp = "carimbo-invalido"
     errors: list[str] = []
     report: dict = {
         "scope": SCOPE,
@@ -517,7 +561,7 @@ def snapshot_curated(
             # completo o que ninguém conferiu (Codex, 262F-4).
             flat = _flat_name(rel)
             try:
-                (target_root / flat).write_text(current[rel], encoding="utf-8")
+                (target_root / flat).write_bytes(current[rel])
                 report["copied"].append(rel)
                 gravados[flat] = rel
                 digests[flat] = _digest(current[rel])

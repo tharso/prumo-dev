@@ -460,7 +460,7 @@ class ColetaIncompletaTest(BaseTest):
         """Buraco no inventário: retrato furado não pode virar régua."""
         self.indice().write_text("x" * 500, encoding="utf-8")
         with patch.object(
-            curated.Path, "read_text", side_effect=OSError("disco pifou")
+            curated.Path, "read_bytes", side_effect=OSError("disco pifou")
         ):
             self.snapshot("2026-07-27T08-00-00")
         self.assertFalse(
@@ -675,13 +675,13 @@ class PulsoInvalidoTest(BaseTest):
 
     def test_bloco_aberto_sem_fechar_conta_o_arquivo_inteiro(self) -> None:
         texto = "# Projetos\n" + "autoral\n" * 50 + PULSO_BEGIN + "\n" + "pulso\n" * 50
-        medido = curated.measured_size(texto, curated.HYBRID)
+        medido = curated.measured_size(texto.encode("utf-8"), curated.HYBRID)
         self.assertEqual(medido, len(texto.encode("utf-8")), "sufixo órfão sumiu da conta")
 
     def test_fim_sem_comeco_conta_o_arquivo_inteiro(self) -> None:
         texto = "# Projetos\n" + "autoral\n" * 10 + PULSO_END + "\n"
         self.assertEqual(
-            curated.measured_size(texto, curated.HYBRID), len(texto.encode("utf-8"))
+            curated.measured_size(texto.encode("utf-8"), curated.HYBRID), len(texto.encode("utf-8"))
         )
 
     def test_estrutura_invalida_vira_erro_reportado(self) -> None:
@@ -700,14 +700,14 @@ class PulsoInvalidoTest(BaseTest):
             + PULSO_BEGIN + "\n" + PULSO_BEGIN + "\npulso\n" + PULSO_END + "\n"
         )
         self.assertEqual(
-            curated.measured_size(texto, curated.HYBRID), len(texto.encode("utf-8"))
+            curated.measured_size(texto.encode("utf-8"), curated.HYBRID), len(texto.encode("utf-8"))
         )
         _, erro = curated._pulso_partition(texto)
         self.assertEqual(erro, "bloco de pulso aninhado")
 
     def test_crlf_nao_quebra_o_parser(self) -> None:
         texto = "# P\r\n" + PULSO_BEGIN + "\r\npulso\r\n" + PULSO_END + "\r\nautoral\r\n"
-        medido = curated.measured_size(texto, curated.HYBRID)
+        medido = curated.measured_size(texto.encode("utf-8"), curated.HYBRID)
         self.assertLess(medido, len(texto.encode("utf-8")), "bloco de pulso não foi excluído")
 
 
@@ -800,8 +800,6 @@ class CarimboTest(BaseTest):
         )
 
 
-if __name__ == "__main__":
-    unittest.main()
 
 
 class BaselineVerificadaTest(BaseTest):
@@ -896,12 +894,12 @@ class JanelaDeEscritaTest(BaseTest):
         devolve o conteúdo íntegro, qualquer releitura devolve o mutilado. Uma
         implementação que reabre o arquivo pra copiar gravaria o mutilado e o
         declararia completo."""
-        integro = "# Índice\n" + "linha\n" * 200
-        mutilado = "mutilado\n"
-        self.indice().write_text(integro, encoding="utf-8")
+        integro = ("# Índice\n" + "linha\n" * 200).encode("utf-8")
+        mutilado = b"mutilado\n"
+        self.indice().write_bytes(integro)
 
         alvo = self.indice().resolve()
-        real = Path.read_text
+        real = Path.read_bytes
         lido = {"ja": False}
 
         def leitura_com_corrida(self, *a, **kw):
@@ -912,12 +910,10 @@ class JanelaDeEscritaTest(BaseTest):
                 return integro
             return real(self, *a, **kw)
 
-        with patch.object(Path, "read_text", leitura_com_corrida):
+        with patch.object(Path, "read_bytes", leitura_com_corrida):
             self.snapshot("t1")
 
-        copia = (self.scope_root() / "t1" / "Prumo__Referencias__INDICE.md").read_text(
-            encoding="utf-8"
-        )
+        copia = (self.scope_root() / "t1" / "Prumo__Referencias__INDICE.md").read_bytes()
         self.assertEqual(copia, integro, "gravou conteúdo diferente do que mediu")
 
     def test_digest_do_manifesto_bate_com_a_copia(self) -> None:
@@ -927,5 +923,127 @@ class JanelaDeEscritaTest(BaseTest):
             (self.scope_root() / "t1" / curated.MANIFEST_NAME).read_text(encoding="utf-8")
         )
         for flat, digest in manifesto["digests"].items():
-            texto = (self.scope_root() / "t1" / flat).read_text(encoding="utf-8")
-            self.assertEqual(curated._digest(texto), digest, flat)
+            data = (self.scope_root() / "t1" / flat).read_bytes()
+            self.assertEqual(curated._digest(data), digest, flat)
+
+class FidelidadeDeBytesTest(BaseTest):
+    """`read_text`/`write_text` normalizam quebra de linha: a cópia poderia
+    diferir do original e o digest autenticaria o TEXTO, não o arquivo
+    (Codex, 262G-1). Backup que não devolve os bytes não é backup."""
+
+    def test_crlf_sobrevive_ao_snapshot(self) -> None:
+        original = b"# Indice\r\n| 1 | a |\r\n\n| 2 | b |\r\n"
+        self.indice().write_bytes(original)
+        self.snapshot("t1")
+
+        copia = (self.scope_root() / "t1" / "Prumo__Referencias__INDICE.md").read_bytes()
+        self.assertEqual(copia, original, "quebra de linha foi normalizada na cópia")
+
+    def test_digest_e_dos_bytes(self) -> None:
+        original = b"a\r\nb\n"
+        self.indice().write_bytes(original)
+        self.snapshot("t1")
+        manifesto = json.loads(
+            (self.scope_root() / "t1" / curated.MANIFEST_NAME).read_text(encoding="utf-8")
+        )
+        self.assertEqual(
+            manifesto["digests"]["Prumo__Referencias__INDICE.md"], curated._digest(original)
+        )
+
+
+class ManifestoMalformadoTest(BaseTest):
+    """Manifesto estruturalmente inválido não pode DESLIGAR o mecanismo: ele
+    tem de ser degradado e ignorado, com o snapshot de hoje gravado assim
+    mesmo (Codex, 262G-2)."""
+
+    def _corromper(self, stamp: str, **campos) -> None:
+        alvo = self.scope_root() / stamp / curated.MANIFEST_NAME
+        manifesto = json.loads(alvo.read_text(encoding="utf-8"))
+        manifesto.update(campos)
+        alvo.write_text(json.dumps(manifesto), encoding="utf-8")
+
+    def test_digests_como_lista_nao_derruba(self) -> None:
+        self.indice().write_text("a" * 1000, encoding="utf-8")
+        self.snapshot("t1")
+        self._corromper("t1", digests=[])
+
+        self.indice().write_text("a" * 100, encoding="utf-8")
+        report = self.snapshot("t2")
+
+        self.assertTrue((self.scope_root() / "t2").is_dir(), "parou de gravar snapshot")
+        self.assertTrue(any("sem manifesto válido" in e for e in report["errors"]))
+
+    def test_instante_malformado_e_recusado(self) -> None:
+        self.snapshot("t1")
+        self._corromper("t1", captured_at_utc="ontem de manhã")
+        self.indice().write_text("mudou", encoding="utf-8")
+        report = self.snapshot("t2")
+        self.assertTrue(any("sem manifesto válido" in e for e in report["errors"]))
+
+    def test_instante_sem_fuso_e_recusado(self) -> None:
+        self.snapshot("t1")
+        self._corromper("t1", captured_at_utc="2026-07-29T08:00:00")
+        self.indice().write_text("mudou", encoding="utf-8")
+        report = self.snapshot("t2")
+        self.assertTrue(any("sem manifesto válido" in e for e in report["errors"]))
+
+
+class CarimboSeguroTest(BaseTest):
+    """Carimbo é NOME de diretório: absoluto ou `../` reservaria fora do
+    scope, furando a cerca (Codex, 262G-4)."""
+
+    def test_travessia_nao_escapa_do_scope(self) -> None:
+        """Afirma o FILESYSTEM, não o rótulo devolvido: a primeira versão
+        deste teste conferia `report["stamp"]`, que com um carimbo absoluto
+        vira só o basename e parece inocente (achado da bateria)."""
+        vizinho = Path(self._tmp.name).parent / f"vizinho-{Path(self._tmp.name).name}"
+        vizinho.mkdir()
+        self.addCleanup(shutil.rmtree, vizinho, True)
+
+        for malicioso in (
+            "../../fora", f"{vizinho}/fora", "..", "", "sub/dir",
+        ):
+            with self.subTest(malicioso):
+                antes = {p.name for p in self.scope_root().iterdir()} if self.scope_root().is_dir() else set()
+                curated.snapshot_curated(self.ws, stamp=malicioso)
+
+                self.assertEqual(
+                    list(vizinho.iterdir()), [], f"carimbo `{malicioso}` gravou fora do workspace"
+                )
+                depois = {p.name for p in self.scope_root().iterdir()}
+                novos = depois - antes
+                for nome in novos:
+                    alvo = (self.scope_root() / nome).resolve()
+                    self.assertTrue(
+                        alvo.is_relative_to(self.scope_root().resolve()),
+                        f"carimbo `{malicioso}` escapou pra {alvo}",
+                    )
+                self.indice().write_text(f"muda {malicioso}", encoding="utf-8")
+
+
+class AcervoSymlinkTest(BaseTest):
+    """`Acervo/` symlinkado pra fora leria conteúdo externo e rebaixaria uma
+    deleção REAL a arquivado (Codex, 262G-3)."""
+
+    def test_acervo_symlinkado_nao_rebaixa(self) -> None:
+        conteudo = "# Artigo\n" + "conteúdo\n" * 60
+        ficha = self.ws / "Prumo" / "Referencias" / "artigo.md"
+        ficha.write_text(conteudo, encoding="utf-8")
+        self.snapshot("t1")
+
+        fora = Path(self._tmp.name).parent / f"acervo-{Path(self._tmp.name).name}"
+        fora.mkdir()
+        self.addCleanup(shutil.rmtree, fora, True)
+        (fora / "artigo.md").write_text(conteudo, encoding="utf-8")
+        (self.ws / "Prumo" / "Arquivo").mkdir(parents=True)
+        (self.ws / "Prumo" / "Arquivo" / "Acervo").symlink_to(fora, target_is_directory=True)
+
+        ficha.unlink()
+        report = self.snapshot("t2")
+
+        alerta = next(a for a in report["alerts"] if a["path"].endswith("Referencias/artigo.md"))
+        self.assertEqual(alerta["state"], curated.GONE, "gêmeo externo rebaixou deleção real")
+
+
+if __name__ == "__main__":
+    unittest.main()
