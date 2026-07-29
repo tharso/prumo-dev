@@ -297,6 +297,24 @@ class EscritaNoFlatParaTests(unittest.TestCase):
             self.assertFalse((Path(tmp) / ".prumo").exists())
             self.assertEqual(render_report(report), "")
 
+    def test_pasta_alheia_com_subpasta_Prumo_nao_ganha_snapshot(self) -> None:
+        """O buraco da rodada 6: eu decidia por `nested_layout` sozinho, e uma
+        pasta alheia com uma subpasta `Prumo/` incidental É detectada como
+        nested. O snapshot gravaria `.prumo/backups/curated/` dentro do projeto
+        de outra pessoa — e o briefing chama isto antes de montar o painel.
+
+        Diretório vazio não pegava isso: ele nem é detectado como nested."""
+        from prumo_runtime import curated
+        from prumo_runtime.curated import snapshot_curated
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "Prumo").mkdir()
+            (root / "Prumo" / "README.md").write_text("projeto alheio\n", encoding="utf-8")
+            report = snapshot_curated(root)
+            self.assertEqual(report["skipped"], curated.SKIPPED_NOT_NESTED)
+            self.assertFalse((root / ".prumo").exists(), "gravou dentro de projeto alheio")
+
     def test_dedupe_normal_nao_vira_alarme(self) -> None:
         """`sem-mudanca` é o dedupe saudável e mora no MESMO campo `skipped`.
         Tratá-lo como bloqueio fazia todo briefing nested sem alteração
