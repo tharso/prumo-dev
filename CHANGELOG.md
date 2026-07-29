@@ -6,6 +6,14 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.73.0] - 2026-07-28
+
+### Fixed
+- **Zero silencioso vira estado declarado — prova de predicado de busca (#236)** — `from:me newer_than:4d` devolveu `{}` no briefing real de 27/07 enquanto existia mensagem com `SENT` em `labelIds` DENTRO da janela: o conector não resolve o alias `me`, o vazio foi lido como "não tem nada", e a regra que existia pra cobrir esse braço estava morta desde que foi escrita. O defeito não é de um operador — é de classe: **query que volta zero tem duas causas indistinguíveis** (não há nada / o predicado não foi resolvido), e tratar a segunda como a primeira produz silêncio confiante sobre conteúdo que existe. Agora `briefing-canais.md` tem o protocolo **"Prova de predicado de busca"**, com resultados fechados em dois eixos: três estados da **assinatura** (`VALIDADA` | `FALHA` | `INCONCLUSIVO`) mais **`VAZIO CONFIRMADO`** — resultado da resposta deste briefing, alcançado por varredura exaustiva com o predicado aplicado localmente, e que **não** valida a assinatura (varrer não prova nada sobre o conector). Cada um com porta de entrada explícita; validação **por testemunha** — mensagem cuja metadata prove o predicado por conta própria, porque controle amplo não prova nada e **query nunca é testemunha de si mesma**; **assinatura** com escopo explícito (host/conector + conta + classe do argumento), então `from:me` reprovado **não** reprova `from:<endereço>` e validação não atravessa host; varredura exaustiva definida (paginar até o conector declarar fim — cursor ausente mantém `INCONCLUSIVO`); orçamento com teto por assinatura **e** global; e **degradação nomeada por braço** na linha de cobertura. O veredito é registrado em `EMAIL-CURADORIA.md` → "Compatibilidade da busca", alimentada **só por evidência do conector**, nunca por conteúdo de mensagem — o produto guarda o protocolo, o workspace guarda o fato local. Completude segue dona de `briefing-montagem.md` (braço declarado não impede marcar o dia; braço calado, sim).
+
+### Changed
+- **Endereços pessoais fora do módulo canônico (#236)** — `briefing-canais.md` listava as 4 contas de email do autor em texto fixo, num módulo que vai para **todo** usuário do Prumo. A fonte agora é `EMAIL-CURADORIA.md` → "Contas monitoradas", e conta que o conector não alcança fica declarada como limitação em vez de sumir em silêncio. Guard novo reprova qualquer endereço concreto em `skills/` fora da lista de exemplos ilustrativos.
+
 ## [5.72.0] - 2026-07-28
 
 ### Fixed
