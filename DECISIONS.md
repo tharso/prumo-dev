@@ -73,13 +73,17 @@ Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões ant
 
 **Decisão:** ponteiro para módulo canônico **não** mantém **bloco ou lista enumerativa paralela replicando as responsabilidades do módulo**. Quem quer saber o escopo abre o módulo — é literalmente o que o ponteiro existe pra dizer.
 
-O recorte é estreito de propósito, e o que fica **fora** dele importa tanto quanto o que fica dentro:
+O recorte é estreito de propósito, e o que fica **fora** dele importa tanto quanto o que fica dentro. Três categorias legítimas, todas presentes no repo hoje:
 
-- **metadado contratual continua legítimo** — a coluna `Tipo` do mapa de carregamento (`wrapper da raiz`, `porta canônica`) classifica o arquivo, não enumera as responsabilidades do módulo;
-- **desambiguação de nome enganoso continua legítima** — a nota do `higiene/SKILL.md` explicando que `claude-hygiene.md` é nome histórico e cobre `PERFIL.md` e os módulos do `Agente/` existe porque o nome mente, e apagá-la reintroduz a confusão que ela resolve;
-- o alvo é a lista que responde "o que este módulo cobre?" — a que envelhece porque ninguém é dono dela.
+- **metadado contratual** — a coluna `Tipo` do mapa de carregamento (`wrapper da raiz`, `porta canônica`) classifica o arquivo; não enumera responsabilidades;
+- **desambiguação de nome enganoso** — a nota do `higiene/SKILL.md` dizendo que `claude-hygiene.md` é nome histórico e cobre `PERFIL.md` e os módulos do `Agente/` existe porque o nome mente; apagá-la reintroduz a confusão que ela resolve;
+- **invariante repetida no ponto de execução, com dono declarado** — as "Regras que não podem ser puladas" do `briefing/SKILL.md` foram criadas pela própria #180 e existem pra impedir que o hot path pule contrato (carregar `briefing-canais.md` antes do Gmail, declarar a faxina, gerar o despacho visual). Elas nomeiam o dono de cada regra e vivem onde o pulo aconteceria.
 
-**Antes de apagar, conferir bullet a bullet** que o conteúdo está no **módulo apontado ou no dono canônico que ele alcança explicitamente**. Essa segunda metade não é detalhe: no caso do Briefing, "curadoria em camadas" e a janela de 24h moram em `briefing-canais.md`, alcançado pelo `briefing-procedure.md` — conferir só a espinha faria o agente julgá-los ausentes e **migrá-los para dentro dela**, recriando exatamente a duplicação que a #180 eliminou. Integridade referencial aqui é grafo, não estrela. O que não estiver em lugar nenhum da cadeia **migra** em vez de sumir.
+O que distingue as três do que esta decisão apaga: elas **declaram o dono** e existem pra **agir**, não pra descrever. Os blocos removidos da Parte 2 não faziam nem uma coisa nem outra — respondiam "o que este módulo cobre?" e não tinham dono, que é exatamente por que envelheceram.
+
+**Antes de apagar, conferir bullet a bullet** contra o **módulo apontado ou o dono canônico que ele alcança explicitamente**. Essa segunda metade não é detalhe: no caso do Briefing, "curadoria em camadas" e a janela de 24h moram em `briefing-canais.md`, alcançado pelo `briefing-procedure.md` — conferir só a espinha faria o agente julgá-los ausentes e **migrá-los para dentro dela**, recriando a duplicação que a #180 eliminou. Integridade referencial aqui é grafo, não estrela.
+
+**Bullet órfão não é contrato perdido por default.** A premissa desta decisão é que esses resumos envelhecem — então conteúdo que não aparece em lugar nenhum da cadeia é, com mais frequência, comportamento **abolido** que sobreviveu no resumo do que contrato que sumiu do dono. Classificar antes de agir: vigente **migra** para o dono; obsoleto **é removido**, com a evidência de que foi abolido (a issue ou decisão que o removeu) citada no PR. Sem evidência para nenhum dos dois lados, **não adivinhar** — perguntar ao dono do projeto.
 
 **Alternativas consideradas:** regra de varredura retroativa no `CLAUDE.md`, obrigando a varrer o core ao mudar um módulo (rejeitada — é prosa de julgamento consertando falha de prosa de julgamento, a mesma camada que falhou); teste casando os bullets com o módulo nomeado (rejeitado — casamento por palavra-chave, frágil, e criaria manutenção nova para um bloco que não deveria existir). Estrutura no lugar de processo: deletar remove a superfície de drift e a necessidade da regra no mesmo golpe.
 
