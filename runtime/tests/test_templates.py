@@ -139,22 +139,35 @@ class TemplateAdapterTests(unittest.TestCase):
         e editar mesmo assim — por isso o ponteiro pro mapa autoral é parte do
         contrato, não enfeite.
         """
+        def marcador(mapa: str) -> str:
+            return (
+                "# AGENT.md\n\n"
+                "> **Arquivo gerado** por `prumo repair` — não edite à mão, o repair sobrescreve.\n"
+                f"> Caminhos seus vão em `{mapa}`, que sobrevive ao repair.\n"
+            )
+
         nested = templates.render_agent_md(
             user_name="Batata", agent_name="Prumo", timezone_name="America/Sao_Paulo",
             briefing_time="09:00", core_path=".prumo/system/PRUMO-CORE.md",
-            state_path=".prumo/state/", skills_path=".prumo/skills/",
+            state_path=".prumo/state/", skills_path=".prumo/skills/", nested_layout=True,
         )
-        self.assertIn("Arquivo gerado", nested)
-        self.assertIn("prumo repair", nested)
-        self.assertIn("Prumo/Agente/MAPA-AUTORAL.md", nested)
-
         flat = templates.render_agent_md(
             user_name="Batata", agent_name="Prumo", timezone_name="America/Sao_Paulo",
-            briefing_time="09:00",
+            briefing_time="09:00", nested_layout=False,
         )
-        self.assertIn("Arquivo gerado", flat)
-        self.assertIn("`Agente/MAPA-AUTORAL.md`", flat)
-        self.assertNotIn("`Prumo/Agente/MAPA-AUTORAL.md`", flat)
+
+        # BLOCO CONTÍGUO no topo, não `assertIn` solto: `prumo repair` e
+        # `MAPA-AUTORAL.md` aparecem em outras seções do documento, então
+        # asserção espalhada continuava verde com o marcador degradado pra
+        # variante curta — a que foi recusada com o custo na mão (Codex, r1).
+        self.assertTrue(
+            nested.startswith(marcador("Prumo/Agente/MAPA-AUTORAL.md")),
+            f"marcador do nested não bate:\n{nested[:260]}",
+        )
+        self.assertTrue(
+            flat.startswith(marcador("Agente/MAPA-AUTORAL.md")),
+            f"marcador do flat não bate:\n{flat[:260]}",
+        )
 
     def test_workflows_template_exposes_structure_only_phase(self) -> None:
         rendered = templates.render_workflows_md("22/03/2026")

@@ -199,6 +199,7 @@ def render_agent_md(
     state_path: str = "_state/",
     skills_path: str | None = None,
     core_text: str | None = None,
+    nested_layout: bool | None = None,
 ) -> str:
     fallback_section = ""
     if skills_path:
@@ -261,9 +262,15 @@ def render_agent_md(
     # superfície: o arquivo com mais chance de alguém querer ajustar era o
     # único sem aviso. A saída de emergência (`MAPA-AUTORAL.md`, que sobrevive
     # ao repair, #241) já existia; faltava a placa apontando pra ela.
-    autoral_map = (
-        "Prumo/Agente/MAPA-AUTORAL.md" if core_path.startswith(".prumo/") else "Agente/MAPA-AUTORAL.md"
-    )
+    # Layout explícito quando o caller sabe (os dois chamadores de produção
+    # sabem: `render_files` tem `paths.nested_layout`). O fallback por
+    # `core_path` é bússola improvisada — acerta nos fluxos reais, mas erra em
+    # combinação híbrida de parâmetros avulsos, ex.: `state_path` nested com
+    # `core_path` default (Codex, r1). Fica só pra caller de teste que não
+    # declara layout.
+    if nested_layout is None:
+        nested_layout = core_path.startswith(".prumo/")
+    autoral_map = "Prumo/Agente/MAPA-AUTORAL.md" if nested_layout else "Agente/MAPA-AUTORAL.md"
 
     return f"""# AGENT.md
 

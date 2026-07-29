@@ -182,6 +182,7 @@ def render_files(config: WorkspaceConfig) -> dict[str, str]:
             core_path=core_relative,
             state_path=state_relative,
             skills_path=paths.relative(paths.skills_root) + "/" if paths.nested_layout else None,
+            nested_layout=paths.nested_layout,
         ),
         paths.relative(paths.agente_root / "PERFIL.md"): templates.render_perfil_md(),
         paths.relative(paths.agente_root / "MAPA-AUTORAL.md"): templates.render_mapa_autoral_md(),
