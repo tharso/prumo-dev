@@ -423,5 +423,58 @@ class DeteccaoAlinhadaComExecucaoTest(BaseTest):
         self.assertEqual(planejados, 1, "o limpo tem de sair")
 
 
+class LayoutFlatTest(unittest.TestCase):
+    """No flat não existe `.prumo/`: a porta anunciava `_state/rascunho/` e a
+    varredura só olhava `.prumo/state/rascunho/` — acúmulo invisível e
+    permanente, o mesmo alarme eterno em outro endereço (Codex, r6)."""
+
+    def setUp(self) -> None:
+        self._tmp = tempfile.TemporaryDirectory()
+        self.ws = Path(self._tmp.name)
+        (self.ws / "_state" / "rascunho").mkdir(parents=True)
+        self.addCleanup(self._tmp.cleanup)
+
+    def _envelhecer(self, path: Path) -> None:
+        import os, time
+        stamp = time.mktime((HOJE - timedelta(days=40)).timetuple())
+        os.utime(path, (stamp, stamp))
+
+    def test_rascunho_do_flat_e_varrido(self) -> None:
+        alvo = self.ws / "_state" / "rascunho" / "velho.md"
+        alvo.write_text("x", encoding="utf-8")
+        self._envelhecer(alvo)
+
+        plano = sanitize.build_plan(self.ws, today=HOJE)
+        caminhos = [i["path"] for i in plano["items"] if i["rule"] == "agente_rascunho"]
+        self.assertEqual(caminhos, ["_state/rascunho/velho.md"])
+
+    def test_fim_conta_o_rascunho_do_flat(self) -> None:
+        alvo = self.ws / "_state" / "rascunho" / "velho.md"
+        alvo.write_text("x", encoding="utf-8")
+        self._envelhecer(alvo)
+        s = accumulation_signals(self.ws, today=HOJE)["signals"]
+        self.assertEqual(s["rascunho_old"], 1)
+
+    def test_a_porta_anuncia_um_endereco_que_a_varredura_cobre(self) -> None:
+        """A propriedade que faltava: o que a porta ENSINA tem de ser o que a
+        varredura OLHA — nos dois layouts."""
+        import re
+        from prumo_runtime.sanitize import RASCUNHO_RELS
+        from prumo_runtime.templates import render_agent_md
+
+        for state_path in ("_state/", ".prumo/state/"):
+            with self.subTest(state_path=state_path):
+                doc = render_agent_md("T", "Prumo", "UTC", "09:00", state_path=state_path)
+                linha = next(
+                    (l for l in doc.splitlines() if "rascunho/" in l and state_path in l), ""
+                )
+                self.assertTrue(linha, f"a porta não anuncia o rascunho ({state_path})")
+                # O root anunciado + `rascunho` tem de ser um dos varridos.
+                self.assertIn(
+                    state_path.rstrip("/") + "/rascunho", RASCUNHO_RELS,
+                    f"porta ensina `{state_path}rascunho/`, varredura olha {RASCUNHO_RELS}",
+                )
+
+
 if __name__ == "__main__":
     unittest.main()

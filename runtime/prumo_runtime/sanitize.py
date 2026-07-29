@@ -161,16 +161,14 @@ def _under_backup_root(workspace: Path, path: Path) -> bool:
 # --- Detectores puros (reusados pelo /fim, read-only) -----------------------
 
 
-RASCUNHO_REL = ".prumo/state/rascunho"
+RASCUNHO_RELS = (".prumo/state/rascunho", "_state/rascunho")
 
 
 def _sob_rascunho(workspace: Path, path: Path) -> bool:
-    """Subtree do rascunho é EXCLUSIVA (#263).
-
-    Ordem de regra só garante disjunção quando todas rodam: com `--rules`
-    isolado, uma fonte ali cairia em `asset_dedupe` e seria DELETADA.
-    """
-    return _rel(workspace, path).startswith(RASCUNHO_REL + "/")
+    """Subtree do rascunho é EXCLUSIVA (#263): ordem de regra só garante
+    disjunção quando todas rodam, e isolada a fonte ali seria DELETADA."""
+    rel = _rel(workspace, path)
+    return any(rel == r or rel.startswith(r + "/") for r in RASCUNHO_RELS)
 
 
 def iter_handover_files(workspace: Path) -> list[Path]:
@@ -248,20 +246,22 @@ def _iter_old_cache(workspace: Path, today: date, cache_days: int) -> list[Path]
 
 
 def iter_agente_rascunho(workspace: Path, today: date, ephemeral_days: int) -> list[Path]:
-    """Filhos DIRETOS frios de `.prumo/state/rascunho/`.
+    """Filhos DIRETOS frios do rascunho do agente (#263).
 
-    A unidade é o filho direto: varrer arquivo a arquivo desmontaria uma
-    reconstrução parcial e deixaria casca. Diretório entra só com a árvore
-    INTEIRA fria.
+    A unidade é o filho direto: arquivo a arquivo desmontaria reconstrução
+    parcial. Diretório entra só com a árvore INTEIRA fria.
     """
-    root = workspace / ".prumo" / "state" / "rascunho"
-    if not _usable_root(workspace, root):
-        return []
+    # Os DOIS roots, como o handover: no flat não existe `.prumo/`.
     frios: list[Path] = []
-    try:
-        filhos = sorted(root.iterdir())
-    except OSError:
-        return []
+    filhos: list[Path] = []
+    for rel in RASCUNHO_RELS:
+        root = workspace / rel
+        if not _usable_root(workspace, root):
+            continue
+        try:
+            filhos.extend(sorted(root.iterdir()))
+        except OSError:
+            continue
     for filho in filhos:
         if filho.is_symlink():
             continue
