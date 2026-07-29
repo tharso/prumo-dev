@@ -24,6 +24,8 @@ import json
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
+from prumo_runtime import indice_integridade
+
 from prumo_runtime import faxina_thresholds
 from prumo_runtime.pauta_parsing import (
     cobrar_state,
@@ -222,6 +224,8 @@ def build_local_panorama(
     preview: dict,
     today: date,
     thresholds: dict | None = None,
+    referencias_root: Path | None = None,
+    indice_path: Path | None = None,
 ) -> tuple[dict, dict]:
     """Monta (`local_panorama`, `payload_completeness`).
 
@@ -297,6 +301,17 @@ def build_local_panorama(
         "mtime": (preview.get("freshness") or {}).get("index_mtime"),
     }
 
+    valores = thresholds["values"]
+    if referencias_root is not None and indice_path is not None:
+        indice_bloco = indice_integridade.avaliar(
+            referencias_root,
+            indice_path,
+            gap_alert_pct=valores["referencias_id_gap_alert_pct"],
+            bulk_reindex_at=valores["referencias_bulk_reindex_at"],
+        )
+    else:
+        indice_bloco = {"schema": indice_integridade.SCHEMA, "decisao": "indisponivel"}
+
     panorama = {
         "schema_version": PANORAMA_SCHEMA_VERSION,
         "generated_for": today.isoformat(),
@@ -319,6 +334,10 @@ def build_local_panorama(
             "override_keys": thresholds["override_keys"],
             "ignored_keys": thresholds["ignored_keys"],
         },
+        # #261: a DECISÃO viaja pronta, não o dado cru. Sem isso o agente
+        # refaria a aritmética do pavio a cada briefing — e duas projeções do
+        # mesmo cálculo divergem, que é o bug da #195 em outra roupa.
+        "indice_referencias": indice_bloco,
         "budget": {
             "display_max_chars": _DISPLAY_MAX_CHARS,
             "registro_tail_lines": _REGISTRO_TAIL_LINES,

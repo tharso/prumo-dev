@@ -7,6 +7,8 @@ do script.
 """
 from __future__ import annotations
 
+import re
+
 import unittest
 from pathlib import Path
 
@@ -27,9 +29,26 @@ class HigieneVozTests(unittest.TestCase):
             "linha de fala roteirizada voltou — a voz vem do PERFIL (#180 PR12)",
         )
 
-    def test_six_intencao_lines_with_labeled_examples(self) -> None:
-        self.assertEqual(self.text.count("**Intenção:**"), 6)
-        self.assertEqual(self.text.count(EXAMPLE_LABEL), 6)
+    def _secoes(self) -> dict[str, str]:
+        partes = re.split(r"^### (\d+\. [^\n]+)$", self.text, flags=re.M)[1:]
+        return dict(zip(partes[::2], partes[1::2]))
+
+    def test_toda_deteccao_que_propoe_tem_intencao_e_exemplo(self) -> None:
+        """Cobertura por SEÇÃO, não número mágico. Fixar `6` fazia o guard
+        precisar de manutenção a cada check novo, e número desatualizado
+        reprova o certo — a pior forma de guard. O contrato real é: quem faz
+        proposta em voz declara a Intenção e rotula o exemplo."""
+        faltando = [
+            titulo for titulo, corpo in self._secoes().items()
+            if "**Propor" in corpo
+            and not ("**Intenção:**" in corpo and EXAMPLE_LABEL in corpo)
+        ]
+        self.assertEqual(faltando, [], f"detecção propõe sem Intenção rotulada: {faltando}")
+
+    def test_intencao_nao_aparece_fora_de_deteccao(self) -> None:
+        """Negativa: rótulo solto fora de seção de detecção é decoração."""
+        dentro = sum(c.count("**Intenção:**") for c in self._secoes().values())
+        self.assertEqual(dentro, self.text.count("**Intenção:**"))
 
     def test_voice_section_points_to_perfil(self) -> None:
         # Âncoras DENTRO da seção (round 2 do Codex): menção solta em outro
@@ -45,7 +64,7 @@ class HigieneVozTests(unittest.TestCase):
         # vazia) — em qualquer outro lugar, o rótulo vira decoração solta
         # (review Codex do PR12).
         blocks = self.text.split("**Intenção:**")[1:]
-        self.assertEqual(len(blocks), 6)
+        self.assertTrue(blocks, "nenhuma Intenção no documento")
         for i, block in enumerate(blocks, start=1):
             with self.subTest(deteccao=i):
                 lines = block.splitlines()

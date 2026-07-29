@@ -29,6 +29,8 @@ Limites ajustáveis em `Prumo/Custom/rules/` (ver "Customização").
 | Parâmetro | Valor padrão | O que significa |
 |-----------|-------------|----------------|
 | referencias_subcategorize_at | 30 | Acima de 30 itens, agrupar por tema |
+| referencias_id_gap_alert_pct | 50 | Lacunas de ID (%, teto 100) além disso: índice suspeito, faxina bloqueia (#261) |
+| referencias_bulk_reindex_at | 5 | Fichas fora do índice a partir deste número: não são "novas", faxina bloqueia (#261) |
 
 ## Diário
 

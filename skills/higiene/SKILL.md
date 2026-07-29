@@ -3,8 +3,8 @@ name: higiene
 description: >
   Higiene assistida do workspace. Detecta problemas que precisam de decisão
   do usuário: itens velhos na pauta, contradições entre arquivos, CLAUDE.md
-  pesado, contexto obsoleto em Agente/, inbox esquecido, referências quebradas
-  e órfãos. Propõe e espera
+  pesado, contexto obsoleto em Agente/, inbox esquecido, referências quebradas,
+  órfãos e índice de referências inconsistente. Propõe e espera
   confirmação — nunca resolve sozinha. Use com /higiene, "tem algo pra
   limpar?", "revisa meus arquivos", ou quando o briefing detectar sinais.
 ---
@@ -156,6 +156,9 @@ Exemplo (voz Equilibrada — não é script): "Arquivo pesado demais faz o conte
 **Propor:**
 - "O sistema atualizou e você tem um override do briefing. Pode ter ficado incompatível. Quer revisar?"
 
+**Intenção:** avisar que a customização pode ter ficado para trás sem sugerir que ela foi um erro — override é escolha do usuário, não dívida.
+Exemplo (voz Equilibrada — não é script): "Seu ajuste continua valendo. Só não sei se ele ainda encaixa na versão nova — quer conferir junto?"
+
 ### 8. Integridade referencial (órfãos e cross-refs quebradas)
 
 O eixo que faltava. A higiene cobre contradição e staleness, mas não
@@ -192,9 +195,51 @@ adotou esse estilo. Órfão de verdade é referência que aponta pra nada — n�
 jeito pessoal de organizar. Na dúvida entre "quebrado" e "estilo", é estilo:
 pergunta leve, sem acusar.
 
+### 9. Integridade do índice de referências (#261)
+
+A faxina detecta e **para**; a resolução é daqui. Ela bloqueia quando o
+`Referencias/INDICE.md` fica suspeito — lacuna de ID acima de
+`referencias_id_gap_alert_pct` ou fichas fora da tabela a partir de
+`referencias_bulk_reindex_at`. **Use os números EFETIVOS**, não os defaults:
+`faxina.thresholds` da semente (#258) ou, sem semente, `faxina-thresholds.md`
+**mais** o override em `Prumo/Custom/rules/`. Com override mais sensível, a
+faxina bloqueia e a higiene com default concluiria que não há problema — o
+bombeiro chegando e discordando do alarme.
+
+**Verificar (refazer a conta, não confiar na anterior):**
+- Rodapé `<!-- proximo-id: N -->` × IDs distintos da tabela
+- Fichas em `Referencias/` sem entrada, **nomeadas uma a uma**
+- Cópia disponível em `.prumo/backups/curated/` (#262) — é ela que preserva os
+  IDs e as descrições autorais originais
+
+**Propor (uma decisão por vez, nenhuma escrita antes da escolha):**
+- Com cópia: "Achei N ficha(s) fora do índice e o rodapé aponta pra um índice
+  bem maior. Tem uma cópia de {data} com as entradas originais. Restauro a
+  partir dela, preservando IDs e descrições?"
+- Sem cópia: "Não tenho cópia anterior. Posso recriar as entradas a partir das
+  fichas, mas os IDs serão novos e as descrições virão do 'Por que guardei' —
+  as originais não voltam. Faço assim, ou você prefere reescrever à mão?"
+- Sempre oferecer a terceira saída: **"a remoção foi deliberada"**. Nada é
+  reinserido, e a higiene grava no índice as DUAS marcas do que foi aceito —
+  `<!-- lacunas-conferidas: L/S -->` (fração exata, nunca percentual
+  arredondado) e `<!-- fichas-fora-conferidas: a.md, b.md -->` (por NOME).
+  É isso que faz a faxina parar de bloquear. Sem gravar, a confirmação não
+  muda o estado observável e o mesmo alarme volta na rodada seguinte: saída
+  cenográfica. Gravar só uma das duas também não fecha — a outra dimensão
+  bloqueia em seguida. Só o que CRESCER além do aceito alarma de novo, e ficha
+  nova continua sendo indexada normalmente.
+
+**Intenção:** tratar como estado a explicar, não como erro a corrigir — nenhuma porcentagem lê intenção, e apagar uma seção de propósito produz o mesmo observável de um truncamento.
+Exemplo (voz Equilibrada — não é script): "Isso aqui tá estranho, mas pode ser
+coisa sua. O índice aponta pra 48 e mostra 4. Foi você que limpou, ou perdemos
+alguma coisa?"
+
+**Nunca:** reinserir automaticamente. Foi exatamente o reflexo automático que
+teria cimentado o dano de 27/07.
+
 ## Fluxo de execução
 
-1. Rodar todos os checks (1-8)
+1. Rodar todos os checks (1-9)
 2. Se nada encontrado: "Casa em ordem. Nada pra revisar."
 3. Se encontrou algo: apresentar lista curta dos achados
 4. Perguntar: "Quer resolver agora ou coloco na pauta pra depois?"

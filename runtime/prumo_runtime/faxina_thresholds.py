@@ -37,6 +37,10 @@ DEFAULTS: dict[str, int] = {
     "curated_shrink_alert_pct": 40,
     # Índices
     "referencias_subcategorize_at": 30,
+    # #261: lacunas de ID acima disso = índice suspeito (pavio do rodapé)
+    "referencias_id_gap_alert_pct": 50,
+    # #261: fichas fora do índice a partir daqui não são "novas", são estado
+    "referencias_bulk_reindex_at": 5,
     # Diário
     "diario_expiry_days": 90,
 }
@@ -44,7 +48,18 @@ DEFAULTS: dict[str, int] = {
 # Teto por chave, pra chave cujo domínio não é "qualquer inteiro >= 0".
 # Percentual acima de 100 é inatingível: o alerta desligaria em silêncio, que
 # é pior que não existir (achado da rodada 6 do Codex na #262).
-MAXIMOS: dict[str, int] = {"curated_shrink_alert_pct": 100}
+# Piso por chave. Zero nestas duas viraria bloqueio PERMANENTE: `bulk` zero
+# bloqueia até com lista vazia, `gap` zero bloqueia índice com 0% de lacuna
+# (Codex, 261D-6). Fora do domínio é ignorado E reportado, como sempre.
+MINIMOS: dict[str, int] = {
+    "referencias_bulk_reindex_at": 1,
+    "referencias_id_gap_alert_pct": 1,
+}
+
+MAXIMOS: dict[str, int] = {
+    "curated_shrink_alert_pct": 100,
+    "referencias_id_gap_alert_pct": 100,
+}
 
 # Candidato = qualquer `- chave: valor`. A gramática da CHAVE é validada
 # depois, pra que nome inválido (maiúscula, hífen) apareça em `ignored_keys`
@@ -64,7 +79,7 @@ def read_override(workspace: Path) -> tuple[dict[str, int], list[str]]:
 
     Vocabulário controlado (regra do próprio doc: "apelido novo não é override,
     é dialeto"): chave fora do `DEFAULTS`, valor não-inteiro e valor fora do
-    domínio da chave (ver `MAXIMOS`) são **ignorados e reportados** — nunca
+    domínio da chave (ver `MINIMOS`/`MAXIMOS`) são **ignorados e reportados** — nunca
     adivinhados.
     """
     path = override_path(workspace)
@@ -86,7 +101,7 @@ def read_override(workspace: Path) -> tuple[dict[str, int], list[str]]:
         except ValueError:
             ignoradas.append(chave)
             continue
-        if valor < 0 or valor > MAXIMOS.get(chave, valor):
+        if valor < MINIMOS.get(chave, 0) or valor > MAXIMOS.get(chave, valor):
             ignoradas.append(chave)
             continue
         valores[chave] = valor

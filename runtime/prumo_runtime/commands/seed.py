@@ -42,6 +42,7 @@ from prumo_runtime.inbox_preview import load_inbox_preview
 from prumo_runtime import faxina_thresholds
 from prumo_runtime.local_panorama import build_local_panorama
 from prumo_runtime.curated import render_report, snapshot_curated
+from prumo_runtime.indice_integridade import render as render_indice
 from prumo_runtime.workspace import build_config_from_existing
 from prumo_runtime.workspace_paths import workspace_paths
 
@@ -111,6 +112,39 @@ def _inbox4mobile_manifest(inbox_dir: Path) -> list[dict]:
     return entries
 
 
+def _referencias_manifest(root: Path) -> list[dict]:
+    """Manifesto raso das fichas: nome + tamanho + mtime. Só o mtime da PASTA
+    não bastaria — editar uma ficha não mexe no diretório, e a decisão do
+    índice depende do conjunto (#261)."""
+    if not root.is_dir() or root.is_symlink():
+        return []
+    import stat as stat_module
+
+    try:
+        filhos = sorted(root.iterdir(), key=lambda p: p.name)
+    except OSError as exc:
+        raise SeedError(
+            f"listagem de Referencias/ falhou ({exc}) — semente não gravada"
+        ) from exc
+    entradas: list[dict] = []
+    for entry in filhos:
+        if entry.suffix.lower() != ".md":
+            continue
+        try:
+            st = entry.lstat()
+        except OSError as exc:
+            raise SeedError(
+                f"stat falhou em Referencias/{entry.name} ({exc}) — "
+                "manifesto parcial mentiria; semente não gravada"
+            ) from exc
+        if stat_module.S_ISLNK(st.st_mode) or not stat_module.S_ISREG(st.st_mode):
+            continue
+        entradas.append(
+            {"name": entry.name, "size": st.st_size, "mtime_ns": st.st_mtime_ns}
+        )
+    return entradas
+
+
 def _capture_sources(paths) -> dict:
     """Retrato COMPLETO das fontes num instante — inclui o manifesto do
     Inbox4Mobile: captura antes/depois só protege o que ela enxerga."""
@@ -126,6 +160,13 @@ def _capture_sources(paths) -> dict:
         "faxina_override": _stat_entry(
             paths.custom_rules_root / "faxina-thresholds.md"
         ),
+        # #261: sem isto, o índice podia ser TRUNCADO depois do `prumo seed` e
+        # a semente seguiria "fresca" carregando `decisao: ok` — o incidente
+        # reencenado com JSON e gravata (Codex, 261D-1). O manifesto cobre
+        # `INDICE.md` junto com as fichas: ele é um `.md` de `Referencias/`, e
+        # um `_stat_entry` separado pra ele seria linha que nenhuma mutação
+        # distingue (achado da bateria).
+        "referencias": _referencias_manifest(paths.referencias_root),
     }
 
 
@@ -142,6 +183,8 @@ def _build_once(workspace: Path, paths, timezone_name: str) -> dict:
         preview=preview,
         today=today,
         thresholds=faxina_thresholds.effective(workspace),  # #258
+        referencias_root=paths.referencias_root,  # #261
+        indice_path=paths.referencias_index,
     )
     return {
         "schema_version": SEED_SCHEMA_VERSION,
@@ -246,6 +289,9 @@ def run_seed(args: argparse.Namespace) -> int:
         aviso = render_report(snapshot)
         if aviso:
             print(aviso)
+        indice = render_indice(payload.get("local_panorama", {}).get("indice_referencias", {}))
+        if indice:
+            print(f"[indice] {indice}")
         print(
             f"[seed] semente gravada em `{target.relative_to(workspace)}` — "
             f"{total} item(ns) da PAUTA ({len(sections)} seções canônicas + "
