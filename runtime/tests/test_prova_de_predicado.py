@@ -279,7 +279,10 @@ class RegistroTest(unittest.TestCase):
             self.assertIn("append-only", flat, f"semântica do log ausente em {nome}")
             self.assertIn("nunca reescrever nem apagar linha", flat, f"log mutável em {nome}")
             self.assertIn("vale a última", flat, f"precedência entre linhas ausente em {nome}")
-        self.assertIn("é a data dela que ordena a fila", _flat(_secao_do_protocolo()))
+            # DENTRO do loop: fora dele, o template podia dizer "a data mais
+            # antiga ordena" e passar verde — os dois lados divergindo em
+            # silêncio sobre qual ponta da fila é qual (gate r3).
+            self.assertIn("a data dela ordena a fila", flat, f"ordenação da fila ausente em {nome}")
 
     def test_secao_ausente_e_criada_de_forma_idempotente(self) -> None:
         """O template só roda em workspace novo. Arquivo antigo não tem a seção
