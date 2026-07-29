@@ -505,5 +505,100 @@ class ParidadeDoTextoTest(unittest.TestCase):
         self.assertIn("slots = N-1", self.faxina)
 
 
+class ConferenciaTest(BaseTest):
+    """"A remoção foi deliberada" só vale se MUDAR o predicado. Sem marca, a
+    confirmação do usuário não altera nada e o mesmo alarme volta na rodada
+    seguinte — saída cenográfica (Codex, r3)."""
+
+    def _indice_com_lacuna_grande(self) -> None:
+        self.escrever(_tabela([45, 46, 47, 48]) + "\n<!-- proximo-id: 49 -->\n")
+
+    def test_sem_marca_bloqueia(self) -> None:
+        self._indice_com_lacuna_grande()
+        self.assertEqual(self.avaliar()["decisao"], indice_integridade.BLOQUEAR)
+
+    def test_marca_de_conferencia_silencia(self) -> None:
+        self._indice_com_lacuna_grande()
+        with self.indice().open("a", encoding="utf-8") as fh:
+            fh.write("<!-- lacunas-conferidas: 92 -->\n")
+        r = self.avaliar()
+        self.assertEqual(r["decisao"], indice_integridade.OK)
+        self.assertEqual(r["lacunas_conferidas"], 92)
+
+    def test_lacuna_que_cresce_alem_do_conferido_volta_a_alarmar(self) -> None:
+        """Negativa central: conferir não é cheque em branco."""
+        self.escrever(
+            _tabela(range(1, 26)) + "\n<!-- proximo-id: 49 -->\n"
+            "<!-- lacunas-conferidas: 50 -->\n"
+        )
+        self.assertEqual(self.avaliar()["decisao"], indice_integridade.OK)
+
+        self.escrever(
+            _tabela([45, 46, 47, 48]) + "\n<!-- proximo-id: 49 -->\n"
+            "<!-- lacunas-conferidas: 50 -->\n"
+        )
+        self.assertEqual(self.avaliar()["decisao"], indice_integridade.BLOQUEAR)
+
+    def test_marca_malformada_nao_silencia(self) -> None:
+        self._indice_com_lacuna_grande()
+        with self.indice().open("a", encoding="utf-8") as fh:
+            fh.write("<!-- lacunas-conferidas: sei la -->\n")
+        self.assertEqual(self.avaliar()["decisao"], indice_integridade.BLOQUEAR)
+
+
+class FichaInacessivelTest(BaseTest):
+    """`is_file()` transforma erro de stat em False: a ficha inacessível
+    sumiria da contagem e o resultado podia ser `ok` (Codex, r3)."""
+
+    def test_stat_que_falha_bloqueia(self) -> None:
+        from unittest.mock import patch
+        self.escrever(_tabela([1]) + "\n<!-- proximo-id: 2 -->\n")
+        self.fichas([1])
+        real = Path.lstat
+        alvo = (self.root / "ficha-1.md").resolve()
+
+        def falha(self, *a, **kw):
+            if self.resolve() == alvo:
+                raise PermissionError("sem permissão")
+            return real(self, *a, **kw)
+
+        with patch.object(Path, "lstat", falha):
+            r = self.avaliar()
+        self.assertEqual(r["decisao"], indice_integridade.BLOQUEAR)
+        self.assertFalse(r["fonte_completa"])
+
+
+class ParidadeHigieneTest(unittest.TestCase):
+    """A higiene é quem RESOLVE o que a faxina bloqueou. Se ela recalcular com
+    defaults enquanto a faxina usou override, o bombeiro chega e discorda do
+    alarme (Codex, r3)."""
+
+    def setUp(self) -> None:
+        raiz = Path(__file__).resolve().parents[2]
+        self.higiene = (raiz / "skills" / "higiene" / "SKILL.md").read_text(encoding="utf-8")
+        self.faxina = (raiz / "skills" / "prumo" / "references" / "modules"
+                       / "faxina.md").read_text(encoding="utf-8")
+
+    def _check9(self) -> str:
+        ini = self.higiene.index("### 9. Integridade do índice de referências")
+        return self.higiene[ini:self.higiene.index("## Fluxo de execução", ini)]
+
+    def test_higiene_usa_thresholds_efetivos(self) -> None:
+        c9 = self._check9()
+        self.assertIn("EFETIVOS", c9)
+        self.assertIn("Custom/rules/", c9)
+
+    def test_higiene_grava_a_marca_de_conferencia(self) -> None:
+        self.assertIn("lacunas-conferidas", self._check9())
+
+    def test_faxina_le_a_marca_de_conferencia(self) -> None:
+        """Os dois lados: quem grava e quem respeita."""
+        self.assertIn("lacunas-conferidas", self.faxina)
+
+    def test_faxina_bloqueia_indice_ausente_com_ficha(self) -> None:
+        self.assertIn("Índice ausente com ficha em disco", self.faxina)
+        self.assertIn("não criar o índice", self.faxina.lower())
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -199,8 +199,12 @@ pergunta leve, sem acusar.
 
 A faxina detecta e **para**; a resolução é daqui. Ela bloqueia quando o
 `Referencias/INDICE.md` fica suspeito — lacuna de ID acima de
-`referencias_id_gap_alert_pct` (default 50) ou fichas fora da tabela a partir de
-`referencias_bulk_reindex_at` (default 5).
+`referencias_id_gap_alert_pct` ou fichas fora da tabela a partir de
+`referencias_bulk_reindex_at`. **Use os números EFETIVOS**, não os defaults:
+`faxina.thresholds` da semente (#258) ou, sem semente, `faxina-thresholds.md`
+**mais** o override em `Prumo/Custom/rules/`. Com override mais sensível, a
+faxina bloqueia e a higiene com default concluiria que não há problema — o
+bombeiro chegando e discordando do alarme.
 
 **Verificar (refazer a conta, não confiar na anterior):**
 - Rodapé `<!-- proximo-id: N -->` × IDs distintos da tabela
@@ -215,8 +219,11 @@ A faxina detecta e **para**; a resolução é daqui. Ela bloqueia quando o
 - Sem cópia: "Não tenho cópia anterior. Posso recriar as entradas a partir das
   fichas, mas os IDs serão novos e as descrições virão do 'Por que guardei' —
   as originais não voltam. Faço assim, ou você prefere reescrever à mão?"
-- Sempre oferecer a terceira saída: **"a remoção foi deliberada"** — nesse
-  caso, nada é reinserido e a faxina para de bloquear.
+- Sempre oferecer a terceira saída: **"a remoção foi deliberada"**. Nada é
+  reinserido, e a higiene grava `<!-- lacunas-conferidas: P -->` no índice com
+  a lacuna atual — é isso que faz a faxina parar de bloquear. Sem gravar,
+  a confirmação não muda o estado observável e o mesmo alarme volta na próxima
+  rodada: saída cenográfica. Só o que CRESCER além de `P` alarma de novo.
 
 **Intenção:** tratar como estado a explicar, não como erro a corrigir — nenhuma porcentagem lê intenção, e apagar uma seção de propósito produz o mesmo observável de um truncamento.
 Exemplo (voz Equilibrada — não é script): "Isso aqui tá estranho, mas pode ser

@@ -74,12 +74,18 @@ pergunta "onde guardei aquele artigo?" e Prumo não sabe.
 
 **Decidir nesta ordem, e parar na primeira que bater:**
 
+0. **Índice ausente com ficha em disco (#261).** `INDICE.md` não existe e há
+   ficha em `Referencias/`: **não criar o índice**. Recriá-lo daria IDs novos e
+   descrições derivadas — é a forma mais grave do incidente, não workspace
+   novo. Pasta sem índice E sem ficha é começo: segue limpo.
 1. **Lacuna de ID (#261).** Com rodapé presente e `N > 1`: `slots = N-1`;
    `ocupados` = IDs distintos em `1..slots` (ID ≥ N não preenche lacuna — o
    rodapé é sugestão e pode estar atrasado; duplicata conta uma vez). Se
    `lacunas × 100 ≥ referencias_id_gap_alert_pct × slots` (default 50 —
    comparar TAXA, nunca a contagem crua): **não alterar o índice**, relatar e entregar pra higiene. Sem rodapé, ou malformado, este
-   passo é PULADO — ausência de rodapé nunca é alarme por si.
+   passo é PULADO — ausência de rodapé nunca é alarme por si. Lacuna já
+   declarada deliberada pelo usuário (`<!-- lacunas-conferidas: P -->`) não
+   volta a alarmar: só o que CRESCEU além de `P` conta.
 2. **Volume (#261).** Se as fichas fora da tabela forem `≥ referencias_bulk_reindex_at`
    (default 5): **não alterar o índice**, relatar e entregar pra higiene.
    N fichas fora do índice de uma vez não são "N fichas novas" — são um

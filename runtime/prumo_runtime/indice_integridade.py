@@ -32,6 +32,12 @@ SCHEMA = "prumo_indice_integridade.v1"
 OPERACIONAIS = frozenset({"INDICE.md", "WORKFLOWS.md", "EMAIL-CURADORIA.md"})
 
 _RODAPE = re.compile(r"<!--\s*proximo-id:\s*(\d+)\s*-->")
+# Marca de conferência (#261): a higiene grava aqui o nível de lacuna que o
+# usuário declarou DELIBERADO. Sem isto, "a remoção foi deliberada" não mudava
+# nada e o mesmo estado bloqueava na rodada seguinte — saída cenográfica
+# (Codex, r3). Mora no próprio índice: é curado, então entra no snapshot da
+# #262 e viaja com o arquivo.
+_CONFERIDA = re.compile(r"<!--\s*lacunas-conferidas:\s*(\d+)\s*-->")
 # Linha de tabela cujo primeiro campo é o ID.
 _LINHA_ID = re.compile(r"^\s*\|\s*(\d+)\s*\|", re.M)
 # Linha de dados da tabela: `| # | Título | Arquivo | ...`. A COLUNA importa —
@@ -53,6 +59,17 @@ def proximo_id(texto: str) -> int | None:
         return int(achados[-1])
     except ValueError:
         return None
+
+
+def lacunas_conferidas(texto: str) -> int:
+    """Nível de lacuna que o usuário já declarou deliberado. 0 = nada aceito.
+
+    A regex só casa dígitos, então marca malformada simplesmente não casa e
+    cai em 0 — sem `try/except`, que aqui seria ramo inalcançável (achado da
+    bateria de mutação: nenhuma mutação dele mudava comportamento).
+    """
+    achados = _CONFERIDA.findall(texto)
+    return min(100, int(achados[-1])) if achados else 0
 
 
 def ids_da_tabela(texto: str) -> set[int]:
@@ -122,6 +139,8 @@ def fichas_sem_entrada(referencias_root: Path, texto: str) -> list[str] | None:
     """
     if not referencias_root.is_dir():
         return None
+    import stat as stat_module
+
     indexados = arquivos_indexados(texto)
     faltando: list[str] = []
     try:
@@ -136,7 +155,14 @@ def fichas_sem_entrada(referencias_root: Path, texto: str) -> list[str] | None:
         nome = path.name
         if nome in OPERACIONAIS or nome.startswith((".", "_")):
             continue
-        if not path.is_file() or path.is_symlink():
+        try:
+            # `lstat` protegido, não `is_file()`: o helper transforma erro de
+            # stat em False, e a ficha inacessível sumiria da contagem
+            # (Codex, r3). Mesmo padrão do manifesto da semente.
+            st = path.lstat()
+        except OSError:
+            return None
+        if stat_module.S_ISLNK(st.st_mode) or not stat_module.S_ISREG(st.st_mode):
             continue
         if nome not in indexados:
             faltando.append(nome)
@@ -163,6 +189,7 @@ def avaliar(
         "ids_distintos": 0,
         "lacunas_pct": None,
         "sem_entrada": [],
+        "lacunas_conferidas": 0,
         "fonte_completa": True,
         "decisao": OK,
         "razoes": [],
@@ -202,8 +229,16 @@ def avaliar(
         return resultado
 
     fracao = lacunas_fracao(texto)
-    # Comparação EXATA em inteiros: `lacunas/slots >= pct/100`.
-    if fracao is not None and fracao[0] * 100 >= gap_alert_pct * fracao[1]:
+    conferido = lacunas_conferidas(texto)
+    resultado["lacunas_conferidas"] = conferido
+    # Comparação EXATA em inteiros: `lacunas/slots >= pct/100`. E só alarma o
+    # que CRESCEU além do que o usuário já aceitou — senão a confirmação dele
+    # não muda o predicado e o alarme volta amanhã.
+    if (
+        fracao is not None
+        and fracao[0] * 100 >= gap_alert_pct * fracao[1]
+        and fracao[0] * 100 > conferido * fracao[1]
+    ):
         resultado["decisao"] = BLOQUEAR
         resultado["razoes"] = [
             f"{resultado['lacunas_pct']}% dos IDs até {resultado['proximo_id']} "
