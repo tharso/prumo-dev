@@ -678,6 +678,11 @@ def render_report(report: dict) -> str:
     NÃO ganharam cópia, o pior momento pra ficar calado (Codex, 262D-5).
     """
     linhas: list[str] = []
+    # `skipped` precisa CHEGAR ao usuário: no modo texto o snapshot era pulado
+    # em silêncio, e a função não mentia — o porta-voz é que engolia o bilhete
+    # (Codex, r3). Quem não ganhou cópia de segurança tem que saber disso.
+    if report.get("skipped"):
+        linhas.append(f"[curado] snapshot não rodou — {report['skipped']}")
     graves = [
         a for a in report.get("alerts", [])
         if a.get("state") not in {ARCHIVED, UNMEASURABLE}

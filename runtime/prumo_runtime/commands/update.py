@@ -854,6 +854,8 @@ def _emit(payload: dict, output_format: str, exit_code: int = 0) -> int:
     if post:
         if post.get("new_version"):
             print(f"Versão pós-update: {post['new_version']}")
+        if post.get("workspace_note"):
+            print(f"⚠ {post['workspace_note']}")
         if post.get("repair_executed"):
             print("Workspace detectado no CWD — `prumo repair` executado automaticamente (skills propagadas).")
         elif post.get("repair_suggested"):

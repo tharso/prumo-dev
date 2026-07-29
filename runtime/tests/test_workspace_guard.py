@@ -268,6 +268,28 @@ class EscritaNoFlatParaTests(unittest.TestCase):
         self.assertIn("nada a semear aqui", out)
         self.assertNotIn("prumo migrate", out, "pasta qualquer não é caso de migração")
 
+    def test_snapshot_dos_curados_para_no_flat_e_avisa(self) -> None:
+        """A trava mora DENTRO de `snapshot_curated` porque dois rituais a
+        chamam (`seed` e `briefing`). Sem teste próprio, removê-la deixaria a
+        suíte verde (Codex, r3). E o aviso tem que CHEGAR no modo texto: no
+        JSON aparecia e no texto o snapshot era pulado em silêncio."""
+        from prumo_runtime.curated import render_report, snapshot_curated
+
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = _flat_workspace(Path(tmp))
+            report = snapshot_curated(ws)
+            self.assertIsNotNone(report["skipped"], "o snapshot gravaria dentro de um flat")
+            self.assertIn("migrate", report["skipped"])
+            self.assertFalse((ws / ".prumo").exists())
+            self.assertIn("snapshot não rodou", render_report(report))
+
+    def test_snapshot_dos_curados_continua_rodando_no_nested(self) -> None:
+        from prumo_runtime.curated import snapshot_curated
+
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = _nested_workspace(Path(tmp))
+            self.assertIsNone(snapshot_curated(ws)["skipped"], "regressão no nested")
+
     def test_flat_legitimo_e_reconhecido_como_legado(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             self.assertTrue(is_legacy_flat_workspace(_flat_workspace(Path(tmp))))

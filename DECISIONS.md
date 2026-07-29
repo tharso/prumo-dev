@@ -65,7 +65,7 @@ Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões ant
 
 **Tópicos:** workspace-layout, governance
 
-**Issues relacionadas:** [#268](https://github.com/tharso/prumo-dev/issues/268) (**executa**), [#271](https://github.com/tharso/prumo-dev/issues/271) (**desdobra** — os dois predicados nested-only que ficaram fora da porta da CLI).
+**Issues relacionadas:** [#268](https://github.com/tharso/prumo-dev/issues/268) (**executa** — primeira parcela), [#271](https://github.com/tharso/prumo-dev/issues/271) (**desdobra** — predicados nested-only fora da porta da CLI), [#272](https://github.com/tharso/prumo-dev/issues/272) (**desdobra** — o resto da superfície de escrita, incluindo o `repair` manual e as skills).
 
 **Relações com decisões anteriores:** **estende** 2026-04-15 (#65 nova estrutura de workspace) — aquela decisão já REJEITOU "manter tudo na raiz" ao adotar `Prumo/` + `.prumo/` como padrão; esta torna a rejeição operacional no runtime, em vez de deixá-la só no texto. **Mantém** 2026-05-04 (#77 skills em `.prumo/skills/`) e 2026-07-29 (#262 snapshot de curado) — nenhum destino de escrita muda; o que muda é onde eles podem ser acionados. Nenhuma revogação identificada após consulta ao índice temático (tópico `workspace-layout`, 20 entradas conferidas).
 
@@ -75,7 +75,9 @@ Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões ant
 
 **Alternativas consideradas:** suporte pleno aos dois layouts (rejeitado — tornar os 39 destinos layout-aware mexe no contrato de archive/backup, onde mora a cópia de segurança dos curados da #262, e comprometeria o projeto a testar dois arranjos em toda feature futura, contra a direção de migrar todo mundo pra nested); reverter e só melhorar a mensagem de recusa (rejeitado — deixaria o `/fim` continuando a recomendar ferramenta que a pessoa não consegue rodar, que foi a reclamação que abriu a issue).
 
-**Consequência aceita:** quem está no layout antigo não ganha `seed` nem `--apply` sem migrar. Em troca, nunca acaba com um workspace híbrido, e o produto não promete o que não pretende sustentar.
+**Consequência aceita:** quem está no layout antigo não ganha `seed` nem `--apply` sem migrar. Em troca, nunca acaba com um workspace híbrido por essas rotas, e o produto não promete o que não pretende sustentar.
+
+**Alcance real desta parcela (não confundir com a política inteira):** a #268 aplica a decisão em quatro portas — `sanitize --apply`, `prumo seed`, `snapshot_curated()` e o repair do pós-update. A rodada 3 da revisão do Codex mostrou que a superfície é maior: `prumo repair` MANUAL continua criando `.prumo/skills/` num flat (a porta da frente), e `skills/acervo` e `skills/decidir` mandam o agente gravar em `.prumo/state/` sem detectar layout — e valem em host sem runtime, onde trava de Python não alcança. Isso vai na [#272](https://github.com/tharso/prumo-dev/issues/272), com uma **pergunta aberta que precisa do dono**: o dano que motivou esta decisão é o HÍBRIDO, e três comandos (`briefing --mark-done`, `inbox preview`, `acervo apply`) gravam no flat sem criar híbrido. A política é "não criar híbrido" ou "flat é somente-leitura até migrar"? Enquanto não houver resposta, esta entrada cobre só o primeiro.
 
 **Nota de identidade:** o critério de "isto é um workspace do Prumo" (`is_prumo_workspace`) é deliberadamente **assimétrico** entre layouts. No nested, encontrar `.prumo/` já basta — é nome exclusivo do Prumo. No flat, marcador canônico (`_state/workspace-schema.json` ou `PRUMO-CORE.md` na raiz) é obrigatório, porque `_state/` e `_logs/` são nomes que qualquer projeto pode ter. Sem essa assimetria, um `prumo update` rodaria `repair` automático dentro de projeto alheio que tivesse uma pasta `_logs/`. Marcador vale só como arquivo real dentro da raiz — symlink não conta, porque o repair escreveria por ele pra fora do workspace.
 
@@ -85,13 +87,15 @@ Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões ant
 
 **Tópicos:** code-quality, governance
 
-**Issues relacionadas:** [#268](https://github.com/tharso/prumo-dev/issues/268).
+**Issues relacionadas:** [#268](https://github.com/tharso/prumo-dev/issues/268) (**executa** — o PR que produziu o ganho de cobertura).
 
-**Relações com decisões anteriores:** **mantém** o contrato do quality gate — a catraca de cobertura só anda num sentido, e este é um aperto, não uma recalibração. Nenhuma revogação identificada.
+**Relações com decisões anteriores:** **mantém** 2026-05-06 (quality gate) — a catraca segue andando num sentido só; **estende** 2026-07-26 (baseline coverage 85), que é exatamente o número sendo apertado aqui. Não é recalibração de instrumento (a régua não mudou, o codebase melhorou), então não se aplica a exceção regrada do `briefing_f0f1_words`. Nenhuma revogação identificada após consulta ao índice temático (tópico `code-quality`).
 
 **Contexto:** o trabalho da #268 levou a cobertura de 85% (baseline) para 87% medidos. Enquanto o baseline ficasse em 85, seria possível apagar testes até perder 2 pontos sem o CI reclamar.
 
-**Decisão (dono, 29/07):** apertar para 87. Alternativas oferecidas e recusadas: deixar em 85 (guardaria folga pra código futuro difícil de testar, ao custo de 2 pontos perdíveis em silêncio) e apertar para 86 (meio-termo que não corresponde a nenhum número real).
+**Decisão (dono, 29/07):** apertar para 87.
+
+**Alternativas consideradas:** deixar em 85 (rejeitado — guardaria folga pra código futuro difícil de testar, ao custo de 2 pontos perdíveis em silêncio); apertar para 86 (rejeitado — meio-termo que não corresponde a nenhum número medido).
 
 **Consequência aceita:** PR futuro que derrube a cobertura abaixo de 87 falha no CI e precisa de justificativa explícita.
 
