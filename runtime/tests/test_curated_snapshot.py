@@ -1326,5 +1326,104 @@ class HistoricoLongoTest(BaseTest):
 
         self.assertEqual(len(lidos), 1, f"leu {len(lidos)} carimbos: {lidos}")
 
+
+class ManifestoMapeamentoTest(BaseTest):
+    """#265, item 1: o manifesto é conferido em estrutura, digest e UTF-8, mas
+    o mapeamento `flat → rel` nunca era verificado contra a função que o gerou.
+
+    Adulteração COERENTE — `files` e `digests` internamente consistentes, com o
+    nome achatado trocado — passava na validação e fazia `previous_copy`
+    apontar pra um arquivo que não existe. Não é vetor prático de dano (exige
+    editar o backup à mão), mas `previous_copy` é uma promessa ("a cópia está
+    aqui") e promessa tem que ser verificável.
+    """
+
+    def _adulterar_flat(self, stamp: str) -> str:
+        """Troca o nome achatado de uma entrada mantendo tudo o mais coerente."""
+        stamp_dir = self.scope_root() / stamp
+        manifest = json.loads((stamp_dir / curated.MANIFEST_NAME).read_text(encoding="utf-8"))
+        flat, rel = next(iter(manifest["files"].items()))
+        impostor = "Impostor__" + str(flat)
+        (stamp_dir / str(flat)).rename(stamp_dir / impostor)
+        manifest["files"] = {
+            (impostor if k == flat else k): v for k, v in manifest["files"].items()
+        }
+        manifest["digests"] = {
+            (impostor if k == flat else k): v for k, v in manifest["digests"].items()
+        }
+        (stamp_dir / curated.MANIFEST_NAME).write_text(
+            json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+        return str(rel)
+
+    def test_manifesto_com_flat_trocado_nao_serve_de_regua(self) -> None:
+        self.indice().write_text("a" * 1000, encoding="utf-8")
+        self.snapshot("t1")
+        self._adulterar_flat("t1")
+
+        self.indice().write_text("a" * 100, encoding="utf-8")
+        report = self.snapshot("t2")
+
+        self.assertTrue(
+            any("t1" in e and "não serve de régua" in e for e in report["errors"]),
+            f"manifesto adulterado passou como régua; errors={report['errors']}",
+        )
+
+    def test_manifesto_integro_continua_servindo(self) -> None:
+        """Negativa: a checagem nova não pode recusar manifesto legítimo."""
+        self.indice().write_text("a" * 1000, encoding="utf-8")
+        self.snapshot("t1")
+        self.indice().write_text("a" * 100, encoding="utf-8")
+        report = self.snapshot("t2")
+
+        self.assertEqual(
+            [e for e in report["errors"] if "não serve de régua" in e],
+            [],
+            "manifesto íntegro foi recusado",
+        )
+        self.assertTrue(
+            any(a["path"].endswith("INDICE.md") for a in report["alerts"]),
+            "sem régua válida o encolhimento passou calado",
+        )
+
+
+class TetoDoAcervoTest(BaseTest):
+    """#265, item 2: a coleta dos curados respeita `MAX_FILE_BYTES`, mas o
+    índice do acervo lia TODO `*.md` sob `Arquivo/Acervo/` sem teto.
+
+    Um acervo com arquivos grandes fazia o ritual pagar leitura integral deles
+    só pra decidir se um sumiço foi arquivamento.
+    """
+
+    def _acervo(self) -> Path:
+        raiz = self.ws / "Prumo" / "Arquivo" / "Acervo"
+        raiz.mkdir(parents=True, exist_ok=True)
+        return raiz
+
+    def test_arquivo_acima_do_teto_nao_entra_no_indice(self) -> None:
+        grande = self._acervo() / "transcricao-gigante.md"
+        conteudo = b"z" * (curated.MAX_FILE_BYTES + 10)
+        grande.write_bytes(conteudo)
+
+        indice = curated._acervo_index(workspace_paths(self.ws))
+
+        self.assertNotIn(
+            curated._digest(conteudo),
+            indice,
+            "arquivo acima do teto entrou no índice — o custo de leitura foi pago",
+        )
+
+    def test_arquivo_dentro_do_teto_continua_entrando(self) -> None:
+        """Negativa: o teto não pode cegar o índice pro caso normal, senão
+        arquivamento legítimo volta a virar alarme de sumiço."""
+        pequeno = self._acervo() / "artigo.md"
+        conteudo = b"conteudo normal\n" * 10
+        pequeno.write_bytes(conteudo)
+
+        indice = curated._acervo_index(workspace_paths(self.ws))
+
+        self.assertIn(curated._digest(conteudo), indice)
+
+
 if __name__ == "__main__":
     unittest.main()
