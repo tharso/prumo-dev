@@ -25,6 +25,7 @@ from pathlib import Path
 from typing import Any
 
 from prumo_runtime import __version__
+from prumo_runtime.workspace_paths import is_prumo_workspace
 
 
 REMOTE_VERSION_URL = "https://raw.githubusercontent.com/tharso/prumo/main/VERSION"
@@ -370,8 +371,8 @@ def workspace_core_status(workspace: Path, remote_version: str | None) -> dict |
     Update do runtime ≠ update do core do workspace: o core sincroniza via
     `prumo repair` (rodado no pós-update). Este report evita que o `--check`
     esconda um workspace defasado atrás de um runtime em dia. Retorna None se o
-    CWD não é um workspace (sem `.prumo`)."""
-    if not (workspace / ".prumo").is_dir():
+    CWD não é um workspace (em qualquer layout, #268)."""
+    if not is_prumo_workspace(workspace):
         return None
     try:
         from prumo_runtime.workspace import parse_core_version
@@ -721,7 +722,7 @@ def run_update(args) -> int:
         # binário diz de si mesmo — senão um update que não pegou "valida"
         # comparando a versão velha com ela própria (review Codex, #232).
         expected = artifact_version or remote_version
-        workspace_detected = (Path.cwd() / ".prumo").is_dir()
+        workspace_detected = is_prumo_workspace(Path.cwd())
         payload["post_update"] = {
             "new_version": new_version,
             "expected_version": expected,

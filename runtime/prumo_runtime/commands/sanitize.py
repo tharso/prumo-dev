@@ -13,12 +13,13 @@ import json
 from pathlib import Path
 
 from prumo_runtime.sanitize import SanitizeError, Thresholds, apply_plan, build_plan
+from prumo_runtime.workspace_paths import is_prumo_workspace
 
 
 def _print_text(report: dict) -> None:
     print(f"[sanitize] modo: {report['mode']} — workspace {report['workspace_path']}")
     if not report["items"]:
-        print("[sanitize] nada a fazer — `.prumo/` está enxuto.")
+        print("[sanitize] nada a fazer — a infra do workspace está enxuta.")
     for item in report["items"]:
         print(
             f"[sanitize]   {item['rule']:<28} {item['action']:<15} "
@@ -46,8 +47,8 @@ def _print_text(report: dict) -> None:
 
 def run_sanitize(args) -> int:
     workspace = Path(args.workspace).expanduser().resolve()
-    if not (workspace / ".prumo").is_dir():
-        print(f"workspace sem `.prumo/`: {workspace} — nada a sanitizar aqui.")
+    if not is_prumo_workspace(workspace):
+        print(f"não parece um workspace do Prumo: {workspace} — nada a sanitizar aqui.")
         return 1
 
     rules = None

@@ -44,7 +44,7 @@ from prumo_runtime.local_panorama import build_local_panorama
 from prumo_runtime.curated import render_report, snapshot_curated
 from prumo_runtime.indice_integridade import render as render_indice
 from prumo_runtime.workspace import build_config_from_existing
-from prumo_runtime.workspace_paths import workspace_paths
+from prumo_runtime.workspace_paths import is_prumo_workspace, workspace_paths
 
 SEED_SCHEMA_VERSION = "prumo_local_panorama_file.v1"
 SEED_FILENAME = "local-panorama.json"
@@ -263,8 +263,8 @@ def write_seed(workspace: Path) -> Path:
 
 def run_seed(args: argparse.Namespace) -> int:
     workspace = Path(args.workspace).expanduser().resolve()
-    if not (workspace / ".prumo").is_dir():
-        print(f"workspace sem `.prumo/`: {workspace} — nada a semear aqui.")
+    if not is_prumo_workspace(workspace):
+        print(f"não parece um workspace do Prumo: {workspace} — nada a semear aqui.")
         return 1
     # Snapshot dos curados (#262). Fica AQUI, e não dentro de
     # `build_seed_payload`, porque construtor de payload não ganha escrita

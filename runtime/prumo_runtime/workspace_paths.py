@@ -272,3 +272,37 @@ def workspace_paths(workspace: Path, *, layout_mode: str | None = None) -> Works
     root = workspace.expanduser().resolve()
     nested_layout = detect_nested_layout(root) if layout_mode is None else layout_mode == "nested"
     return WorkspacePaths(root=root, nested_layout=nested_layout)
+
+
+def is_prumo_workspace(workspace: Path) -> bool:
+    """A pasta é um workspace do Prumo, em QUALQUER layout (#268).
+
+    Substitui o atalho `(workspace / ".prumo").is_dir()` herdado da #179, que
+    perguntava "isto é um workspace?" olhando um caminho exclusivo do NESTED e
+    por isso recusava todo workspace flat legítimo.
+
+    O critério é marcador canônico do runtime resolvido pelo layout detectado —
+    `workspace-schema.json` no `state_root` (`.prumo/state/` ou `_state/`) ou o
+    core em um dos `core_candidates`. A proteção original é preservada: pasta
+    que apenas contém uma subpasta `Prumo/` (repo alheio) não passa, porque
+    nome não é marcador.
+    """
+    root = Path(workspace).expanduser()
+    if not root.is_dir():
+        return False
+    paths = workspace_paths(root)
+    if paths.workspace_schema.exists():
+        return True
+    if any(candidate.exists() for candidate in paths.core_candidates):
+        return True
+    # Workspace meio-construído (infra criada, core ainda não) continua sendo
+    # workspace: o atalho histórico aceitava `.prumo/` existir e ponto. Exigir
+    # marcador canônico aqui transformaria conserto de bug em mudança de
+    # comportamento — a sanitize passaria a recusar workspace que ela aceita
+    # hoje. O nível de aceitação é preservado e só estendido ao flat.
+    infra = [paths.state_root, paths.logs_root]
+    if paths.nested_layout:
+        # `system_root` é `.prumo/` no nested. No flat ele É a raiz, e incluí-lo
+        # faria QUALQUER pasta passar — a proteção morreria em silêncio.
+        infra.append(paths.system_root)
+    return any(marker.is_dir() for marker in infra)

@@ -243,7 +243,10 @@ class SeedCliTests(unittest.TestCase):
             with redirect_stdout(buffer):
                 code = run_seed(Namespace(workspace=tmp, format="text"))
             self.assertEqual(code, 1)
-            self.assertIn("sem `.prumo/`", buffer.getvalue())
+            # #268: a mensagem deixou de citar `.prumo/` — num workspace flat
+            # ela mandava o usuário procurar pasta que o layout dele não tem.
+            self.assertIn("não parece um workspace do Prumo", buffer.getvalue())
+            self.assertIn("nada a semear aqui", buffer.getvalue())
 
 
 if __name__ == "__main__":
