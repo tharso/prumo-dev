@@ -1207,5 +1207,76 @@ class CaminhoDaCopiaTest(BaseTest):
         self.assertEqual(copia.read_text(encoding="utf-8"), "a" * 1000)
 
 
+class ReguaPorArquivoTest(BaseTest):
+    """Um carimbo só como régua tinha buraco: arquivo que passa do teto sai do
+    inventário daquele carimbo, e o carimbo continua COMPLETO (oversized é
+    estado conhecido, não falha). No dia seguinte, mutilado de volta abaixo do
+    teto, ele parecia não ter história — jogando fora a cópia mensurável de
+    antes de ontem (Codex, 262J-1)."""
+
+    def _ficha(self) -> Path:
+        return self.ws / "Prumo" / "Referencias" / "transcricao.md"
+
+    def test_buraco_de_oversized_nao_apaga_a_regua(self) -> None:
+        self._ficha().write_text("a" * 2000, encoding="utf-8")
+        self.snapshot("t1")                                   # mensurável
+
+        self._ficha().write_text("a" * (curated.MAX_FILE_BYTES + 10), encoding="utf-8")
+        self.snapshot("t2")                                   # oversized, completo
+
+        self._ficha().write_text("a" * 100, encoding="utf-8")  # volta mutilado
+        report = self.snapshot("t3")
+
+        alerta = next(
+            (a for a in report["alerts"] if a["path"].endswith("transcricao.md")), None
+        )
+        self.assertIsNotNone(alerta, "encolhimento de 95% passou calado pelo buraco")
+        self.assertEqual(alerta["before_bytes"], 2000)
+        self.assertIn("t1", alerta["previous_copy"], "não usou a régua mensurável mais recente")
+
+    def test_regua_por_arquivo_prefere_a_mais_nova(self) -> None:
+        """Negativa: com o arquivo presente em vários carimbos, vale o mais
+        novo — a composição não pode virar arqueologia."""
+        self._ficha().write_text("a" * 3000, encoding="utf-8")
+        self.snapshot("t1")
+        self._ficha().write_text("a" * 2000, encoding="utf-8")
+        self.snapshot("t2")
+        self._ficha().write_text("a" * 100, encoding="utf-8")
+        report = self.snapshot("t3")
+
+        alerta = next(a for a in report["alerts"] if a["path"].endswith("transcricao.md"))
+        self.assertEqual(alerta["before_bytes"], 2000)
+        self.assertIn("t2", alerta["previous_copy"])
+
+
+class RelatorioNaoMensuravelTest(BaseTest):
+    """O estado existia no JSON mas o texto imprimia `antes → 0 bytes (−0%)`:
+    trocar 'SUMIU' por outra ficção contábil não resolve (Codex, 262J-2)."""
+
+    def test_texto_diz_nao_mensuravel(self) -> None:
+        ficha = self.ws / "Prumo" / "Referencias" / "transcricao.md"
+        ficha.write_text("a" * 1000, encoding="utf-8")
+        self.snapshot("t1")
+        ficha.write_text("a" * (curated.MAX_FILE_BYTES + 10), encoding="utf-8")
+        report = self.snapshot("t2")
+
+        texto = curated.render_report(report)
+        self.assertIn("fora da medição", texto)
+        self.assertNotIn("SUMIU", texto)
+        self.assertNotIn("0 bytes (−0%)", texto)
+        self.assertIn("tinha 1000 bytes", texto)
+
+    def test_encolhimento_de_verdade_continua_com_numeros(self) -> None:
+        """Negativa: o caso normal não pode virar 'não-mensurável'."""
+        self.indice().write_text("a" * 1000, encoding="utf-8")
+        self.snapshot("t1")
+        self.indice().write_text("a" * 100, encoding="utf-8")
+        report = self.snapshot("t2")
+
+        texto = curated.render_report(report)
+        self.assertIn("1000 → 100 bytes", texto)
+        self.assertNotIn("fora da medição", texto)
+
+
 if __name__ == "__main__":
     unittest.main()

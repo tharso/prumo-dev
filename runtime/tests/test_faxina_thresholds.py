@@ -431,8 +431,6 @@ class ContratoTest(unittest.TestCase):
         self.assertIn("sem semente", linha[0].lower(), "o doc voltou a carregar sempre")
 
 
-if __name__ == "__main__":
-    unittest.main()
 
 
 class DominioPorChaveTest(unittest.TestCase):
@@ -462,3 +460,6 @@ class DominioPorChaveTest(unittest.TestCase):
         """Negativa: o teto é POR CHAVE, não global."""
         valores, _ = self._override("- max_items: 5000\n")
         self.assertEqual(valores["max_items"], 5000)
+
+if __name__ == "__main__":
+    unittest.main()

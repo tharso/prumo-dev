@@ -181,7 +181,8 @@ def _check_roots(paths, errors: list[str]) -> None:
 
 
 def _read_current(paths, errors: list[str]) -> tuple[dict[str, bytes], list[str], set[str]]:
-    """Lê os curados existentes. Devolve (texto por path, oversized).
+    """Lê os curados existentes. Devolve (bytes por path, oversized, presentes
+    sem medida).
 
     Ausência LEGÍTIMA (arquivo que nunca existiu) é silêncio; qualquer outra
     falha de `stat` vira erro de coleta — distinguir as duas é o que impede o
@@ -197,6 +198,8 @@ def _read_current(paths, errors: list[str]) -> tuple[dict[str, bytes], list[str]
         try:
             if _has_symlink_ancestor(paths.root, rel) or _under_backup_root(paths.root, source):
                 errors.append(f"{rel}: caminho atravessa link ou cai dentro do backup")
+                # Recusado, mas EXISTE: não pode ser lido como sumiço.
+                presentes_sem_medida.add(rel)
                 continue
             try:
                 st = source.stat()
@@ -308,29 +311,32 @@ def _validate_candidate(stamp_dir: Path, manifest: dict) -> tuple[dict[str, byte
     return conteudo, None
 
 
-def _latest_previous(scope_root: Path, degradacoes: list[str]) -> tuple[Path | None, dict | None]:
-    """Baseline = carimbo COMPLETO mais recente, pelo instante UTC do manifesto.
+def _collect_baseline(
+    scope_root: Path, degradacoes: list[str], limite: int = 8
+) -> tuple[dict[str, tuple[bytes, Path]], Path | None, dict | None]:
+    """Régua POR ARQUIVO: caminha os carimbos completos do mais novo pro mais
+    velho e fica com a primeira ocorrência de cada path.
 
-    Duas coisas que a rodada 1 errava. Ordenar por nome quebra com relógio que
-    recua (fuso, DST). E aceitar carimbo INCOMPLETO como baseline apagava a
-    comparação: um snapshot que falhou em ler o índice não o tem no inventário,
-    então o índice mutilado no dia seguinte não teria contra o que alarmar
-    (Codex, 262E-1). Incompleto continua no disco como história — só não serve
-    de régua.
+    Um único carimbo como régua tinha um buraco: se o arquivo passou do teto
+    de tamanho num dia, ele sai do inventário daquele carimbo — e o carimbo
+    continua completo, porque oversized é estado conhecido, não falha. No dia
+    seguinte, com o arquivo mutilado de volta abaixo do teto, a comparação
+    achava que ele não tinha história e ficava calada, jogando fora a cópia
+    mensurável de antes de ontem (Codex, 262J-1).
 
-    Candidato ilegível ou corrompido é DECLARADO em `degradacoes`: perder
-    história em silêncio é o defeito que este módulo existe pra combater
-    (Codex, 262E-2).
+    Devolve também o carimbo mais novo válido e seu manifesto — é ele que
+    responde "mudou alguma coisa?" pro dedupe.
     """
     try:
         if not scope_root.is_dir():
-            return None, None
+            return {}, None, None
         candidates = sorted(
             p for p in scope_root.iterdir() if p.is_dir() and not p.is_symlink()
         )
     except OSError as exc:
         degradacoes.append(f"backups/{SCOPE}: {exc}")
-        return None, None
+        return {}, None, None
+
     completos: list[tuple[datetime, Path, dict]] = []
     for stamp_dir in candidates:
         manifest = _manifest_of(stamp_dir)
@@ -341,18 +347,24 @@ def _latest_previous(scope_root: Path, degradacoes: list[str]) -> tuple[Path | N
             continue
         if manifest["complete"]:
             completos.append((_parse_instant(manifest["captured_at_utc"]), stamp_dir, manifest))
-    # Do mais novo pro mais velho, aceitando o primeiro que se VERIFICA.
-    for _, stamp_dir, manifest in sorted(completos, key=lambda c: c[0], reverse=True):
+
+    baseline: dict[str, tuple[bytes, Path]] = {}
+    topo_stamp: Path | None = None
+    topo_manifest: dict | None = None
+    for _, stamp_dir, manifest in sorted(completos, key=lambda c: c[0], reverse=True)[:limite]:
         conteudo, problema = _validate_candidate(stamp_dir, manifest)
-        if problema is None:
-            manifest = {**manifest, "_conteudo": conteudo}
-            return stamp_dir, manifest
-        degradacoes.append(f"snapshot `{stamp_dir.name}`: {problema} — não serve de régua")
-    if candidates and not completos:
+        if problema is not None:
+            degradacoes.append(f"snapshot `{stamp_dir.name}`: {problema} — não serve de régua")
+            continue
+        if topo_stamp is None:
+            topo_stamp, topo_manifest = stamp_dir, {**manifest, "_conteudo": conteudo}
+        for rel, data in conteudo.items():
+            baseline.setdefault(rel, (data, stamp_dir))
+    if candidates and topo_stamp is None:
         degradacoes.append(
             "nenhum snapshot completo no histórico — detecção de encolhimento indisponível"
         )
-    return None, None
+    return baseline, topo_stamp, topo_manifest
 
 
 def _acervo_index(paths) -> dict[str, str]:
@@ -395,14 +407,13 @@ def _acervo_index(paths) -> dict[str, str]:
 def _build_alerts(
     paths,
     current: dict[str, bytes],
-    previous: dict[str, bytes],
-    previous_stamp: Path | None,
+    baseline: dict[str, tuple[bytes, Path]],
     shrink_pct: int,
     presentes_sem_medida: set[str] = frozenset(),
 ) -> list[dict]:
     flow, hybrid = paths.curated_flow_paths(), paths.curated_hybrid_paths()
     ausentes = [
-        rel for rel in previous
+        rel for rel in baseline
         if rel not in current
         and rel not in presentes_sem_medida
         and watch_class(rel, flow, hybrid) != FLOW
@@ -412,12 +423,13 @@ def _build_alerts(
     acervo = _acervo_index(paths) if ausentes else {}
 
     alerts: list[dict] = []
-    for rel in sorted(set(current) | set(previous)):
+    for rel in sorted(set(current) | set(baseline)):
         klass = watch_class(rel, flow, hybrid)
-        if klass == FLOW or rel not in previous:
+        if klass == FLOW or rel not in baseline:
             # Sem cópia anterior não há delta — só ausência de história.
             continue
-        before = measured_size(previous[rel], klass)
+        anterior, stamp_do_rel = baseline[rel]
+        before = measured_size(anterior, klass)
         # O piso existe contra ruído PROPORCIONAL (arquivo minúsculo em que
         # qualquer edição é % enorme). Sumiço não é proporção: um curado que
         # deixou de existir é perda, tenha 20 bytes ou 20 mil.
@@ -429,9 +441,7 @@ def _build_alerts(
             "before_bytes": before,
             # Caminho EXATO do arquivo restaurável, não só o diretório: a
             # mensagem promete "a cópia está aqui" e tem de cumprir.
-            "previous_copy": (
-                str(previous_stamp / _flat_name(rel)) if previous_stamp else ""
-            ),
+            "previous_copy": str(stamp_do_rel / _flat_name(rel)),
         }
         if rel in presentes_sem_medida:
             # Está lá; só não coube na régua. Anunciar sumiço aqui seria a
@@ -445,7 +455,7 @@ def _build_alerts(
             # operação. Então rebaixa o tom em vez de silenciar — chamar de
             # arquivamento sem rastro seria o detector inventando história
             # (Codex, 262F-3).
-            gemeo = acervo.get(_digest(previous[rel]))
+            gemeo = acervo.get(_digest(anterior))
             alerts.append(
                 {
                     **base,
@@ -568,15 +578,14 @@ def snapshot_curated(
 
         # O conteúdo do baseline já vem VERIFICADO contra os digests do
         # manifesto (`_validate_candidate`) — reler aqui reabriria a janela.
-        previous_stamp, previous_manifest = _latest_previous(scope_root, errors)
-        previous = dict(previous_manifest.get("_conteudo", {})) if previous_manifest else {}
+        baseline, previous_stamp, previous_manifest = _collect_baseline(scope_root, errors)
 
         if shrink_pct is None:
             shrink_pct = faxina_thresholds.effective(workspace)["values"][
                 "curated_shrink_alert_pct"
             ]
         report["alerts"] = _build_alerts(
-            paths, current, previous, previous_stamp, shrink_pct, sem_medida
+            paths, current, baseline, shrink_pct, sem_medida
         )
 
         # DOIS conceitos, antes espremidos num `complete` só (Codex, 262E-4):
@@ -585,11 +594,15 @@ def snapshot_curated(
         # conhecido e declarado no manifesto; furar faria um único .md de
         # 512 KiB desligar o dedupe pra sempre e copiar tudo em todo ritual.
         integro = not coleta
+        # Dedupe compara com o carimbo mais novo válido — "mudou algo desde a
+        # última foto?" —, não com a régua por arquivo (que é retrato composto
+        # de vários carimbos).
+        topo = dict(previous_manifest.get("_conteudo", {})) if previous_manifest else {}
         previous_oversized = set(previous_manifest.get("oversized", [])) if previous_manifest else set()
         equivalente = (
-            set(current) == set(previous)
+            set(current) == set(topo)
             and set(oversized) == previous_oversized
-            and all(_digest(current[r]) == _digest(previous.get(r, "")) for r in current)
+            and all(_digest(current[r]) == _digest(topo.get(r, b"")) for r in current)
         )
         if previous_stamp is not None and integro and equivalente:
             report["skipped"] = "sem-mudanca"
@@ -636,7 +649,10 @@ def render_report(report: dict) -> str:
     NÃO ganharam cópia, o pior momento pra ficar calado (Codex, 262D-5).
     """
     linhas: list[str] = []
-    graves = [a for a in report.get("alerts", []) if a.get("state") != ARCHIVED]
+    graves = [
+        a for a in report.get("alerts", [])
+        if a.get("state") not in {ARCHIVED, UNMEASURABLE}
+    ]
     if graves:
         linhas.append(
             "[curado] mudança suspeita desde a última cópia — confira antes de seguir:"
@@ -658,6 +674,16 @@ def render_report(report: dict) -> str:
     if arquivados:
         linhas.append("[curado] saiu de lugar, com cópia idêntica no acervo:")
         linhas.extend(f"  - `{a['path']}` → `{a['twin']}`" for a in arquivados)
+    # Estado próprio no texto também: dizer "antes → 0 bytes (−0%)" pra um
+    # arquivo que CRESCEU seria trocar uma ficção contábil por outra
+    # (Codex, 262J-2).
+    sem_medida = [a for a in report.get("alerts", []) if a.get("state") == UNMEASURABLE]
+    if sem_medida:
+        linhas.append("[curado] existe, mas ficou fora da medição desta vez:")
+        linhas.extend(
+            f"  - `{a['path']}` (tinha {a['before_bytes']} bytes na última cópia)"
+            for a in sem_medida
+        )
     naocopiados = list(report.get("oversized", []))
     if naocopiados:
         linhas.append("[curado] acima do teto de tamanho, SEM cópia:")
