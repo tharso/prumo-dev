@@ -165,12 +165,10 @@ RASCUNHO_REL = ".prumo/state/rascunho"
 
 
 def _sob_rascunho(workspace: Path, path: Path) -> bool:
-    """Subtree do rascunho do agente é EXCLUSIVA (#263).
+    """Subtree do rascunho é EXCLUSIVA (#263).
 
     Ordem de regra só garante disjunção quando todas rodam: com `--rules`
-    isolado, uma fonte recente ali cairia em `asset_dedupe` e seria DELETADA,
-    e um `HANDOVER*` cairia em `handover_legacy` — a mesma coisa mudando de
-    família e de ação conforme a seleção (Codex, 263-3).
+    isolado, uma fonte ali cairia em `asset_dedupe` e seria DELETADA.
     """
     return _rel(workspace, path).startswith(RASCUNHO_REL + "/")
 
@@ -252,9 +250,9 @@ def _iter_old_cache(workspace: Path, today: date, cache_days: int) -> list[Path]
 def iter_agente_rascunho(workspace: Path, today: date, ephemeral_days: int) -> list[Path]:
     """Filhos DIRETOS frios de `.prumo/state/rascunho/`.
 
-    A unidade é o filho direto, não o arquivo solto: reconstrução parcial em
-    diretório seria desmontada aos pedaços e deixaria casca vazia. Diretório
-    só entra quando a árvore INTEIRA está fria (Codex, 263-5).
+    A unidade é o filho direto: varrer arquivo a arquivo desmontaria uma
+    reconstrução parcial e deixaria casca. Diretório entra só com a árvore
+    INTEIRA fria.
     """
     root = workspace / ".prumo" / "state" / "rascunho"
     if not _usable_root(workspace, root):
@@ -278,6 +276,10 @@ def iter_agente_rascunho(workspace: Path, today: date, ephemeral_days: int) -> l
         # backup. O PRÓPRIO filho entra na checagem — `rascunho/backups/`
         # escapava. Fica onde está; o usuário resolve.
         if any(d.name in _BACKUP_DIR_NAMES for d in (filho, *subdirs)):
+            continue
+        # Symlink faz o `build_plan` recusar depois: contar aqui daria alarme
+        # eterno no `/fim` com plano vazio na sanitize (Codex, r5).
+        if _tree_has_symlink(filho):
             continue
         # TODA a árvore, não só os arquivos: reconstrução criada HOJE com
         # arquivos antigos dentro (um `mv` basta) parecia fria. E sem exigir

@@ -396,5 +396,32 @@ class BordasDaArvoreTest(BaseTest):
         self.assertEqual(aninhado, [], "backup dentro de backup")
 
 
+class DeteccaoAlinhadaComExecucaoTest(BaseTest):
+    """Symlink na árvore faz o `build_plan` recusar. Se o iterator contasse
+    assim mesmo, o `/fim` recomendaria sanitize pra sempre e a sanitize
+    produziria plano vazio (Codex, r5)."""
+
+    def test_arvore_com_symlink_nao_conta_no_fim(self) -> None:
+        self._arquivo("recon/nota.md")
+        (self.rascunho / "recon" / "atalho").symlink_to(self.ws / "Prumo")
+        self._envelhecer(self.rascunho / "recon")
+
+        s = accumulation_signals(self.ws, today=HOJE)["signals"]
+        self.assertEqual(s["rascunho_old"], 0, "alarme sem incêndio apagável")
+
+    def test_o_que_o_fim_conta_a_sanitize_consegue_apagar(self) -> None:
+        """A propriedade geral: detecção e execução não podem divergir."""
+        self._arquivo("com-link/nota.md")
+        (self.rascunho / "com-link" / "atalho").symlink_to(self.ws / "Prumo")
+        self._envelhecer(self.rascunho / "com-link")
+        self._arquivo("limpo/nota.md")
+        self._envelhecer(self.rascunho / "limpo")
+
+        contados = accumulation_signals(self.ws, today=HOJE)["signals"]["rascunho_old"]
+        planejados = len(self._familias(self._plano()).get("agente_rascunho", []))
+        self.assertEqual(contados, planejados)
+        self.assertEqual(planejados, 1, "o limpo tem de sair")
+
+
 if __name__ == "__main__":
     unittest.main()
