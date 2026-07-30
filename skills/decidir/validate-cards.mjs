@@ -137,12 +137,26 @@ function _tipoDeTexto(valor, campo, onde, erros) {
   // `String({})` vira "[object Object]" e o template renderiza isso. Campo
   // presente com tipo errado é artefato quebrado, não detalhe (Codex, r11).
   if (typeof valor === "string") return true;
-  if (typeof valor === "number" && Number.isFinite(valor)) return true;
   erros.push(
     `${onde}: '${campo}' é ${Array.isArray(valor) ? "lista" : typeof valor}, ` +
-      `não texto — o template interpola direto e renderiza '[object Object]'`,
+      `não string — o template interpola direto e renderiza ` +
+      `'[object Object]' ou o número sem formatação`,
   );
   return false;
+}
+
+function validarNumeroDeSecao(valor, onde, erros) {
+  // ÚNICA exceção ao "texto é string": `sec.num` é o contador exibido no
+  // cabeçalho e no índice, e os exemplos o escrevem como número. Deixar essa
+  // tolerância no helper geral vazava para `title` e `contexto` (Codex, r12).
+  if (valor === undefined || valor === null) {
+    erros.push(`${onde}: 'num' é obrigatório`);
+    return;
+  }
+  const ok =
+    typeof valor === "string" || (typeof valor === "number" && Number.isFinite(valor));
+  if (!ok) erros.push(`${onde}: 'num' precisa ser string ou número finito`);
+  else if (/[<>]/.test(String(valor))) erros.push(`${onde}: 'num' contém '<' ou '>'`);
 }
 
 function validarTexto(valor, campo, onde, erros, obrigatorio = false) {
@@ -276,21 +290,6 @@ function validarMarkup(valor, campo, onde, erros, obrigatorio = false) {
 // quebrava no `.map` do template, interrompendo o render ANTES do aviso
 // visual — ou seja, sem card e sem alarme (Codex, r10).
 
-function exigirString(valor, campo, onde, erros, obrigatorio) {
-  if (valor === undefined || valor === null) {
-    if (obrigatorio) erros.push(`${onde}: '${campo}' é obrigatório`);
-    return false;
-  }
-  if (typeof valor !== "string") {
-    erros.push(
-      `${onde}: '${campo}' é ${typeof valor}, não string — o template ` +
-        `interpola direto e renderiza '[object Object]'`,
-    );
-    return false;
-  }
-  return true;
-}
-
 function exigirLista(valor, campo, onde, erros, obrigatorio) {
   if (valor === undefined || valor === null) {
     if (obrigatorio) erros.push(`${onde}: '${campo}' é obrigatório`);
@@ -349,7 +348,7 @@ export function validar(html) {
     }
     for (const campo of CAMPOS_ATRIBUTO.section) validarAtributo(s[campo], campo, onde, erros);
     validarTexto(s.title, "title", onde, erros, true);
-    validarTexto(s.num, "num", onde, erros, true);
+    validarNumeroDeSecao(s.num, onde, erros);
     validarTexto(s.sub, "sub", onde, erros, false);
     if (typeof s.id !== "string" || !s.id) erros.push(`${onde}: sem id string`);
     else if (idsDeSecao.has(s.id)) erros.push(`${onde}: id duplicado`);

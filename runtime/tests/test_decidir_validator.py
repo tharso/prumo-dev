@@ -371,6 +371,31 @@ class TiposTest(unittest.TestCase):
             with self.subTest(campo=nome):
                 self._reprova(pts)
 
+    def test_numero_em_campo_de_texto_reprova(self) -> None:
+        # A exceção de `section.num` (que aceita número) tinha vazado para o
+        # helper geral, e `title: 123` / `contexto: 123` passavam (Codex, r12).
+        for campo in ("title", "contexto"):
+            campos = {"title": "'x'", "contexto": "'y'"}
+            campos[campo] = "123"
+            corpo = ", ".join(f"{k}:{v}" for k, v in campos.items())
+            with self.subTest(campo=campo):
+                self._reprova(
+                    f"""{{ id:'7', sec:'emails', type:'despacho', {corpo},
+                         actions:[{{key:'r',label:'R',tone:'green',effect:'archive'}}] }},""",
+                    "não string",
+                )
+
+    def test_section_num_aceita_numero_de_proposito(self) -> None:
+        # A exceção é legítima e documentada: os exemplos escrevem `num: 1`.
+        code, r = _validar(
+            _gerar(
+                "{id:'emails', num:1, title:'Emails'},",
+                """{ id:'7', sec:'emails', type:'despacho', title:'x', contexto:'y',
+                     actions:[{key:'r',label:'R',tone:'green',effect:'archive'}] },""",
+            )
+        )
+        self.assertEqual(code, 0, r)
+
     def test_section_title_com_tipo_errado_reprova(self) -> None:
         self._reprova(
             """{ id:'7', sec:'emails', type:'despacho', title:'x', contexto:'y',
