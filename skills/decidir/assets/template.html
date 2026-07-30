@@ -532,6 +532,23 @@ function render() {
   });
   app.innerHTML = html;
 
+  // Rede de segurança de última instância (#287): se uma tag crua escapar da
+  // validação prévia, o parser do browser engole os cards seguintes e a
+  // página fica plausível — só que faltando itens, e ninguém percebe. Aqui a
+  // divergência vira visível em vez de virar triagem incompleta em silêncio.
+  const esperados = POINTS.filter(p => SECTIONS.some(s => s.id === p.sec)).length;
+  const saidos = app.querySelectorAll('article.card').length;
+  if (saidos !== esperados) {
+    const aviso = document.createElement('div');
+    aviso.className = 'card';
+    aviso.style.cssText = 'border-color:#c0392b;background:#fff5f4;margin-bottom:16px';
+    aviso.textContent =
+      `⚠ ${esperados - saidos} card(s) não renderizaram (${saidos} de ${esperados}). ` +
+      `Quase sempre é tag HTML literal não escapada engolindo os seguintes. ` +
+      `Não despache por esta página: peça a regeneração.`;
+    app.prepend(aviso);
+  }
+
   POINTS.forEach(p => {
     const fb = state[p.id] || {};
     const root = document.querySelector(`[data-pt="${p.id}"]`);
