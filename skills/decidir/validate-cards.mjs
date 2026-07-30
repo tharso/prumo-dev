@@ -25,7 +25,7 @@
  * Saída 0 = aprovado, 1 = reprovado, 2 = não deu para ler.
  */
 
-import { readFileSync } from "node:fs";
+import { readFileSync, realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
 import { createContext, runInContext } from "node:vm";
@@ -65,7 +65,7 @@ const TIPOS_VALIDOS = new Set(["despacho", "escolha"]);
 // Gramática pequena e fechada. `exemplos-de-cards.md` usa `<span class="ref">`
 // e `<span class="q">`; banir todo `<` reprovaria a documentação do produto.
 const GRAMATICA = {
-  span: { atributos: { class: new Set(["ref", "q"]) }, fecha: true },
+  span: { atributos: { class: new Set(["ref", "q"]) }, exige: ["class"], fecha: true },
   strong: { atributos: {}, fecha: true },
   em: { atributos: {}, fecha: true },
   br: { atributos: {}, fecha: false },
@@ -157,7 +157,10 @@ function validarMarkup(valor, campo, onde, erros) {
     const lt = texto.indexOf("<", i);
     if (lt === -1) break;
 
-    const m = /^<\s*(\/?)\s*([A-Za-z][\w-]*)((?:[^<>"']|"[^"]*"|'[^']*')*)>/.exec(
+    // Sem espaço entre `<` e o nome, nem entre `</` e o nome: `< strong>` não
+    // é a sintaxe canônica do template e "gramática fechada" tem de recusar
+    // o que não declarou.
+    const m = /^<(\/?)([A-Za-z][\w-]*)((?:[^<>"']|"[^"]*"|'[^']*')*)>/.exec(
       texto.slice(lt),
     );
     if (!m) {
@@ -170,7 +173,8 @@ function validarMarkup(valor, campo, onde, erros) {
       return;
     }
 
-    const [bruto, barra, nome, attrs] = [m[0], m[1], m[2].toLowerCase(), m[3] || ""];
+    const [bruto, barra, nomeBruto, attrs] = [m[0], m[1], m[2], m[3] || ""];
+    const nome = nomeBruto.toLowerCase();
     const regra = GRAMATICA[nome];
     if (!regra) {
       erros.push(
@@ -182,6 +186,12 @@ function validarMarkup(valor, campo, onde, erros) {
     }
 
     if (barra) {
+      // `</span onclick="...">` é fechamento com atributo: o browser ignora,
+      // mas a gramática não pode aprovar o que não sabe ler.
+      if (attrs.trim()) {
+        erros.push(`${onde}: fechamento </${nome}> não aceita atributo`);
+        return;
+      }
       if (!regra.fecha) erros.push(`${onde}: </${nome}> não existe`);
       else if (pilha.pop() !== nome) {
         erros.push(`${onde}: </${nome}> sem abertura correspondente em '${campo}'`);
@@ -196,7 +206,16 @@ function validarMarkup(valor, campo, onde, erros) {
         erros.push(`${onde}: atributo mal formado em <${nome}> ('${nus.slice(0, 24)}')`);
         return;
       }
+
+      const chavesVistas = new Set();
       for (const [, chave, valorAttr] of encontrados) {
+        if (chavesVistas.has(chave)) {
+          // `class="ref" class="q"`: o browser fica com o primeiro, quem lê
+          // o card fica com a impressão do segundo.
+          erros.push(`${onde}: atributo '${chave}' repetido em <${nome}>`);
+          return;
+        }
+        chavesVistas.add(chave);
         if (!(chave in permitidos)) {
           erros.push(
             `${onde}: atributo '${chave}' não permitido em <${nome}> — ` +
@@ -212,6 +231,16 @@ function validarMarkup(valor, campo, onde, erros) {
           );
         }
       }
+
+      // Atributo declarado OBRIGATÓRIO: `<span>` cru não é markup do
+      // gerador, é tag solta que ninguém pediu.
+      for (const exigido of regra.exige || []) {
+        if (!chavesVistas.has(exigido)) {
+          erros.push(`${onde}: <${nome}> exige o atributo '${exigido}'`);
+          return;
+        }
+      }
+
       if (regra.fecha) pilha.push(nome);
     }
     i = lt + bruto.length;
@@ -220,6 +249,41 @@ function validarMarkup(valor, campo, onde, erros) {
   if (pilha.length) {
     erros.push(`${onde}: tag <${pilha[pilha.length - 1]}> não fechada em '${campo}'`);
   }
+}
+
+// ── Tipos ────────────────────────────────────────────────────────────────
+// O validador certificava artefato que NÃO ABRE: `badges: "abc"` passava e
+// quebrava no `.map` do template, interrompendo o render ANTES do aviso
+// visual — ou seja, sem card e sem alarme (Codex, r10).
+
+function exigirString(valor, campo, onde, erros, obrigatorio) {
+  if (valor === undefined || valor === null) {
+    if (obrigatorio) erros.push(`${onde}: '${campo}' é obrigatório`);
+    return false;
+  }
+  if (typeof valor !== "string") {
+    erros.push(
+      `${onde}: '${campo}' é ${typeof valor}, não string — o template ` +
+        `interpola direto e renderiza '[object Object]'`,
+    );
+    return false;
+  }
+  return true;
+}
+
+function exigirLista(valor, campo, onde, erros, obrigatorio) {
+  if (valor === undefined || valor === null) {
+    if (obrigatorio) erros.push(`${onde}: '${campo}' é obrigatório`);
+    return [];
+  }
+  if (!Array.isArray(valor)) {
+    erros.push(
+      `${onde}: '${campo}' não é lista — o template chama .map() e o render ` +
+        `MORRE antes de desenhar qualquer card`,
+    );
+    return [];
+  }
+  return valor;
 }
 
 function validarBase64(valor, onde, erros) {
@@ -305,13 +369,24 @@ export function validar(html) {
     for (const campo of CAMPOS_MARKUP) validarMarkup(p[campo], campo, onde, erros);
     validarBase64(p.conteudo_b64, onde, erros);
 
-    for (const b of p.badges || []) {
-      validarTone(b?.tone, `${onde} badge`, erros);
-      for (const campo of CAMPOS_TEXTO.badge) validarTexto(b?.[campo], campo, onde, erros);
+    // Tipos: sem isto o validador certificava artefato que NÃO ABRE.
+    exigirString(p.title, "title", onde, erros, true);
+    exigirString(p.contexto, "contexto", onde, erros, true);
+    const badges = exigirLista(p.badges, "badges", onde, erros, false);
+    const acoes = exigirLista(p.actions, "actions", onde, erros, p.type === "despacho");
+    const opcoes = exigirLista(p.options, "options", onde, erros, p.type === "escolha");
+
+    for (const b of badges) {
+      if (!b || typeof b !== "object") {
+        erros.push(`${onde}: entrada de badges não é objeto`);
+        continue;
+      }
+      validarTone(b.tone, `${onde} badge`, erros);
+      for (const campo of CAMPOS_TEXTO.badge) validarTexto(b[campo], campo, onde, erros);
     }
 
     const chaves = new Set();
-    for (const a of p.actions || []) {
+    for (const a of acoes) {
       if (!a || typeof a.key !== "string") {
         erros.push(`${onde}: ação sem key`);
         continue;
@@ -323,14 +398,14 @@ export function validar(html) {
       for (const campo of CAMPOS_TEXTO.action) validarTexto(a[campo], campo, onde, erros);
     }
 
-    const opcoes = new Set();
-    for (const o of p.options || []) {
+    const vistasOpcoes = new Set();
+    for (const o of opcoes) {
       if (!o || typeof o.key !== "string") {
         erros.push(`${onde}: opção sem key`);
         continue;
       }
-      if (opcoes.has(o.key)) erros.push(`${onde}: opção '${o.key}' repetida`);
-      opcoes.add(o.key);
+      if (vistasOpcoes.has(o.key)) erros.push(`${onde}: opção '${o.key}' repetida`);
+      vistasOpcoes.add(o.key);
       for (const campo of CAMPOS_ATRIBUTO.option) validarAtributo(o[campo], campo, onde, erros);
       for (const campo of CAMPOS_TEXTO.option) validarTexto(o[campo], campo, onde, erros);
     }
@@ -378,7 +453,19 @@ function main(argv) {
 }
 
 // Comparar `import.meta.url` cru com `process.argv[1]` falha em path com
-// espaço ou `#`, e no Windows: o processo saía 0 sem validar nada.
-if (process.argv[1] && resolve(fileURLToPath(import.meta.url)) === resolve(process.argv[1])) {
+// espaço, `#` ou acento — o processo saía 0 SEM VALIDAR NADA. E resolver só
+// com `resolve()` não basta: no macOS `/tmp` e `/var` são symlink, e
+// `import.meta.url` já vem com o link resolvido enquanto `argv[1]` não. Sem
+// `realpathSync` dos dois lados, o validador morre em silêncio em qualquer
+// pasta temporária do sistema.
+function _mesmoArquivo(a, b) {
+  try {
+    return realpathSync(a) === realpathSync(b);
+  } catch {
+    return resolve(a) === resolve(b);
+  }
+}
+
+if (process.argv[1] && _mesmoArquivo(fileURLToPath(import.meta.url), process.argv[1])) {
   process.exit(main(process.argv.slice(2)));
 }

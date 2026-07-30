@@ -294,21 +294,30 @@ class ValidadorTest(unittest.TestCase):
 
     def test_roda_em_path_com_espaco(self) -> None:
         # O entry point comparava URL percent-encoded com path cru: em pasta
-        # com espaço o processo saía 0 SEM VALIDAR NADA (Codex).
-        base = Path(tempfile.mkdtemp()) / "pasta com espaço"
+        # com espaço o processo saía 0 SEM VALIDAR NADA (Codex). O bug é do
+        # caminho DO VALIDADOR, então é ELE que precisa mudar de pasta —
+        # mover só o HTML deixaria o teste verde com a comparação defeituosa.
+        base = Path(tempfile.mkdtemp()) / "pasta com espaço e #"
         base.mkdir()
-        origem = _gerar(
-            SECAO,
-            """{ id:'7', sec:'nao_existe', type:'despacho', title:'x', contexto:'y' },""",
-        )
-        destino = base / "d.html"
-        destino.write_text(origem.read_text(encoding="utf-8"), encoding="utf-8")
-        code, r = _validar(destino)
-        self.assertEqual(code, 1, f"saiu {code} sem validar: {r}")
+        copia = base / "validate-cards.mjs"
+        copia.write_text(VALIDADOR.read_text(encoding="utf-8"), encoding="utf-8")
 
-    def test_validador_nao_toca_a_rede_nem_o_disco_do_usuario(self) -> None:
-        # O sandbox `vm` roda sem `process` e sem `require`: um literal
-        # malicioso no artefato não vira execução.
+        alvo = _gerar(
+            SECAO,
+            """{ id:'7', sec:'nao_existe', type:'despacho', title:'x', contexto:'y',
+                 actions:[{key:'r',label:'R',tone:'green',effect:'archive'}] },""",
+        )
+        r = subprocess.run(
+            [NODE, str(copia), str(alvo), "--json"], capture_output=True, text=True, timeout=30
+        )
+        self.assertEqual(
+            r.returncode, 1, f"saiu {r.returncode} sem validar — entry point morto: {r.stdout}"
+        )
+
+    def test_contexto_do_vm_nao_expoe_process(self) -> None:
+        # Prova o que prova: `process` não está no contexto. NÃO prova sandbox
+        # — `node:vm` não é fronteira de segurança, e o cabeçalho do script
+        # diz isso. O artefato é do agente, não de terceiro.
         path = _gerar(
             SECAO,
             """{ id:'7', sec:'emails', type:'despacho', title:'x',
