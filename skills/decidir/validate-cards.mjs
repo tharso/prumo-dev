@@ -133,8 +133,24 @@ function validarAtributo(valor, campo, onde, erros) {
   }
 }
 
-function validarTexto(valor, campo, onde, erros) {
-  if (valor === undefined || valor === null) return;
+function _tipoDeTexto(valor, campo, onde, erros) {
+  // `String({})` vira "[object Object]" e o template renderiza isso. Campo
+  // presente com tipo errado é artefato quebrado, não detalhe (Codex, r11).
+  if (typeof valor === "string") return true;
+  if (typeof valor === "number" && Number.isFinite(valor)) return true;
+  erros.push(
+    `${onde}: '${campo}' é ${Array.isArray(valor) ? "lista" : typeof valor}, ` +
+      `não texto — o template interpola direto e renderiza '[object Object]'`,
+  );
+  return false;
+}
+
+function validarTexto(valor, campo, onde, erros, obrigatorio = false) {
+  if (valor === undefined || valor === null) {
+    if (obrigatorio) erros.push(`${onde}: '${campo}' é obrigatório`);
+    return;
+  }
+  if (!_tipoDeTexto(valor, campo, onde, erros)) return;
   if (/[<>]/.test(String(valor))) {
     erros.push(`${onde}: '${campo}' é texto puro e contém '<' ou '>' — escape`);
   }
@@ -147,8 +163,12 @@ function validarTone(valor, onde, erros) {
   }
 }
 
-function validarMarkup(valor, campo, onde, erros) {
-  if (valor === undefined || valor === null) return;
+function validarMarkup(valor, campo, onde, erros, obrigatorio = false) {
+  if (valor === undefined || valor === null) {
+    if (obrigatorio) erros.push(`${onde}: '${campo}' é obrigatório`);
+    return;
+  }
+  if (!_tipoDeTexto(valor, campo, onde, erros)) return;
   const texto = String(valor);
   const pilha = [];
   let i = 0;
@@ -283,6 +303,11 @@ function exigirLista(valor, campo, onde, erros, obrigatorio) {
     );
     return [];
   }
+  if (obrigatorio && valor.length === 0) {
+    // Card sem nenhuma ação/opção existe na tela e não decide nada: o
+    // usuário não tem o que despachar.
+    erros.push(`${onde}: '${campo}' está vazio — o card não oferece decisão`);
+  }
   return valor;
 }
 
@@ -323,7 +348,9 @@ export function validar(html) {
       continue;
     }
     for (const campo of CAMPOS_ATRIBUTO.section) validarAtributo(s[campo], campo, onde, erros);
-    for (const campo of CAMPOS_TEXTO.section) validarTexto(s[campo], campo, onde, erros);
+    validarTexto(s.title, "title", onde, erros, true);
+    validarTexto(s.num, "num", onde, erros, true);
+    validarTexto(s.sub, "sub", onde, erros, false);
     if (typeof s.id !== "string" || !s.id) erros.push(`${onde}: sem id string`);
     else if (idsDeSecao.has(s.id)) erros.push(`${onde}: id duplicado`);
     else idsDeSecao.add(s.id);
@@ -365,24 +392,24 @@ export function validar(html) {
     }
 
     for (const campo of CAMPOS_ATRIBUTO.point) validarAtributo(p[campo], campo, onde, erros);
-    for (const campo of CAMPOS_TEXTO.point) validarTexto(p[campo], campo, onde, erros);
-    for (const campo of CAMPOS_MARKUP) validarMarkup(p[campo], campo, onde, erros);
+    for (const campo of CAMPOS_MARKUP) {
+      validarMarkup(p[campo], campo, onde, erros, campo === "contexto");
+    }
     validarBase64(p.conteudo_b64, onde, erros);
 
     // Tipos: sem isto o validador certificava artefato que NÃO ABRE.
-    exigirString(p.title, "title", onde, erros, true);
-    exigirString(p.contexto, "contexto", onde, erros, true);
+    validarTexto(p.title, "title", onde, erros, true);
     const badges = exigirLista(p.badges, "badges", onde, erros, false);
     const acoes = exigirLista(p.actions, "actions", onde, erros, p.type === "despacho");
     const opcoes = exigirLista(p.options, "options", onde, erros, p.type === "escolha");
 
     for (const b of badges) {
-      if (!b || typeof b !== "object") {
+      if (!b || typeof b !== "object" || Array.isArray(b)) {
         erros.push(`${onde}: entrada de badges não é objeto`);
         continue;
       }
+      validarTexto(b.label, "badges[].label", onde, erros, true);
       validarTone(b.tone, `${onde} badge`, erros);
-      for (const campo of CAMPOS_TEXTO.badge) validarTexto(b[campo], campo, onde, erros);
     }
 
     const chaves = new Set();
@@ -393,9 +420,14 @@ export function validar(html) {
       }
       if (chaves.has(a.key)) erros.push(`${onde}: ação '${a.key}' repetida`);
       chaves.add(a.key);
+      if (Array.isArray(a)) {
+        erros.push(`${onde}: entrada de actions é lista, não objeto`);
+        continue;
+      }
       for (const campo of CAMPOS_ATRIBUTO.action) validarAtributo(a[campo], campo, onde, erros);
       validarTone(a.tone, `${onde} ação ${a.key}`, erros);
-      for (const campo of CAMPOS_TEXTO.action) validarTexto(a[campo], campo, onde, erros);
+      validarTexto(a.label, `actions[${a.key}].label`, onde, erros, true);
+      validarTexto(a.requires, `actions[${a.key}].requires`, onde, erros, false);
     }
 
     const vistasOpcoes = new Set();
@@ -406,8 +438,13 @@ export function validar(html) {
       }
       if (vistasOpcoes.has(o.key)) erros.push(`${onde}: opção '${o.key}' repetida`);
       vistasOpcoes.add(o.key);
+      if (Array.isArray(o)) {
+        erros.push(`${onde}: entrada de options é lista, não objeto`);
+        continue;
+      }
       for (const campo of CAMPOS_ATRIBUTO.option) validarAtributo(o[campo], campo, onde, erros);
-      for (const campo of CAMPOS_TEXTO.option) validarTexto(o[campo], campo, onde, erros);
+      validarTexto(o.label, `options[${o.key}].label`, onde, erros, true);
+      validarTexto(o.desc, `options[${o.key}].desc`, onde, erros, true);
     }
   }
 

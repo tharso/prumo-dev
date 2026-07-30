@@ -328,5 +328,116 @@ class ValidadorTest(unittest.TestCase):
         self.assertEqual(code, 0, r)
 
 
+class TiposTest(unittest.TestCase):
+    """O validador certificava artefato que não abre (Codex, r10 e r11)."""
+
+    def _reprova(self, points: str, trecho: str = "", sections: str = SECAO) -> None:
+        code, r = _validar(_gerar(sections, points))
+        self.assertEqual(code, 1, f"passou: {r}")
+        if trecho:
+            self.assertIn(trecho, " ".join(r["erros"]))
+
+    def test_badges_string_reprova(self) -> None:
+        # `.map()` numa string mata o render ANTES de desenhar qualquer card
+        # e antes do aviso visual: sem card e sem alarme.
+        self._reprova(
+            """{ id:'7', sec:'emails', type:'despacho', title:'x', contexto:'y', badges:'abc',
+                 actions:[{key:'r',label:'R',tone:'green',effect:'archive'}] },""",
+            "não é lista",
+        )
+
+    def test_contexto_objeto_reprova(self) -> None:
+        self._reprova(
+            """{ id:'7', sec:'emails', type:'despacho', title:'x', contexto:{a:1},
+                 actions:[{key:'r',label:'R',tone:'green',effect:'archive'}] },""",
+            "[object Object]",
+        )
+
+    def test_campos_irmaos_com_tipo_errado_reprovam(self) -> None:
+        # Corrigir só `title`/`contexto` deixava os irmãos passando (Codex).
+        casos = {
+            "evidencia": """{ id:'7', sec:'emails', type:'despacho', title:'x', contexto:'y', evidencia:{a:1},
+                             actions:[{key:'r',label:'R',tone:'green',effect:'archive'}] },""",
+            "badge.label": """{ id:'7', sec:'emails', type:'despacho', title:'x', contexto:'y',
+                               badges:[{label:{a:1}, tone:'red'}],
+                               actions:[{key:'r',label:'R',tone:'green',effect:'archive'}] },""",
+            "option.desc": """{ id:'7', sec:'emails', type:'escolha', title:'x', contexto:'y',
+                               options:[{key:'a', label:'A', desc:{a:1}}] },""",
+            "badges lista de lista": """{ id:'7', sec:'emails', type:'despacho', title:'x', contexto:'y',
+                                        badges:[[]],
+                                        actions:[{key:'r',label:'R',tone:'green',effect:'archive'}] },""",
+        }
+        for nome, pts in casos.items():
+            with self.subTest(campo=nome):
+                self._reprova(pts)
+
+    def test_section_title_com_tipo_errado_reprova(self) -> None:
+        self._reprova(
+            """{ id:'7', sec:'emails', type:'despacho', title:'x', contexto:'y',
+                 actions:[{key:'r',label:'R',tone:'green',effect:'archive'}] },""",
+            sections="{id:'emails', num:1, title:{a:1}},",
+        )
+
+    def test_acao_sem_label_reprova(self) -> None:
+        self._reprova(
+            """{ id:'7', sec:'emails', type:'despacho', title:'x', contexto:'y',
+                 actions:[{key:'r',tone:'green',effect:'archive'}] },""",
+            "obrigatório",
+        )
+
+    def test_campo_obrigatorio_ausente_reprova(self) -> None:
+        for pts in (
+            """{ id:'7', sec:'emails', type:'despacho', contexto:'y',
+                 actions:[{key:'r',label:'R',tone:'green',effect:'archive'}] },""",
+            """{ id:'7', sec:'emails', type:'despacho', title:'x',
+                 actions:[{key:'r',label:'R',tone:'green',effect:'archive'}] },""",
+        ):
+            self._reprova(pts, "obrigatório")
+
+    def test_colecao_obrigatoria_vazia_reprova(self) -> None:
+        # Card sem ação nenhuma existe na tela e não decide nada.
+        self._reprova(
+            """{ id:'7', sec:'emails', type:'despacho', title:'x', contexto:'y', actions:[] },""",
+            "não oferece decisão",
+        )
+        self._reprova(
+            """{ id:'7', sec:'emails', type:'escolha', title:'x', contexto:'y', options:[] },""",
+            "não oferece decisão",
+        )
+
+    def test_despacho_sem_actions_reprova(self) -> None:
+        self._reprova("""{ id:'7', sec:'emails', type:'despacho', title:'x', contexto:'y' },""")
+
+    def test_escolha_sem_options_reprova(self) -> None:
+        self._reprova("""{ id:'7', sec:'emails', type:'escolha', title:'x', contexto:'y' },""")
+
+
+class GramaticaFechadaTest(unittest.TestCase):
+    """Os mutantes que o Codex executou e que passavam."""
+
+    def _reprova(self, contexto: str) -> None:
+        code, r = _validar(
+            _gerar(
+                SECAO,
+                f"""{{ id:'7', sec:'emails', type:'despacho', title:'x',
+                     contexto: '{contexto}',
+                     actions:[{{key:'r',label:'R',tone:'green',effect:'archive'}}] }},""",
+            )
+        )
+        self.assertEqual(code, 1, f"'{contexto}' passou: {r}")
+
+    def test_span_sem_class_reprova(self) -> None:
+        self._reprova("oi <span>x</span>")
+
+    def test_atributo_repetido_reprova(self) -> None:
+        self._reprova('oi <span class=\"ref\" class=\"q\">x</span>')
+
+    def test_atributo_em_fechamento_reprova(self) -> None:
+        self._reprova('oi <span class=\"ref\">x</span onclick=\"alert(1)\">')
+
+    def test_espaco_depois_do_menor_reprova(self) -> None:
+        self._reprova("oi < strong>x")
+
+
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()
