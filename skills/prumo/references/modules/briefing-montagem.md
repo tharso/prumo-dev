@@ -28,7 +28,7 @@ A numeração do primeiro tempo (1..k, com k variável — é quantos itens houv
 
 ### Segundo tempo: curadoria na sequência (automático)
 
-Continua **na mesma resposta, sem pergunta no meio** — a variante com pergunta bloqueante foi rejeitada no desenho: quando a resposta é quase sempre "sim", ela só adiciona um degrau de espera. Execução **adaptativa** (#205: tool calls serializam em todos os hosts medidos): os canais rodam em sequência priorizada e fail-independent (metadata do Gmail → Calendar → corpos por predicado de `briefing-canais.md`); **paralelismo por subagente fica DESLIGADO por default** — só habilitar quando uma comparação equivalente demonstrar ganho líquido num canal comprovadamente lento (spawn de ~3s+ por agente; medido 22–28s por chamada de metadata).
+Continua **na mesma conversa, em NOVA entrega, sem pergunta no meio** — nunca colado ao primeiro tempo num bloco único: se os dois saem juntos, não houve primeiro tempo, e o ASSERT do core reprova (#284). A variante com pergunta bloqueante foi rejeitada no desenho: quando a resposta é quase sempre "sim", ela só adiciona um degrau de espera. Execução **adaptativa** (#205: tool calls serializam em todos os hosts medidos): os canais rodam em sequência priorizada e fail-independent (metadata do Gmail → Calendar → corpos por predicado de `briefing-canais.md`); **paralelismo por subagente fica DESLIGADO por default** — só habilitar quando uma comparação equivalente demonstrar ganho líquido num canal comprovadamente lento (spawn de ~3s+ por agente; medido 22–28s por chamada de metadata).
 
 Componentes do segundo tempo (itens k+1..N, cada um com seu número):
 

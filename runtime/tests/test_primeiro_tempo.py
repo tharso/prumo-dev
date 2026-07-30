@@ -134,14 +134,32 @@ class AssertReferenciaAsPecasTest(unittest.TestCase):
 class PecasNosOutrosModulosTest(unittest.TestCase):
     """As duas premissas que moram fora do core."""
 
-    def test_canais_ainda_exige_primeiro_tempo_antes_dos_externos(self) -> None:
+    def test_canais_exige_antes_da_CHAMADA_nao_so_do_resultado(self) -> None:
+        # Achado do Codex na revisão do código: "antes de qualquer RESULTADO"
+        # é mais frouxo que o ASSERT ("nenhuma chamada pode COMEÇAR antes").
+        # Com a redação frouxa, disparar o Gmail e escrever o primeiro tempo
+        # enquanto ele volta seria conforme — e é assim que os 11 minutos
+        # acontecem: a chamada demora, a entrega espera por ela.
         canais = _read(CANAIS)
-        self.assertIn(
+        self.assertIn("antes de qualquer CHAMADA a email/calendário", canais)
+        self.assertNotIn(
             "antes de qualquer resultado de email/calendário",
             canais,
-            "briefing-canais.md deixou de exigir o primeiro tempo antes dos "
-            "canais externos — o ASSERT do core passa a contradizer a fase",
+            "a redação frouxa voltou — módulo e ASSERT precisam proibir a "
+            "mesma coisa, senão a fase autoriza o que o core proíbe",
         )
+
+    def test_modulos_nao_dizem_que_o_segundo_tempo_vem_na_MESMA_resposta(self) -> None:
+        # A formulação que licenciou o incidente. O core já dizia "mesma
+        # conversa" (regra 12); os módulos ainda diziam "mesma resposta", que
+        # é exatamente a leitura de quem entregou os dois blocos juntos.
+        for path in (MONTAGEM, CANAIS, MODULES / "interaction-format.md"):
+            self.assertNotIn(
+                "mesma resposta",
+                _read(path),
+                f"{path.name} voltou a dizer 'mesma resposta' para os dois "
+                "tempos — é a redação que produziu o briefing de 11 minutos",
+            )
 
     def test_cowork_continua_classificado_como_dois_tempos(self) -> None:
         # O ASSERT nomeia o Cowork diretamente. Se a matriz reclassificar o

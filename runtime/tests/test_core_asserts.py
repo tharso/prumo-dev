@@ -84,6 +84,25 @@ class CoreAssertsTest(unittest.TestCase):
             "guardrail removido/adicionado sem atualizar o registro",
         )
 
+    def test_asserts_moram_na_secao_guardrails(self) -> None:
+        # Achado do Codex (#284): o registro provava que o ASSERT existe em
+        # ALGUM lugar do core, não que mora na seção que a rota carrega. A
+        # mutação "mover o ASSERT para outra seção" passava em tudo — e a
+        # catraca, sendo teto, ainda sorriria porque o número CAIRIA.
+        bruto = CORE.read_text(encoding="utf-8")
+        inicio = bruto.index("\n## Guardrails")
+        resto = bruto[inicio + 1 :]
+        fim = resto.index("\n## ", 1)
+        guardrails = resto[:fim]
+
+        dentro = _extract_asserts(guardrails)
+        fora = self.found - dentro
+        self.assertFalse(
+            fora,
+            "ASSERT fora da seção `## Guardrails` — a rota carrega essa seção "
+            f"em F1; fora dela a regra não chega a tempo: {sorted(fora)}",
+        )
+
     def test_asserts_set_matches_registry(self) -> None:
         missing = self.expected - self.found
         unexpected = self.found - self.expected

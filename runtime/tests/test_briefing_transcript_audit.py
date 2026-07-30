@@ -264,5 +264,184 @@ class TravasDeDesenhoTest(unittest.TestCase):
             self.assertEqual(audit.analyse(path).verdict, audit.VERDICT_OK, nome)
 
 
+class OrdemCausalTest(unittest.TestCase):
+    """Rodada 4 do Codex: comparar timestamp aprovava o que devia reprovar."""
+
+    def test_tool_antes_do_texto_no_MESMO_record_reprova(self) -> None:
+        # `tool_use` e `text` do mesmo record compartilham o carimbo. Com
+        # comparação por tempo (`<`), "abriu o canal e depois escreveu"
+        # saía `ok` só porque os dois marcam o mesmo segundo.
+        path = _write(
+            [
+                _assistant(T0, [_tool("Read")]),
+                _assistant(
+                    T_LOCAL,
+                    [_tool("mcp__x__search_threads"), _text(PRIMEIRO_TEMPO)],
+                ),
+            ]
+        )
+        self.assertEqual(audit.analyse(path).verdict, audit.VERDICT_NOT_EMITTED)
+
+    def test_texto_antes_do_tool_no_mesmo_record_aprova(self) -> None:
+        path = _write(
+            [
+                _assistant(T0, [_tool("Read")]),
+                _assistant(
+                    T_LOCAL,
+                    [_text(PRIMEIRO_TEMPO), _tool("mcp__x__search_threads")],
+                ),
+            ]
+        )
+        self.assertEqual(audit.analyse(path).verdict, audit.VERDICT_OK)
+
+    def test_transcript_fora_de_ordem_usa_posicao_nao_relogio(self) -> None:
+        # Carimbo do canal ANTERIOR ao da entrega, mas o canal vem depois no
+        # fluxo. A ordem causal é a do arquivo; o relógio serve para durações.
+        path = _write(
+            [
+                _assistant(T0, [_tool("Read")]),
+                _assistant(T_FIM, [_text(PRIMEIRO_TEMPO)]),
+                _assistant(T_LOCAL, [_tool("mcp__x__search_threads")]),
+            ]
+        )
+        self.assertEqual(audit.analyse(path).verdict, audit.VERDICT_OK)
+
+
+class SentinelaEstritaTest(unittest.TestCase):
+    def test_mencao_no_meio_do_texto_nao_e_entrega(self) -> None:
+        # "trailer do trailer": prometer a linha não é emiti-la.
+        citacao = f'Em seguida encerro com "{SENT}" e sigo para o email.'
+        path = _write(
+            [
+                _assistant(T0, [_tool("Read")]),
+                _assistant(T_LOCAL, [_text(citacao)]),
+                _assistant(T_EXTERNO, [_tool("mcp__x__search_threads")]),
+            ]
+        )
+        self.assertEqual(audit.analyse(path).verdict, audit.VERDICT_NOT_EMITTED)
+
+    def test_texto_relevante_depois_da_sentinela_nao_conta(self) -> None:
+        path = _write(
+            [
+                _assistant(T0, [_tool("Read")]),
+                _assistant(T_LOCAL, [_text(f"{SENT}\n\nE já adianto: 12. Reunião")]),
+                _assistant(T_EXTERNO, [_tool("mcp__x__search_threads")]),
+            ]
+        )
+        self.assertEqual(audit.analyse(path).verdict, audit.VERDICT_NOT_EMITTED)
+
+    def test_negrito_em_volta_da_linha_ainda_conta(self) -> None:
+        path = _write([_assistant(T0, [_text(f"1. item\n\n**{SENT}**")])])
+        self.assertEqual(audit.analyse(path).verdict, audit.VERDICT_OK)
+
+
+class FalhaFechadaTest(unittest.TestCase):
+    """Descartar record ruim e seguir é o modo de falha que este script evita."""
+
+    def _unsupported(self, records: list[dict], trecho: str) -> None:
+        with self.assertRaises(audit.UnsupportedTranscript) as ctx:
+            audit.analyse(_write(records))
+        self.assertIn(trecho, str(ctx.exception))
+
+    def test_json_invalido(self) -> None:
+        tmp = Path(tempfile.mkdtemp()) / "t.jsonl"
+        tmp.write_text('{"type":"assistant"\n', encoding="utf-8")
+        with self.assertRaises(audit.UnsupportedTranscript):
+            audit.analyse(tmp)
+
+    def test_timestamp_ausente(self) -> None:
+        self._unsupported(
+            [{"type": "assistant", "message": {"content": [_text("oi")]}}],
+            "timestamp ausente",
+        )
+
+    def test_timestamp_sem_fuso(self) -> None:
+        self._unsupported(
+            [_assistant("2026-07-30T16:51:07", [_text("oi")])], "sem fuso"
+        )
+
+    def test_content_nao_lista(self) -> None:
+        self._unsupported(
+            [{"type": "assistant", "timestamp": T0, "message": {"content": "cru"}}],
+            "não é lista",
+        )
+
+    def test_tool_use_sem_nome(self) -> None:
+        self._unsupported(
+            [_assistant(T0, [{"type": "tool_use", "input": {}}])], "sem name"
+        )
+
+    def test_sidechain_string_nao_engole_o_record(self) -> None:
+        # "false" é truthy: o record sumiria em silêncio, levando junto a
+        # entrega ou o canal que decidiriam o veredito.
+        self._unsupported(
+            [
+                {
+                    "type": "assistant",
+                    "timestamp": T0,
+                    "isSidechain": "false",
+                    "message": {"content": [_text("oi")]},
+                }
+            ],
+            "isSidechain",
+        )
+
+    def test_token_nao_numerico(self) -> None:
+        self._unsupported(
+            [_assistant(T0, [_text("oi")], {"output_tokens": "muitos"})],
+            "não-inteiro",
+        )
+
+
+class AllowlistDeCanaisTest(unittest.TestCase):
+    def test_nomes_documentados_no_repo_sao_reconhecidos(self) -> None:
+        # Nomes que o próprio repo cita e que a allowlist original não tinha.
+        for nome in (
+            "gmail_read_message",
+            "gmail_get_profile",
+            "list_gcal_calendars",
+            "mcp__srv__gmail_search",
+            "google_calendar_list",
+        ):
+            self.assertTrue(audit.is_external_channel(nome), nome)
+
+    def test_ferramentas_locais_continuam_fora(self) -> None:
+        for nome in ("Read", "Bash", "WebFetch", "Grep", "Write", "TodoWrite"):
+            self.assertFalse(audit.is_external_channel(nome), nome)
+
+
+class VarianteEExitTest(unittest.TestCase):
+    def test_host_de_resposta_unica_nao_se_aplica(self) -> None:
+        path = _write(
+            [
+                _assistant(T0, [_tool("mcp__x__search_threads")]),
+                _assistant(T_FIM, [_text("panorama inteiro num bloco")]),
+            ]
+        )
+        report = audit.analyse(path, variant=audit.VARIANT_SINGLE)
+        self.assertEqual(report.verdict, audit.VERDICT_NOT_APPLICABLE)
+
+    def test_missing_sai_diferente_de_zero(self) -> None:
+        # Um contrato chamado ausente não pode terminar em sucesso.
+        path = _write([_assistant(T0, [_text("panorama sem fechamento")])])
+        self.assertEqual(audit.main([str(path)]), 1)
+
+    def test_ok_sai_zero_e_violacao_sai_um(self) -> None:
+        ok = _write([_assistant(T0, [_text(PRIMEIRO_TEMPO)])])
+        self.assertEqual(audit.main([str(ok)]), 0)
+        ruim = _write(
+            [
+                _assistant(T0, [_tool("mcp__x__search_threads")]),
+                _assistant(T_FIM, [_text(PRIMEIRO_TEMPO)]),
+            ]
+        )
+        self.assertEqual(audit.main([str(ruim)]), 1)
+
+    def test_schema_desconhecido_sai_tres(self) -> None:
+        tmp = Path(tempfile.mkdtemp()) / "t.jsonl"
+        tmp.write_text('{"type":"assistant","message":"cru"}\n', encoding="utf-8")
+        self.assertEqual(audit.main([str(tmp)]), 3)
+
+
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()
