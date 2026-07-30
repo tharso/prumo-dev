@@ -147,14 +147,66 @@ def _parse_ts(raw: Any, line_no: int) -> datetime:
     return parsed
 
 
-def is_external_channel(name: str) -> bool:
-    """Gmail/Calendar, por sufixo do método OU por família no nome."""
-    if not isinstance(name, str) or not name:
-        return False
-    if name.rsplit("__", 1)[-1] in EXTERNAL_SUFFIXES:
-        return True
-    return any(p.search(name) for p in EXTERNAL_PATTERNS)
+_MCP = re.compile(r"^mcp__(?P<servidor>.+?)__(?P<metodo>.+)$")
 
+CANAL_EXTERNO = "external"
+CANAL_CONHECIDO_NAO_EXTERNO = "known_nonexternal"
+CANAL_DESCONHECIDO = "unknown"
+
+# Servidores MCP que sabidamente NÃO são email/agenda. "Legível" é propriedade
+# tipográfica, não certidão de nascimento (Codex, r6): sem esta lista,
+# `mcp__slack__get_message` casava o sufixo genérico e virava canal externo.
+SERVIDORES_NAO_EXTERNOS = frozenset(
+    {"slack", "granola", "supabase", "vercel", "strava", "context7", "notion", "linear"}
+)
+SERVIDORES_EXTERNOS = frozenset({"gmail", "gcal", "googlecalendar", "google_calendar"})
+
+
+def classify_tool(name: str) -> str:
+    """Externo / sabidamente-não-externo / desconhecido.
+
+    Booleano não dava conta: `mcp__slack__get_message` não é Gmail, e
+    `mcp__<uuid>__get_attachment` pode ser. Certificar `ok` com um
+    `unknown` antes da entrega seria absolver por omissão.
+    """
+    if not isinstance(name, str) or not name:
+        return CANAL_CONHECIDO_NAO_EXTERNO
+
+    if any(p.search(name) for p in EXTERNAL_PATTERNS):
+        return CANAL_EXTERNO
+
+    m = _MCP.match(name)
+    if not m:
+        # Ferramenta nativa do host (Read, Bash, WebFetch...) não é canal.
+        return CANAL_CONHECIDO_NAO_EXTERNO
+
+    servidor = m.group("servidor").lower()
+    metodo = m.group("metodo")
+
+    if servidor in SERVIDORES_EXTERNOS:
+        return CANAL_EXTERNO
+    if servidor in SERVIDORES_NAO_EXTERNOS:
+        # O servidor decide, não o sufixo: Slack tem `get_message` e não é
+        # email. Esta linha é a que conserta o falso positivo da r6.
+        return CANAL_CONHECIDO_NAO_EXTERNO
+
+    # Servidor desconhecido: o método ainda pode denunciar.
+    if metodo in EXTERNAL_SUFFIXES:
+        return CANAL_EXTERNO
+    return CANAL_DESCONHECIDO
+
+
+def is_external_channel(name: str) -> bool:
+    return classify_tool(name) == CANAL_EXTERNO
+
+
+# Blocos sabidamente inertes para o veredito. Tipo desconhecido em record de
+# assistente falha fechado: uma representação nova de texto visível ou de
+# ferramenta sumindo em silêncio deixaria um marcador antigo emprestar `ok`.
+BLOCOS_INERTES = frozenset(
+    {"thinking", "redacted_thinking", "tool_result", "image", "server_tool_use",
+     "web_search_tool_result", "document"}
+)
 
 _BLOCKQUOTE = re.compile(r"^\s*>")
 _CODESPAN = re.compile(r"^\s*`[^`]*`\s*$")
@@ -191,26 +243,6 @@ def _encerra_com_sentinela(texto: str) -> bool:
     return _strip_enfase(ultima) == SENTINELA
 
 
-_MCP = re.compile(r"^mcp__(?P<servidor>[^_]+(?:_[^_]+)*)__(?P<metodo>.+)$")
-
-
-def _mcp_opaco(nome: str) -> bool:
-    """Ferramenta MCP cujo servidor não se identifica no nome.
-
-    O prefixo é UUID por instalação, então `mcp__<uuid>__get_attachment` pode
-    ser Gmail e a allowlist não sabe. Não dá para reprovar por isso — Slack,
-    Granola e afins são MCP legítimo no meio do briefing. O que NÃO dá é
-    certificar `ok` tendo visto chamadas assim antes da entrega: absolver por
-    omissão é o modo de falha que este script existe para não repetir.
-    """
-    m = _MCP.match(nome)
-    if not m:
-        return False
-    servidor = m.group("servidor")
-    # Servidor legível (slack, supabase, vercel...) não é opaco.
-    return bool(re.fullmatch(r"[0-9a-f]{6,}(-[0-9a-f]+)*", servidor, re.IGNORECASE))
-
-
 @dataclass
 class _Entrega:
     """Um record de assistente = UMA entrega ao usuário."""
@@ -231,6 +263,8 @@ def analyse(
     entregas: list[_Entrega] = []
     carimbos: list[datetime] = []
     viu_forma = False
+    viu_record_apos_corte = False
+    prompts_do_usuario = 0
     idx = 0
 
     for line_no, record in _records(path):
@@ -239,51 +273,68 @@ def analyse(
             continue
 
         sidechain = record.get("isSidechain")
-        if sidechain not in (None, True, False):
+        if sidechain is not None and not isinstance(sidechain, bool):
+            # `0`/`1` passavam por booleano em Python (Codex, r6).
             _fail(line_no, f"isSidechain não-booleano: {sidechain!r}")
         if sidechain:
             continue
 
+        # O corte entra logo depois do timestamp e ANTES de validar a forma:
+        # record de outro briefing não pode reprovar o arquivo por schema.
+        ts = _parse_ts(record.get("timestamp"), line_no)
+        if since is not None and ts < since:
+            continue
+        viu_record_apos_corte = True
+
+        # Timestamp de `user` entra no envelope mesmo quando a forma dele
+        # varia: sem isso, `time_to_first_time` começaria na primeira resposta
+        # do assistente e o prefill e a espera inicial — que é o que o dono
+        # sentiu — evaporariam da métrica principal (Codex, r6).
+        carimbos.append(ts)
+
         message = record.get("message")
         content = message.get("content") if isinstance(message, dict) else None
 
-        # Fail-closed vale para o ASSISTENTE, onde mora toda a evidência do
-        # veredito. Records de `user` variam de forma entre versões do host e
-        # não decidem nada aqui — exigir deles quebraria o auditor em
-        # transcript legítimo sem ganhar precisão.
         if rtype == "assistant":
             if not isinstance(message, dict):
                 _fail(line_no, "record de assistente sem message objeto")
             if not isinstance(content, list):
                 _fail(line_no, "message.content de assistente não é lista")
-        elif not isinstance(content, list):
+        else:
+            # `user` é tolerante quanto à FORMA (varia entre versões do host)
+            # e mudo quanto ao VEREDITO: nem texto nem tool_use dele contam.
+            if isinstance(content, list):
+                tipos = {b.get("type") for b in content if isinstance(b, dict)}
+                # Prompt de verdade traz TEXTO. `tool_result` é devolução de
+                # ferramenta (também é record `user` neste schema) e não abre
+                # execução nova.
+                if "text" in tipos and "tool_result" not in tipos:
+                    prompts_do_usuario += 1
+            elif isinstance(content, str):
+                prompts_do_usuario += 1
+            viu_forma = viu_forma or isinstance(content, list)
             continue
 
         viu_forma = True
-        ts = _parse_ts(record.get("timestamp"), line_no)
-        if since is not None and ts < since:
-            continue
-        carimbos.append(ts)
         idx += 1
+        report.model_calls += 1
 
-        if rtype == "assistant":
-            report.model_calls += 1
-            usage = message.get("usage")
-            if usage is not None and not isinstance(usage, dict):
-                _fail(line_no, f"usage presente mas não é objeto: {type(usage).__name__}")
-            if isinstance(usage, dict):
-                for chave, campo in (
-                    ("input", "input_tokens"),
-                    ("cache_creation", "cache_creation_input_tokens"),
-                    ("cache_read", "cache_read_input_tokens"),
-                    ("output", "output_tokens"),
-                ):
-                    valor = usage.get(campo, 0)
-                    if valor is None:
-                        valor = 0
-                    if not isinstance(valor, int) or isinstance(valor, bool):
-                        _fail(line_no, f"usage.{campo} não-inteiro: {valor!r}")
-                    tokens[chave] += valor
+        usage = message.get("usage")
+        if usage is not None and not isinstance(usage, dict):
+            _fail(line_no, f"usage presente mas não é objeto: {type(usage).__name__}")
+        if isinstance(usage, dict):
+            for chave, campo in (
+                ("input", "input_tokens"),
+                ("cache_creation", "cache_creation_input_tokens"),
+                ("cache_read", "cache_read_input_tokens"),
+                ("output", "output_tokens"),
+            ):
+                valor = usage.get(campo, 0)
+                if valor is None:
+                    valor = 0
+                if not isinstance(valor, int) or isinstance(valor, bool):
+                    _fail(line_no, f"usage.{campo} não-inteiro: {valor!r}")
+                tokens[chave] += valor
 
         entrega = _Entrega(idx=idx, ts=ts)
         textos: list[str] = []
@@ -294,7 +345,7 @@ def analyse(
                 _fail(line_no, "bloco de content não é objeto")
             btype = bloco.get("type")
 
-            if btype == "text" and rtype == "assistant":
+            if btype == "text":
                 texto = bloco.get("text")
                 if not isinstance(texto, str):
                     _fail(line_no, "bloco text sem campo text string")
@@ -308,16 +359,17 @@ def analyse(
                 if not isinstance(nome, str) or not nome:
                     _fail(line_no, "tool_use sem name string")
                 report.tools_by_name[nome] = report.tools_by_name.get(nome, 0) + 1
-                if is_external_channel(nome):
+                classe = classify_tool(nome)
+                if classe == CANAL_EXTERNO:
                     if not entrega.tem_canal_externo:
                         entrega.tem_canal_externo = True
                         entrega.canal = nome
-                elif _mcp_opaco(nome):
+                elif classe == CANAL_DESCONHECIDO:
                     entrega.opacos.append(nome)
 
-        # A sentinela encerra a ENTREGA, não um bloco qualquer dela: com
-        # [text(...sentinela), text("e já adianto...")] a frase não fecha
-        # coisa nenhuma.
+            elif btype not in BLOCOS_INERTES:
+                _fail(line_no, f"tipo de bloco desconhecido em assistente: {btype!r}")
+
         if textos and _encerra_com_sentinela(textos[-1]):
             entrega.encerra_com_sentinela = True
 
@@ -327,19 +379,30 @@ def analyse(
 
         entregas.append(entrega)
 
+    if since is not None and not viu_record_apos_corte:
+        # Antes do check de forma: janela vazia tem causa própria, e reportar
+        # "schema não reconhecido" mandaria investigar o parser em vez do
+        # corte.
+        raise UnsupportedTranscript(
+            "nenhum record depois de --since — a janela não cobre execução alguma"
+        )
     if not viu_forma:
         raise UnsupportedTranscript(
             "nenhum registro com message.content em lista — schema não reconhecido"
         )
 
-    # Uma entrega que fecha o primeiro tempo E abre canal na mesma mensagem
-    # não é primeiro tempo: é o bloco único que a #284 revogou.
-    primeiras = [e for e in entregas if e.encerra_com_sentinela and not e.tem_canal_externo]
-    if len(primeiras) > 1 and since is None:
+    # Delimitação (Codex, r6): contar sentinelas não bastava. O caso perigoso
+    # é "ontem conforme, hoje violado": há UMA sentinela — a de ontem — e ela
+    # absolveria a violação de hoje. A fronteira honesta é o TURNO: um prompt
+    # do usuário abre uma execução.
+    primeiras = [
+        e for e in entregas if e.encerra_com_sentinela and not e.tem_canal_externo
+    ]
+    if prompts_do_usuario > 1 or len(primeiras) > 1:
         raise UnsupportedTranscript(
-            f"{len(primeiras)} primeiros tempos no mesmo arquivo — o transcript "
-            "cobre mais de um briefing; delimite com --since, senão a sentinela "
-            "de ontem absolve a violação de hoje"
+            f"o arquivo cobre {max(prompts_do_usuario, len(primeiras))} execuções "
+            "(prompts do usuário ou primeiros tempos) — delimite com --since, "
+            "senão a sentinela de ontem absolve a violação de hoje"
         )
 
     externos = [e for e in entregas if e.tem_canal_externo]
@@ -354,17 +417,13 @@ def analyse(
     if primeira:
         report.first_time_at = primeira.ts.isoformat()
         if carimbos:
-            # Envelope pelo MENOR carimbo: usar "o da primeira linha" produzia
-            # duração negativa em transcript fora de ordem.
             report.time_to_first_time_s = (primeira.ts - min(carimbos)).total_seconds()
     if externo:
         report.first_external_at = externo.ts.isoformat()
         report.first_external_tool = externo.canal
 
     corte = primeira.idx if primeira else (externo.idx if externo else idx)
-    opacos = sorted(
-        {n for e in entregas if e.idx <= corte for n in e.opacos}
-    )
+    opacos = sorted({n for e in entregas if e.idx <= corte for n in e.opacos})
     report.unclassified_mcp_before_first_time = opacos
 
     report.verdict, report.reason = _verdict(

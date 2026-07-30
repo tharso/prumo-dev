@@ -57,6 +57,27 @@ def _text(body: str) -> dict:
     return {"type": "text", "text": body}
 
 
+def _user_prompt(ts: str, texto: str = "briefing") -> dict:
+    """Prompt real do usuário: `user` sem `tool_result` — abre uma execução."""
+    return {
+        "type": "user",
+        "timestamp": ts,
+        "message": {"role": "user", "content": [{"type": "text", "text": texto}]},
+    }
+
+
+def _tool_result(ts: str) -> dict:
+    """Devolução de ferramenta: também é record `user` neste schema."""
+    return {
+        "type": "user",
+        "timestamp": ts,
+        "message": {
+            "role": "user",
+            "content": [{"type": "tool_result", "content": "ok"}],
+        },
+    }
+
+
 def _write(records: list[dict]) -> Path:
     tmp = Path(tempfile.mkdtemp()) / "transcript.jsonl"
     tmp.write_text(
@@ -381,12 +402,96 @@ class DelimitacaoTest(unittest.TestCase):
         # Sem isto, a sentinela de ontem absolve a violação de hoje.
         with self.assertRaises(audit.UnsupportedTranscript) as ctx:
             audit.analyse(self._dois_briefings())
-        self.assertIn("mais de um briefing", str(ctx.exception))
+        self.assertIn("execuções", str(ctx.exception))
+
+    def test_ontem_conforme_nao_absolve_hoje_violado(self) -> None:
+        # O caso que a contagem de sentinelas NÃO pegava (Codex, r6): existe
+        # UMA sentinela — a de ontem — e o auditor escolhia os eventos dela,
+        # certificando `ok` para um dia em que o canal abriu sem entrega.
+        path = _write(
+            [
+                _user_prompt(T0),
+                _assistant(T_LOCAL, [_text(PRIMEIRO_TEMPO)]),
+                _assistant(T_EXTERNO, [_tool("mcp__x__search_threads")]),
+                _user_prompt("2026-07-31T09:00:00.000Z"),
+                _assistant("2026-07-31T09:01:00.000Z", [_tool("mcp__x__search_threads")]),
+                _assistant("2026-07-31T09:09:00.000Z", [_text("tudo junto no fim")]),
+            ]
+        )
+        with self.assertRaises(audit.UnsupportedTranscript):
+            audit.analyse(path)
+
+    def test_janela_sem_record_nao_vira_missing(self) -> None:
+        corte = datetime.fromisoformat("2027-01-01T00:00:00+00:00")
+        with self.assertRaises(audit.UnsupportedTranscript) as ctx:
+            audit.analyse(self._dois_briefings(), since=corte)
+        self.assertIn("não cobre execução", str(ctx.exception))
 
     def test_since_delimita_a_execucao(self) -> None:
         corte = datetime.fromisoformat("2026-07-31T00:00:00+00:00")
         report = audit.analyse(self._dois_briefings(), since=corte)
         self.assertEqual(report.verdict, audit.VERDICT_OK)
+
+
+class ClassificacaoDeFerramentaTest(unittest.TestCase):
+    """Trivalente: booleano confundia sufixo genérico com provedor."""
+
+    def test_slack_com_sufixo_generico_nao_e_canal_externo(self) -> None:
+        # O falso positivo da r6: `get_message`/`get_profile` existem no Slack
+        # e casavam a allowlist de sufixo. Slack é MCP legítimo no briefing —
+        # classificá-lo como email reprovaria briefing conforme.
+        for nome in ("mcp__slack__get_message", "mcp__slack__get_profile"):
+            self.assertEqual(audit.classify_tool(nome), audit.CANAL_CONHECIDO_NAO_EXTERNO, nome)
+
+    def test_gmail_continua_externo_por_familia_e_por_metodo(self) -> None:
+        for nome in ("mcp__gmail__seja_o_que_for", "mcp__deadbeef1234__search_threads"):
+            self.assertEqual(audit.classify_tool(nome), audit.CANAL_EXTERNO, nome)
+
+    def test_servidor_desconhecido_com_metodo_generico_e_desconhecido(self) -> None:
+        self.assertEqual(
+            audit.classify_tool("mcp__deadbeef1234__get_attachment"),
+            audit.CANAL_DESCONHECIDO,
+        )
+
+    def test_ferramenta_nativa_nao_e_canal(self) -> None:
+        for nome in ("Read", "Bash", "WebFetch"):
+            self.assertEqual(audit.classify_tool(nome), audit.CANAL_CONHECIDO_NAO_EXTERNO, nome)
+
+
+class RecordDeUsuarioTest(unittest.TestCase):
+    def test_tool_use_em_record_de_usuario_nao_decide_veredito(self) -> None:
+        # O código dizia que `user` não decide; o branch de tool_use não
+        # exigia assistente e deixava decidir (Codex, r6).
+        path = _write(
+            [
+                _user_prompt(T0),
+                {
+                    "type": "user",
+                    "timestamp": T_LOCAL,
+                    "message": {"role": "user", "content": [_tool("mcp__x__search_threads")]},
+                },
+                _assistant(T_EXTERNO, [_text(PRIMEIRO_TEMPO)]),
+            ]
+        )
+        self.assertEqual(audit.analyse(path).verdict, audit.VERDICT_OK)
+
+    def test_carimbo_do_usuario_entra_no_envelope(self) -> None:
+        # Sem isto a métrica principal começaria na primeira resposta do
+        # assistente, e a espera inicial — que é o que o dono sentiu —
+        # evaporaria.
+        path = _write([_user_prompt(T0), _assistant(T_LOCAL, [_text(PRIMEIRO_TEMPO)])])
+        self.assertEqual(audit.analyse(path).time_to_first_time_s, 193.0)
+
+    def test_tool_result_nao_conta_como_novo_prompt(self) -> None:
+        path = _write(
+            [
+                _user_prompt(T0),
+                _assistant(T_LOCAL, [_tool("Read")]),
+                _tool_result(T_LOCAL),
+                _assistant(T_EXTERNO, [_text(PRIMEIRO_TEMPO)]),
+            ]
+        )
+        self.assertEqual(audit.analyse(path).verdict, audit.VERDICT_OK)
 
 
 class OpacoTest(unittest.TestCase):
@@ -492,6 +597,37 @@ class FalhaFechadaTest(unittest.TestCase):
         self._unsupported(
             [_assistant(T0, [{"type": "tool_use", "input": {}}])], "sem name"
         )
+
+    def test_sidechain_zero_ou_um_nao_passa_por_booleano(self) -> None:
+        # `0 == False` e `1 == True` em Python: a comparação por igualdade
+        # deixava passar (Codex, r6).
+        for valor in (0, 1):
+            self._unsupported(
+                [
+                    {
+                        "type": "assistant",
+                        "timestamp": T0,
+                        "isSidechain": valor,
+                        "message": {"content": [_text("oi")]},
+                    }
+                ],
+                "isSidechain",
+            )
+
+    def test_bloco_desconhecido_em_assistente_falha(self) -> None:
+        self._unsupported(
+            [_assistant(T0, [{"type": "holograma", "dados": 1}])],
+            "tipo de bloco desconhecido",
+        )
+
+    def test_bloco_inerte_conhecido_nao_falha(self) -> None:
+        path = _write(
+            [
+                _assistant(T0, [{"type": "thinking", "thinking": "..."}]),
+                _assistant(T_LOCAL, [_text(PRIMEIRO_TEMPO)]),
+            ]
+        )
+        self.assertEqual(audit.analyse(path).verdict, audit.VERDICT_OK)
 
     def test_sidechain_string_nao_engole_o_record(self) -> None:
         # "false" é truthy: o record sumiria em silêncio, levando junto a
