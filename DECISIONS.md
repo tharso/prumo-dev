@@ -59,18 +59,18 @@ A partir de 2026-05-04 (#78), toda entrada nova segue o formato:
 
 Descrevem a relação da entrada com o **trabalho** — diferente do campo "Relações com decisões anteriores", que descreve relação entre **decisões**. A lista é **ilustrativa, não fechada**: nomeie o papel em uma ou duas palavras e, se nenhum destes servir, use o termo que descreve honestamente a relação.
 
-Em todos os papéis abaixo o **sujeito é esta decisão** e o objeto é a issue citada — não o contrário.
+**O sujeito varia por papel** — em uns é a issue, em outros é esta decisão. Cada linha declara o seu; não existe regra geral, e supor uma inverte metade dos casos.
 
-| Papel | Significado |
+| Papel | Significado (sujeito em **negrito**) |
 |---|---|
-| `executa` | a issue cujo trabalho executa esta decisão — de longe o mais comum |
-| `épico` | a issue guarda-chuva à qual esta decisão pertence |
-| `origem` | a issue, incidente ou relato de onde esta decisão nasceu |
-| `desdobra` | a issue que continua o trabalho que esta decisão deixou em aberto |
-| `revoga` / `estende` / `mantém` | esta decisão revoga, amplia ou preserva o que a decisão daquela issue estabeleceu |
-| `bloqueia` / `desbloqueia` | esta decisão trava ou destrava o trabalho daquela issue |
-| `predecessora` / `sucessora` | a issue vem antes ou depois desta decisão na mesma linha de trabalho |
-| `ortogonal` | tocam a mesma área sem conflito de contrato |
+| `executa` | **a issue** é a que executa esta decisão — de longe o mais comum |
+| `épico` | **a issue** é a guarda-chuva à qual esta decisão pertence |
+| `origem` | **a issue**, incidente ou relato é de onde esta decisão nasceu |
+| `desdobra` | **a issue** é a que continua o trabalho que esta decisão deixou em aberto |
+| `predecessora` / `sucessora` | **a issue** vem antes ou depois desta decisão na mesma linha de trabalho |
+| `revoga` / `estende` / `mantém` | **esta decisão** revoga, amplia ou preserva o que a decisão daquela issue estabeleceu |
+| `bloqueia` / `desbloqueia` | **esta decisão** trava ou destrava o trabalho daquela issue |
+| `ortogonal` | simétrico: tocam a mesma área sem conflito de contrato |
 
 **Por que a lista é aberta.** A #78 fixou seis papéis pensando em relações entre decisões, mas o campo aponta pra trabalho, e a variedade real é maior: a varredura de 29/07 encontrou **19 termos distintos em uso**, com `executa` (34 ocorrências), `épico` (13) e `origem` (7) liderando — e nenhum dos três estava na lista. Fechar o conjunto obrigaria um PR de governança a cada relação nova legítima, e o resultado previsível é o que já aconteceu: a prática ignora a lista e ninguém percebe. O vocabulário que continua **controlado de verdade** é o de `Tópicos`, logo acima, onde termo novo exige justificativa explícita na entrada que o introduz.
 
@@ -92,7 +92,7 @@ Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões ant
 
 Ao implementar, a varredura do corpus derrubou a premissa da própria issue: não eram dois termos clandestinos, eram **19 termos distintos em uso** — `executa` (34 ocorrências), `épico` (13), `origem` (7), `resolve`, `complementa`, `predecessora`, `sucessora`, `emenda parcialmente`, `decide`, `pré-requisito`. Os três mais usados nunca estiveram na lista. A "lista controlada de seis" era ficção desde cedo, e ampliar de seis para oito teria mantido a ficção com dois números a mais.
 
-**Decisão (dono, 29/07, em duas etapas):** primeiro aprovou **ampliar** o vocabulário. Quando a varredura mostrou 19 termos em vez de 2, a questão voltou pra ele com o dado real e as três saídas medidas; aprovou então a **lista aberta com os comuns nomeados**. A tabela nomeia os papéis de uso real, declara o sujeito de cada um (é sempre *esta decisão*, não a issue) e diz explicitamente que, se nenhum servir, vale o termo que descreve honestamente a relação. Nenhuma entrada existente é reescrita. O fechamento continua onde é barato e verificável: o vocabulário de `Tópicos`, que tem regra própria pra termo novo.
+**Decisão (dono, 29/07, em duas etapas):** primeiro aprovou **ampliar** o vocabulário. Quando a varredura mostrou 19 termos em vez de 2, a questão voltou pra ele com o dado real e as três saídas medidas; aprovou então a **lista aberta com os comuns nomeados**. A tabela nomeia os papéis de uso real, declara o sujeito **linha a linha** — ele varia: em `executa` e `épico` é a issue, em `revoga` e `bloqueia` é a decisão — e diz explicitamente que, se nenhum servir, vale o termo que descreve honestamente a relação. Nenhuma entrada existente é reescrita. O fechamento continua onde é barato e verificável: o vocabulário de `Tópicos`, que tem regra própria pra termo novo.
 
 **Alternativas consideradas:** reescrever as entradas forçando os termos originais (rejeitado — obrigaria a escolher termo que descreve mal a relação, e o problema é da lista); enumerar os 19 termos como lista fechada (rejeitado — uma lista de 19 não é vocabulário controlado, é inventário, e cada relação nova legítima exigiria um PR de governança); deixar como norma tácita (rejeitado com o argumento do Codex: *"três infrações não fazem uma constituição, só fazem uma fila"*).
 
