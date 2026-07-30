@@ -6,6 +6,15 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.82.0] - 2026-07-30
+
+### Fixed
+- **A verificação de cards do `decidir` parou de pedir um browser que não precisa existir (#287)** — a instrução mandava contar `<article class="card">` **renderizados**, e essa string aparece **uma única vez** no arquivo gerado, dentro do template literal: um `grep` devolve 1 com 29 cards ou com zero. Lida ao pé da letra, ela embutia execução de JS — e foi assim que um briefing real gastou **186 segundos** (28% do relógio) em `npm i playwright` mais o boot do Chromium, contra um contrato que já dizia, no topo da própria skill, que "o agente **não renderiza** nada". A skill agora **proíbe explicitamente** instalar browser, runtime ou dependência durante o briefing: "se houver browser" significa aproveitar um que já exista, nunca fabricá-lo. Sem `node` no host, a entrega sai com a validação declarada como não executada — degradação honesta vale mais que instalação silenciosa.
+
+### Added
+- **Validador de cards, offline e em milissegundos (#287)** — `skills/decidir/validate-cards.mjs` avalia `SECTIONS` e `POINTS` num contexto `vm` sem `process` nem `require` — que **não é fronteira de segurança**, e o cabeçalho do script diz isso: o artefato é escrito pelo agente, não por terceiro, e o `vm` aqui reduz acidente, não hostilidade — e confere o que engole cards **antes** de eles sumirem: tag fora da allowlist ou `<` solto nos campos de markup, `sec` que não existe em `SECTIONS` (esse card some em **silêncio**, sem erro e sem console — `if (!pts.length) return;`), id ou chave de ação repetida, `conteudo_b64` com a quebra de 76 colunas do `base64` do GNU. A troca de fundo é atacar a **causa** em vez do sintoma: barrada a tag crua na origem, o engolimento não acontece. A allowlist é pequena mas não vazia — `<span class="ref">` e `<span class="q">` são do exemplo canônico do produto, e um scanner que banisse todo `<` reprovaria a própria documentação.
+- **O template avisa quando a conta não fecha (#287)** — rede de última instância: se algo escapar da validação prévia, a página comparava nada e ficava plausível, só que faltando itens. Agora ela mostra em vermelho quantos cards não renderizaram e pede a regeneração, em vez de entregar triagem incompleta com cara de completa. Verificado ao vivo: um `<title>` cru engole 2 de 3 cards e o aviso aparece.
+
 ## [5.81.0] - 2026-07-30
 
 ### Fixed

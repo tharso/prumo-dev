@@ -458,10 +458,14 @@ const CONFIG = {
 //   que só descreve o item, sem conteúdo nem link, é inválido. Análise pesada
 //   (transcrição/OCR/resumo) NUNCA na geração — é ação pós-despacho.
 // IDs reusam a numeração do panorama do briefing (1..N).
-// ATENÇÃO (só vale pros campos de markup do gerador, `contexto`/`evidencia`/
-//   `title` — o conteudo_b64 é imune por construção): escapar tags HTML
-//   literais (&lt;title&gt;), senão uma tag crua engole os cards seguintes;
-//   dentro das strings JS, `</` vira `<\/` e apóstrofo vira \'.
+// ATENÇÃO — campos de MARKUP do gerador (`contexto`, `evidencia`, `proposta`,
+//   `sugestao`): aceitam só <span class="ref">, <span class="q">, <strong>,
+//   <em>, <br>, balanceados e sem outros atributos. `title` é TEXTO PURO —
+//   nada de tag. `id`, `sec`, `key` e `tone` vão para dentro de ATRIBUTO:
+//   só [A-Za-z0-9_.:-]. O conteudo_b64 é imune por construção.
+//   Escapar tag literal (&lt;title&gt;), senão uma tag crua engole os cards
+//   seguintes; dentro das strings JS, `</` vira `<\/` e apóstrofo vira \'.
+//   `node skills/decidir/validate-cards.mjs <arquivo>` confere tudo isso.
 // ════════════════════════════════════════════════════════════
 const SECTIONS = [
 /*__SECTIONS__*/
@@ -531,6 +535,27 @@ function render() {
     nav.innerHTML += `<a href="#sec-${sec.id}">${sec.num}. ${sec.title}</a>`;
   });
   app.innerHTML = html;
+
+  // Rede de segurança de última instância (#287): se uma tag crua escapar da
+  // validação prévia, o parser do browser engole os cards seguintes e a
+  // página fica plausível — só que faltando itens, e ninguém percebe. Aqui a
+  // divergência vira visível em vez de virar triagem incompleta em silêncio.
+  // Compara contra TODOS os POINTS, não só os de seção conhecida: excluir os
+  // órfãos faria o card que some em silêncio se absolver sozinho (saidos ===
+  // esperados) — que é exatamente o defeito a denunciar.
+  const esperados = POINTS.length;
+  const saidos = app.querySelectorAll('article.card').length;
+  if (saidos !== esperados) {
+    const aviso = document.createElement('div');
+    aviso.className = 'card';
+    aviso.style.cssText = 'border-color:#c0392b;background:#fff5f4;margin-bottom:16px';
+    aviso.textContent =
+      `⚠ ${esperados - saidos} card(s) não renderizaram (${saidos} de ${esperados}). ` +
+      `Causas: tag HTML literal não escapada engolindo os seguintes, ou ` +
+      `card com 'sec' que não existe em SECTIONS. ` +
+      `Não despache por esta página: peça a regeneração.`;
+    app.prepend(aviso);
+  }
 
   POINTS.forEach(p => {
     const fb = state[p.id] || {};
