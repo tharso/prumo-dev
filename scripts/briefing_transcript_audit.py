@@ -118,6 +118,7 @@ class Report:
     visible_text_blocks: int = 0
     tokens: dict[str, int] = field(default_factory=dict)
     tools_by_name: dict[str, int] = field(default_factory=dict)
+    unclassified_mcp_before_first_time: list[str] = field(default_factory=list)
 
     def as_dict(self) -> dict[str, Any]:
         return dict(self.__dict__)
@@ -155,31 +156,82 @@ def is_external_channel(name: str) -> bool:
     return any(p.search(name) for p in EXTERNAL_PATTERNS)
 
 
-def _ends_with_sentinela(text: str) -> bool:
-    """A sentinela ENCERRA o bloco — não é uma menção no meio dele.
+_BLOCKQUOTE = re.compile(r"^\s*>")
+_CODESPAN = re.compile(r"^\s*`[^`]*`\s*$")
 
-    "Depois encerrarei com 'Curadoria de email e agenda...'" não é primeiro
-    tempo, é trailer do trailer. O contrato diz "encerrado pela linha", então
-    a última linha não-vazia tem de SER a linha.
+
+def _strip_enfase(linha: str) -> str:
+    """Tira ênfase Markdown e aspas em volta do payload.
+
+    O contrato exibe a frase entre aspas e itálico (`briefing-montagem.md:25`),
+    então rejeitá-las seria rígido demais. Blockquote e code span, não: eles
+    MUDAM a função semântica da linha — citar a regra não é cumpri-la.
     """
-    linhas = [ln.strip() for ln in text.splitlines()]
-    nao_vazias = [ln for ln in linhas if ln]
+    texto = linha.strip()
+    for _ in range(4):
+        anterior = texto
+        texto = texto.strip()
+        for par in ('""', "''", "**", "__", "*", "_", "“”", "‘’"):
+            abre, fecha = par[0], par[-1]
+            if len(texto) > 1 and texto.startswith(abre) and texto.endswith(fecha):
+                texto = texto[1:-1]
+        if texto == anterior:
+            break
+    return " ".join(texto.split())
+
+
+def _encerra_com_sentinela(texto: str) -> bool:
+    """A sentinela ENCERRA o bloco — não é menção no meio nem citação."""
+    nao_vazias = [ln for ln in texto.splitlines() if ln.strip()]
     if not nao_vazias:
         return False
-    ultima = " ".join(nao_vazias[-1].split())
-    return ultima.rstrip("*_` ").lstrip("*_`> ") == SENTINELA
+    ultima = nao_vazias[-1]
+    if _BLOCKQUOTE.match(ultima) or _CODESPAN.match(ultima):
+        return False
+    return _strip_enfase(ultima) == SENTINELA
 
 
-def analyse(path: Path, variant: str = VARIANT_TWO_TIMES) -> Report:
+_MCP = re.compile(r"^mcp__(?P<servidor>[^_]+(?:_[^_]+)*)__(?P<metodo>.+)$")
+
+
+def _mcp_opaco(nome: str) -> bool:
+    """Ferramenta MCP cujo servidor não se identifica no nome.
+
+    O prefixo é UUID por instalação, então `mcp__<uuid>__get_attachment` pode
+    ser Gmail e a allowlist não sabe. Não dá para reprovar por isso — Slack,
+    Granola e afins são MCP legítimo no meio do briefing. O que NÃO dá é
+    certificar `ok` tendo visto chamadas assim antes da entrega: absolver por
+    omissão é o modo de falha que este script existe para não repetir.
+    """
+    m = _MCP.match(nome)
+    if not m:
+        return False
+    servidor = m.group("servidor")
+    # Servidor legível (slack, supabase, vercel...) não é opaco.
+    return bool(re.fullmatch(r"[0-9a-f]{6,}(-[0-9a-f]+)*", servidor, re.IGNORECASE))
+
+
+@dataclass
+class _Entrega:
+    """Um record de assistente = UMA entrega ao usuário."""
+
+    idx: int
+    ts: datetime
+    encerra_com_sentinela: bool = False
+    tem_canal_externo: bool = False
+    canal: str | None = None
+    opacos: list[str] = field(default_factory=list)
+
+
+def analyse(
+    path: Path, variant: str = VARIANT_TWO_TIMES, since: datetime | None = None
+) -> Report:
     report = Report(variant=variant)
     tokens = {"input": 0, "cache_creation": 0, "cache_read": 0, "output": 0}
-
-    seq = 0
-    primeiro_ts: datetime | None = None
-    ultimo_ts: datetime | None = None
-    first_time: tuple[int, datetime] | None = None
-    first_external: tuple[int, datetime, str] | None = None
+    entregas: list[_Entrega] = []
+    carimbos: list[datetime] = []
     viu_forma = False
+    idx = 0
 
     for line_no, record in _records(path):
         rtype = record.get("type")
@@ -188,29 +240,37 @@ def analyse(path: Path, variant: str = VARIANT_TWO_TIMES) -> Report:
 
         sidechain = record.get("isSidechain")
         if sidechain not in (None, True, False):
-            # "false" (string) é truthy e sumiria com o record inteiro.
             _fail(line_no, f"isSidechain não-booleano: {sidechain!r}")
         if sidechain:
             continue
 
         message = record.get("message")
-        if not isinstance(message, dict):
-            continue
-        content = message.get("content")
-        if content is None:
-            continue
-        if not isinstance(content, list):
-            _fail(line_no, "message.content presente mas não é lista")
-        viu_forma = True
+        content = message.get("content") if isinstance(message, dict) else None
 
+        # Fail-closed vale para o ASSISTENTE, onde mora toda a evidência do
+        # veredito. Records de `user` variam de forma entre versões do host e
+        # não decidem nada aqui — exigir deles quebraria o auditor em
+        # transcript legítimo sem ganhar precisão.
+        if rtype == "assistant":
+            if not isinstance(message, dict):
+                _fail(line_no, "record de assistente sem message objeto")
+            if not isinstance(content, list):
+                _fail(line_no, "message.content de assistente não é lista")
+        elif not isinstance(content, list):
+            continue
+
+        viu_forma = True
         ts = _parse_ts(record.get("timestamp"), line_no)
-        if primeiro_ts is None:
-            primeiro_ts = ts
-        ultimo_ts = ts if ultimo_ts is None or ts > ultimo_ts else ultimo_ts
+        if since is not None and ts < since:
+            continue
+        carimbos.append(ts)
+        idx += 1
 
         if rtype == "assistant":
             report.model_calls += 1
             usage = message.get("usage")
+            if usage is not None and not isinstance(usage, dict):
+                _fail(line_no, f"usage presente mas não é objeto: {type(usage).__name__}")
             if isinstance(usage, dict):
                 for chave, campo in (
                     ("input", "input_tokens"),
@@ -225,22 +285,21 @@ def analyse(path: Path, variant: str = VARIANT_TWO_TIMES) -> Report:
                         _fail(line_no, f"usage.{campo} não-inteiro: {valor!r}")
                     tokens[chave] += valor
 
+        entrega = _Entrega(idx=idx, ts=ts)
+        textos: list[str] = []
         tools_na_rodada = 0
+
         for bloco in content:
             if not isinstance(bloco, dict):
                 _fail(line_no, "bloco de content não é objeto")
-            seq += 1
             btype = bloco.get("type")
 
-            # `thinking` NÃO é entrega: é exatamente a diferença entre compor
-            # e entregar que o ASSERT do core nomeia.
             if btype == "text" and rtype == "assistant":
                 texto = bloco.get("text")
                 if not isinstance(texto, str):
                     _fail(line_no, "bloco text sem campo text string")
                 report.visible_text_blocks += 1
-                if first_time is None and _ends_with_sentinela(texto):
-                    first_time = (seq, ts)
+                textos.append(texto)
 
             elif btype == "tool_use":
                 tools_na_rodada += 1
@@ -249,51 +308,86 @@ def analyse(path: Path, variant: str = VARIANT_TWO_TIMES) -> Report:
                 if not isinstance(nome, str) or not nome:
                     _fail(line_no, "tool_use sem name string")
                 report.tools_by_name[nome] = report.tools_by_name.get(nome, 0) + 1
-                if first_external is None and is_external_channel(nome):
-                    first_external = (seq, ts, nome)
+                if is_external_channel(nome):
+                    if not entrega.tem_canal_externo:
+                        entrega.tem_canal_externo = True
+                        entrega.canal = nome
+                elif _mcp_opaco(nome):
+                    entrega.opacos.append(nome)
+
+        # A sentinela encerra a ENTREGA, não um bloco qualquer dela: com
+        # [text(...sentinela), text("e já adianto...")] a frase não fecha
+        # coisa nenhuma.
+        if textos and _encerra_com_sentinela(textos[-1]):
+            entrega.encerra_com_sentinela = True
 
         if tools_na_rodada:
             report.tool_rounds += 1
-            # Chamadas além da primeira no mesmo turno: é o que separa
-            # "agrupou" de "gastou uma rodada de modelo por ferramenta".
             report.batched_tool_calls += tools_na_rodada - 1
+
+        entregas.append(entrega)
 
     if not viu_forma:
         raise UnsupportedTranscript(
             "nenhum registro com message.content em lista — schema não reconhecido"
         )
 
-    report.tokens = tokens
-    report.started_at = primeiro_ts.isoformat() if primeiro_ts else None
-    report.final_at = ultimo_ts.isoformat() if ultimo_ts else None
-    if first_time:
-        report.first_time_at = first_time[1].isoformat()
-    if first_external:
-        report.first_external_at = first_external[1].isoformat()
-        report.first_external_tool = first_external[2]
+    # Uma entrega que fecha o primeiro tempo E abre canal na mesma mensagem
+    # não é primeiro tempo: é o bloco único que a #284 revogou.
+    primeiras = [e for e in entregas if e.encerra_com_sentinela and not e.tem_canal_externo]
+    if len(primeiras) > 1 and since is None:
+        raise UnsupportedTranscript(
+            f"{len(primeiras)} primeiros tempos no mesmo arquivo — o transcript "
+            "cobre mais de um briefing; delimite com --since, senão a sentinela "
+            "de ontem absolve a violação de hoje"
+        )
 
-    if primeiro_ts and first_time:
-        report.time_to_first_time_s = (first_time[1] - primeiro_ts).total_seconds()
-    if primeiro_ts and ultimo_ts:
-        report.time_to_final_s = (ultimo_ts - primeiro_ts).total_seconds()
+    externos = [e for e in entregas if e.tem_canal_externo]
+    primeira = primeiras[0] if primeiras else None
+    externo = externos[0] if externos else None
+
+    report.tokens = tokens
+    if carimbos:
+        report.started_at = min(carimbos).isoformat()
+        report.final_at = max(carimbos).isoformat()
+        report.time_to_final_s = (max(carimbos) - min(carimbos)).total_seconds()
+    if primeira:
+        report.first_time_at = primeira.ts.isoformat()
+        if carimbos:
+            # Envelope pelo MENOR carimbo: usar "o da primeira linha" produzia
+            # duração negativa em transcript fora de ordem.
+            report.time_to_first_time_s = (primeira.ts - min(carimbos)).total_seconds()
+    if externo:
+        report.first_external_at = externo.ts.isoformat()
+        report.first_external_tool = externo.canal
+
+    corte = primeira.idx if primeira else (externo.idx if externo else idx)
+    opacos = sorted(
+        {n for e in entregas if e.idx <= corte for n in e.opacos}
+    )
+    report.unclassified_mcp_before_first_time = opacos
 
     report.verdict, report.reason = _verdict(
         variant,
-        first_time[0] if first_time else None,
-        first_external[0] if first_external else None,
+        primeira.idx if primeira else None,
+        externo.idx if externo else None,
+        opacos,
     )
     return report
 
 
 def _verdict(
-    variant: str, first_time_seq: int | None, first_external_seq: int | None
+    variant: str,
+    first_time_idx: int | None,
+    first_external_idx: int | None,
+    opacos: list[str] | None = None,
 ) -> tuple[str, str]:
-    """A regra do ASSERT, na ordem CAUSAL.
+    """A regra do ASSERT, em unidade de ENTREGA.
 
-    A comparação é por posição no fluxo — (record, bloco) —, nunca por
-    timestamp: `tool_use` e texto do mesmo record compartilham o carimbo, e
-    comparar tempo aprovaria "abriu o canal, depois escreveu" só porque os
-    dois marcam o mesmo segundo.
+    A fronteira é o record do assistente, não a posição do bloco: `[texto,
+    tool_use]` na mesma mensagem é UMA resposta, e aprová-la certificaria
+    exatamente a interpretação de "dois tempos na mesma resposta" que a #284
+    revogou.
     """
     if variant == VARIANT_SINGLE:
         return (
@@ -301,24 +395,33 @@ def _verdict(
             "host de resposta única: o contrato de duas entregas não se aplica",
         )
 
-    if first_time_seq is None:
-        if first_external_seq is None:
+    if first_time_idx is None:
+        if first_external_idx is None:
             return (
                 VERDICT_MISSING,
-                "nenhum canal externo aberto, e o primeiro tempo nunca foi "
-                "encerrado pela sentinela — em host de dois tempos ele é "
+                "nenhum canal externo aberto, e nenhuma entrega encerrada pela "
+                "sentinela — em host de dois tempos o primeiro tempo é "
                 "obrigatório mesmo sem email/agenda a consultar",
             )
         return (
             VERDICT_NOT_EMITTED,
-            "canal externo aberto e a sentinela do primeiro tempo nunca "
-            "apareceu em texto visível",
+            "canal externo aberto e nenhuma entrega anterior foi encerrada "
+            "pela sentinela do primeiro tempo",
         )
 
-    if first_external_seq is not None and first_external_seq < first_time_seq:
+    if first_external_idx is not None and first_external_idx <= first_time_idx:
         return (
             VERDICT_NOT_EMITTED,
-            "canal externo aberto antes da entrega do primeiro tempo",
+            "canal externo aberto na mesma entrega do primeiro tempo, ou antes "
+            "dela — entregar junto não é entregar antes",
+        )
+
+    if opacos:
+        return (
+            VERDICT_UNSUPPORTED,
+            "não dá para certificar: houve chamada MCP de servidor opaco "
+            f"antes da entrega ({', '.join(opacos[:3])}) — pode ter sido "
+            "Gmail/Calendar e o nome não permite saber",
         )
 
     return VERDICT_OK, "primeiro tempo entregue antes do primeiro canal externo"
@@ -385,14 +488,30 @@ def main(argv: list[str] | None = None) -> int:
         help="variante do host (matriz do briefing-montagem.md). Cowork é "
         "two-times; o auditor não adivinha o host.",
     )
+    parser.add_argument(
+        "--since",
+        help="ISO-8601 com fuso: ignora records anteriores. Necessário quando "
+        "o transcript cobre mais de um briefing.",
+    )
     args = parser.parse_args(argv)
+
+    since = None
+    if args.since:
+        try:
+            since = datetime.fromisoformat(args.since.replace("Z", "+00:00"))
+        except ValueError:
+            print(f"--since não é ISO-8601: {args.since!r}", file=sys.stderr)
+            return 2
+        if since.tzinfo is None:
+            print("--since precisa de fuso", file=sys.stderr)
+            return 2
 
     if not args.transcript.is_file():
         print(f"transcript não encontrado: {args.transcript}", file=sys.stderr)
         return 2
 
     try:
-        report = analyse(args.transcript, variant=args.variant)
+        report = analyse(args.transcript, variant=args.variant, since=since)
     except UnsupportedTranscript as exc:
         payload = {"schema": SCHEMA, "verdict": VERDICT_UNSUPPORTED, "reason": str(exc)}
         print(
@@ -407,7 +526,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.json
         else _render(report)
     )
-    return EXIT_CODES[report.verdict]
+    return EXIT_CODES.get(report.verdict, 3)
 
 
 if __name__ == "__main__":  # pragma: no cover

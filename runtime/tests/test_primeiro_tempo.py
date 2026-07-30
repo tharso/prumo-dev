@@ -24,6 +24,7 @@ MODULES = REPO_ROOT / "skills" / "prumo" / "references" / "modules"
 CORE = REPO_ROOT / "skills" / "prumo" / "references" / "prumo-core.md"
 MONTAGEM = MODULES / "briefing-montagem.md"
 CANAIS = MODULES / "briefing-canais.md"
+SKILL_BRIEFING = REPO_ROOT / "skills" / "briefing" / "SKILL.md"
 
 # A frase-sentinela é MARCADOR DE PROTOCOLO, não copy (#284). É a fronteira
 # observável que o ASSERT usa e que o medidor procura no transcript. Mudá-la
@@ -153,13 +154,26 @@ class PecasNosOutrosModulosTest(unittest.TestCase):
         # A formulação que licenciou o incidente. O core já dizia "mesma
         # conversa" (regra 12); os módulos ainda diziam "mesma resposta", que
         # é exatamente a leitura de quem entregou os dois blocos juntos.
-        for path in (MONTAGEM, CANAIS, MODULES / "interaction-format.md"):
+        #
+        # `casefold()` porque a primeira versão deste guard comparava caixa
+        # exata e `MESMA resposta` passou de bigode postiço — sobreviveu na
+        # linha 12 do próprio arquivo que o teste dizia proteger (Codex, r5).
+        donos = (MONTAGEM, CANAIS, MODULES / "interaction-format.md", SKILL_BRIEFING)
+        for path in donos:
             self.assertNotIn(
                 "mesma resposta",
-                _read(path),
+                _read(path).casefold(),
                 f"{path.name} voltou a dizer 'mesma resposta' para os dois "
                 "tempos — é a redação que produziu o briefing de 11 minutos",
             )
+
+    def test_donos_afirmam_positivamente_as_duas_entregas(self) -> None:
+        # Proibir a formulação velha não obriga a nova: um arquivo que apague
+        # a frase e não diga nada passa nos dois `assertNotIn` e deixa o
+        # contrato mudo justamente onde ele precisa falar.
+        montagem = _read(MONTAGEM).casefold()
+        self.assertIn("nova entrega", montagem)
+        self.assertIn("duas entregas, nunca um bloco só".casefold(), montagem)
 
     def test_cowork_continua_classificado_como_dois_tempos(self) -> None:
         # O ASSERT nomeia o Cowork diretamente. Se a matriz reclassificar o

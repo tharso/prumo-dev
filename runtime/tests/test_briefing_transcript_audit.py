@@ -18,6 +18,7 @@ import json
 import sys
 import tempfile
 import unittest
+from datetime import datetime
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -282,7 +283,12 @@ class OrdemCausalTest(unittest.TestCase):
         )
         self.assertEqual(audit.analyse(path).verdict, audit.VERDICT_NOT_EMITTED)
 
-    def test_texto_antes_do_tool_no_mesmo_record_aprova(self) -> None:
+    def test_texto_e_tool_no_MESMO_record_tambem_reprova(self) -> None:
+        # Este teste nasceu invertido: eu aprovava `[texto, tool]` no mesmo
+        # record porque comparava posição de BLOCO. Mas um record é UMA
+        # mensagem do assistente — aprovar isso certificaria exatamente a
+        # interpretação "dois tempos na mesma resposta" que a #284 revogou
+        # (Codex, r5). A fronteira é a ENTREGA, não o bloco.
         path = _write(
             [
                 _assistant(T0, [_tool("Read")]),
@@ -292,7 +298,30 @@ class OrdemCausalTest(unittest.TestCase):
                 ),
             ]
         )
+        self.assertEqual(audit.analyse(path).verdict, audit.VERDICT_NOT_EMITTED)
+
+    def test_entrega_em_record_ANTERIOR_aprova(self) -> None:
+        path = _write(
+            [
+                _assistant(T0, [_tool("Read")]),
+                _assistant(T_LOCAL, [_text(PRIMEIRO_TEMPO)]),
+                _assistant(T_EXTERNO, [_tool("mcp__x__search_threads")]),
+            ]
+        )
         self.assertEqual(audit.analyse(path).verdict, audit.VERDICT_OK)
+
+    def test_sentinela_em_bloco_nao_final_da_entrega_nao_conta(self) -> None:
+        # Irmão do mutante acima: a sentinela encerra o bloco, mas o bloco
+        # seguinte da MESMA entrega continua falando. A frase não fecha coisa
+        # nenhuma.
+        path = _write(
+            [
+                _assistant(T0, [_tool("Read")]),
+                _assistant(T_LOCAL, [_text(PRIMEIRO_TEMPO), _text("e já adianto: 12.")]),
+                _assistant(T_EXTERNO, [_tool("mcp__x__search_threads")]),
+            ]
+        )
+        self.assertEqual(audit.analyse(path).verdict, audit.VERDICT_NOT_EMITTED)
 
     def test_transcript_fora_de_ordem_usa_posicao_nao_relogio(self) -> None:
         # Carimbo do canal ANTERIOR ao da entrega, mas o canal vem depois no
@@ -333,6 +362,99 @@ class SentinelaEstritaTest(unittest.TestCase):
     def test_negrito_em_volta_da_linha_ainda_conta(self) -> None:
         path = _write([_assistant(T0, [_text(f"1. item\n\n**{SENT}**")])])
         self.assertEqual(audit.analyse(path).verdict, audit.VERDICT_OK)
+
+
+class DelimitacaoTest(unittest.TestCase):
+    """Rodada 5: o auditor não pode misturar dois briefings num veredito."""
+
+    def _dois_briefings(self) -> Path:
+        return _write(
+            [
+                _assistant(T0, [_text(PRIMEIRO_TEMPO)]),
+                _assistant(T_LOCAL, [_tool("mcp__x__search_threads")]),
+                _assistant("2026-07-31T09:00:00.000Z", [_text(PRIMEIRO_TEMPO)]),
+                _assistant("2026-07-31T09:05:00.000Z", [_tool("mcp__x__list_events")]),
+            ]
+        )
+
+    def test_dois_briefings_no_mesmo_arquivo_exigem_delimitacao(self) -> None:
+        # Sem isto, a sentinela de ontem absolve a violação de hoje.
+        with self.assertRaises(audit.UnsupportedTranscript) as ctx:
+            audit.analyse(self._dois_briefings())
+        self.assertIn("mais de um briefing", str(ctx.exception))
+
+    def test_since_delimita_a_execucao(self) -> None:
+        corte = datetime.fromisoformat("2026-07-31T00:00:00+00:00")
+        report = audit.analyse(self._dois_briefings(), since=corte)
+        self.assertEqual(report.verdict, audit.VERDICT_OK)
+
+
+class OpacoTest(unittest.TestCase):
+    def test_mcp_de_servidor_opaco_antes_da_entrega_impede_certificar(self) -> None:
+        # Não dá pra reprovar (pode ser Slack), nem pra aprovar (pode ser
+        # Gmail e o nome não permite saber). Absolver por omissão é o modo de
+        # falha que este script existe para não repetir.
+        path = _write(
+            [
+                _assistant(T0, [_tool("mcp__aadaeb5fed7147329__get_attachment")]),
+                _assistant(T_LOCAL, [_text(PRIMEIRO_TEMPO)]),
+            ]
+        )
+        report = audit.analyse(path)
+        self.assertEqual(report.verdict, audit.VERDICT_UNSUPPORTED)
+        self.assertIn("get_attachment", report.unclassified_mcp_before_first_time[0])
+
+    def test_mcp_de_servidor_legivel_nao_atrapalha(self) -> None:
+        path = _write(
+            [
+                _assistant(T0, [_tool("mcp__slack__slack_read_channel")]),
+                _assistant(T_LOCAL, [_text(PRIMEIRO_TEMPO)]),
+            ]
+        )
+        self.assertEqual(audit.analyse(path).verdict, audit.VERDICT_OK)
+
+
+class EnvelopeTemporalTest(unittest.TestCase):
+    def test_duracao_nunca_fica_negativa_em_transcript_fora_de_ordem(self) -> None:
+        # `primeiro_ts` era "o carimbo da primeira linha", não o menor: com o
+        # arquivo fora de ordem, a métrica saía negativa (Codex, r5).
+        path = _write(
+            [
+                _assistant(T_FIM, [_tool("Read")]),
+                _assistant(T0, [_text(PRIMEIRO_TEMPO)]),
+            ]
+        )
+        report = audit.analyse(path)
+        self.assertGreaterEqual(report.time_to_first_time_s, 0)
+        self.assertGreaterEqual(report.time_to_final_s, 0)
+
+
+class SentinelaCitadaTest(unittest.TestCase):
+    def test_blockquote_nao_conta_como_entrega(self) -> None:
+        # Citar a regra não é cumpri-la.
+        path = _write(
+            [
+                _assistant(T0, [_text(f"Como manda a doc:\n\n> {SENT}")]),
+                _assistant(T_EXTERNO, [_tool("mcp__x__search_threads")]),
+            ]
+        )
+        self.assertEqual(audit.analyse(path).verdict, audit.VERDICT_NOT_EMITTED)
+
+    def test_code_span_nao_conta_como_entrega(self) -> None:
+        path = _write(
+            [
+                _assistant(T0, [_text(f"a linha é `{SENT}`")]),
+                _assistant(T_EXTERNO, [_tool("mcp__x__search_threads")]),
+            ]
+        )
+        self.assertEqual(audit.analyse(path).verdict, audit.VERDICT_NOT_EMITTED)
+
+    def test_aspas_e_italico_do_contrato_contam(self) -> None:
+        # O contrato EXIBE a frase entre aspas e itálico; rejeitar seria
+        # rígido demais e reprovaria quem seguiu o texto ao pé da letra.
+        for forma in (f'*"{SENT}"*', f"**{SENT}**", f'"{SENT}"', SENT):
+            path = _write([_assistant(T0, [_text(f"1. item\n\n{forma}")])])
+            self.assertEqual(audit.analyse(path).verdict, audit.VERDICT_OK, forma)
 
 
 class FalhaFechadaTest(unittest.TestCase):

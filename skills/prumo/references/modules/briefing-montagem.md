@@ -9,7 +9,7 @@
 
 ## Montar o briefing — em DOIS TEMPOS (#196)
 
-O briefing chega em **dois tempos na MESMA resposta**, com numeração sequencial única de 1 a N — nunca reinicia entre os tempos, o despacho em lote ("3, 7, 12") sobrevive intacto (dono da regra: `interaction-format.md` — carregar aqui se ainda não estiver no contexto). A capacidade do host decide a variante (matriz abaixo); host sem a capacidade entrega resposta única como sempre.
+O briefing chega em **dois tempos na mesma CONVERSA — duas entregas, nunca um bloco só**, com numeração sequencial única de 1 a N — nunca reinicia entre os tempos, o despacho em lote ("3, 7, 12") sobrevive intacto (dono da regra: `interaction-format.md` — carregar aqui se ainda não estiver no contexto). A capacidade do host decide a variante (matriz abaixo); host sem a capacidade entrega resposta única como sempre.
 
 ### Primeiro tempo: panorama local imediato
 
