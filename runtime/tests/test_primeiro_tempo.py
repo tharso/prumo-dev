@@ -10,7 +10,7 @@ O ASSERT do core (`test_core_asserts.py`) congela o texto. Este módulo
 congela as PEÇAS de que ele depende, espalhadas por três arquivos: se
 qualquer uma sair de baixo dele, o ASSERT vira letra morta apontando pro
 vazio. Um teste estático não prova que um modelo vai entregar texto antes de
-uma ferramenta — isso é do guard de transcript, no medidor. Aqui só se
+uma ferramenta — isso é do auditor de transcript (#286). Aqui só se
 garante que o contrato continua dizendo o que o ASSERT afirma que ele diz.
 """
 
@@ -27,7 +27,7 @@ CANAIS = MODULES / "briefing-canais.md"
 SKILL_BRIEFING = REPO_ROOT / "skills" / "briefing" / "SKILL.md"
 
 # A frase-sentinela é MARCADOR DE PROTOCOLO, não copy (#284). É a fronteira
-# observável que o ASSERT usa e que o medidor procura no transcript. Mudá-la
+# observável que o ASSERT usa e que o auditor da #286 vai procurar. Mudá-la
 # exige atualizar, no mesmo diff: o core, o montagem, este guard e o parser.
 SENTINELA = "Curadoria de email e agenda chegando na sequência."
 
@@ -49,12 +49,12 @@ class SentinelaTest(unittest.TestCase):
             SENTINELA,
             self.montagem,
             "a frase-sentinela sumiu do briefing-montagem.md — o ASSERT do "
-            "core e o medidor ficam apontando pro vazio",
+            "core fica apontando pro vazio",
         )
 
     def test_assert_do_core_usa_a_mesma_string(self) -> None:
         # Duas grafias divergentes fariam o guard passar e a execução falhar:
-        # o agente encerra com uma frase e o detector procura outra.
+        # o agente encerra com uma frase e quem for conferir procura outra.
         self.assertIn(
             SENTINELA,
             self.core,
@@ -81,7 +81,7 @@ class SentinelaTest(unittest.TestCase):
             SENTINELA,
             " ".join(segundo.split()),
             "a frase-sentinela aparece também depois do primeiro tempo — "
-            "fronteira ambígua faz o detector marcar o momento errado",
+            "fronteira ambígua faz quem confere marcar o momento errado",
         )
 
     def test_montagem_declara_que_e_marcador_de_protocolo(self) -> None:
