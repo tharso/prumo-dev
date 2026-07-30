@@ -47,14 +47,28 @@ A partir de 2026-05-04 (#78), toda entrada nova segue o formato:
 ## YYYY-MM-DD — [Título descritivo]
 
 **Tópicos:** lista de termos do vocabulário controlado, separados por vírgula.
-**Issues relacionadas:** #N (papel: **executa** / **desdobra** / revoga / estende / mantém / bloqueia / desbloqueia / ortogonal), ou "nenhuma".
-> Os dois primeiros papéis descrevem a relação com o TRABALHO, não com outra decisão, e por isso não existiam na lista original (#78, pensada para relações entre decisões): **executa** = a issue que esta decisão implementa; **desdobra** = a issue que continua o trabalho que esta decisão deixou em aberto. Ampliação aprovada pelo dono em 29/07 (#273), depois que a prática se consolidou por repetição em #261, #262, #263, #268, #269 e #279 — repetição não ratifica contrato.
+**Issues relacionadas:** #N (papel — ver lista abaixo), ou "nenhuma".
 **Relações com decisões anteriores:** entradas prévias deste arquivo que esta entrada toca, com o papel (revoga, estende parcialmente, mantém, complementa). Se nenhuma, escrever explicitamente "nenhuma identificada após consulta ao índice temático" — isso documenta que a consulta foi feita.
 
 **Contexto:** ...
 **Decisão:** ...
 **Alternativas consideradas:** ...
 ```
+
+### Papéis do campo "Issues relacionadas" (#273)
+
+Descrevem a relação da entrada com o **trabalho** — diferente do campo "Relações com decisões anteriores", que descreve relação entre **decisões**. A lista é **ilustrativa, não fechada**: nomeie o papel em uma ou duas palavras e, se nenhum destes servir, use o termo que descreve honestamente a relação.
+
+| Papel | Significado |
+|---|---|
+| `executa` | a issue cujo trabalho executa esta decisão — o caso mais comum |
+| `épico` | a issue guarda-chuva à qual esta decisão pertence |
+| `desdobra` | a issue que continua o trabalho que esta decisão deixou em aberto |
+| `revoga` / `estende` / `mantém` | a issue muda, amplia ou preserva o que outra decisão estabeleceu |
+| `bloqueia` / `desbloqueia` | dependência de trabalho entre as duas |
+| `ortogonal` | tocam o mesmo arquivo ou área sem conflito de contrato |
+
+**Por que a lista é aberta.** A #78 fixou seis papéis pensando em relações entre decisões, mas o campo aponta pra trabalho, e a variedade real é maior: uma varredura em 29/07 encontrou **18 termos distintos em uso**, com `executa` (34 ocorrências) e `épico` (13) liderando — e `épico` nunca esteve na lista. Fechar o conjunto obrigaria um PR de governança a cada relação nova legítima, e o resultado previsível é o que já aconteceu: a prática ignora a lista e ninguém percebe. O vocabulário que continua **controlado de verdade** é o de `Tópicos`, logo abaixo, onde termo novo exige justificativa explícita na entrada que o introduz.
 
 Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões anteriores" (introduzido na #78). Quando um conflito retrospectivo for descoberto, anotar a relação na entrada nova que o resolve — não reescrever entradas antigas.
 
@@ -70,13 +84,15 @@ Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões ant
 
 **Relações com decisões anteriores:** **estende** 2026-05-04 (#78, que criou o formato das entradas e a lista de papéis). Não revoga: os seis termos originais continuam válidos e descrevem o que sempre descreveram. Nenhuma revogação identificada após consulta ao índice temático.
 
-**Contexto:** o bloco `## Formato das entradas` declara os papéis válidos do campo "Issues relacionadas" como `revoga / estende / mantém / bloqueia / desbloqueia / ortogonal`. Mas as entradas de julho — #261, #262, #263, #268, #269 e #279 — usam `executa` e `desdobra`, que não estão na lista. Achado do Codex na revisão do PR #270. A causa é que a lista da #78 foi pensada para relações entre **decisões**, e o campo "Issues relacionadas" aponta para **trabalho**: nenhum dos seis descreve honestamente "a issue que esta decisão implementa" nem "a issue que continua o que ela deixou aberto".
+**Contexto:** o bloco `## Formato das entradas` declarava os papéis válidos do campo "Issues relacionadas" como `revoga / estende / mantém / bloqueia / desbloqueia / ortogonal`. Achado do Codex na revisão do PR #270: as entradas de julho usam `executa` e `desdobra`, fora da lista. A causa é que a lista da #78 foi pensada para relações entre **decisões**, e o campo aponta para **trabalho**.
 
-**Decisão (dono, 29/07):** ampliar o vocabulário com os dois termos, cada um com uma frase explicando o papel. Nenhuma entrada existente é reescrita — elas passam a estar em conformidade com o contrato que já seguiam na prática.
+Ao implementar, a varredura do corpus derrubou a premissa da própria issue: não eram dois termos clandestinos, eram **18 termos distintos em uso** — `executa` (34 ocorrências), `épico` (13), `resolve`, `complementa`, `predecessora`, `sucessora`, `emenda parcialmente`, `decide`, `pré-requisito`. O segundo mais usado nunca esteve na lista. A "lista controlada de seis" era ficção desde cedo, e ampliar de seis para oito teria mantido a ficção com dois números a mais.
 
-**Alternativas consideradas:** reescrever as seis entradas forçando os termos atuais (rejeitado — obrigaria a escolher um termo que descreve mal a relação, e o problema é da lista, não das entradas); deixar como estava e tratar a prática como norma tácita (rejeitado com o argumento do Codex: *"três infrações não fazem uma constituição, só fazem uma fila"* — repetição não ratifica contrato, e um contrato de governança que a própria prática contradiz não governa nada).
+**Decisão (dono, 29/07):** ampliar o vocabulário. Na execução, ampliado **e declarado ilustrativo, não fechado**: a tabela nomeia os papéis de uso real e o texto diz explicitamente que, se nenhum servir, vale o termo que descreve honestamente a relação. Nenhuma entrada existente é reescrita. O vocabulário que continua **controlado de verdade** é o de `Tópicos`, onde termo novo exige justificativa na entrada que o introduz.
 
-**Consequência aceita:** o vocabulário fica com oito termos em vez de seis. Em troca, o bloco de formato volta a descrever o que o arquivo de fato faz.
+**Alternativas consideradas:** reescrever as entradas forçando os termos originais (rejeitado — obrigaria a escolher termo que descreve mal a relação, e o problema é da lista); enumerar os 18 termos como lista fechada (rejeitado — uma lista de 18 não é vocabulário controlado, é inventário, e cada relação nova legítima exigiria um PR de governança); deixar como norma tácita (rejeitado com o argumento do Codex: *"três infrações não fazem uma constituição, só fazem uma fila"*).
+
+**Consequência aceita:** o campo perde a garantia de conjunto fechado — em troca de o bloco de formato parar de descrever um arquivo que não existe. Fechamento continua onde ele é barato e verificável (`Tópicos`), não onde a prática já provou que ele não se sustenta.
 
 ---
 
