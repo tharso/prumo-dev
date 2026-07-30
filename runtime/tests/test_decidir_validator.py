@@ -11,8 +11,10 @@ CAUSA. Tag crua num campo de markup é o que engole os cards seguintes —
 barrada na origem, o engolimento não acontece.
 
 Os testes de contrato (que a skill proíbe instalar dependência) rodam sempre.
-Os do validador exigem `node`; sem ele, pulam — instalar Node para testar o
-script que existe para não instalar nada seria piada de mau gosto.
+Os do validador exigem `node` e pulam sem ele — mas o CI **instala** Node de
+propósito: pular lá seria cobertura fantasma, verde significando "não
+testamos o software novo". Ambiente de CI e briefing do usuário são coisas
+diferentes; a proibição vale no segundo.
 """
 
 from __future__ import annotations
@@ -92,6 +94,32 @@ class ContratoDaSkillTest(unittest.TestCase):
         tpl = TEMPLATE.read_text(encoding="utf-8")
         self.assertIn("querySelectorAll('article.card').length", tpl)
         self.assertIn("não renderizaram", tpl)
+
+    def test_aviso_compara_contra_TODOS_os_points(self) -> None:
+        # Achado do Codex: excluir os cards de seção órfã do "esperado" fazia
+        # o card que some em silêncio se absolver sozinho — saidos ===
+        # esperados — que é exatamente o defeito a denunciar.
+        tpl = TEMPLATE.read_text(encoding="utf-8")
+        self.assertIn("const esperados = POINTS.length;", tpl)
+        self.assertNotIn(
+            "const esperados = POINTS.filter(p => SECTIONS.some(s => s.id === p.sec)).length;",
+            tpl,
+            "o esperado voltou a excluir órfãos — o card sumido se absolve",
+        )
+
+    def test_comentario_do_template_bate_com_o_schema(self) -> None:
+        # O comentário dizia que `title` aceita markup e omitia proposta e
+        # sugestao: quem escreve o card lê ali, não no validador.
+        tpl = TEMPLATE.read_text(encoding="utf-8")
+        self.assertIn("`title` é TEXTO PURO", tpl)
+        self.assertIn("validate-cards.mjs", tpl)
+
+    def test_ci_roda_os_testes_do_validador(self) -> None:
+        # `skipUnless(node)` é razoável na máquina de alguém, mas no CI vira
+        # cobertura fantasma: verde significando "não testamos o software
+        # novo" (Codex). O workflow precisa instalar node.
+        ci = (REPO_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+        self.assertIn("setup-node", ci)
 
 
 @unittest.skipUnless(NODE, "node ausente — o validador é opcional por desenho")
@@ -195,6 +223,88 @@ class ValidadorTest(unittest.TestCase):
         vazio.write_text("<html>sem literais</html>", encoding="utf-8")
         code, _ = _validar(vazio)
         self.assertEqual(code, 2)
+
+    def test_injecao_por_atributo_reprova(self) -> None:
+        # `id` vai para dentro de `data-pt="${p.id}"`. Proibir só `<`/`>`
+        # não impedia fechar a aspas e abrir um handler (Codex).
+        path = _gerar(
+            SECAO,
+            """{ id:'7" onclick="alert(1)', sec:'emails', type:'despacho', title:'x', contexto:'y',
+                 actions:[{key:'r',label:'R',tone:'green',effect:'archive'}] },""",
+        )
+        code, r = _validar(path)
+        self.assertEqual(code, 1)
+        self.assertIn("ATRIBUTO", " ".join(r["erros"]))
+
+    def test_handler_dentro_de_tag_permitida_reprova(self) -> None:
+        # A allowlist antiga olhava o nome da tag e a classe, e deixava
+        # passar qualquer outro atributo.
+        path = _gerar(
+            SECAO,
+            """{ id:'7', sec:'emails', type:'despacho', title:'x',
+                 contexto: 'oi <span class="ref" onclick="alert(1)">x</span>',
+                 actions:[{key:'r',label:'R',tone:'green',effect:'archive'}] },""",
+        )
+        code, r = _validar(path)
+        self.assertEqual(code, 1)
+        self.assertIn("onclick", " ".join(r["erros"]))
+
+    def test_atributo_sem_aspas_reprova(self) -> None:
+        path = _gerar(
+            SECAO,
+            """{ id:'7', sec:'emails', type:'despacho', title:'x',
+                 contexto: 'oi <span class=ref>x</span>',
+                 actions:[{key:'r',label:'R',tone:'green',effect:'archive'}] },""",
+        )
+        self.assertEqual(_validar(path)[0], 1)
+
+    def test_tag_nao_fechada_reprova(self) -> None:
+        for contexto in ("oi <strong x", "oi <strong>x", "oi </em>x"):
+            path = _gerar(
+                SECAO,
+                f"""{{ id:'7', sec:'emails', type:'despacho', title:'x',
+                     contexto: '{contexto}',
+                     actions:[{{key:'r',label:'R',tone:'green',effect:'archive'}}] }},""",
+            )
+            self.assertEqual(_validar(path)[0], 1, contexto)
+
+    def test_tone_fora_do_enum_reprova(self) -> None:
+        path = _gerar(
+            SECAO,
+            """{ id:'7', sec:'emails', type:'despacho', title:'x', contexto:'y',
+                 badges:[{label:'P1', tone:'neon'}],
+                 actions:[{key:'r',label:'R',tone:'green',effect:'archive'}] },""",
+        )
+        code, r = _validar(path)
+        self.assertEqual(code, 1)
+        self.assertIn("enum", " ".join(r["erros"]))
+
+    def test_getter_hostil_nao_trava_o_validador(self) -> None:
+        # O timeout do `vm` termina quando `runInContext` retorna; um getter
+        # rodaria DEPOIS, sem timeout, na hora de ler o campo. Por isso o
+        # JSON.stringify acontece DENTRO do contexto (Codex).
+        path = _gerar(
+            SECAO,
+            """{ id:'7', sec:'emails', type:'despacho', title:'x',
+                 get contexto() { for(;;){} },
+                 actions:[{key:'r',label:'R',tone:'green',effect:'archive'}] },""",
+        )
+        code, _ = _validar(path)
+        self.assertIn(code, (1, 2), "o validador não pode congelar num getter")
+
+    def test_roda_em_path_com_espaco(self) -> None:
+        # O entry point comparava URL percent-encoded com path cru: em pasta
+        # com espaço o processo saía 0 SEM VALIDAR NADA (Codex).
+        base = Path(tempfile.mkdtemp()) / "pasta com espaço"
+        base.mkdir()
+        origem = _gerar(
+            SECAO,
+            """{ id:'7', sec:'nao_existe', type:'despacho', title:'x', contexto:'y' },""",
+        )
+        destino = base / "d.html"
+        destino.write_text(origem.read_text(encoding="utf-8"), encoding="utf-8")
+        code, r = _validar(destino)
+        self.assertEqual(code, 1, f"saiu {code} sem validar: {r}")
 
     def test_validador_nao_toca_a_rede_nem_o_disco_do_usuario(self) -> None:
         # O sandbox `vm` roda sem `process` e sem `require`: um literal
