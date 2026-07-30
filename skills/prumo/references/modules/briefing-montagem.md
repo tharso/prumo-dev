@@ -1,6 +1,6 @@
 # Briefing — Montagem e fechamento (F3)
 
-> **module_version: 5.73.0**
+> **module_version: 5.81.0**
 >
 > Fase F3 da rota fásica do briefing (#180). Carregar **ao montar o
 > panorama** (o primeiro tempo já pode ser emitido a partir daqui; a
@@ -22,7 +22,7 @@ Componentes do primeiro tempo (estruturais sem número; **só item despachável 
 - **Linha de faxina obrigatória (#217):** o primeiro tempo contém a linha com o resultado da checagem de `briefing-estado.md` — *"Faxina: nada pendente"* ou *"Faxina: arquivei N itens do registro"* (elemento estrutural, sem número). Briefing sem a linha de faxina é briefing **fora de conformidade**.
 - Caixas declaradas (#245): se o usuário marcou pastas como `(caixa de entrada)` no mapa autoral, apresentar a contagem em uma linha — "Caixas declaradas: N em `X/`, M em `Y/`" —, sem despejar itens. Contar e cobrar, nunca reorganizar.
 - Inbox4Mobile: se houver itens novos (detectados em `briefing-canais.md` → Inbox4Mobile), apresentar a contagem e a triagem — **itens de triagem numeram**. Linkar `inbox-preview.html` quando o preview estiver atualizado. No primeiro tempo, não despejar conteúdo bruto dos arquivos — preferir resumo numerado com classificação. **Este item é sobre formato de apresentação. A triagem real acontece no estágio local dos canais — não pular por causa deste item.**
-- Fechar o primeiro tempo com UMA linha (sem número): *"Curadoria de email e agenda chegando na sequência."* — e **seguir sem esperar resposta**.
+- Fechar o primeiro tempo com UMA linha (sem número): *"Curadoria de email e agenda chegando na sequência."* — e **seguir sem esperar resposta**. Esta linha é **marcador de protocolo**, não copy: é ela que o ASSERT do core usa como fronteira observável, e só depois de ela ter sido ENTREGUE ao usuário é que Gmail/Calendar podem abrir. Compor o texto e segurá-lo para emitir junto do segundo tempo é a não-conformidade que o ASSERT nomeia — briefing assim é briefing **fora de conformidade**, no mesmo molde da linha de faxina (#217). Mudar o texto da linha exige atualizar o guard e o parser do medidor juntos.
 
 A numeração do primeiro tempo (1..k, com k variável — é quantos itens houver) fica **congelada** (snapshot lógico): o segundo tempo continua de k+1; nunca renumerar. Se o usuário despachar itens entre os tempos, atender e anotar — sem recompor o panorama.
 

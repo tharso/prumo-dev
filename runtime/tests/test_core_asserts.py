@@ -31,6 +31,20 @@ EXPECTED_ASSERTS = {
     # tempo" (a proibição segue idêntica em substância — o que muda é o nome
     # da janela; em host de resposta única, vale a resposta inteira).
     "ASSERT: No primeiro tempo do briefing (#196 — a primeira entrega da resposta em dois tempos; em host de resposta única, a resposta inteira), é proibido abrir arquivo bruto de Prumo/Inbox4Mobile/*.",
+    # #284: a #196 prometeu "tempo até a primeira resposta" e não deixou como
+    # cobrar. No briefing real de 30/07 o agente compôs os dois tempos e
+    # entregou tudo junto aos 11 minutos — e o auto-relatório certificou
+    # conformidade auditando a numeração contínua (verdadeira e irrelevante:
+    # prova que os números não reiniciaram, não que houve DUAS entregas).
+    # A fronteira é observável de propósito: a primeira chamada Gmail/Calendar.
+    # O preflight de versão fica fora por construção — WebFetch não é canal.
+    (
+        "ASSERT: Em host de dois tempos (matriz do briefing-montagem.md; Cowork é um), "
+        "nenhuma chamada Gmail/Calendar pode começar antes de o primeiro tempo ter sido "
+        'ENTREGUE ao usuário, encerrado pela linha "Curadoria de email e agenda chegando '
+        'na sequência." Compor não é entregar: texto retido em contexto ou emitido junto '
+        "do segundo tempo não conta."
+    ),
     (
         "ASSERT: No update aplicado à mão (sem runtime), a allowlist de escrita é apenas "
         ".prumo/system/PRUMO-CORE.md e .prumo/backups/<scope>/<timestamp>/... — via runtime, "
@@ -62,11 +76,11 @@ class CoreAssertsTest(unittest.TestCase):
         cls.found = _extract_asserts(CORE.read_text(encoding="utf-8"))
         cls.expected = {" ".join(item.split()) for item in EXPECTED_ASSERTS}
 
-    def test_asserts_count_is_12(self) -> None:
+    def test_asserts_count_is_13(self) -> None:
         self.assertEqual(
             len(self.found),
-            12,
-            f"o core deveria ter 12 ASSERTs; achei {len(self.found)} — "
+            13,
+            f"o core deveria ter 13 ASSERTs; achei {len(self.found)} — "
             "guardrail removido/adicionado sem atualizar o registro",
         )
 
