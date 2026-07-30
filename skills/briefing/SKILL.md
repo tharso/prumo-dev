@@ -61,7 +61,7 @@ O mapa acima é a única lista deste briefing. A **espinha** (`briefing-procedur
 
 ## O runtime é a prévia, não o briefing
 
-Pedir "briefing" dispara a curadoria rica (espinha + fases). **Nunca** entregar o cartão do runtime (`prumo start`) como briefing final — o briefing é curadoria em **dois tempos na mesma resposta** (#196), numeração única que nunca reinicia. Variante completa marca o dia (`--mark-done`, montagem).
+Pedir "briefing" dispara a curadoria rica (espinha + fases). **Nunca** entregar o cartão do runtime (`prumo start`) como briefing final — o briefing é curadoria em **dois tempos na mesma conversa** (#196), numeração única que nunca reinicia. Variante completa marca o dia (`--mark-done`, montagem).
 
 ## Quando o briefing roda
 

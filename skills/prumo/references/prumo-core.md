@@ -1,6 +1,6 @@
 # Prumo Core — Motor do sistema
 
-> **prumo_version: 5.80.0**
+> **prumo_version: 5.81.0**
 >
 > Núcleo estável do Prumo. Define regras, guardrails e localização dos módulos canônicos.
 > Procedimento detalhado não mora aqui.
@@ -230,6 +230,8 @@ O briefing chega em **dois tempos na mesma conversa** (#196): primeiro o panoram
 
 `ASSERT: No primeiro tempo do briefing (#196 — a primeira entrega da resposta em dois tempos; em host de resposta única, a resposta inteira), é proibido abrir arquivo bruto de Prumo/Inbox4Mobile/*.`
 
+`ASSERT: Em host de dois tempos (matriz do briefing-montagem.md; Cowork é um), nenhuma chamada Gmail/Calendar pode começar antes de o primeiro tempo ter sido ENTREGUE ao usuário, encerrado pela linha "Curadoria de email e agenda chegando na sequência." Compor não é entregar: texto retido em contexto ou emitido junto do segundo tempo não conta.`
+
 `ASSERT: No update aplicado à mão (sem runtime), a allowlist de escrita é apenas .prumo/system/PRUMO-CORE.md e .prumo/backups/<scope>/<timestamp>/... — via runtime, os destinos são os gerenciados do repair (#146: .prumo/skills/, adapters, Prumo/AGENT.md com backup e wrappers via mescla in-place). Arquivos PESSOAIS do usuário são proibidos nos dois caminhos.`
 
 `ASSERT: Antes do panorama do briefing, o sistema deve tentar preflight de versão e avisar quando detectar versão nova.`
@@ -312,8 +314,8 @@ Histórico completo de versão vive em `CHANGELOG.md`.
 
 Versão atual deste core:
 
-- `5.80.0`
+- `5.81.0`
 
 ---
 
-*Prumo Core v5.80.0 — https://github.com/tharso/prumo*
+*Prumo Core v5.81.0 — https://github.com/tharso/prumo*

@@ -20,7 +20,7 @@ Quando o Prumo apresentar itens no mesmo fluxo:
 3. não reiniciar do `1.` só porque abriu um subtítulo novo;
 4. só zerar a numeração quando um fluxo novo realmente começou.
 
-O briefing em **dois tempos** (#196) é o caso canônico desta regra: o segundo tempo continua a numeração exatamente de onde o primeiro parou (k+1..N), na mesma resposta — dois tempos são UM fluxo, nunca dois.
+O briefing em **dois tempos** (#196) é o caso canônico desta regra: o segundo tempo continua a numeração exatamente de onde o primeiro parou (k+1..N), em nova entrega da mesma conversa — dois tempos são UM fluxo em DUAS entregas, nunca um bloco só.
 
 Exemplo bom:
 

@@ -6,6 +6,12 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.81.0] - 2026-07-30
+
+### Fixed
+- **O primeiro tempo do briefing ganhou fronteira observável (#284)** — o briefing de 30/07 levou 11 minutos e o dono ficou **os 11 minutos sem nada na tela**: os dois tempos foram compostos e entregues juntos no fim. O contrato existia desde a #196 (*"o primeiro tempo sai antes de qualquer resultado de email/calendário"*), mas sem forma verificável — e o auto-relatório daquele briefing chegou a **certificar conformidade** auditando a numeração contínua 1..29, que é verdadeira e irrelevante: prova que os números não reiniciaram, não que houve **duas entregas**. Guardrail sem dente perde para o impulso de juntar tudo e entregar bonito, e perde em silêncio, porque quem viola é quem reporta. Agora um `ASSERT` do core proíbe qualquer chamada Gmail/Calendar antes de o primeiro tempo ter sido **ENTREGUE**, com a frase de fechamento promovida de copy a **marcador de protocolo**. A fronteira é a primeira chamada de canal — o único evento que existe no transcript —, e o preflight de versão fica de fora por construção, porque `WebFetch` não é canal. O ASSERT mora no core, não no módulo, por razão de mecanismo: a seção `## Guardrails` entra sempre em F1, antes que os canais possam abrir, enquanto o `briefing-montagem.md` só carrega quando a montagem começa — proibição que morasse lá seria lida depois de o estrago poder ter acontecido. **Catraca 6.699 → 6.753 (+54)**, contrato novo com teto autorizado pelo dono antes da medição e custo medido antes do commit. **Entrega em duas etapas:** esta é a proteção textual — o ASSERT sempre carregado, a redação corrigida e os guards estáticos. A verificação COMPORTAMENTAL (um auditor que leia o transcript e prove que a entrega aconteceu antes da chamada) fica para a #286: ela é um parser específico do host, com delimitação de sessão e classificação de ferramenta, e mereceu ciclo próprio em vez de carona.
+
+
 ## [5.80.0] - 2026-07-29
 
 ### Added

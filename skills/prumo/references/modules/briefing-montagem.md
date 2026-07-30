@@ -1,6 +1,6 @@
 # Briefing — Montagem e fechamento (F3)
 
-> **module_version: 5.73.0**
+> **module_version: 5.81.0**
 >
 > Fase F3 da rota fásica do briefing (#180). Carregar **ao montar o
 > panorama** (o primeiro tempo já pode ser emitido a partir daqui; a
@@ -9,7 +9,7 @@
 
 ## Montar o briefing — em DOIS TEMPOS (#196)
 
-O briefing chega em **dois tempos na MESMA resposta**, com numeração sequencial única de 1 a N — nunca reinicia entre os tempos, o despacho em lote ("3, 7, 12") sobrevive intacto (dono da regra: `interaction-format.md` — carregar aqui se ainda não estiver no contexto). A capacidade do host decide a variante (matriz abaixo); host sem a capacidade entrega resposta única como sempre.
+O briefing chega em **dois tempos na mesma CONVERSA — duas entregas, nunca um bloco só**, com numeração sequencial única de 1 a N — nunca reinicia entre os tempos, o despacho em lote ("3, 7, 12") sobrevive intacto (dono da regra: `interaction-format.md` — carregar aqui se ainda não estiver no contexto). A capacidade do host decide a variante (matriz abaixo); host sem a capacidade entrega resposta única como sempre.
 
 ### Primeiro tempo: panorama local imediato
 
@@ -22,13 +22,13 @@ Componentes do primeiro tempo (estruturais sem número; **só item despachável 
 - **Linha de faxina obrigatória (#217):** o primeiro tempo contém a linha com o resultado da checagem de `briefing-estado.md` — *"Faxina: nada pendente"* ou *"Faxina: arquivei N itens do registro"* (elemento estrutural, sem número). Briefing sem a linha de faxina é briefing **fora de conformidade**.
 - Caixas declaradas (#245): se o usuário marcou pastas como `(caixa de entrada)` no mapa autoral, apresentar a contagem em uma linha — "Caixas declaradas: N em `X/`, M em `Y/`" —, sem despejar itens. Contar e cobrar, nunca reorganizar.
 - Inbox4Mobile: se houver itens novos (detectados em `briefing-canais.md` → Inbox4Mobile), apresentar a contagem e a triagem — **itens de triagem numeram**. Linkar `inbox-preview.html` quando o preview estiver atualizado. No primeiro tempo, não despejar conteúdo bruto dos arquivos — preferir resumo numerado com classificação. **Este item é sobre formato de apresentação. A triagem real acontece no estágio local dos canais — não pular por causa deste item.**
-- Fechar o primeiro tempo com UMA linha (sem número): *"Curadoria de email e agenda chegando na sequência."* — e **seguir sem esperar resposta**.
+- Fechar o primeiro tempo com UMA linha (sem número): *"Curadoria de email e agenda chegando na sequência."* — e **seguir sem esperar resposta**. Esta linha é **marcador de protocolo**, não copy: é ela que o ASSERT do core usa como fronteira observável, e só depois de ela ter sido ENTREGUE ao usuário é que Gmail/Calendar podem abrir. Compor o texto e segurá-lo para emitir junto do segundo tempo é a não-conformidade que o ASSERT nomeia — briefing assim é briefing **fora de conformidade**, no mesmo molde da linha de faxina (#217). Mudar o texto da linha exige atualizar o guard junto — e, quando o auditor de transcript existir (#286), o parser dele também.
 
 A numeração do primeiro tempo (1..k, com k variável — é quantos itens houver) fica **congelada** (snapshot lógico): o segundo tempo continua de k+1; nunca renumerar. Se o usuário despachar itens entre os tempos, atender e anotar — sem recompor o panorama.
 
 ### Segundo tempo: curadoria na sequência (automático)
 
-Continua **na mesma resposta, sem pergunta no meio** — a variante com pergunta bloqueante foi rejeitada no desenho: quando a resposta é quase sempre "sim", ela só adiciona um degrau de espera. Execução **adaptativa** (#205: tool calls serializam em todos os hosts medidos): os canais rodam em sequência priorizada e fail-independent (metadata do Gmail → Calendar → corpos por predicado de `briefing-canais.md`); **paralelismo por subagente fica DESLIGADO por default** — só habilitar quando uma comparação equivalente demonstrar ganho líquido num canal comprovadamente lento (spawn de ~3s+ por agente; medido 22–28s por chamada de metadata).
+Continua **na mesma conversa, em NOVA entrega, sem pergunta no meio** — nunca colado ao primeiro tempo num bloco único: se os dois saem juntos, não houve primeiro tempo, e o ASSERT do core reprova (#284). A variante com pergunta bloqueante foi rejeitada no desenho: quando a resposta é quase sempre "sim", ela só adiciona um degrau de espera. Execução **adaptativa** (#205: tool calls serializam em todos os hosts medidos): os canais rodam em sequência priorizada e fail-independent (metadata do Gmail → Calendar → corpos por predicado de `briefing-canais.md`); **paralelismo por subagente fica DESLIGADO por default** — só habilitar quando uma comparação equivalente demonstrar ganho líquido num canal comprovadamente lento (spawn de ~3s+ por agente; medido 22–28s por chamada de metadata).
 
 Componentes do segundo tempo (itens k+1..N, cada um com seu número):
 
