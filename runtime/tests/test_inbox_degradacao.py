@@ -97,8 +97,24 @@ class DegradacaoHonestaTest(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.inbox = _read(INBOX)
 
-    def test_preview_velho_nao_suspende_a_triagem(self) -> None:
-        self.assertIn("Preview velho ou ausente não suspende a triagem", self.inbox)
+    def test_preview_velho_nao_suspende_a_triagem_nem_escolhe_ramo(self) -> None:
+        """O acoplamento saiu do passo 4 e ficou no 3 (Codex, r18).
+
+        Estado do preview é condição da FONTE; classificar é do ITEM. Deixar
+        o passo 3 rotear para um ramo faz a fonte decidir o que se sabe de
+        cada item — o mesmo erro, um cômodo adiante.
+        """
+        self.assertIn("não suspende a triagem — e não escolhe ramo", self.inbox)
+
+        bruto = INBOX.read_text(encoding="utf-8")
+        passo3 = bruto[bruto.index("3. **Preview velho") :]
+        passo3 = passo3[: passo3.index("\n4. ")]
+        for roteamento in ("ramo **sem evidência**", "ramo sem evidência"):
+            self.assertNotIn(
+                roteamento,
+                passo3,
+                "o passo 3 voltou a mandar o item para um ramo pelo estado da fonte",
+            )
 
     def test_manda_dar_nomes_e_idade(self) -> None:
         # O que sustenta decisão: contagem sozinha não sustenta. E `mtime` no
@@ -187,6 +203,9 @@ class DegradacaoHonestaTest(unittest.TestCase):
         # E o montagem não pode seguir com o predicado velho.
         montagem = _read(MONTAGEM)
         self.assertNotIn("quando o preview estiver atualizado", montagem)
+        # Proibir a redação velha não obriga a nova: apagar a obrigação
+        # inteira passaria no assertNotIn e deixaria o link sem predicado.
+        self.assertIn("quando ele existir e estiver utilizável", montagem)
 
     def test_ausencia_de_HTML_nao_decide_a_evidencia(self) -> None:
         # O HTML decide o LINK. A evidência pode ter chegado por outra via —
