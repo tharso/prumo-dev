@@ -22,7 +22,7 @@ Vale para:
 4. Linkar `inbox-preview.html` **só se ele existir e estiver utilizável** — arquivo regular, legível, não-vazio e não-symlink. O predicado é o HTML, não o índice: `status: gerado` compara mtimes e não confere a existência do arquivo, então índice fresco pode apontar um fantasma. **Sem HTML utilizável, não linkar — e só isso**: a classificação de cada item segue a bifurcação do passo 5, porque a evidência pode ter chegado por outra via (o usuário colou o conteúdo, por exemplo). O HTML decide o LINK, não decide sozinho o que se sabe do item.
 5. **Para cada item novo**, classificar — e o que se pode afirmar depende do que se tem:
 
-   O corte é **evidência material do ITEM**, não frescor da fonte. Metadata — nome, tipo, tamanho, `mtime`, fingerprint e a `first_url` do índice — **não é evidência**. URL sozinha identifica a FONTE, não ação, prazo nem consequência: um link de YouTube ou de encurtador não diz se é urgente. Ela só conta quando o que está visível (inclusive a semântica explícita da própria URL, quando houver) sustenta os três campos. Metadata ela não distingue um `IMG_1234.jpg` urgente de um print de meme. E `status: gerado` não garante conteúdo à vista: o frescor compara o `mtime` do índice com o dos arquivos e **não confere se o `inbox-preview.html` existe** — índice fresco com preview ausente cai no ramo de baixo.
+   O corte é **evidência material do ITEM**, não frescor da fonte. Metadata — nome, tipo, tamanho, `mtime`, fingerprint e a `first_url` do índice — **não é evidência**. URL sozinha identifica a FONTE, não ação, prazo nem consequência: um link de YouTube ou de encurtador não diz se é urgente. Ela só conta quando o que está visível (inclusive a semântica explícita da própria URL, quando houver) sustenta os três campos. Metadata ela não distingue um `IMG_1234.jpg` urgente de um print de meme. E `status: gerado` não garante conteúdo à vista: o frescor compara o `mtime` do índice com o dos arquivos e **não confere se o `inbox-preview.html` existe**. Índice fresco com preview ausente, por si só, **não prova conteúdo** — mas também não condena o item: ele só cai no ramo fraco se nenhuma outra via tiver trazido evidência material dele.
 
    **Com evidência** (o conteúdo do item está à vista — preview utilizável que o mostra, ou conteúdo já legitimamente em mãos — e o que se vê sustenta ação, prioridade **e** motivo):
    - ação: `Responder`, `Ver`, `Sem ação`
@@ -48,7 +48,7 @@ Abrir conteúdo bruto completo apenas quando houver:
 
 ## Preview multimídia
 
-1. Se a geração falhar mas houver preview anterior, ainda assim linkar o preview e avisar que pode estar defasado.
+1. Se a geração falhar mas houver preview anterior **utilizável** (mesmo predicado do passo 4), linkar e avisar que pode estar defasado.
 2. Se não houver preview utilizável, seguir com lista numerada no chat e registrar a falha.
 3. No panorama do briefing, **não despejar conteúdo bruto** dos arquivos — link e contagem bastam para o preview em si. Isto é sobre o PREVIEW, não sobre a triagem: o formato do panorama é do `briefing-montagem.md`, e ele exige contagem **e** triagem, com itens numerados. Ler esta linha como licença para entregar só um número é o furo de 30/07.
 

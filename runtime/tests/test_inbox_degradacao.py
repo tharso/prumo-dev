@@ -109,12 +109,15 @@ class DegradacaoHonestaTest(unittest.TestCase):
         bruto = INBOX.read_text(encoding="utf-8")
         passo3 = bruto[bruto.index("3. **Preview velho") :]
         passo3 = passo3[: passo3.index("\n4. ")]
-        for roteamento in ("ramo **sem evidência**", "ramo sem evidência"):
-            self.assertNotIn(
-                roteamento,
-                passo3,
-                "o passo 3 voltou a mandar o item para um ramo pelo estado da fonte",
-            )
+        # Padrão, não grafia: "seguir o fallback de metadata" sobreviveria a
+        # uma lista de duas strings exatas.
+        import re
+
+        rota = re.compile(r"(ramo|fallback|caminho)\s+(de\s+)?(\*\*)?(sem evid|metadata|nome)", re.I)
+        self.assertIsNone(
+            rota.search(passo3),
+            "o passo 3 voltou a mandar o item para um ramo pelo estado da fonte",
+        )
 
     def test_manda_dar_nomes_e_idade(self) -> None:
         # O que sustenta decisão: contagem sozinha não sustenta. E `mtime` no
@@ -166,6 +169,9 @@ class DegradacaoHonestaTest(unittest.TestCase):
         self.assertIn("Metadata", self.inbox)
         self.assertIn("não é evidência", self.inbox)
         self.assertIn("não confere se o `inbox-preview.html` existe", self.inbox)
+        # E o fato de o preview faltar não pode CONDENAR o item: outra via
+        # pode ter trazido evidência dele.
+        self.assertIn("também não condena o item", self.inbox)
 
         # O ramo de cima não pode convidar por NENHUMA forma de metadata.
         # O guard estreito pegava só "índice fresco" e deixava `first_url`,
@@ -206,6 +212,11 @@ class DegradacaoHonestaTest(unittest.TestCase):
         # Proibir a redação velha não obriga a nova: apagar a obrigação
         # inteira passaria no assertNotIn e deixaria o link sem predicado.
         self.assertIn("quando ele existir e estiver utilizável", montagem)
+
+    def test_preview_anterior_tambem_precisa_ser_utilizavel(self) -> None:
+        # O bloco de fallback mandava linkar "preview anterior" sem predicado
+        # — a mesma porta dos fundos, num parágrafo distante (Codex, r19).
+        self.assertIn("houver preview anterior **utilizável**", self.inbox)
 
     def test_ausencia_de_HTML_nao_decide_a_evidencia(self) -> None:
         # O HTML decide o LINK. A evidência pode ter chegado por outra via —
