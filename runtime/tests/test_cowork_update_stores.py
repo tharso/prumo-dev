@@ -35,9 +35,16 @@ def _git(*args: str, cwd: Path) -> None:
 
 
 def _remoto(base: Path) -> Path:
-    """Um marketplace remoto de mentira, com um VERSION."""
+    """Um marketplace remoto de mentira, com um VERSION.
+
+    `-b main` e o `symbolic-ref` explícito NÃO são zelo: sem eles o bare
+    nasce com HEAD apontando para o `init.defaultBranch` de quem roda. Se for
+    `master` — o default dos runners — o clone sai com HEAD não-nascido e o
+    `rev-parse HEAD` falha com "ambiguous argument". Passava na minha máquina
+    e quebrava no CI, que é exatamente para isso que o CI existe.
+    """
     remoto = base / "remoto.git"
-    subprocess.run(["git", "init", "-q", "--bare", str(remoto)], check=True)
+    subprocess.run(["git", "init", "-q", "--bare", "-b", "main", str(remoto)], check=True)
     origem = base / "origem"
     origem.mkdir()
     _git("init", "-q", cwd=origem)
@@ -49,6 +56,11 @@ def _remoto(base: Path) -> Path:
     _git("branch", "-M", "main", cwd=origem)
     _git("remote", "add", "origin", str(remoto), cwd=origem)
     _git("push", "-q", "origin", "main", cwd=origem)
+    # Garante o HEAD do bare mesmo em git antigo, que não o move no primeiro push.
+    subprocess.run(
+        ["git", "--git-dir", str(remoto), "symbolic-ref", "HEAD", "refs/heads/main"],
+        check=True, capture_output=True,
+    )
     return remoto
 
 
