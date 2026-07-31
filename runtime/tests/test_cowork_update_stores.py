@@ -1,0 +1,229 @@
+"""O update do Cowork enxerga a store ATIVA, não só a legada (#276).
+
+O defeito: `collect_roots` procurava por diretórios chamados `cowork_plugins`,
+que é o arranjo legado (≤março/2026). A store do Cowork atual é
+`~/.claude/plugins/` e não tem nenhum diretório com esse nome — então ela era
+estruturalmente invisível.
+
+Pior que não funcionar: o script **reportava sucesso**. Atualizava a legada,
+imprimia "marketplace alinhado", e quem lia concluía que o problema tinha
+sido resolvido. O checkout que importa continuava parado — e o `doctor`
+recomendava esse script como primeira ação para o diagnóstico que ele acabara
+de fazer.
+
+O cabeçalho culpava a camada ("alcança só checkouts git locais, camada 3"),
+mas a store unificada TAMBÉM é checkout git local: tem `.git`, remoto e HEAD
+rastreável. A limitação nunca foi de camada, era de padrão de busca.
+"""
+
+from __future__ import annotations
+
+import json
+import subprocess
+import tempfile
+import unittest
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+SCRIPT = REPO_ROOT / "scripts" / "prumo_cowork_update.sh"
+
+KNOWN = {"prumo-marketplace": {"lastUpdated": "2020-01-01T00:00:00Z"}}
+
+
+def _git(*args: str, cwd: Path) -> None:
+    subprocess.run(["git", *args], cwd=cwd, check=True, capture_output=True)
+
+
+def _remoto(base: Path) -> Path:
+    """Um marketplace remoto de mentira, com um VERSION."""
+    remoto = base / "remoto.git"
+    subprocess.run(["git", "init", "-q", "--bare", str(remoto)], check=True)
+    origem = base / "origem"
+    origem.mkdir()
+    _git("init", "-q", cwd=origem)
+    _git("config", "user.email", "t@t", cwd=origem)
+    _git("config", "user.name", "t", cwd=origem)
+    (origem / "VERSION").write_text("9.9.9\n")
+    _git("add", "-A", cwd=origem)
+    _git("commit", "-qm", "v1", cwd=origem)
+    _git("branch", "-M", "main", cwd=origem)
+    _git("remote", "add", "origin", str(remoto), cwd=origem)
+    _git("push", "-q", "origin", "main", cwd=origem)
+    return remoto
+
+
+def _clone(remoto: Path, destino: Path) -> None:
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    subprocess.run(
+        ["git", "clone", "-q", str(remoto), str(destino)], check=True, capture_output=True
+    )
+
+
+class StoreDiscoveryTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.base = Path(tempfile.mkdtemp())
+        self.remoto = _remoto(self.base)
+
+    def _unificada(self) -> Path:
+        """Topologia atual: ~/.claude/plugins/ — sem `cowork_plugins` nenhum."""
+        raiz = self.base / "uni"
+        _clone(self.remoto, raiz / "marketplaces" / "prumo-marketplace")
+        (raiz / "known_marketplaces.json").write_text(json.dumps(KNOWN))
+        (raiz / "installed_plugins.json").write_text(
+            json.dumps(
+                {"plugins": {"prumo@prumo-marketplace": [{"version": "1.0.0"}]}}
+            )
+        )
+        return raiz
+
+    def _legada(self) -> Path:
+        """Arranjo ≤março/2026: diretório `cowork_plugins` dentro das sessões."""
+        sessoes = self.base / "leg" / "sess"
+        store = sessoes / "abc" / "cowork_plugins"
+        _clone(self.remoto, store / "marketplaces" / "prumo-marketplace")
+        (store / "known_marketplaces.json").write_text(json.dumps(KNOWN))
+        return sessoes
+
+    def _rodar(self, plugins_root: Path, sessions_root: Path):
+        r = subprocess.run(
+            [
+                "bash",
+                str(SCRIPT),
+                "--plugins-root",
+                str(plugins_root),
+                "--sessions-root",
+                str(sessions_root),
+                "--json",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+        try:
+            return r.returncode, json.loads(r.stdout)
+        except json.JSONDecodeError:
+            self.fail(f"saída não-JSON (rc={r.returncode}): {r.stdout[:300]} {r.stderr[:300]}")
+
+    def test_a_store_unificada_e_alcancada(self) -> None:
+        # O critério central da #276: ela não tem `cowork_plugins` no caminho.
+        uni = self._unificada()
+        code, payload = self._rodar(uni, self.base / "sem-sessoes")
+        self.assertEqual(code, 0)
+        self.assertTrue(payload["active_store_reached"])
+        self.assertEqual([r["kind"] for r in payload["results"]], ["ativa"])
+        self.assertEqual(payload["results"][0]["after_version"], "9.9.9")
+
+    def test_ativa_vem_antes_da_legada(self) -> None:
+        # Ordem importa no relatório em texto: quem lê a primeira linha tem de
+        # ler sobre a store que decide o comportamento.
+        code, payload = self._rodar(self._unificada(), self._legada())
+        self.assertEqual(code, 0)
+        self.assertEqual([r["kind"] for r in payload["results"]], ["ativa", "legada"])
+
+    def test_so_legada_nao_e_sucesso(self) -> None:
+        """O coração do defeito: atualizar a legada e dizer 'alinhado'."""
+        code, payload = self._rodar(self.base / "nao-existe", self._legada())
+        self.assertEqual(code, 3, "só-legada continua saindo zero — o sucesso mente")
+        self.assertFalse(payload["active_store_reached"])
+        self.assertEqual([r["kind"] for r in payload["results"]], ["legada"])
+
+    def test_legada_e_atualizada_mesmo_assim(self) -> None:
+        # Não deixar de fazer o trabalho: ela continua sendo atualizada. O que
+        # muda é o relatório parar de vender isso como solução.
+        _, payload = self._rodar(self.base / "nao-existe", self._legada())
+        self.assertEqual(payload["results"][0]["after_version"], "9.9.9")
+
+    def test_texto_declara_a_natureza_de_cada_store(self) -> None:
+        r = subprocess.run(
+            [
+                "bash",
+                str(SCRIPT),
+                "--plugins-root",
+                str(self.base / "nao-existe"),
+                "--sessions-root",
+                str(self._legada()),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+        saida = r.stdout
+        self.assertIn("LEGADA", saida)
+        self.assertIn("não resolve o Cowork atual", saida.replace("NÃO", "não"))
+        self.assertIn("a store ATIVA (unificada) não foi encontrada", saida)
+        # E aponta o reparo real da camada 5, em vez de deixar o leitor achando
+        # que o trabalho acabou.
+        self.assertIn("re-adicionar como owner/repo", saida)
+
+    def test_sem_store_nenhuma_sai_diferente_de_zero(self) -> None:
+        r = subprocess.run(
+            [
+                "bash",
+                str(SCRIPT),
+                "--plugins-root",
+                str(self.base / "nada"),
+                "--sessions-root",
+                str(self.base / "nada2"),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+        self.assertNotEqual(r.returncode, 0)
+
+
+class ContratoDoCabecalhoTest(unittest.TestCase):
+    """O texto do script precisa parar de culpar a camada errada."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.fonte = SCRIPT.read_text(encoding="utf-8")
+
+    def test_documenta_a_flag_da_store_ativa(self) -> None:
+        self.assertIn("--plugins-root", self.fonte)
+
+    def test_explica_por_que_a_unificada_era_invisivel(self) -> None:
+        # Sem isso, o próximo a ler `rglob("cowork_plugins")` acha que é
+        # limitação de camada, que era o que o cabeçalho dizia.
+        self.assertIn("era de padrão de busca", self.fonte)
+
+    def test_nao_procura_mais_so_por_cowork_plugins(self) -> None:
+        # A busca legada continua existindo — o que não pode é ser a única.
+        self.assertIn("_e_store", self.fonte)
+        self.assertIn("plugins_base", self.fonte)
+
+
+class DoctorEUpdateConcordamTest(unittest.TestCase):
+    """Critério 6 da #276: o doctor sabia e o script não.
+
+    O doctor já listava `~/.claude/plugins` em `EXTRA_ROOTS` e classificava as
+    outras como legado morto. O update procurava só `cowork_plugins`. Duas
+    ferramentas do mesmo produto discordando sobre qual store decide o
+    comportamento é como o painel recomendar o que a ferramenta não executa
+    (#268) — e foi assim que o doctor prescreveu, como primeira ação, um
+    script que não alcançava o que ele acabara de diagnosticar.
+    """
+
+    def test_ambos_reconhecem_a_store_unificada(self) -> None:
+        doctor = (REPO_ROOT / "scripts" / "prumo_cowork_doctor.sh").read_text(
+            encoding="utf-8"
+        )
+        update = SCRIPT.read_text(encoding="utf-8")
+        for fonte, nome in ((doctor, "doctor"), (update, "update")):
+            self.assertIn(
+                ".claude/plugins",
+                fonte,
+                f"{nome} deixou de conhecer a store unificada",
+            )
+
+    def test_ambos_tratam_cowork_plugins_como_legado(self) -> None:
+        doctor = (REPO_ROOT / "scripts" / "prumo_cowork_doctor.sh").read_text(
+            encoding="utf-8"
+        )
+        update = SCRIPT.read_text(encoding="utf-8")
+        self.assertIn("LEGADO", doctor.upper())
+        self.assertIn("legada", update)
+
+
+if __name__ == "__main__":  # pragma: no cover
+    unittest.main()

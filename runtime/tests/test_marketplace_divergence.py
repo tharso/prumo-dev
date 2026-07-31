@@ -79,13 +79,33 @@ def _make_store(tmp: Path, remote: Path) -> tuple[Path, Path, Path]:
 
 
 def _run_update(sessions: Path) -> dict:
+    """Roda o update HERMÉTICO, sem tocar a store real da máquina.
+
+    Desde a #276 o script também procura a store ATIVA (`~/.claude/plugins`
+    por default). Sem apontar `--plugins-root` para um caminho inexistente,
+    este teste faria `git fetch` na store de verdade de quem roda a suíte —
+    e `results[0]` seria ela, não a fixture. Teste que mexe no ambiente do
+    dono não é teste, é visita indesejada.
+    """
+    sem_ativa = sessions.parent / "sem-store-ativa"
     completed = subprocess.run(
-        ["bash", str(UPDATE_SCRIPT), "--sessions-root", str(sessions), "--json"],
+        [
+            "bash", str(UPDATE_SCRIPT),
+            "--sessions-root", str(sessions),
+            "--plugins-root", str(sem_ativa),
+            "--json",
+        ],
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=False,
     )
-    if completed.returncode != 0:
+    # Código 3 = "só achei store legada", que é exatamente o cenário destas
+    # fixtures. O que não pode é o script estourar (>3) ou não emitir JSON.
+    if completed.returncode not in (0, 3):
         raise AssertionError(f"update falhou: {completed.stderr}\n{completed.stdout}")
-    return json.loads(completed.stdout)
+    payload = json.loads(completed.stdout)
+    assert not payload["active_store_reached"], (
+        "o teste alcançou uma store ATIVA — a fixture deixou de ser hermética"
+    )
+    return payload
 
 
 @unittest.skipUnless(__import__("os").name == "posix", "scripts bash (macOS/Linux)")

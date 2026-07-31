@@ -4,6 +4,7 @@ set -euo pipefail
 
 MARKETPLACE_NAME="prumo-marketplace"
 SESSIONS_ROOT="${HOME}/Library/Application Support/Claude/local-agent-mode-sessions"
+PLUGINS_ROOT="${HOME}/.claude/plugins"
 REF="main"
 OUTPUT_FORMAT="text"
 DRY_RUN="0"
@@ -11,15 +12,21 @@ DRY_RUN="0"
 usage() {
   cat <<'EOF'
 Uso:
-  scripts/prumo_cowork_update.sh [--sessions-root PATH] [--marketplace-name NAME] [--ref BRANCH] [--dry-run] [--json]
+  scripts/prumo_cowork_update.sh [--plugins-root PATH] [--sessions-root PATH] [--marketplace-name NAME] [--ref BRANCH] [--dry-run] [--json]
 
 O que faz:
-  1. Localiza os checkouts do marketplace do Prumo usados pelo Cowork
+  1. Localiza os checkouts do marketplace do Prumo — a store ATIVA (unificada,
+     ~/.claude/plugins) e as LEGADAS (diretórios cowork_plugins nas sessões)
   2. Faz fetch/checkout/pull neles
   3. Atualiza o timestamp em known_marketplaces.json para forçar o app a perceber o refresh
   4. Diz se o plugin instalado ainda ficou atrás da versão anunciada no catálogo
 
 Não tenta editar o cache do plugin instalado na marra.
+
+Cada store aparece no relatório NOMEADA e CLASSIFICADA (ativa ou legada). Se só
+houver legada, o script diz isso em voz alta e sai diferente de zero: antes ele
+atualizava a legada e reportava "marketplace alinhado", o que fazia quem lia
+concluir que o problema tinha sido resolvido (#276).
 
 Escopo (#190): este script alcança só CHECKOUTS GIT LOCAIS (camada 3 da propagação).
 O Cowork atual materializa plugins do registro server-side da conta (camada 5) — se a
@@ -33,6 +40,10 @@ while [ "$#" -gt 0 ]; do
   case "$1" in
     --sessions-root)
       SESSIONS_ROOT="${2:-}"
+      shift 2
+      ;;
+    --plugins-root)
+      PLUGINS_ROOT="${2:-}"
       shift 2
       ;;
     --marketplace-name)
@@ -72,7 +83,7 @@ if ! command -v git >/dev/null 2>&1; then
   exit 1
 fi
 
-python3 - "$SESSIONS_ROOT" "$MARKETPLACE_NAME" "$REF" "$DRY_RUN" "$OUTPUT_FORMAT" <<'PY'
+python3 - "$SESSIONS_ROOT" "$MARKETPLACE_NAME" "$REF" "$DRY_RUN" "$OUTPUT_FORMAT" "$PLUGINS_ROOT" <<'PY'
 import datetime as dt
 import json
 import subprocess
@@ -84,6 +95,7 @@ marketplace_name = sys.argv[2]
 ref = sys.argv[3]
 dry_run = sys.argv[4] == "1"
 output_format = sys.argv[5]
+plugins_root = Path(sys.argv[6]).expanduser() if len(sys.argv) > 6 else None
 
 
 def read_json(path: Path):
@@ -108,21 +120,51 @@ def run_git(args, cwd: Path, check=True):
     return completed
 
 
-def collect_roots(base: Path):
-    if not base.exists():
-        return []
-    roots = []
-    for path in base.rglob("cowork_plugins"):
-        if path.is_dir() and ((path / "known_marketplaces.json").exists() or (path / "marketplaces").exists()):
-            roots.append(path)
+def _e_store(path: Path) -> bool:
+    """Marcadores de uma store de plugins, qualquer que seja a topologia."""
+    return path.is_dir() and (
+        (path / "known_marketplaces.json").exists() or (path / "marketplaces").is_dir()
+    )
+
+
+def collect_roots(sessions_base: Path, plugins_base):
+    """Stores ATIVA e LEGADAS, cada uma classificada.
+
+    A versão anterior procurava só por diretórios chamados `cowork_plugins`
+    (#276). A store do Cowork atual é `~/.claude/plugins/`, que não tem
+    nenhum diretório com esse nome — então ela era estruturalmente invisível,
+    e o script atualizava a legada reportando sucesso. O cabeçalho culpava a
+    camada, mas a store unificada TAMBÉM é checkout git local: a limitação
+    era de padrão de busca.
+    """
+    achados = []
+
+    if plugins_base is not None and _e_store(plugins_base):
+        achados.append((plugins_base, "ativa"))
+
+    if sessions_base.exists():
+        for path in sessions_base.rglob("cowork_plugins"):
+            if _e_store(path):
+                achados.append((path, "legada"))
+
     unique = {}
-    for root in roots:
+    for root, kind in achados:
+        chave = str(root)
+        if chave in unique:
+            continue
         try:
             score = root.stat().st_mtime
         except FileNotFoundError:
             continue
-        unique[str(root)] = (root, score)
-    return [item[0] for item in sorted(unique.values(), key=lambda entry: entry[1], reverse=True)]
+        unique[chave] = (root, kind, score)
+
+    # Ativa primeiro sempre; entre as legadas, a mais recente na frente.
+    return [
+        (item[0], item[1])
+        for item in sorted(
+            unique.values(), key=lambda e: (e[1] != "ativa", -e[2])
+        )
+    ]
 
 
 def inspect_plugin_version(root: Path):
@@ -137,11 +179,11 @@ def inspect_plugin_version(root: Path):
     return items[0].get("version")
 
 
-roots = collect_roots(sessions_root)
+roots = collect_roots(sessions_root, plugins_root)
 results = []
 timestamp = dt.datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
 
-for root in roots:
+for root, kind in roots:
     known_path = root / "known_marketplaces.json"
     market_dir = root / "marketplaces" / marketplace_name
     before_head = None
@@ -216,6 +258,7 @@ for root in roots:
     results.append(
         {
             "root": str(root),
+            "kind": kind,
             "marketplace_known": marketplace_known,
             "marketplace_dir": str(market_dir),
             "before_head": before_head,
@@ -229,21 +272,28 @@ for root in roots:
         }
     )
 
+tem_ativa = any(item["kind"] == "ativa" for item in results)
+tem_legada = any(item["kind"] == "legada" for item in results)
+
 payload = {
     "sessions_root": str(sessions_root),
+    "plugins_root": str(plugins_root) if plugins_root else None,
     "marketplace_name": marketplace_name,
     "ref": ref,
     "dry_run": dry_run,
     "roots_updated": len(results),
+    "active_store_reached": tem_ativa,
     "results": results,
 }
 
 if output_format == "json":
     print(json.dumps(payload, indent=2, ensure_ascii=False))
-    raise SystemExit(0)
+    # Só-legada não é sucesso: quem lê JSON também precisa saber (#276).
+    raise SystemExit(0 if tem_ativa else 3)
 
 print("==> Prumo Cowork update")
-print(f"Sessions root: {sessions_root}")
+print(f"Store ativa (procurada em): {plugins_root or 'n/d'}")
+print(f"Sessions root (legadas): {sessions_root}")
 print(f"Marketplace: {marketplace_name}")
 print(f"Ref: {ref}")
 print(f"Dry-run: {'sim' if dry_run else 'não'}")
@@ -255,7 +305,8 @@ if not results:
 
 for item in results:
     print()
-    print(f"Store: {item['root']}")
+    rotulo = "ATIVA (unificada)" if item["kind"] == "ativa" else "LEGADA (cowork_plugins)"
+    print(f"Store [{rotulo}]: {item['root']}")
     print(f"- checkout: {item['marketplace_dir']}")
     print(f"- versão antes: {item['before_version'] or 'n/d'}")
     print(f"- versão depois: {item['after_version'] or 'n/d'}")
@@ -268,6 +319,19 @@ for item in results:
         print(f"- erro: {item['error']}")
     elif item["plugin_reinstall_recommended"]:
         print("- ação: o catálogo foi atualizado, mas o plugin ainda está em outra versão. Reinicie o Cowork e, se precisar, remova só o plugin Prumo e reinstale a partir do marketplace.")
+    elif item["kind"] == "ativa":
+        print("- ação: marketplace alinhado NA STORE ATIVA. Se o app continuar velho, reinicie o Cowork antes de chamar o botão de mentiroso.")
     else:
-        print("- ação: marketplace alinhado. Se o app continuar velho, reinicie o Cowork antes de chamar o botão de mentiroso.")
+        print("- ação: store legada alinhada — e isso NÃO resolve o Cowork atual. Ela é entulho de arranjo antigo (≤março/2026).")
+
+print()
+if not tem_ativa:
+    print("ATENÇÃO: a store ATIVA (unificada) não foi encontrada.")
+    if tem_legada:
+        print("Só atualizei store LEGADA — isso não muda o que o Cowork carrega.")
+    print(f"Procurei em: {plugins_root or 'n/d'}")
+    print("Se o caminho for outro nesta máquina, passe --plugins-root.")
+    print("Se o catálogo continuar velho com a store ativa em dia, o reparo é")
+    print("da camada 5: remover o marketplace na UI e re-adicionar como owner/repo.")
+    raise SystemExit(3)
 PY
