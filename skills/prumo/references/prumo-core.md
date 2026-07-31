@@ -1,6 +1,6 @@
 # Prumo Core — Motor do sistema
 
-> **prumo_version: 5.83.1**
+> **prumo_version: 5.83.2**
 >
 > Núcleo estável do Prumo. Define regras, guardrails e localização dos módulos canônicos.
 > Procedimento detalhado não mora aqui.
@@ -314,8 +314,8 @@ Histórico completo de versão vive em `CHANGELOG.md`.
 
 Versão atual deste core:
 
-- `5.83.1`
+- `5.83.2`
 
 ---
 
-*Prumo Core v5.83.1 — https://github.com/tharso/prumo*
+*Prumo Core v5.83.2 — https://github.com/tharso/prumo*

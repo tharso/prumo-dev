@@ -79,13 +79,33 @@ def _make_store(tmp: Path, remote: Path) -> tuple[Path, Path, Path]:
 
 
 def _run_update(sessions: Path) -> dict:
+    """Roda o update HERMÉTICO, sem tocar a store real da máquina.
+
+    Desde a #276 o script também procura a store ATIVA (`~/.claude/plugins`
+    por default). Sem apontar `--plugins-root` para um caminho inexistente,
+    este teste faria `git fetch` na store de verdade de quem roda a suíte —
+    e `results[0]` seria ela, não a fixture. Teste que mexe no ambiente do
+    dono não é teste, é visita indesejada.
+    """
+    sem_ativa = sessions.parent / "sem-store-ativa"
     completed = subprocess.run(
-        ["bash", str(UPDATE_SCRIPT), "--sessions-root", str(sessions), "--json"],
+        [
+            "bash", str(UPDATE_SCRIPT),
+            "--sessions-root", str(sessions),
+            "--plugins-root", str(sem_ativa),
+            "--json",
+        ],
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=False,
     )
-    if completed.returncode != 0:
+    # Código 3 = "só achei store legada", que é exatamente o cenário destas
+    # fixtures. O que não pode é o script estourar (>3) ou não emitir JSON.
+    if completed.returncode not in (0, 3):
         raise AssertionError(f"update falhou: {completed.stderr}\n{completed.stdout}")
-    return json.loads(completed.stdout)
+    payload = json.loads(completed.stdout)
+    assert not payload["active_store_reached"], (
+        "o teste alcançou uma store ATIVA — a fixture deixou de ser hermética"
+    )
+    return payload
 
 
 @unittest.skipUnless(__import__("os").name == "posix", "scripts bash (macOS/Linux)")
@@ -194,12 +214,23 @@ class DoctorDivergenceTests(unittest.TestCase):
             _git(["fetch", "origin", "main"], market)
 
             completed = subprocess.run(
-                ["bash", str(DOCTOR_SCRIPT), "--sessions-root", str(sessions), "--json"],
+                [
+                    "bash", str(DOCTOR_SCRIPT),
+                    "--sessions-root", str(sessions),
+                    # `--extra-root` SUBSTITUI os defaults: sem ele o doctor
+                    # leria as stores reais de quem roda a suíte (não muta,
+                    # mas não é hermético) — Codex, r22.
+                    # `--offline` NÃO entra: ele pula o ls-remote, que é
+                    # exatamente o que estes testes verificam. O remoto da
+                    # fixture é um bare local, então não há rede envolvida.
+                    "--extra-root", str(sessions.parent / "sem-extra"),
+                    "--json",
+                ],
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=False, timeout=60,
             )
             self.assertEqual(completed.returncode, 0, completed.stderr)
             result = json.loads(completed.stdout)
-            # Stores reais do HOME podem aparecer na varredura — mirar o fake.
+            # Stores reais do HOME NÃO aparecem (--extra-root substitui os defaults) na varredura — mirar o fake.
             target = next(r for r in result["roots"] if r["root"] == str(_store))
             self.assertEqual(target.get("marketplace_checkout_divergence"), "divergente")
             diagnosis = " ".join(target.get("diagnosis", []))
@@ -222,7 +253,18 @@ class DoctorDivergenceTests(unittest.TestCase):
             _git(["fetch", "origin", "main"], market)
 
             completed = subprocess.run(
-                ["bash", str(DOCTOR_SCRIPT), "--sessions-root", str(sessions), "--json"],
+                [
+                    "bash", str(DOCTOR_SCRIPT),
+                    "--sessions-root", str(sessions),
+                    # `--extra-root` SUBSTITUI os defaults: sem ele o doctor
+                    # leria as stores reais de quem roda a suíte (não muta,
+                    # mas não é hermético) — Codex, r22.
+                    # `--offline` NÃO entra: ele pula o ls-remote, que é
+                    # exatamente o que estes testes verificam. O remoto da
+                    # fixture é um bare local, então não há rede envolvida.
+                    "--extra-root", str(sessions.parent / "sem-extra"),
+                    "--json",
+                ],
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=False, timeout=60,
             )
             self.assertEqual(completed.returncode, 0, completed.stderr)

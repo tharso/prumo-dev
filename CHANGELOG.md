@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.83.2] - 2026-07-31
+
+### Fixed
+- **O update do Cowork parou de reportar sucesso atualizando a store errada (#276)** — `collect_roots` procurava por diretórios chamados `cowork_plugins`, que é o arranjo de até março/2026. A store do Cowork atual é `~/.claude/plugins/` e não tem nenhum diretório com esse nome: ela era **estruturalmente invisível**. Pior que não funcionar, o script imprimia "marketplace alinhado" depois de atualizar a legada — e quem lia concluía que o problema tinha sido resolvido, com o checkout que importa parado. O cabeçalho culpava a camada ("alcança só checkouts git locais, camada 3"), mas a store unificada **também** é checkout git local, com `.git`, remoto e HEAD rastreável: a limitação nunca foi de camada, era de padrão de busca. Agora cada store aparece **nomeada e classificada** (ativa ou legada), a legada continua sendo atualizada mas o relatório declara que isso não muda o que o Cowork carrega, e a ausência da store ativa sai com **código 3** em vez de zero — em texto e em JSON. Quando ela não é encontrada, o script aponta o reparo real da camada 5 (re-adicionar o marketplace como `owner/repo`) em vez de deixar o leitor achando que o trabalho acabou. E ganhou **contrato de veredito**: um estado só, calculado antes de qualquer serialização, que texto e JSON projetam igual — `ok` (0), `simulacao` (0, e o veredito diz que nada foi escrito), `sem_store` (1), `so_legada` (3), `ativa_falhou` (4). O último é o que faltava: **achar não é atualizar**, e store ativa com checkout ausente ou com `git` falhando continuava saindo zero. Antes, texto e JSON até discordavam entre si — sem store nenhuma, um saía 1 e o outro 3. Nova flag `--plugins-root` para topologias fora do default. Verificado na máquina real: encontra a ativa e a legada, e as distingue.
+
 ## [5.83.1] - 2026-07-31
 
 ### Fixed
