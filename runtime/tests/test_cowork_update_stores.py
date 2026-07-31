@@ -328,7 +328,9 @@ class InspecaoQuebradaTest(unittest.TestCase):
 
 
 class DryRunNaoPrometeAtualizabilidadeTest(unittest.TestCase):
-    """"Seria atualizável" prometia o que a simulação não testa (Codex, r24).
+    """A promessa que a simulação não testa (Codex, r24).
+
+    "Seria atualizável" prometia o que a simulação não testa (Codex, r24).
 
     O dry-run pula `fetch`, `checkout` e `pull` — então remoto inacessível,
     branch inexistente, checkout sujo e commits locais passariam como 0.
@@ -388,6 +390,99 @@ class DryRunNaoPrometeAtualizabilidadeTest(unittest.TestCase):
         self.assertEqual(payload["status"], "so_legada")
         self.assertEqual(r.returncode, 3)
         self.assertIn("nada foi escrito", payload["verdict"])
+
+
+class VereditoBaseadoNoResultadoTest(unittest.TestCase):
+    """O veredito de `so_legada` não pode narrar o que não aconteceu.
+
+    Ele afirmava "só atualizei store LEGADA" sem consultar os erros das
+    legadas — com checkout ausente ou git falhando, prometia atualização
+    sobre uma store que também não tinha sido atualizada (Codex, r25).
+    """
+
+    def setUp(self) -> None:
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.base = Path(tmp.name)
+
+    def test_legada_quebrada_nao_recebe_recibo_de_atualizacao(self) -> None:
+        sess = self.base / "sess"
+        store = sess / "abc" / "cowork_plugins"
+        (store / "marketplaces").mkdir(parents=True)
+        (store / "known_marketplaces.json").write_text(json.dumps(KNOWN))
+
+        r = subprocess.run(
+            [
+                "bash", str(SCRIPT),
+                "--plugins-root", str(self.base / "nao-existe"),
+                "--sessions-root", str(sess),
+                "--json",
+            ],
+            capture_output=True, text=True, timeout=120,
+        )
+        payload = json.loads(r.stdout)
+        self.assertEqual(payload["status"], "so_legada")
+        self.assertEqual(payload["stores_updated"], 0)
+        self.assertIn("0 atualizada(s), 1 com erro", payload["verdict"])
+        self.assertNotIn("só atualizei store LEGADA", payload["verdict"])
+
+
+class RevParsePosOperacaoTest(unittest.TestCase):
+    """`check=False` fazia o rev-parse falhar ABERTO (Codex, r25).
+
+    Retorno não-zero não levantava: `after_head` virava None, `error` ficava
+    vazio e a store ATIVA saía certificada como `ok`. Um shim de `git` que
+    falha só no segundo `rev-parse` prova o caminho.
+    """
+
+    def setUp(self) -> None:
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.base = Path(tmp.name)
+
+    def test_rev_parse_que_falha_depois_do_update_nao_vira_ok(self) -> None:
+        remoto = _remoto(self.base)
+        uni = self.base / "uni"
+        _clone(remoto, uni / "marketplaces" / "prumo-marketplace")
+        (uni / "known_marketplaces.json").write_text(json.dumps(KNOWN))
+
+        # Shim: o SEGUNDO `rev-parse` (o pós-operação) falha.
+        bin_dir = self.base / "bin"
+        bin_dir.mkdir()
+        contador = self.base / "n"
+        shim = bin_dir / "git"
+        corpo = "\n".join(
+            [
+                "#!/usr/bin/env bash",
+                'if [ "$1" = "rev-parse" ] || [ "$2" = "rev-parse" ]; then',
+                f'  n=$(cat "{contador}" 2>/dev/null || echo 0)',
+                f'  echo $((n+1)) > "{contador}"',
+                '  if [ "$n" -ge 1 ]; then echo "shim: rev-parse quebrado" >&2; exit 128; fi',
+                "fi",
+                'exec /usr/bin/git "$@"',
+                "",
+            ]
+        )
+        shim.write_text(corpo)
+        shim.chmod(0o755)
+
+        import os
+
+        env = dict(os.environ, PATH=f"{bin_dir}:{os.environ['PATH']}")
+        r = subprocess.run(
+            [
+                "bash", str(SCRIPT),
+                "--plugins-root", str(uni),
+                "--sessions-root", str(self.base / "nada"),
+                "--json",
+            ],
+            capture_output=True, text=True, timeout=120, env=env,
+        )
+        payload = json.loads(r.stdout)
+        self.assertNotEqual(
+            payload["status"], "ok", "git falhando saiu certificado como sucesso"
+        )
+        self.assertFalse(payload["active_store_updated"])
 
 
 class ParidadeTextoJsonTest(unittest.TestCase):

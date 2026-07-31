@@ -98,7 +98,7 @@ O cabeçalho culpava a camada ("alcança só checkouts git locais, camada 3"). M
 |---|---|---|
 | `ok` | 0 | store ativa encontrada **e atualizada** |
 | `sem_store` | 1 | nenhuma store |
-| `so_legada` | 3 | ativa não encontrada; só a legada foi tocada |
+| `so_legada` | 3 | ativa ausente; ao menos uma legada encontrada (o veredito diz quantas atualizaram e quantas falharam) |
 | `ativa_falhou` | 4 | ativa encontrada, atualização (ou inspeção) falhou |
 | `simulacao` | 0 | `--dry-run`: nada foi escrito, e o veredito diz isso |
 

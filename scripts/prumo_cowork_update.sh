@@ -264,10 +264,10 @@ for root, kind in roots:
             # Também aqui (Codex, r24): permissão, checkout que sumiu no meio
             # da operação ou VERSION ilegível estouravam depois do try.
             try:
-                after_head = (
-                    run_git(["rev-parse", "HEAD"], market_dir, check=False).stdout.strip()
-                    or None
-                )
+                # `check=False` fazia o rev-parse falhar ABERTO: retorno
+                # não-zero virava `after_head=None` com `error` vazio, e a
+                # store ativa saía certificada como `ok` (Codex, r25).
+                after_head = run_git(["rev-parse", "HEAD"], market_dir).stdout.strip() or None
                 if version_file is not None and version_file.exists():
                     after_version = version_file.read_text().strip()
             except Exception as exc:  # noqa: BLE001
@@ -317,9 +317,19 @@ elif not tem_ativa:
     # modo. Com o dry-run na frente, um dry-run sem store ativa virava
     # `ativa_falhou` — contradizendo o próprio contrato (Codex, r24).
     estado, codigo = "so_legada", 3
+    legadas = [item for item in results if item["kind"] == "legada"]
+    com_erro = sum(1 for item in legadas if item["error"])
+    # Baseado no RESULTADO, não na narrativa: com checkout ausente ou git
+    # falhando, o texto anterior afirmava "só atualizei store LEGADA" sobre
+    # uma legada que também não tinha sido atualizada (Codex, r25).
+    detalhe = (
+        "nada foi escrito (simulação)"
+        if dry_run
+        else f"{len(legadas) - com_erro} atualizada(s), {com_erro} com erro"
+    )
     veredito = (
-        "a store ATIVA (unificada) não foi encontrada; "
-        + ("nada foi escrito (simulação). " if dry_run else "só atualizei store LEGADA, o que não muda o que o Cowork carrega. ")
+        f"a store ATIVA (unificada) não foi encontrada; só encontrei store(s) "
+        f"LEGADA(s) — {detalhe}. Isso não muda o que o Cowork carrega. "
         + REPARO_CAMADA5
     )
 elif not ativa_sem_erro:
