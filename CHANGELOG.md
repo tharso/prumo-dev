@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.83.1] - 2026-07-31
+
+### Fixed
+- **A bandeira do botão parou de contradizer o contador (#294)** — o botão de ação renderizava o `⚑` olhando só `a.requires`, enquanto o contador de pendências já respeitava `act.requires && !act.default` desde a #246. O resultado: um card com `default` mostrava `Descartar⚑` e o painel dizia zero pendências. Cosmético no efeito, corrosivo no hábito — o documento contradizia a própria legenda e treinava o usuário a ignorar a bandeira, que é justamente o sinal de "isto aqui precisa que você escreva algo". Achado num briefing real, verificado ao vivo antes e depois, e agora com guard amarrando as duas expressões.
+
 ## [5.83.0] - 2026-07-31
 
 ### Fixed

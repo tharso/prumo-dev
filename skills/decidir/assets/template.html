@@ -621,7 +621,7 @@ function cardHTML(p) {
   const fbControls = p.type === 'escolha'
     ? ''
     : `<span class="lbl">${L.action}</span><div class="seg">` + actionsOf(p).map(a => `
-        <button class="seg-btn" data-status="${a.key}" data-tone="${a.tone || 'slate'}">${a.label}${a.requires ? `<span class="req">⚑</span>` : ''}</button>`).join('') +
+        <button class="seg-btn" data-status="${a.key}" data-tone="${a.tone || 'slate'}">${a.label}${a.requires && !a.default ? `<span class="req">⚑</span>` : ''}</button>`).join('') +
       `</div><div class="req-note">${L.requiresNote}</div>`;
 
   return `
