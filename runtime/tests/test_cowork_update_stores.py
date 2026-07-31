@@ -227,6 +227,106 @@ class AlcancarNaoEAtualizarTest(unittest.TestCase):
         self.assertEqual(payload["stores_updated"], 0, "tentativa fracassada contada como update")
 
 
+class DryRunHonestoTest(unittest.TestCase):
+    """O dry-run não pode ganhar diploma por não comparecer à aula (Codex, r23).
+
+    `error is None` num dry-run significa "nada deu errado porque nada foi
+    tentado". Sem distinguir, ele saía com `active_store_updated: true`,
+    `stores_updated: 1` e veredito "store ATIVA atualizada" — certificando
+    uma atualização que não aconteceu.
+    """
+
+    def setUp(self) -> None:
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.base = Path(tmp.name)
+        self.remoto = _remoto(self.base)
+        self.uni = self.base / "uni"
+        _clone(self.remoto, self.uni / "marketplaces" / "prumo-marketplace")
+        (self.uni / "known_marketplaces.json").write_text(json.dumps(KNOWN))
+
+    def _dry(self):
+        r = subprocess.run(
+            [
+                "bash", str(SCRIPT),
+                "--plugins-root", str(self.uni),
+                "--sessions-root", str(self.base / "nada"),
+                "--dry-run", "--json",
+            ],
+            capture_output=True, text=True, timeout=120,
+        )
+        return r.returncode, json.loads(r.stdout)
+
+    def test_dry_run_nao_declara_atualizacao(self) -> None:
+        code, payload = self._dry()
+        self.assertEqual(code, 0, "simulação bem-sucedida não é erro")
+        self.assertEqual(payload["status"], "simulacao")
+        self.assertFalse(payload["active_store_updated"])
+        self.assertEqual(payload["stores_updated"], 0)
+
+    def test_veredito_do_dry_run_diz_que_nada_foi_escrito(self) -> None:
+        _, payload = self._dry()
+        self.assertIn("SIMULAÇÃO", payload["verdict"])
+        self.assertIn("nada foi escrito", payload["verdict"])
+
+
+class InspecaoQuebradaTest(unittest.TestCase):
+    """O contrato dos quatro estados vale mesmo quando a leitura falha.
+
+    JSON malformado ou `.git` corrompido estourava ANTES do `try` e derrubava
+    o script com traceback e rc 1 — sem JSON válido e sem veredito. Contrato
+    que só vale quando nada dá errado não é contrato (Codex, r23).
+    """
+
+    def setUp(self) -> None:
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.base = Path(tmp.name)
+
+    def _rodar(self, store: Path):
+        r = subprocess.run(
+            [
+                "bash", str(SCRIPT),
+                "--plugins-root", str(store),
+                "--sessions-root", str(self.base / "nada"),
+                "--json",
+            ],
+            capture_output=True, text=True, timeout=120,
+        )
+        try:
+            return r.returncode, json.loads(r.stdout)
+        except json.JSONDecodeError:
+            self.fail(f"não emitiu JSON (rc={r.returncode}): {r.stdout[:200]} {r.stderr[:300]}")
+
+    def test_installed_plugins_malformado_vira_veredito(self) -> None:
+        store = self.base / "ruim"
+        (store / "marketplaces").mkdir(parents=True)
+        (store / "known_marketplaces.json").write_text(json.dumps(KNOWN))
+        (store / "installed_plugins.json").write_text("NAO E JSON")
+        code, payload = self._rodar(store)
+        self.assertEqual(code, 4)
+        self.assertEqual(payload["status"], "ativa_falhou")
+        self.assertIn("inspeção do store falhou", payload["results"][0]["error"])
+
+    def test_known_marketplaces_malformado_vira_veredito(self) -> None:
+        store = self.base / "ruim2"
+        (store / "marketplaces").mkdir(parents=True)
+        (store / "known_marketplaces.json").write_text("{{{")
+        code, payload = self._rodar(store)
+        self.assertEqual(code, 4)
+        self.assertEqual(payload["status"], "ativa_falhou")
+
+    def test_git_corrompido_vira_veredito(self) -> None:
+        store = self.base / "ruim3"
+        checkout = store / "marketplaces" / "prumo-marketplace"
+        (checkout / ".git").mkdir(parents=True)
+        (checkout / ".git" / "HEAD").write_text("lixo")
+        (store / "known_marketplaces.json").write_text(json.dumps(KNOWN))
+        code, payload = self._rodar(store)
+        self.assertEqual(code, 4)
+        self.assertIsNotNone(payload["results"][0]["error"])
+
+
 class ParidadeTextoJsonTest(unittest.TestCase):
     """Texto e JSON não podem discordar sobre o que aconteceu (Codex, r22).
 

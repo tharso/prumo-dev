@@ -217,8 +217,9 @@ class DoctorDivergenceTests(unittest.TestCase):
                 [
                     "bash", str(DOCTOR_SCRIPT),
                     "--sessions-root", str(sessions),
-                    # Sem isto o doctor LÊ as stores reais de quem roda a
-                    # suíte (não muta, mas não é hermético) — Codex, r22.
+                    # `--extra-root` SUBSTITUI os defaults: sem ele o doctor
+                    # leria as stores reais de quem roda a suíte (não muta,
+                    # mas não é hermético) — Codex, r22.
                     # `--offline` NÃO entra: ele pula o ls-remote, que é
                     # exatamente o que estes testes verificam. O remoto da
                     # fixture é um bare local, então não há rede envolvida.
@@ -255,8 +256,9 @@ class DoctorDivergenceTests(unittest.TestCase):
                 [
                     "bash", str(DOCTOR_SCRIPT),
                     "--sessions-root", str(sessions),
-                    # Sem isto o doctor LÊ as stores reais de quem roda a
-                    # suíte (não muta, mas não é hermético) — Codex, r22.
+                    # `--extra-root` SUBSTITUI os defaults: sem ele o doctor
+                    # leria as stores reais de quem roda a suíte (não muta,
+                    # mas não é hermético) — Codex, r22.
                     # `--offline` NÃO entra: ele pula o ls-remote, que é
                     # exatamente o que estes testes verificam. O remoto da
                     # fixture é um bare local, então não há rede envolvida.

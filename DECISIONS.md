@@ -99,11 +99,14 @@ O cabeçalho culpava a camada ("alcança só checkouts git locais, camada 3"). M
 | `ok` | 0 | store ativa encontrada **e atualizada** |
 | `sem_store` | 1 | nenhuma store |
 | `so_legada` | 3 | ativa não encontrada; só a legada foi tocada |
-| `ativa_falhou` | 4 | ativa encontrada, atualização falhou |
+| `ativa_falhou` | 4 | ativa encontrada, atualização (ou inspeção) falhou |
+| `simulacao` | 0 | `--dry-run`: nada foi escrito, e o veredito diz isso |
 
 Contrato público novo: `--plugins-root`, os códigos acima, e os campos `kind`, `status`, `verdict`, `active_store_reached`, `active_store_updated`, `stores_found`, `stores_updated`.
 
-**Alternativas consideradas:** só acrescentar `~/.claude/plugins` à busca (rejeitada na revisão do Codex — resolveria a invisibilidade e manteria a mentira: store ativa com checkout ausente, ou com `git` falhando, continuaria saindo zero, e `roots_updated` contava tentativa fracassada como atualização); manter códigos diferentes entre texto e JSON (rejeitada — sem store nenhuma, o texto saía 1 e o JSON 3, porque o JSON retornava antes do ramo do texto: dois formatos, dois vereditos); mover o reparo da camada 5 para dentro do script (rejeitada — remendar store por fora é relojoeiro de granada, como o próprio cabeçalho já dizia).
+**Alternativas consideradas:** só acrescentar `~/.claude/plugins` à busca (rejeitada na revisão do Codex — resolveria a invisibilidade e manteria a mentira: store ativa com checkout ausente, ou com `git` falhando, continuaria saindo zero, e `roots_updated` contava tentativa fracassada como atualização); manter códigos diferentes entre texto e JSON (rejeitada — sem store nenhuma, o texto saía 1 e o JSON 3, porque o JSON retornava antes do ramo do texto: dois formatos, dois vereditos); mover o reparo da camada 5 para dentro do script (rejeitada — remendar store por fora é relojoeiro de granada, como o próprio cabeçalho já dizia); tratar `--dry-run` como sucesso comum (rejeitada — `error is None` numa simulação significa "nada deu errado porque nada foi tentado", e o dry-run saía com `active_store_updated: true`, ganhando diploma por não comparecer à aula).
+
+**Cobertura do contrato:** os quatro estados valem **inclusive quando a leitura falha** — `installed_plugins.json` malformado ou `.git` corrompido produzia traceback e rc 1, sem JSON e sem veredito. Contrato que só vale quando nada dá errado não é contrato.
 
 **Consequência aceita:** o script passa a **falhar** em situações onde antes dizia sucesso. É ruído a mais para quem automatiza — em troca de o silêncio parar de significar "resolvido" quando não estava.
 

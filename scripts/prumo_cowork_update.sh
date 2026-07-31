@@ -191,23 +191,34 @@ for root, kind in roots:
     before_version = None
     after_version = None
     marketplace_known = False
-    plugin_version = inspect_plugin_version(root)
+    plugin_version = None
     error = None
     recovered = None
+    known = {}
+    version_file = None
 
-    if known_path.exists():
-        known = read_json(known_path)
-        marketplace_known = marketplace_name in known
-    else:
-        known = {}
+    # A INSPEÇÃO também entra na rede de captura (#276, r23): JSON malformado
+    # ou `.git` corrompido estourava ANTES do try e derrubava o script com
+    # traceback e rc 1 — sem JSON válido, sem veredito. Contrato de quatro
+    # estados que só vale quando nada dá errado não é contrato.
+    try:
+        plugin_version = inspect_plugin_version(root)
+        if known_path.exists():
+            known = read_json(known_path)
+            marketplace_known = marketplace_name in known
+    except Exception as exc:  # noqa: BLE001
+        error = f"inspeção do store falhou: {exc}"
 
-    if market_dir.exists() and (market_dir / ".git").exists():
-        before_head = run_git(["rev-parse", "HEAD"], market_dir).stdout.strip() or None
-        version_file = market_dir / "VERSION"
-        if version_file.exists():
-            before_version = version_file.read_text().strip()
+    if error is None and market_dir.exists() and (market_dir / ".git").exists():
+        try:
+            before_head = run_git(["rev-parse", "HEAD"], market_dir).stdout.strip() or None
+            version_file = market_dir / "VERSION"
+            if version_file.exists():
+                before_version = version_file.read_text().strip()
+        except Exception as exc:  # noqa: BLE001
+            error = f"leitura do checkout falhou: {exc}"
 
-        if not dry_run:
+        if not dry_run and error is None:
             try:
                 run_git(["fetch", "origin", ref], market_dir)
                 run_git(["checkout", ref], market_dir)
@@ -249,10 +260,11 @@ for root, kind in roots:
             except Exception as exc:  # noqa: BLE001
                 error = str(exc)
 
-        after_head = run_git(["rev-parse", "HEAD"], market_dir, check=False).stdout.strip() or None
-        if version_file.exists():
-            after_version = version_file.read_text().strip()
-    else:
+        if error is None:
+            after_head = run_git(["rev-parse", "HEAD"], market_dir, check=False).stdout.strip() or None
+            if version_file is not None and version_file.exists():
+                after_version = version_file.read_text().strip()
+    elif error is None:
         error = "Checkout do marketplace não encontrado neste store."
 
     results.append(
@@ -277,7 +289,12 @@ tem_ativa = bool(ativas)
 tem_legada = any(item["kind"] == "legada" for item in results)
 # ACHAR não é ATUALIZAR: store ativa com checkout ausente ou git que falhou
 # saía com sucesso, que é exatamente a mentira que esta issue remove.
-ativa_ok = tem_ativa and all(item["error"] is None for item in ativas)
+# `error is None` num dry-run significa "nada deu errado porque nada foi
+# tentado". Sem esta distinção o dry-run ganhava diploma por não comparecer
+# à aula: `active_store_updated: true`, `stores_updated: 1`, status `ok`
+# (Codex, r23).
+ativa_sem_erro = tem_ativa and all(item["error"] is None for item in ativas)
+ativa_ok = ativa_sem_erro and not dry_run
 
 REPARO_CAMADA5 = (
     "se o catálogo continuar velho com a store ativa em dia, o reparo é da "
@@ -287,6 +304,16 @@ REPARO_CAMADA5 = (
 if not results:
     estado, codigo = "sem_store", 1
     veredito = "nenhum store de plugins encontrado — não há o que atualizar"
+elif dry_run:
+    estado, codigo = ("simulacao", 0) if ativa_sem_erro else ("ativa_falhou", 4)
+    veredito = (
+        "SIMULAÇÃO: nada foi escrito. "
+        + (
+            "a store ATIVA está acessível e seria atualizável"
+            if ativa_sem_erro
+            else "a store ATIVA não está em condição de ser atualizada"
+        )
+    )
 elif not tem_ativa:
     estado, codigo = "so_legada", 3
     veredito = (
@@ -309,7 +336,7 @@ payload = {
     "ref": ref,
     "dry_run": dry_run,
     "stores_found": len(results),
-    "stores_updated": sum(1 for item in results if item["error"] is None),
+    "stores_updated": 0 if dry_run else sum(1 for item in results if item["error"] is None),
     "active_store_reached": tem_ativa,
     "active_store_updated": ativa_ok,
     "status": estado,
