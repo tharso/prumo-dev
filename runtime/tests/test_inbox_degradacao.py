@@ -136,6 +136,27 @@ class DegradacaoHonestaTest(unittest.TestCase):
         )
         self.assertIn("`não determinada`", passo5)
 
+    def test_evidencia_e_do_item_nao_frescor_da_fonte(self) -> None:
+        """Índice fresco não é evidência (Codex, r15).
+
+        O índice guarda `filename`, `kind`, `size_bytes`, `mtime_iso`,
+        `fingerprint` e `first_url` — metadata, nada de conteúdo. Isso não
+        sustenta `P1` para um `IMG_1234.jpg`. Pior: `load_inbox_preview`
+        declara `gerado` comparando o mtime do índice com o dos arquivos, sem
+        conferir se o `inbox-preview.html` existe — então "fresco" convivia
+        com "preview ausente" e produzia prioridade cenográfica.
+        """
+        self.assertIn("evidência material do ITEM", self.inbox)
+        self.assertIn("Metadata", self.inbox)
+        self.assertIn("não é evidência", self.inbox)
+        self.assertIn("não confere se o `inbox-preview.html` existe", self.inbox)
+
+        # E o ramo de cima não pode mais convidar pelo frescor da fonte.
+        bruto = INBOX.read_text(encoding="utf-8")
+        com = bruto[bruto.index("**Com evidência**") :]
+        com = com[: com.index("**Sem evidência**")]
+        self.assertNotIn("índice fresco", com, "frescor voltou a valer como evidência")
+
     def test_fallback_continua_entregando_triagem_numerada(self) -> None:
         # Degradar a certeza é legítimo; degradar a ENTREGA é o defeito de
         # 30/07. O texto tem de dizer qual das duas cede.

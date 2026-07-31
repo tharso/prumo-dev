@@ -22,12 +22,14 @@ Vale para:
 4. Se `_preview-index.json` estiver atualizado, linkar `inbox-preview.html` antes de abrir arquivo bruto.
 5. **Para cada item novo**, classificar — e o que se pode afirmar depende do que se tem:
 
-   **Com evidência** (preview atualizado, índice fresco ou conteúdo já legítimo em mãos):
+   O corte é **evidência material do ITEM**, não frescor da fonte. Metadata — nome, tipo, tamanho, `mtime`, fingerprint — **não é evidência**: ela não distingue um `IMG_1234.jpg` urgente de um print de meme. E `status: gerado` não garante conteúdo à vista: o frescor compara o `mtime` do índice com o dos arquivos e **não confere se o `inbox-preview.html` existe** — índice fresco com preview ausente cai no ramo de baixo.
+
+   **Com evidência** (o conteúdo do item está à vista: preview aberto que o mostra, URL que identifica a fonte, ou conteúdo já legitimamente em mãos):
    - ação: `Responder`, `Ver`, `Sem ação`
    - prioridade: `P1`, `P2`, `P3`
    - motivo objetivo
 
-   **Sem evidência** (preview velho, ausente ou inutilizável — só nome e `mtime`):
+   **Sem evidência** (só metadata — inclusive com índice fresco, se o conteúdo não chegou a aparecer):
    - ação: só quando o **nome** a sustentar; na dúvida, `Ver`
    - prioridade: **`não determinada`**. Nunca `P1/P2/P3` de arquivo que ninguém abriu — prioridade sem evidência é chute com cara de triagem, e o custo dela é o usuário confiar num número que ninguém apurou
    - motivo: o que o nome diz, e só
