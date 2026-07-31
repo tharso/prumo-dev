@@ -16,14 +16,24 @@ Vale para:
 
 ### Estágio A: triagem leve
 
-1. **Inventário real**: listar os arquivos em `Inbox4Mobile/` (excluindo `_preview-index.json`, `_processed.json`, `inbox-preview.html`). Comparar com `_processed.json`. Qualquer arquivo que não esteja lá com `status: "processed"` é item novo. Não confiar no `_preview-index.json` como fonte de verdade — ele pode estar stale.
+1. **Inventário real**: listar os arquivos em `Inbox4Mobile/` **com nome e `mtime`** (excluindo `_preview-index.json`, `_processed.json`, `inbox-preview.html`). Comparar com `_processed.json`. Qualquer arquivo que não esteja lá com `status: "processed"` é item novo. Não confiar no `_preview-index.json` como fonte de verdade — ele pode estar stale.
 2. **Regenerar o preview exige runtime:** `prumo inbox preview` (operação explícita — o briefing nunca regenera implicitamente, #197). O gerador vive dentro do pacote `prumo_runtime`, então **em host sem runtime não há como**: não procure script, não tente caminho alternativo. Quem mantém o preview fresco é o ritual na máquina que tem o runtime.
-3. **Preview velho ou ausente não suspende a triagem** — degrade e declare: contagem, **nomes** dos itens novos e idade do mais antigo, classificados pelo que o nome sustenta, com uma linha dizendo que a classificação é por nome. **Nunca inventar `P1/P2/P3`** de arquivo que ninguém abriu: prioridade sem evidência é chute com cara de triagem. O ASSERT do core proíbe abrir o BRUTO no primeiro tempo; classificar por nome sempre foi permitido — e é obrigatório (`briefing-canais.md`).
+3. **Preview velho ou ausente não suspende a triagem** — degrade e declare. O ASSERT do core proíbe abrir o BRUTO no primeiro tempo; classificar por nome sempre foi permitido — e é obrigatório (`briefing-canais.md`). O que sai nesse caso está no passo 5, ramo **sem evidência**.
 4. Se `_preview-index.json` estiver atualizado, linkar `inbox-preview.html` antes de abrir arquivo bruto.
-5. **Para cada item novo**, classificar por:
+5. **Para cada item novo**, classificar — e o que se pode afirmar depende do que se tem:
+
+   **Com evidência** (preview atualizado, índice fresco ou conteúdo já legítimo em mãos):
    - ação: `Responder`, `Ver`, `Sem ação`
    - prioridade: `P1`, `P2`, `P3`
    - motivo objetivo
+
+   **Sem evidência** (preview velho, ausente ou inutilizável — só nome e `mtime`):
+   - ação: só quando o **nome** a sustentar; na dúvida, `Ver`
+   - prioridade: **`não determinada`**. Nunca `P1/P2/P3` de arquivo que ninguém abriu — prioridade sem evidência é chute com cara de triagem, e o custo dela é o usuário confiar num número que ninguém apurou
+   - motivo: o que o nome diz, e só
+   - **declarar em uma linha** que a classificação é por nome, mais a idade do item mais antigo (do `mtime` do passo 1; sem acesso a metadata, dizer que a idade está indisponível — lacuna nomeada vale mais que aniversário inventado)
+
+   Os dois ramos entregam **triagem numerada** — o fallback degrada a certeza, nunca a entrega (`briefing-montagem.md` é o dono do formato).
 
 ### Estágio B: aprofundamento seletivo
 

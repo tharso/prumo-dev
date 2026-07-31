@@ -101,15 +101,45 @@ class DegradacaoHonestaTest(unittest.TestCase):
         self.assertIn("Preview velho ou ausente não suspende a triagem", self.inbox)
 
     def test_manda_dar_nomes_e_idade(self) -> None:
-        # O que sustenta decisão: contagem sozinha não sustenta.
-        for exigido in ("nomes", "idade do mais antigo"):
-            self.assertIn(exigido, self.inbox)
+        # O que sustenta decisão: contagem sozinha não sustenta. E `mtime` no
+        # inventário, senão "idade do mais antigo" seria pedido sem fonte.
+        self.assertIn("com nome e `mtime`", self.inbox)
+        self.assertIn("idade do item mais antigo", self.inbox)
+        self.assertIn("idade está indisponível", self.inbox)
 
     def test_proibe_inventar_prioridade(self) -> None:
         # A degradação só é honesta se ela não fingir o que não tem. Sem esta
         # proibição, "classifique com o que houver" convida a chutar P1.
-        self.assertIn("Nunca inventar `P1/P2/P3`", self.inbox)
+        self.assertIn("Nunca `P1/P2/P3` de arquivo que ninguém abriu", self.inbox)
         self.assertIn("prioridade sem evidência é chute", self.inbox)
+
+    def test_o_passo_da_classificacao_nao_contradiz_a_degradacao(self) -> None:
+        """A contradição que eu mesmo criei ao consertar a outra (Codex, r14).
+
+        O passo 3 proibia inventar prioridade e o passo 5, duas linhas
+        depois, exigia `P1/P2/P3` para CADA item novo — e no fallback todos
+        são novos. É a mesma forma do bug original (o agente escolhe qual
+        regra desobedecer), agora dentro de um arquivo só.
+        """
+        bruto = INBOX.read_text(encoding="utf-8")
+        passo5 = bruto[bruto.index("5. **Para cada item novo**") :]
+        passo5 = passo5[: passo5.index("### Estágio B")]
+
+        # A exigência de P1/P2/P3 tem de estar SOB um ramo condicionado a
+        # evidência, e o outro ramo tem de existir com a saída alternativa.
+        self.assertIn("**Com evidência**", passo5)
+        self.assertIn("**Sem evidência**", passo5)
+        self.assertLess(
+            passo5.index("**Com evidência**"),
+            passo5.index("`P1`, `P2`, `P3`"),
+            "a exigência de prioridade voltou a valer incondicionalmente",
+        )
+        self.assertIn("`não determinada`", passo5)
+
+    def test_fallback_continua_entregando_triagem_numerada(self) -> None:
+        # Degradar a certeza é legítimo; degradar a ENTREGA é o defeito de
+        # 30/07. O texto tem de dizer qual das duas cede.
+        self.assertIn("degrada a certeza, nunca a entrega", self.inbox)
 
     def test_lembra_que_o_ASSERT_proibe_o_bruto_nao_a_classificacao(self) -> None:
         # O relatório de 30/07 propôs abrir exceção no ASSERT. Não decorre
