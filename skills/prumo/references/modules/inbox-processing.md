@@ -17,11 +17,8 @@ Vale para:
 ### Estágio A: triagem leve
 
 1. **Inventário real**: listar os arquivos em `Inbox4Mobile/` (excluindo `_preview-index.json`, `_processed.json`, `inbox-preview.html`). Comparar com `_processed.json`. Qualquer arquivo que não esteja lá com `status: "processed"` é item novo. Não confiar no `_preview-index.json` como fonte de verdade — ele pode estar stale.
-2. Se houver shell, regenerar:
-   - `Inbox4Mobile/inbox-preview.html`
-   - `Inbox4Mobile/_preview-index.json`
-   - usando os paths válidos definidos em `runtime-paths.md`
-3. Se não houver shell, produzir fallback textual equivalente.
+2. **Regenerar o preview exige runtime:** `prumo inbox preview` (operação explícita — o briefing nunca regenera implicitamente, #197). O gerador vive dentro do pacote `prumo_runtime`, então **em host sem runtime não há como**: não procure script, não tente caminho alternativo. Quem mantém o preview fresco é o ritual na máquina que tem o runtime.
+3. **Preview velho ou ausente não suspende a triagem** — degrade e declare: contagem, **nomes** dos itens novos e idade do mais antigo, classificados pelo que o nome sustenta, com uma linha dizendo que a classificação é por nome. **Nunca inventar `P1/P2/P3`** de arquivo que ninguém abriu: prioridade sem evidência é chute com cara de triagem. O ASSERT do core proíbe abrir o BRUTO no primeiro tempo; classificar por nome sempre foi permitido — e é obrigatório (`briefing-canais.md`).
 4. Se `_preview-index.json` estiver atualizado, linkar `inbox-preview.html` antes de abrir arquivo bruto.
 5. **Para cada item novo**, classificar por:
    - ação: `Responder`, `Ver`, `Sem ação`
@@ -41,7 +38,7 @@ Abrir conteúdo bruto completo apenas quando houver:
 
 1. Se a geração falhar mas houver preview anterior, ainda assim linkar o preview e avisar que pode estar defasado.
 2. Se não houver preview utilizável, seguir com lista numerada no chat e registrar a falha.
-3. No panorama do briefing, mostrar apenas o link e a contagem de itens. Não despejar arquivos individuais ali.
+3. No panorama do briefing, **não despejar conteúdo bruto** dos arquivos — link e contagem bastam para o preview em si. Isto é sobre o PREVIEW, não sobre a triagem: o formato do panorama é do `briefing-montagem.md`, e ele exige contagem **e** triagem, com itens numerados. Ler esta linha como licença para entregar só um número é o furo de 30/07.
 
 ## Commit do inbox
 

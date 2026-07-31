@@ -24,6 +24,8 @@ Observação importante:
 
 A higiene **não** entra nesta lista: é conduzida pelo agente, sem script (ver `claude-hygiene.md`). O antigo `prumo_claude_hygiene.py` não existe na arquitetura atual.
 
+O **gerador do preview do Inbox4Mobile** também não entra: ele vive dentro do pacote `prumo_runtime` e se alcança por `prumo inbox preview`, nunca por path de script. `Prumo/scripts/` no SCRIPT_PATHS acima cobre bundle de artefato gerado — não é destino de instalação, e nenhum instalador o popula. Módulo que precise do preview aponta o COMANDO, não um caminho que pode nunca existir (#289).
+
 
 ## Regra
 
