@@ -230,7 +230,7 @@ class DoctorDivergenceTests(unittest.TestCase):
             )
             self.assertEqual(completed.returncode, 0, completed.stderr)
             result = json.loads(completed.stdout)
-            # Stores reais do HOME podem aparecer na varredura — mirar o fake.
+            # Stores reais do HOME NÃO aparecem (--extra-root substitui os defaults) na varredura — mirar o fake.
             target = next(r for r in result["roots"] if r["root"] == str(_store))
             self.assertEqual(target.get("marketplace_checkout_divergence"), "divergente")
             diagnosis = " ".join(target.get("diagnosis", []))

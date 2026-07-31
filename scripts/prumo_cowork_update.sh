@@ -261,9 +261,17 @@ for root, kind in roots:
                 error = str(exc)
 
         if error is None:
-            after_head = run_git(["rev-parse", "HEAD"], market_dir, check=False).stdout.strip() or None
-            if version_file is not None and version_file.exists():
-                after_version = version_file.read_text().strip()
+            # Também aqui (Codex, r24): permissão, checkout que sumiu no meio
+            # da operação ou VERSION ilegível estouravam depois do try.
+            try:
+                after_head = (
+                    run_git(["rev-parse", "HEAD"], market_dir, check=False).stdout.strip()
+                    or None
+                )
+                if version_file is not None and version_file.exists():
+                    after_version = version_file.read_text().strip()
+            except Exception as exc:  # noqa: BLE001
+                error = f"leitura pós-operação falhou: {exc}"
     elif error is None:
         error = "Checkout do marketplace não encontrado neste store."
 
@@ -304,26 +312,30 @@ REPARO_CAMADA5 = (
 if not results:
     estado, codigo = "sem_store", 1
     veredito = "nenhum store de plugins encontrado — não há o que atualizar"
-elif dry_run:
-    estado, codigo = ("simulacao", 0) if ativa_sem_erro else ("ativa_falhou", 4)
-    veredito = (
-        "SIMULAÇÃO: nada foi escrito. "
-        + (
-            "a store ATIVA está acessível e seria atualizável"
-            if ativa_sem_erro
-            else "a store ATIVA não está em condição de ser atualizada"
-        )
-    )
 elif not tem_ativa:
+    # ANTES do ramo de simulação: ativa ausente é `so_legada` em qualquer
+    # modo. Com o dry-run na frente, um dry-run sem store ativa virava
+    # `ativa_falhou` — contradizendo o próprio contrato (Codex, r24).
     estado, codigo = "so_legada", 3
     veredito = (
-        "a store ATIVA (unificada) não foi encontrada; só atualizei store "
-        f"LEGADA, o que não muda o que o Cowork carrega. {REPARO_CAMADA5}"
+        "a store ATIVA (unificada) não foi encontrada; "
+        + ("nada foi escrito (simulação). " if dry_run else "só atualizei store LEGADA, o que não muda o que o Cowork carrega. ")
+        + REPARO_CAMADA5
     )
-elif not ativa_ok:
+elif not ativa_sem_erro:
     estado, codigo = "ativa_falhou", 4
     veredito = "a store ATIVA foi encontrada mas NÃO foi atualizada: " + "; ".join(
         item["error"] for item in ativas if item["error"]
+    )
+elif dry_run:
+    # "seria atualizável" prometia o que o dry-run não testa: remoto
+    # inacessível, branch inexistente, checkout sujo e commits locais só
+    # aparecem no fetch/pull, que a simulação pula. E provar de verdade
+    # exigiria escrever referências (Codex, r24).
+    estado, codigo = "simulacao", 0
+    veredito = (
+        "SIMULAÇÃO: nada foi escrito. Checkout local da store ATIVA "
+        "acessível; atualização NÃO testada."
     )
 else:
     estado, codigo = "ok", 0
@@ -374,8 +386,14 @@ for item in results:
     print(f"- plugin instalado: {item['plugin_version'] or 'n/d'}")
     if item.get("recovered"):
         print(f"- recuperação: {item['recovered']}")
+
+    # Uma cadeia só, com a simulação ANTES de tudo: no dry-run nada foi
+    # escrito, então nenhuma linha pode dizer "atualizado" ou "alinhado"
+    # (Codex, r24).
     if item["error"]:
         print(f"- erro: {item['error']}")
+    elif dry_run:
+        print("- ação: SIMULAÇÃO — nada foi escrito neste store; atualização não testada.")
     elif item["plugin_reinstall_recommended"]:
         print("- ação: o catálogo foi atualizado, mas o plugin ainda está em outra versão. Reinicie o Cowork e, se precisar, remova só o plugin Prumo e reinstale a partir do marketplace.")
     elif item["kind"] == "ativa":

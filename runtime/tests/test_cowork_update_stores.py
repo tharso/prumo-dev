@@ -271,7 +271,7 @@ class DryRunHonestoTest(unittest.TestCase):
 
 
 class InspecaoQuebradaTest(unittest.TestCase):
-    """O contrato dos quatro estados vale mesmo quando a leitura falha.
+    """O contrato dos estados vale mesmo quando a leitura falha.
 
     JSON malformado ou `.git` corrompido estourava ANTES do `try` e derrubava
     o script com traceback e rc 1 — sem JSON válido e sem veredito. Contrato
@@ -325,6 +325,69 @@ class InspecaoQuebradaTest(unittest.TestCase):
         code, payload = self._rodar(store)
         self.assertEqual(code, 4)
         self.assertIsNotNone(payload["results"][0]["error"])
+
+
+class DryRunNaoPrometeAtualizabilidadeTest(unittest.TestCase):
+    """"Seria atualizável" prometia o que a simulação não testa (Codex, r24).
+
+    O dry-run pula `fetch`, `checkout` e `pull` — então remoto inacessível,
+    branch inexistente, checkout sujo e commits locais passariam como 0.
+    Provar de verdade exigiria escrever referências, que é justamente o que
+    um dry-run não faz. O veredito honesto é "checkout local acessível;
+    atualização NÃO testada".
+    """
+
+    def setUp(self) -> None:
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.base = Path(tmp.name)
+        self.remoto = _remoto(self.base)
+
+    def _uni(self) -> Path:
+        uni = self.base / "uni"
+        _clone(self.remoto, uni / "marketplaces" / "prumo-marketplace")
+        (uni / "known_marketplaces.json").write_text(json.dumps(KNOWN))
+        return uni
+
+    def _legada(self) -> Path:
+        sess = self.base / "leg" / "sess"
+        store = sess / "abc" / "cowork_plugins"
+        _clone(self.remoto, store / "marketplaces" / "prumo-marketplace")
+        (store / "known_marketplaces.json").write_text(json.dumps(KNOWN))
+        return sess
+
+    def _rodar(self, plugins_root: Path, sessions_root: Path, json_out: bool):
+        cmd = [
+            "bash", str(SCRIPT),
+            "--plugins-root", str(plugins_root),
+            "--sessions-root", str(sessions_root),
+            "--dry-run",
+        ] + (["--json"] if json_out else [])
+        return subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+
+    def test_veredito_nao_promete_atualizabilidade(self) -> None:
+        r = self._rodar(self._uni(), self.base / "nada", True)
+        payload = json.loads(r.stdout)
+        self.assertEqual(payload["status"], "simulacao")
+        self.assertIn("NÃO testada", payload["verdict"])
+        self.assertNotIn("seria atualizável", payload["verdict"])
+
+    def test_nenhuma_linha_do_texto_diz_alinhado(self) -> None:
+        # O ramo por store dizia "marketplace alinhado" mesmo no dry-run.
+        r = self._rodar(self._uni(), self.base / "nada", False)
+        self.assertIn("SIMULAÇÃO", r.stdout)
+        self.assertNotIn("alinhado", r.stdout)
+        self.assertNotIn("catálogo foi atualizado", r.stdout)
+
+    def test_dry_run_sem_ativa_e_so_legada_nao_ativa_falhou(self) -> None:
+        # O ramo da simulação vinha ANTES de `not tem_ativa`, então um
+        # dry-run sem store ativa virava `ativa_falhou` — contradizendo o
+        # contrato: ativa ausente é `so_legada` em qualquer modo.
+        r = self._rodar(self.base / "nao-existe", self._legada(), True)
+        payload = json.loads(r.stdout)
+        self.assertEqual(payload["status"], "so_legada")
+        self.assertEqual(r.returncode, 3)
+        self.assertIn("nada foi escrito", payload["verdict"])
 
 
 class ParidadeTextoJsonTest(unittest.TestCase):
