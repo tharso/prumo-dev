@@ -61,7 +61,9 @@ def _clone(remoto: Path, destino: Path) -> None:
 
 class StoreDiscoveryTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.base = Path(tempfile.mkdtemp())
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)  # mkdtemp sem limpeza vaza a cada run
+        self.base = Path(tmp.name)
         self.remoto = _remoto(self.base)
 
     def _unificada(self) -> Path:
@@ -125,6 +127,7 @@ class StoreDiscoveryTest(unittest.TestCase):
         code, payload = self._rodar(self.base / "nao-existe", self._legada())
         self.assertEqual(code, 3, "só-legada continua saindo zero — o sucesso mente")
         self.assertFalse(payload["active_store_reached"])
+        self.assertEqual(payload["status"], "so_legada")
         self.assertEqual([r["kind"] for r in payload["results"]], ["legada"])
 
     def test_legada_e_atualizada_mesmo_assim(self) -> None:
@@ -170,6 +173,94 @@ class StoreDiscoveryTest(unittest.TestCase):
             timeout=120,
         )
         self.assertNotEqual(r.returncode, 0)
+
+
+class AlcancarNaoEAtualizarTest(unittest.TestCase):
+    """A segunda camada da mesma mentira (Codex, r22).
+
+    A primeira versão do conserto perguntava só se a store ativa APARECEU.
+    Store ativa com checkout ausente, ou com `git fetch` que falhou, seguia
+    saindo zero — o mesmo "sucesso" que a issue existe para remover, um passo
+    adiante.
+    """
+
+    def setUp(self) -> None:
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.base = Path(tmp.name)
+
+    def test_ativa_sem_checkout_nao_e_sucesso(self) -> None:
+        quebrada = self.base / "quebrada"
+        (quebrada / "marketplaces").mkdir(parents=True)
+        (quebrada / "known_marketplaces.json").write_text(json.dumps(KNOWN))
+
+        r = subprocess.run(
+            [
+                "bash", str(SCRIPT),
+                "--plugins-root", str(quebrada),
+                "--sessions-root", str(self.base / "nada"),
+                "--json",
+            ],
+            capture_output=True, text=True, timeout=120,
+        )
+        payload = json.loads(r.stdout)
+        self.assertEqual(r.returncode, 4)
+        self.assertEqual(payload["status"], "ativa_falhou")
+        self.assertTrue(payload["active_store_reached"])
+        self.assertFalse(payload["active_store_updated"], "achar não é atualizar")
+
+    def test_contagem_nao_conta_fracasso_como_atualizacao(self) -> None:
+        quebrada = self.base / "quebrada2"
+        (quebrada / "marketplaces").mkdir(parents=True)
+        (quebrada / "known_marketplaces.json").write_text(json.dumps(KNOWN))
+        r = subprocess.run(
+            [
+                "bash", str(SCRIPT),
+                "--plugins-root", str(quebrada),
+                "--sessions-root", str(self.base / "nada"),
+                "--json",
+            ],
+            capture_output=True, text=True, timeout=120,
+        )
+        payload = json.loads(r.stdout)
+        self.assertEqual(payload["stores_found"], 1)
+        self.assertEqual(payload["stores_updated"], 0, "tentativa fracassada contada como update")
+
+
+class ParidadeTextoJsonTest(unittest.TestCase):
+    """Texto e JSON não podem discordar sobre o que aconteceu (Codex, r22).
+
+    Antes: sem store nenhuma, o texto saía 1 e o JSON saía 3 — porque o JSON
+    retornava antes de chegar no ramo do texto. Dois formatos, dois vereditos.
+    """
+
+    def setUp(self) -> None:
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.base = Path(tmp.name)
+
+    def _codigos(self, plugins_root: Path, sessions_root: Path):
+        base_cmd = [
+            "bash", str(SCRIPT),
+            "--plugins-root", str(plugins_root),
+            "--sessions-root", str(sessions_root),
+        ]
+        texto = subprocess.run(base_cmd, capture_output=True, text=True, timeout=120)
+        js = subprocess.run(base_cmd + ["--json"], capture_output=True, text=True, timeout=120)
+        return texto.returncode, js.returncode, json.loads(js.stdout) if js.stdout.strip() else {}
+
+    def test_sem_store_nenhuma_concorda(self) -> None:
+        ct, cj, payload = self._codigos(self.base / "a", self.base / "b")
+        self.assertEqual(ct, cj)
+        self.assertEqual(ct, 1)
+        self.assertEqual(payload.get("status"), "sem_store")
+
+    def test_json_carrega_o_veredito_em_texto(self) -> None:
+        # O JSON não oferecia o reparo da camada 5 que o texto oferecia:
+        # quem automatiza ficava sem a instrução que o humano recebia.
+        _, _, payload = self._codigos(self.base / "a", self.base / "b")
+        self.assertIn("verdict", payload)
+        self.assertTrue(payload["verdict"])
 
 
 class ContratoDoCabecalhoTest(unittest.TestCase):

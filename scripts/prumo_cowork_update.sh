@@ -272,8 +272,35 @@ for root, kind in roots:
         }
     )
 
-tem_ativa = any(item["kind"] == "ativa" for item in results)
+ativas = [item for item in results if item["kind"] == "ativa"]
+tem_ativa = bool(ativas)
 tem_legada = any(item["kind"] == "legada" for item in results)
+# ACHAR não é ATUALIZAR: store ativa com checkout ausente ou git que falhou
+# saía com sucesso, que é exatamente a mentira que esta issue remove.
+ativa_ok = tem_ativa and all(item["error"] is None for item in ativas)
+
+REPARO_CAMADA5 = (
+    "se o catálogo continuar velho com a store ativa em dia, o reparo é da "
+    "camada 5: remover o marketplace na UI e re-adicionar como owner/repo"
+)
+
+if not results:
+    estado, codigo = "sem_store", 1
+    veredito = "nenhum store de plugins encontrado — não há o que atualizar"
+elif not tem_ativa:
+    estado, codigo = "so_legada", 3
+    veredito = (
+        "a store ATIVA (unificada) não foi encontrada; só atualizei store "
+        f"LEGADA, o que não muda o que o Cowork carrega. {REPARO_CAMADA5}"
+    )
+elif not ativa_ok:
+    estado, codigo = "ativa_falhou", 4
+    veredito = "a store ATIVA foi encontrada mas NÃO foi atualizada: " + "; ".join(
+        item["error"] for item in ativas if item["error"]
+    )
+else:
+    estado, codigo = "ok", 0
+    veredito = f"store ATIVA atualizada. {REPARO_CAMADA5}"
 
 payload = {
     "sessions_root": str(sessions_root),
@@ -281,15 +308,20 @@ payload = {
     "marketplace_name": marketplace_name,
     "ref": ref,
     "dry_run": dry_run,
-    "roots_updated": len(results),
+    "stores_found": len(results),
+    "stores_updated": sum(1 for item in results if item["error"] is None),
     "active_store_reached": tem_ativa,
+    "active_store_updated": ativa_ok,
+    "status": estado,
+    "verdict": veredito,
     "results": results,
 }
 
 if output_format == "json":
+    # Um estado só, calculado acima: texto e JSON não podem discordar sobre
+    # o que aconteceu nem sobre o código de saída (#276).
     print(json.dumps(payload, indent=2, ensure_ascii=False))
-    # Só-legada não é sucesso: quem lê JSON também precisa saber (#276).
-    raise SystemExit(0 if tem_ativa else 3)
+    raise SystemExit(codigo)
 
 print("==> Prumo Cowork update")
 print(f"Store ativa (procurada em): {plugins_root or 'n/d'}")
@@ -301,7 +333,7 @@ print(f"Dry-run: {'sim' if dry_run else 'não'}")
 if not results:
     print()
     print("Não encontrei nenhum store de plugins do Cowork. Sem store, não há o que atualizar.")
-    raise SystemExit(1)
+    raise SystemExit(codigo)
 
 for item in results:
     print()
@@ -325,13 +357,11 @@ for item in results:
         print("- ação: store legada alinhada — e isso NÃO resolve o Cowork atual. Ela é entulho de arranjo antigo (≤março/2026).")
 
 print()
-if not tem_ativa:
-    print("ATENÇÃO: a store ATIVA (unificada) não foi encontrada.")
-    if tem_legada:
-        print("Só atualizei store LEGADA — isso não muda o que o Cowork carrega.")
-    print(f"Procurei em: {plugins_root or 'n/d'}")
+print(f"Veredito: {veredito}")
+if estado == "so_legada":
+    print(f"Procurei a store ativa em: {plugins_root or 'n/d'}")
     print("Se o caminho for outro nesta máquina, passe --plugins-root.")
-    print("Se o catálogo continuar velho com a store ativa em dia, o reparo é")
-    print("da camada 5: remover o marketplace na UI e re-adicionar como owner/repo.")
-    raise SystemExit(3)
+elif estado == "ativa_falhou":
+    print("A store que decide o comportamento NÃO está em dia.")
+raise SystemExit(codigo)
 PY

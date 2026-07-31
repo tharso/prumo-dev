@@ -214,7 +214,17 @@ class DoctorDivergenceTests(unittest.TestCase):
             _git(["fetch", "origin", "main"], market)
 
             completed = subprocess.run(
-                ["bash", str(DOCTOR_SCRIPT), "--sessions-root", str(sessions), "--json"],
+                [
+                    "bash", str(DOCTOR_SCRIPT),
+                    "--sessions-root", str(sessions),
+                    # Sem isto o doctor LÊ as stores reais de quem roda a
+                    # suíte (não muta, mas não é hermético) — Codex, r22.
+                    # `--offline` NÃO entra: ele pula o ls-remote, que é
+                    # exatamente o que estes testes verificam. O remoto da
+                    # fixture é um bare local, então não há rede envolvida.
+                    "--extra-root", str(sessions.parent / "sem-extra"),
+                    "--json",
+                ],
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=False, timeout=60,
             )
             self.assertEqual(completed.returncode, 0, completed.stderr)
@@ -242,7 +252,17 @@ class DoctorDivergenceTests(unittest.TestCase):
             _git(["fetch", "origin", "main"], market)
 
             completed = subprocess.run(
-                ["bash", str(DOCTOR_SCRIPT), "--sessions-root", str(sessions), "--json"],
+                [
+                    "bash", str(DOCTOR_SCRIPT),
+                    "--sessions-root", str(sessions),
+                    # Sem isto o doctor LÊ as stores reais de quem roda a
+                    # suíte (não muta, mas não é hermético) — Codex, r22.
+                    # `--offline` NÃO entra: ele pula o ls-remote, que é
+                    # exatamente o que estes testes verificam. O remoto da
+                    # fixture é um bare local, então não há rede envolvida.
+                    "--extra-root", str(sessions.parent / "sem-extra"),
+                    "--json",
+                ],
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=False, timeout=60,
             )
             self.assertEqual(completed.returncode, 0, completed.stderr)
