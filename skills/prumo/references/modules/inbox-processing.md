@@ -19,12 +19,12 @@ Vale para:
 1. **Inventário real**: listar os arquivos em `Inbox4Mobile/` **com nome e `mtime`** (excluindo `_preview-index.json`, `_processed.json`, `inbox-preview.html`). Comparar com `_processed.json`. Qualquer arquivo que não esteja lá com `status: "processed"` é item novo. Não confiar no `_preview-index.json` como fonte de verdade — ele pode estar stale.
 2. **Regenerar o preview exige runtime:** `prumo inbox preview` (operação explícita — o briefing nunca regenera implicitamente, #197). O gerador vive dentro do pacote `prumo_runtime`, então **em host sem runtime não há como**: não procure script, não tente caminho alternativo. Quem mantém o preview fresco é o ritual na máquina que tem o runtime.
 3. **Preview velho ou ausente não suspende a triagem** — degrade e declare. O ASSERT do core proíbe abrir o BRUTO no primeiro tempo; classificar por nome sempre foi permitido — e é obrigatório (`briefing-canais.md`). O que sai nesse caso está no passo 5, ramo **sem evidência**.
-4. Se `_preview-index.json` estiver atualizado, linkar `inbox-preview.html` antes de abrir arquivo bruto.
+4. Linkar `inbox-preview.html` **só se ele existir e estiver utilizável** — o predicado é o HTML, não o índice: `status: gerado` compara mtimes e não confere a existência do arquivo, então índice fresco pode apontar um fantasma. Sem HTML utilizável, seguir pelo ramo **sem evidência** do passo 5.
 5. **Para cada item novo**, classificar — e o que se pode afirmar depende do que se tem:
 
-   O corte é **evidência material do ITEM**, não frescor da fonte. Metadata — nome, tipo, tamanho, `mtime`, fingerprint — **não é evidência**: ela não distingue um `IMG_1234.jpg` urgente de um print de meme. E `status: gerado` não garante conteúdo à vista: o frescor compara o `mtime` do índice com o dos arquivos e **não confere se o `inbox-preview.html` existe** — índice fresco com preview ausente cai no ramo de baixo.
+   O corte é **evidência material do ITEM**, não frescor da fonte. Metadata — nome, tipo, tamanho, `mtime`, fingerprint e a `first_url` do índice — **não é evidência**. URL sozinha identifica a FONTE, não ação, prazo nem consequência: um link de YouTube ou de encurtador não diz se é urgente. Ela só conta quando o que está visível (inclusive a semântica explícita da própria URL, quando houver) sustenta os três campos. Metadata ela não distingue um `IMG_1234.jpg` urgente de um print de meme. E `status: gerado` não garante conteúdo à vista: o frescor compara o `mtime` do índice com o dos arquivos e **não confere se o `inbox-preview.html` existe** — índice fresco com preview ausente cai no ramo de baixo.
 
-   **Com evidência** (o conteúdo do item está à vista: preview aberto que o mostra, URL que identifica a fonte, ou conteúdo já legitimamente em mãos):
+   **Com evidência** (o conteúdo do item está à vista — preview utilizável que o mostra, ou conteúdo já legitimamente em mãos — e o que se vê sustenta ação, prioridade **e** motivo):
    - ação: `Responder`, `Ver`, `Sem ação`
    - prioridade: `P1`, `P2`, `P3`
    - motivo objetivo

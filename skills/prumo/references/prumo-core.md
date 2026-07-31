@@ -222,7 +222,7 @@ O briefing chega em **dois tempos na mesma conversa** (#196): primeiro o panoram
 
 `ASSERT: Usar Gmail MCP e Calendar MCP como fonte primária de email e calendário.`
 
-`ASSERT: Se existir Prumo/Inbox4Mobile/_preview-index.json, linkar inbox-preview.html antes de abrir qualquer arquivo bruto.`
+`ASSERT: Se existir Prumo/Inbox4Mobile/inbox-preview.html utilizável, linkar antes de abrir qualquer arquivo bruto.`
 
 `ASSERT: Antes de remover item de inbox, confirmar com o usuário o plano único de commit.`
 

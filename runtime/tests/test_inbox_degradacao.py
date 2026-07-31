@@ -151,11 +151,37 @@ class DegradacaoHonestaTest(unittest.TestCase):
         self.assertIn("não é evidência", self.inbox)
         self.assertIn("não confere se o `inbox-preview.html` existe", self.inbox)
 
-        # E o ramo de cima não pode mais convidar pelo frescor da fonte.
+        # O ramo de cima não pode convidar por NENHUMA forma de metadata.
+        # O guard estreito pegava só "índice fresco" e deixava `first_url`,
+        # "status gerado" e "índice atualizado" entrarem pela janela.
         bruto = INBOX.read_text(encoding="utf-8")
         com = bruto[bruto.index("**Com evidência**") :]
         com = com[: com.index("**Sem evidência**")]
-        self.assertNotIn("índice fresco", com, "frescor voltou a valer como evidência")
+        for isca in ("índice fresco", "índice atualizado", "first_url", "gerado", "mtime"):
+            self.assertNotIn(isca, com, f"'{isca}' voltou a valer como evidência")
+
+    def test_url_sozinha_nao_e_evidencia(self) -> None:
+        # `first_url` vem do PRÓPRIO índice: aceitá-la reintroduzia metadata
+        # pela janela. Um link de YouTube identifica a fonte, não a urgência.
+        self.assertIn("URL sozinha identifica a FONTE", self.inbox)
+        self.assertIn("sustenta os três campos", self.inbox)
+
+    def test_link_do_preview_depende_do_HTML_nao_do_indice(self) -> None:
+        # O predicado era a existência do ÍNDICE, e o índice pode estar
+        # fresco com o HTML ausente — mandava linkar um fantasma. O ASSERT do
+        # core tinha o mesmo defeito; consertar só o módulo criaria
+        # discordância nova, que é o bug que esta issue conserta.
+        core = " ".join(
+            (REPO_ROOT / "skills" / "prumo" / "references" / "prumo-core.md")
+            .read_text(encoding="utf-8")
+            .split()
+        )
+        self.assertIn(
+            "Se existir Prumo/Inbox4Mobile/inbox-preview.html utilizável, linkar",
+            core,
+        )
+        self.assertNotIn("_preview-index.json, linkar", core)
+        self.assertIn("só se ele existir e estiver utilizável", self.inbox)
 
     def test_fallback_continua_entregando_triagem_numerada(self) -> None:
         # Degradar a certeza é legítimo; degradar a ENTREGA é o defeito de

@@ -97,7 +97,11 @@ Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões ant
 
 **Alternativas consideradas:** abrir exceção no ASSERT para ler bruto abaixo de N bytes, como o relatório propôs (rejeitada — não decorre dos fatos: o ASSERT proíbe abrir bruto, e classificar por nome sempre foi permitido **e obrigatório**); distribuir o gerador para `scripts/` (rejeitada — `scripts/` também não chega ao workspace do usuário; resolveria a aparência do ponteiro, não o fato); deixar como está e tratar só a causa raiz na #290 (rejeitada — mesmo com o preview fresco, a contradição textual continuaria licenciando a contagem seca no dia em que ele falhar).
 
+**Emenda ao ASSERT do preview (#289):** o `ASSERT` do core condicionava o link à existência do **índice** (`_preview-index.json`), não do HTML. Como `load_inbox_preview` declara `gerado` comparando mtimes e **nunca confere se o `inbox-preview.html` existe**, o contrato mandava linkar um fantasma. O predicado passa a ser o HTML utilizável. **Catraca neutra** — a redação nova é mais curta. Consertar só o módulo teria criado exatamente a discordância entre camadas que esta entrada existe para desfazer.
+
 **Nota de processo:** a primeira versão desta correção criou uma contradição NOVA dentro do próprio módulo — o passo 3 proibia inventar prioridade e o passo 5, duas linhas depois, exigia `P1/P2/P3` para cada item novo (e no fallback todos são novos). Mesma forma do defeito que a entrada conserta, agora num arquivo só. Achado do Codex na revisão do código. A classificação virou **bifurcada por evidência**, com guard que quebra se a exigência voltar a valer incondicionalmente.
+
+E a bifurcação errou o corte duas vezes antes de acertar: primeiro habilitei o ramo forte por **frescor da fonte** ("índice fresco"), quando o índice só carrega metadata; depois por **URL**, que vem do mesmo índice. O corte certo é evidência material **do item** — o que está à vista sustentando ação, prioridade **e** motivo. Metadata sozinha, em qualquer roupa, cai no ramo fraco.
 
 **Consequência aceita:** o produto passa a **declarar** que não consegue regenerar o preview sem runtime, em vez de sugerir uma tentativa. É menos simpático e mais verdadeiro. E passa a existir um estado `não determinada` para prioridade — mais um valor para o consumidor tratar, em troca de nunca mais publicar um `P1` que ninguém apurou.
 
