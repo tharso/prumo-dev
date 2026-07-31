@@ -29,6 +29,7 @@ INBOX = MODULES / "inbox-processing.md"
 MONTAGEM = MODULES / "briefing-montagem.md"
 RUNTIME_PATHS = MODULES / "runtime-paths.md"
 PREFLIGHT = MODULES / "version-preflight.md"
+CANAIS = MODULES / "briefing-canais.md"
 
 
 def _read(path: Path) -> str:
@@ -64,6 +65,19 @@ class DoisDonosTest(unittest.TestCase):
         # A outra ponta: se ela afrouxar, o ponteiro acima aponta pro vazio.
         self.assertIn("apresentar a contagem e a triagem", self.montagem.casefold())
         self.assertIn("itens de triagem numeram", self.montagem.casefold())
+
+
+class ResumoNosOutrosModulosTest(unittest.TestCase):
+    """Resumo que descreve a regra errado é regra errada (Codex, r20)."""
+
+    def test_canais_nao_lista_fontes_como_eixo_da_classificacao(self) -> None:
+        # "classificação por nome/índice/preview" punha as três fontes no
+        # mesmo plano. O índice não é evidência; o preview só conta quando
+        # mostra conteúdo. Foi a sexta aparição da mesma confusão.
+        canais = _read(CANAIS)
+        self.assertNotIn("classificação por nome/índice/preview", canais)
+        self.assertIn("evidência material de CADA item", canais)
+        self.assertIn("a fonte não escolhe o ramo", canais)
 
 
 class PonteiroPenduradoTest(unittest.TestCase):

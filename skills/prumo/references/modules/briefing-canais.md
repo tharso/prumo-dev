@@ -20,7 +20,7 @@ O DAG segue como ordem **lógica** de dependências; a promessa de paralelismo F
 
 ## Inbox4Mobile (obrigatório quando a pasta existir)
 
-**Estágio LOCAL, ANTES da emissão do primeiro tempo — SEM abrir bruto:** inventário (passo 1), comparação com `_processed.json` (passo 2) e a **triagem leve** (classificação por nome/índice/preview — o Estágio A do `inbox-processing.md`) rodam antes de o primeiro tempo sair: o inbox é apresentado NELE e nada disso espera canal externo. **Abrir arquivo bruto do Inbox4Mobile (Estágio B — aprofundamento) só DEPOIS da primeira entrega** — é o ASSERT do core: proibido no primeiro tempo; em host de resposta única, o ASSERT cobre a resposta inteira, então o aprofundamento fica pra turno posterior ou pedido explícito do usuário.
+**Estágio LOCAL, ANTES da emissão do primeiro tempo — SEM abrir bruto:** inventário (passo 1), comparação com `_processed.json` (passo 2) e a **triagem leve** (classificação conforme a evidência material de CADA item, com fallback por nome — a fonte não escolhe o ramo; o Estágio A do `inbox-processing.md` é o dono) rodam antes de o primeiro tempo sair: o inbox é apresentado NELE e nada disso espera canal externo. **Abrir arquivo bruto do Inbox4Mobile (Estágio B — aprofundamento) só DEPOIS da primeira entrega** — é o ASSERT do core: proibido no primeiro tempo; em host de resposta única, o ASSERT cobre a resposta inteira, então o aprofundamento fica pra turno posterior ou pedido explícito do usuário.
 
 Se `Inbox4Mobile/` existir no workspace:
 
