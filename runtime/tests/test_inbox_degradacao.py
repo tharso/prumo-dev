@@ -182,6 +182,19 @@ class DegradacaoHonestaTest(unittest.TestCase):
         )
         self.assertNotIn("_preview-index.json, linkar", core)
         self.assertIn("só se ele existir e estiver utilizável", self.inbox)
+        # "utilizável" precisa de definição, senão cada execução inventa a sua.
+        self.assertIn("arquivo regular, legível, não-vazio e não-symlink", self.inbox)
+        # E o montagem não pode seguir com o predicado velho.
+        montagem = _read(MONTAGEM)
+        self.assertNotIn("quando o preview estiver atualizado", montagem)
+
+    def test_ausencia_de_HTML_nao_decide_a_evidencia(self) -> None:
+        # O HTML decide o LINK. A evidência pode ter chegado por outra via —
+        # o usuário colou o conteúdo, por exemplo. Deixar a ausência do
+        # preview forçar o ramo fraco recriava o acoplamento errado, agora
+        # entre link e classificação (Codex, r17).
+        self.assertIn("Sem HTML utilizável, não linkar — e só isso", self.inbox)
+        self.assertIn("O HTML decide o LINK", self.inbox)
 
     def test_fallback_continua_entregando_triagem_numerada(self) -> None:
         # Degradar a certeza é legítimo; degradar a ENTREGA é o defeito de
