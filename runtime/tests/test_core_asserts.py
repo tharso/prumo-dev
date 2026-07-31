@@ -21,7 +21,10 @@ _ASSERT_LINE = re.compile(r"^`(ASSERT:.*)`\s*$", re.MULTILINE)
 # decisão, não acidente: atualize junto com o core e explique no PR.
 EXPECTED_ASSERTS = {
     "ASSERT: Usar Gmail MCP e Calendar MCP como fonte primária de email e calendário.",
-    "ASSERT: Se existir Prumo/Inbox4Mobile/_preview-index.json, linkar inbox-preview.html antes de abrir qualquer arquivo bruto.",
+    # #289: o predicado era a existência do ÍNDICE, e o índice pode estar
+    # fresco com o HTML ausente — `load_inbox_preview` declara `gerado`
+    # comparando mtimes e nunca confere o HTML. Mandava linkar um fantasma.
+    "ASSERT: Se existir Prumo/Inbox4Mobile/inbox-preview.html utilizável, linkar antes de abrir qualquer arquivo bruto.",
     # #242: "deletar" → "remover" (troca 1:1, cesto neutro). Remover é MOVER —
     # quarentena _to_delete/ ou destino durável; a máquina mora no
     # inbox-processing.md. Deleção real deixou de ser operação do produto.

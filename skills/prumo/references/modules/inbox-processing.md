@@ -16,17 +16,26 @@ Vale para:
 
 ### Estágio A: triagem leve
 
-1. **Inventário real**: listar os arquivos em `Inbox4Mobile/` (excluindo `_preview-index.json`, `_processed.json`, `inbox-preview.html`). Comparar com `_processed.json`. Qualquer arquivo que não esteja lá com `status: "processed"` é item novo. Não confiar no `_preview-index.json` como fonte de verdade — ele pode estar stale.
-2. Se houver shell, regenerar:
-   - `Inbox4Mobile/inbox-preview.html`
-   - `Inbox4Mobile/_preview-index.json`
-   - usando os paths válidos definidos em `runtime-paths.md`
-3. Se não houver shell, produzir fallback textual equivalente.
-4. Se `_preview-index.json` estiver atualizado, linkar `inbox-preview.html` antes de abrir arquivo bruto.
-5. **Para cada item novo**, classificar por:
+1. **Inventário real**: listar os arquivos em `Inbox4Mobile/` **com nome e `mtime`** (excluindo `_preview-index.json`, `_processed.json`, `inbox-preview.html`). Comparar com `_processed.json`. Qualquer arquivo que não esteja lá com `status: "processed"` é item novo. Não confiar no `_preview-index.json` como fonte de verdade — ele pode estar stale.
+2. **Regenerar o preview exige runtime:** `prumo inbox preview` (operação explícita — o briefing nunca regenera implicitamente, #197). O gerador vive dentro do pacote `prumo_runtime`, então **em host sem runtime não há como**: não procure script, não tente caminho alternativo. Quem mantém o preview fresco é o ritual na máquina que tem o runtime.
+3. **Preview velho ou ausente não suspende a triagem — e não escolhe ramo.** O ASSERT do core proíbe abrir o BRUTO no primeiro tempo; classificar por nome sempre foi permitido — e é obrigatório (`briefing-canais.md`). Cada item segue a bifurcação do passo 5 conforme a evidência que houver **dele**: o estado do preview é uma condição da FONTE, e classificar é do ITEM.
+4. Linkar `inbox-preview.html` **só se ele existir e estiver utilizável** — arquivo regular, legível, não-vazio e não-symlink. O predicado é o HTML, não o índice: `status: gerado` compara mtimes e não confere a existência do arquivo, então índice fresco pode apontar um fantasma. **Sem HTML utilizável, não linkar — e só isso**: a classificação de cada item segue a bifurcação do passo 5, porque a evidência pode ter chegado por outra via (o usuário colou o conteúdo, por exemplo). O HTML decide o LINK, não decide sozinho o que se sabe do item.
+5. **Para cada item novo**, classificar — e o que se pode afirmar depende do que se tem:
+
+   O corte é **evidência material do ITEM**, não frescor da fonte. Metadata — nome, tipo, tamanho, `mtime`, fingerprint e a `first_url` do índice — **não é evidência**. URL sozinha identifica a FONTE, não ação, prazo nem consequência: um link de YouTube ou de encurtador não diz se é urgente. Ela só conta quando o que está visível (inclusive a semântica explícita da própria URL, quando houver) sustenta os três campos. Metadata ela não distingue um `IMG_1234.jpg` urgente de um print de meme. E `status: gerado` não garante conteúdo à vista: o frescor compara o `mtime` do índice com o dos arquivos e **não confere se o `inbox-preview.html` existe**. Índice fresco com preview ausente, por si só, **não prova conteúdo** — mas também não condena o item: ele só cai no ramo fraco se nenhuma outra via tiver trazido evidência material dele.
+
+   **Com evidência** (o conteúdo do item está à vista — preview utilizável que o mostra, ou conteúdo já legitimamente em mãos — e o que se vê sustenta ação, prioridade **e** motivo):
    - ação: `Responder`, `Ver`, `Sem ação`
    - prioridade: `P1`, `P2`, `P3`
    - motivo objetivo
+
+   **Sem evidência** (só metadata — inclusive com índice fresco, se o conteúdo não chegou a aparecer):
+   - ação: só quando o **nome** a sustentar; na dúvida, `Ver`
+   - prioridade: **`não determinada`**. Nunca `P1/P2/P3` de arquivo que ninguém abriu — prioridade sem evidência é chute com cara de triagem, e o custo dela é o usuário confiar num número que ninguém apurou
+   - motivo: o que o nome diz, e só
+   - **declarar em uma linha** que a classificação é por nome, mais a idade do item mais antigo (do `mtime` do passo 1; sem acesso a metadata, dizer que a idade está indisponível — lacuna nomeada vale mais que aniversário inventado)
+
+   Os dois ramos entregam **triagem numerada** — o fallback degrada a certeza, nunca a entrega (`briefing-montagem.md` é o dono do formato).
 
 ### Estágio B: aprofundamento seletivo
 
@@ -39,9 +48,9 @@ Abrir conteúdo bruto completo apenas quando houver:
 
 ## Preview multimídia
 
-1. Se a geração falhar mas houver preview anterior, ainda assim linkar o preview e avisar que pode estar defasado.
+1. Se a geração falhar mas houver preview anterior **utilizável** (mesmo predicado do passo 4), linkar e avisar que pode estar defasado.
 2. Se não houver preview utilizável, seguir com lista numerada no chat e registrar a falha.
-3. No panorama do briefing, mostrar apenas o link e a contagem de itens. Não despejar arquivos individuais ali.
+3. No panorama do briefing, **não despejar conteúdo bruto** dos arquivos — link e contagem bastam para o preview em si. Isto é sobre o PREVIEW, não sobre a triagem: o formato do panorama é do `briefing-montagem.md`, e ele exige contagem **e** triagem, com itens numerados. Ler esta linha como licença para entregar só um número é o furo de 30/07.
 
 ## Commit do inbox
 
