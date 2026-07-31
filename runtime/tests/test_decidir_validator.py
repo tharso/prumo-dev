@@ -114,6 +114,19 @@ class ContratoDaSkillTest(unittest.TestCase):
         self.assertIn("`title` é TEXTO PURO", tpl)
         self.assertIn("validate-cards.mjs", tpl)
 
+    def test_bandeira_do_botao_respeita_o_default(self) -> None:
+        # #294: o botão renderizava ⚑ olhando só `a.requires`, enquanto o
+        # contador de pendências usa `act.requires && !act.default` (#246).
+        # Card com `default` mostrava "Descartar⚑" e o contador dizia zero
+        # pendências — o documento contradizia a própria legenda e treinava
+        # o usuário a ignorar a bandeira. Verificado ao vivo em 31/07.
+        tpl = TEMPLATE.read_text(encoding="utf-8")
+        botao = next(ln for ln in tpl.splitlines() if 'class="seg-btn"' in ln)
+        self.assertIn("a.requires && !a.default", botao)
+
+        contador = next(ln for ln in tpl.splitlines() if "const needs =" in ln)
+        self.assertIn("act.requires && !act.default", contador)
+
     def test_ci_roda_os_testes_do_validador(self) -> None:
         # `skipUnless(node)` é razoável na máquina de alguém, mas no CI vira
         # cobertura fantasma: verde significando "não testamos o software
