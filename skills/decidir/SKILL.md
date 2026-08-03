@@ -98,7 +98,8 @@ Quando o usuário colar o relatório:
 
    **Links de conteúdo:** ao gerar os cards, use o **campo estruturado `link: {label, href}`** (o template sanitiza via `safeUrl` e escapa o label). **Não** cole `<a>` cru no `contexto`/`evidencia` — inbox é entrada do usuário; HTML cru é porta lateral.
 5. **Comentário é instrução.** "Responder" + comentário = responder daquele jeito. Pergunta no comentário exige resposta concreta.
-6. **Feche informando o estado:** o que foi aplicado, o que foi só rascunhado/aguardando confirmação, o que ficou sem resposta.
+6. **Baixa no ledger — só depois da verificação (#303, fecha o ciclo com a #297):** item originado do `Inbox4Mobile/` despachado → executar o move do original (`inbox-processing.md`, pelo transporte do host; host de ponte usa `device_bash`) → **verificar origem ausente e destino íntegro** → **somente então** atualizar a entrada no `_processed.json`, nos campos do contrato (`filename`, `processed_at`, `status`; `reason` quando houver). **Verificação falhou → não dar baixa** — declarar o estado ao usuário. Baixa antes da verificação fabrica o inconsistente que a #212 flagra (ledger `processed` com o arquivo na pasta, item sumindo do preview — Codex, 315-r1/r2); despacho sem baixa é a dívida simétrica, disparando a #212 todo briefing.
+7. **Feche informando o estado:** o que foi aplicado, o que foi só rascunhado/aguardando confirmação, o que ficou sem resposta.
 
 ## Referências
 

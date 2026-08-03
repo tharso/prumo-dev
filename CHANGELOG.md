@@ -6,6 +6,12 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.86.0] - 2026-08-03
+
+### Changed
+- **A `decidir` passou a dar baixa no ledger na mesma rodada — depois do move confirmado (#303)** — o despacho criava item na pauta e linha no registro, mas nenhum passo escrevia no `_processed.json`: cada rodada aumentava a dívida do Inbox4Mobile (15 → 20 inconsistências entre os relatórios de campo de 31/07 e 03/08), e a salvaguarda #212 disparava todo briefing, indefinidamente. O passo novo fecha o ciclo em par com a #297 (a outra metade: o transporte da remoção física) — e na ordem certa, apontada pelo Codex no review: primeiro o move confirmado do original, a baixa junto dele; baixa antecipada fabricaria exatamente o inconsistente que a #212 flagra (item some do preview com o arquivo ainda na pasta).
+- **Arquivo grande não entra inteiro — codificado no `load-policy.md` (#306)** — o padrão que viabilizou o briefing de 03/08 (panorama de 93,9 KB, registro de 83,6 KB, thread de email de 56 KB e 2,1 MB de PDFs consumidos por extração dirigida) virou regra explícita: acima de ~20 KB, só o recorte útil entra no contexto — por shell onde houver, ou por leitura delimitada das APIs do host onde não houver (a regra é o recorte, não a ferramenta). Antes era sabedoria de sessão — cada agente redescobria, ou pagava o preço.
+
 ## [5.85.0] - 2026-08-03
 
 ### Changed

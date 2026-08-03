@@ -1,6 +1,6 @@
 # Load Policy
 
-> **module_version: 5.85.0**
+> **module_version: 5.86.0**
 >
 > Política canônica de leitura incremental do Prumo.
 
@@ -44,6 +44,10 @@ Abrir bruto imediatamente se qualquer condição for verdadeira:
 2. vencimento em até 72h;
 3. item `P1`;
 4. ambiguidade que impeça ação segura.
+
+## Arquivo grande não entra inteiro (#306)
+
+Acima de ~20 KB, nada entra inteiro no contexto — só o recorte útil volta. Com shell: `python3 -c` pra JSON (campo dirigido), `grep`/`sed`/`head`/`tail -c` pra texto, `pdftotext | head` pra PDF. **Sem shell (host suportado):** leitura DELIMITADA pelas APIs do host (offset/limit, range de linhas) — a regra é o recorte, não a ferramenta; grande sem nenhum caminho delimitado é o único caso em que se declara a limitação em vez de ler inteiro. Vale pra qualquer fonte, inclusive resposta de ferramenta que estourou em arquivo. Provado no briefing de 03/08: panorama de 93,9 KB, registro de 83,6 KB, thread de email de 56 KB e 2,1 MB de PDFs consumidos por extração dirigida — nenhum inteiro no contexto, e foi isso que coube.
 
 ## Listagem de diretórios (perímetro de leitura, #194)
 
