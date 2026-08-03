@@ -21,7 +21,17 @@ class TestBaixaNoLedger(unittest.TestCase):
         )
 
     def test_verificacao_antes_da_baixa(self):
-        self.assertIn("verificar origem ausente e destino íntegro", self.text)
+        """A ORDEM é o contrato (Codex, 315-r3): presença das frases não basta
+        — a verificação tem de vir textualmente ANTES da baixa, com o
+        'somente então' entre elas."""
+        verificacao = self.text.find("verificar origem ausente e destino íntegro")
+        somente_entao = self.text.find("somente então")
+        baixa = self.text.find("atualizar a entrada no `_processed.json`")
+        self.assertGreater(verificacao, -1)
+        self.assertGreater(somente_entao, -1)
+        self.assertGreater(baixa, -1)
+        self.assertLess(verificacao, somente_entao)
+        self.assertLess(somente_entao, baixa)
         self.assertIn("Verificação falhou → não dar baixa", self.text)
 
     def test_campos_do_contrato_do_ledger(self):
