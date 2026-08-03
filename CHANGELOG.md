@@ -6,6 +6,12 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.85.0] - 2026-08-03
+
+### Changed
+- **A conta do índice reconhece ficha pela convenção de nome, não por lista de exclusão (#305)** — a semente de 03/08 mandou reindexar 4 arquivos que não são ficha de fonte (uma auditoria interna, uma pesquisa autoral do dono, um índice de reuniões, um módulo de procedimento): a lista fixa (`INDICE.md`, `WORKFLOWS.md`, `EMAIL-CURADORIA.md`) vazava pra qualquer vizinho novo, e indexá-los sujaria a biblioteca. Ficha agora se reconhece por `Autor_Assunto_AAAA-MM-DD.<ext>` — a mesma convenção de roteamento que o perfil já usa — em `referencias_convencao.py` (módulo folha), consumida pela conta de reindexação; os 4 casos reais viraram teste. O acervo **mantém** deliberadamente a exclusão própria de infraestrutura: ele é o navegador do material solto, e esconder não-fichas lá esconderia exatamente o que ele existe pra mostrar.
+- **Na rotação do REGISTRO, o tamanho vence a idade (#307)** — `max_items` (50) e `archive_age_days` (30) eram insatisfazíveis juntos acima de 50 linhas recentes: a trava de idade vencia sempre, a execução real de 03/08 moveu 9 de 117 linhas, e a família ficaria "pendente" todo briefing, indefinidamente — só o calendário fazia a fila andar. Decisão do dono: acima do teto, as mais velhas saem até caber, mesmo recentes; a idade segue como gatilho complementar abaixo dele. Uma passada converge, e "pendente" só aparece quando há de fato o que mover.
+
 ## [5.84.0] - 2026-08-03
 
 ### Fixed

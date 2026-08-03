@@ -30,11 +30,11 @@ lama, não pavimento.
 - Contar linhas na tabela de `REGISTRO.md`
 - Se acima de `max_items` (default 50 — `faxina-thresholds.md`; overrides em `Prumo/Custom/rules/`): hora de arquivar
 
-**Executar:**
-- Agrupar itens além de `archive_age_days` (default 30) por mês
-- Mover pra `Prumo/Arquivo/REGISTRO-{yyyy-mm}.md`
-- Manter os `max_items` mais recentes no arquivo principal
+**Executar (o tamanho vence a idade — #307):**
+- Acima do teto, mover as mais velhas até restarem `max_items`, mesmo recentes; abaixo dele, mover só o que passou de `archive_age_days` (default 30)
+- Agrupar o que sai por mês em `Prumo/Arquivo/REGISTRO-{yyyy-mm}.md`
 - Adicionar nota no cabeçalho: "Itens anteriores em `Arquivo/`"
+- Uma passada converge — "pendente" só quando há o que mover
 
 **Não fazer:**
 - Não deletar nenhum item — mover é diferente de apagar
@@ -70,7 +70,7 @@ pergunta "onde guardei aquele artigo?" e Prumo não sabe.
 **Verificar (uma leitura, uma decisão — com semente, tudo já vem pronto em
 `local_panorama.indice_referencias`):**
 - Rodapé `<!-- proximo-id: N -->` e os IDs distintos da tabela
-- Arquivos em `Referencias/` (ignorar os operacionais: INDICE.md, WORKFLOWS.md, EMAIL-CURADORIA.md — mesma lista de exclusão do acervo), comparados com a tabela
+- Arquivos em `Referencias/` que casam a convenção de ficha (`Autor_Assunto_AAAA-MM-DD.<ext>`, #305 — o que não casa não é ficha e não conta; o acervo mantém exclusão própria, de infraestrutura), comparados com a tabela
 
 **Decidir nesta ordem, e parar na primeira que bater:**
 

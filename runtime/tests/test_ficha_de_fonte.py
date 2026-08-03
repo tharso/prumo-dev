@@ -9,10 +9,12 @@ desalinhar — a categoria de bug que a #97 chamou de "manutenção morta"
 (artefato mantido que nenhum fluxo lê) e o caso inverso (fluxo apontando
 pra referência que não existe).
 
-Também trava a lista de exclusão de arquivos operacionais de
-`Referencias/`: a faxina, o acervo (skill) e o runtime
-(`OPERATIONAL_REFERENCIAS`) precisam concordar sobre o que NUNCA vira
-ficha nem entra no índice.
+Também trava a exclusão dos operacionais de `Referencias/` — que desde a
+#305 tem dois mecanismos deliberadamente distintos: o acervo (skill +
+runtime) mantém a lista de infraestrutura (`OPERATIONAL_REFERENCIAS`),
+enquanto faxina e índice excluem pela convenção de ficha
+(`referencias_convencao`) — e a convenção garante, por construção, que
+nenhum operacional vira ficha.
 """
 from __future__ import annotations
 
@@ -20,6 +22,7 @@ import unittest
 from pathlib import Path
 
 from prumo_runtime.acervo import OPERATIONAL_REFERENCIAS
+from prumo_runtime.referencias_convencao import is_ficha_filename
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -74,13 +77,22 @@ class FichaDeFonteTests(unittest.TestCase):
         self.assertIn("ficha-de-fonte.md", text)
 
     def test_operational_files_excluded_everywhere(self) -> None:
-        """Faxina, acervo (skill) e runtime concordam na lista de exclusão."""
+        """Acervo mantém a lista de infraestrutura; faxina/índice excluem por
+        convenção (#305) — e nenhum operacional pode casar a convenção."""
         self.assertEqual(set(OPERATIONAL_REFERENCIAS), OPERATIONAL_FILES)
-        faxina = FAXINA_SKILL.read_text(encoding="utf-8")
         acervo = ACERVO_SKILL.read_text(encoding="utf-8")
         for name in sorted(OPERATIONAL_FILES):
-            self.assertIn(name, faxina, f"faxina não exclui {name}")
             self.assertIn(name, acervo, f"acervo não exclui {name}")
+            self.assertFalse(
+                is_ficha_filename(name),
+                f"{name} não pode casar a convenção de ficha",
+            )
+        faxina = FAXINA_SKILL.read_text(encoding="utf-8")
+        self.assertIn(
+            "Autor_Assunto_AAAA-MM-DD",
+            faxina,
+            "faxina.md sem a convenção de ficha (#305)",
+        )
 
     def test_acervo_delete_never_touches_external_content(self) -> None:
         """Semântica da ficha-ponteiro no acervo: excluir arquiva a ficha, nunca o conteúdo externo."""

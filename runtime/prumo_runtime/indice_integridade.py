@@ -17,7 +17,7 @@ tenha prova comportamental em vez de um cálculo paralelo que só os testes
 chamam (Codex, 261-7). Sem runtime, o `faxina.md` replica o algoritmo em
 texto — limitação nomeada, não maquiada.
 
-Módulo folha: só stdlib e `faxina_thresholds`.
+Módulo folha: só stdlib, `faxina_thresholds` e `referencias_convencao`.
 """
 
 from __future__ import annotations
@@ -25,11 +25,9 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-SCHEMA = "prumo_indice_integridade.v1"
+from prumo_runtime.referencias_convencao import is_ficha_filename
 
-# Mesma lista de exclusão do acervo e da faxina: infraestrutura de
-# `Referencias/`, não referência catalogável.
-OPERACIONAIS = frozenset({"INDICE.md", "WORKFLOWS.md", "EMAIL-CURADORIA.md"})
+SCHEMA = "prumo_indice_integridade.v1"
 
 _RODAPE = re.compile(r"<!--\s*proximo-id:\s*(\d+)\s*-->")
 # Marcas de conferência (#261): a higiene grava aqui o que o usuário declarou
@@ -214,7 +212,10 @@ def fichas_sem_entrada(referencias_root: Path, texto: str) -> list[str] | None:
         return None
     for path in candidatos:
         nome = path.name
-        if nome in OPERACIONAIS or nome.startswith((".", "_")):
+        # Convenção substitui a lista fixa (#305): a lista vazava — qualquer
+        # arquivo novo fora dela virava candidato a reindexar. Ocultos e
+        # rascunhos (`.x`, `_x`) já não casam a convenção.
+        if not is_ficha_filename(nome):
             continue
         try:
             # `lstat` protegido, não `is_file()`: o helper transforma erro de
