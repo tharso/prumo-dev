@@ -21,4 +21,4 @@ _require_python()
 
 __all__ = ["__version__"]
 
-__version__ = "5.86.0"
+__version__ = "5.87.0"
