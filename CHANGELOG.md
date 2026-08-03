@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.88.0] - 2026-08-03
+
+### Fixed
+- **"Runtime inalcançável por topologia" era falso — o contrato agora conhece o runtime embarcado (#302)** — o bundle do plugin sempre carregou o runtime completo, e o transporte container→VM existe (provado em 03/08: `tar` → `SendUserFile` → `device_commit_files` → `PYTHONPATH=… python3 -m prumo_runtime`, na VM 3.10 que a #301 destravou). O `runtime-paths.md` ganhou o Passo 0 — esgotar PATH E bundle antes de declarar indisponibilidade, nomeando qual falhou; no macOS (Claude Code, Codex CLI) o runtime instalado responde pelo PATH, sem transporte especial. A matriz por host do `briefing-montagem.md` parou de ensinar o agente a nem tentar: a linha antiga custou três declarações falsas na sessão de 03/08 e nove dias de briefings sem marcação de dia.
+
 ## [5.87.0] - 2026-08-03
 
 ### Changed

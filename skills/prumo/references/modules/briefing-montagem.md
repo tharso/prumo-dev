@@ -64,7 +64,7 @@ A proposta deve considerar deadlines de hoje, blockers, agenda disponível e ite
 
 | Host | Variante hoje | Transporte do 1º tempo |
 |---|---|---|
-| Cowork | **dois tempos completo** (automático provado ao vivo) | leitura direta (runtime inalcançável por topologia) |
+| Cowork | **dois tempos completo** (automático provado ao vivo) | runtime embarcado, transferido pra VM do dispositivo (`runtime-paths.md` passo 0 — #302; provado em 03/08) |
 | Claude Code (desktop e CLI) | resposta única — **provisório** até o roteiro automático+escape ser medido lá | semente do runtime (gate de `briefing-estado.md`) |
 | Codex CLI e afins | um tempo com oferta: panorama completo + oferta de aprofundar email/agenda como próximo comando | conforme gate de `briefing-estado.md` |
 
