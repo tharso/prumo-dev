@@ -81,6 +81,8 @@ Os três primeiros estados são da **assinatura**; o quarto é da **resposta des
 
 **Zero só é confiável** com assinatura `VALIDADA`, ou por `VAZIO CONFIRMADO`: **varredura exaustiva** da janela — paginar até o conector declarar fim **e aplicar o predicado localmente**, sobre a metadata de cada mensagem. As duas metades são obrigatórias: varrer sem aplicar não responde nada. Limite oculto, cursor ausente ou paginação incerta → nem exaustiva foi, então segue `INCONCLUSIVO`. "Li bastante" não é "li tudo".
 
+Caminho adicional — **testemunha por cardinalidade (#308):** quando o conector declara o **total do conjunto por fora da busca** (`list_labels`: `messagesTotal`/`threadsTotal`) e uma busca de assinatura **VALIDADA** devolve exatamente esse total, o conjunto está completo — o predicado temporal então se aplica **localmente**, sobre as datas do resultado em mãos. **Pré-condição inegociável: a assinatura da busca já `VALIDADA`.** Sobre query sem prova de vida, vazio não é evidência: em 03/08, a busca por ID retornava vazio num label com 3 mensagens declaradas — cardinalidade sem a pré-condição teria promovido falso-negativo do conector a `VAZIO CONFIRMADO`. E total declarado sem as mensagens em mãos não fecha janela temporal nenhuma: contagem não tem data.
+
 **Orçamento:** no máximo **uma** validação por assinatura **por briefing**, e **três validações novas por briefing**. `VALIDADA` e `FALHA` não voltam à fila até invalidar — o registro é o estado persistido. `INCONCLUSIVO` **volta**: assinatura em limbo tem de ter nova chance, senão o limbo é permanente. Fila determinística: **primeiro a nunca tentada**; empate, a de registro mais antigo (sem registro conta como mais antigo). Dentro da mesma posição, braço da política de cobertura antes de busca dirigida. **Registrar também o `INCONCLUSIVO`** — tentativa não registrada é tentativa que se repete amanhã, e a rotação vira hamster na mesma roda. Sem teto, confiabilidade vira lentidão (metadata mede 22–28s por chamada).
 
 **Degradação nomeada por braço** na linha de cobertura: *"respostas às suas threads: inconclusivo — `from:me` não validado"*. Frase afirmativa sobre braço morto é o furo de 27/07. Completude do briefing é decidida por `briefing-montagem.md`, nunca aqui.
@@ -107,6 +109,8 @@ Sinal FORTE — P1 automático, sem pós-filtro (label é aplicado por filtro do
 ```
 label:Prumo after:{ontem}
 ```
+
+**Label casa por NOME neste conector (#296, provado em 03/08):** a doc do conector afirma que `label:` aceita ID, não nome — o comportamento real é o **inverso** (`label:Prumo` devolveu as 3 threads reais do label; `label:Label_<id>` devolveu vazio num label com 3 declaradas pelo `list_labels`). Usar o **nome de exibição**, nunca o ID; nome com espaço exige aspas. Doc de conector não é prova: o predicado se valida como qualquer outro (protocolo #236 abaixo).
 
 Coleta de CANDIDATOS — P1 só depois do pós-filtro (a query é AMPLA de propósito; o rigor mora no pós-filtro, e por isso NENHUM remetente é excluído na query — excluir aqui amputaria uma captura legítima antes de o filtro decidir):
 ```
@@ -156,7 +160,9 @@ Ler o corpo via `gmail_read_message` quando:
 - (f) regra **sempre-relevante** aprendida em `EMAIL-CURADORIA.md`;
 - (g) qualquer gatilho da **heurística de aprofundamento** do `load-policy.md` (risco legal/financeiro/documental, vencimento ≤72h, ambiguidade que impeça ação segura) — carregar `load-policy.md` aqui, no primeiro uso, se ainda não estiver no contexto.
 
-**FORMATO da leitura de corpo (relatório de 27/07, achado 5.1):** pedir primeiro o formato **mínimo/texto puro** (`plaintextBody`); escalar pra `FULL_CONTENT` **só** se o texto puro não bastar pra classificar ou extrair o fato; `htmlBody` de newsletter é descartado sem ler (um único corpo completo custou 24 KB — 7% do briefing — pra dizer duas linhas úteis). O gatilho decide SE lê; o formato decide QUANTO paga.
+**FORMATO da leitura de corpo (corrigido em 03/08, #304 — a regra anterior, do relatório de 27/07, pedia um degrau que o conector não tem):** os formatos reais são `MINIMAL` (subject + snippet, **sem** corpo), `METADATA_ONLY` e `FULL_CONTENT` (`plaintextBody` **e** `htmlBody` juntos — "só texto puro" não existe). Ler corpo = `FULL_CONTENT`, **descartando `htmlBody` sem ler** e extraindo apenas `plaintextBody` (o htmlBody de um único email custou 24 KB — 7% do briefing — pra dizer duas linhas úteis); thread com histórico citado → ler só as mensagens **não-enviadas pelo usuário**; resposta que estourar o limite da ferramenta cai em arquivo e segue o `load-policy.md` (acima de ~20 KB, shell). O gatilho decide SE lê; a extração decide QUANTO paga.
+
+**Anexo é substância (#304):** o conector devolve `attachmentIds`, `filename` e `mimeType`, mas **não tem tool de download**. Email relevante COM anexo cuja substância está nele (petição, contrato, boleto, laudo — em correspondência com advogado, contador e banco é o caso típico) → **declarar ao usuário que o anexo não é legível pelo conector e pedir o arquivo no chat**. Tratar corpo como a substância inteira foi o que deixou a petição decisiva de 03/08 fora do briefing até o upload manual.
 
 Fica **sem corpo lido** apenas o que nenhum predicado alcança — automatizados e informativos claros, classificáveis por metadata (P3). A Camada 3 (roteamento de conteúdo) pode ler pra rotear.
 
