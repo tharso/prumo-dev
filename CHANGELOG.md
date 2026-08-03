@@ -6,11 +6,19 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+<<<<<<< HEAD
 ## [5.85.0] - 2026-08-03
 
 ### Changed
 - **A conta do índice reconhece ficha pela convenção de nome, não por lista de exclusão (#305)** — a semente de 03/08 mandou reindexar 4 arquivos que não são ficha de fonte (uma auditoria interna, uma pesquisa autoral do dono, um índice de reuniões, um módulo de procedimento): a lista fixa (`INDICE.md`, `WORKFLOWS.md`, `EMAIL-CURADORIA.md`) vazava pra qualquer vizinho novo, e indexá-los sujaria a biblioteca. Ficha agora se reconhece por `Autor_Assunto_AAAA-MM-DD.<ext>` — a mesma convenção de roteamento que o perfil já usa — em `referencias_convencao.py` (módulo folha), consumida pela conta de reindexação; os 4 casos reais viraram teste. O acervo **mantém** deliberadamente a exclusão própria de infraestrutura: ele é o navegador do material solto, e esconder não-fichas lá esconderia exatamente o que ele existe pra mostrar.
 - **Na rotação do REGISTRO, o tamanho vence a idade (#307)** — `max_items` (50) e `archive_age_days` (30) eram insatisfazíveis juntos acima de 50 linhas recentes: a trava de idade vencia sempre, a execução real de 03/08 moveu 9 de 117 linhas, e a família ficaria "pendente" todo briefing, indefinidamente — só o calendário fazia a fila andar. Decisão do dono: acima do teto, as mais velhas saem até caber, mesmo recentes; a idade segue como gatilho complementar abaixo dele. Uma passada converge, e "pendente" só aparece quando há de fato o que mover.
+=======
+## [5.86.0] - 2026-08-03
+
+### Changed
+- **A `decidir` passou a dar baixa no ledger na mesma rodada (#303)** — o despacho criava item na pauta e linha no registro, mas nenhum passo escrevia no `_processed.json`: cada rodada aumentava a dívida do Inbox4Mobile (15 → 20 inconsistências entre os relatórios de campo de 31/07 e 03/08), e a salvaguarda #212 disparava todo briefing, indefinidamente. O passo novo fecha o ciclo em par com a #297 (a outra metade: o transporte da remoção física): item despachado → entrada atualizada no ledger, pelo transporte do host.
+- **Arquivo grande vai pro shell — codificado no `load-policy.md` (#306)** — o padrão que viabilizou o briefing de 03/08 (panorama de 93,9 KB, registro de 83,6 KB, thread de email de 56 KB e 2,1 MB de PDFs consumidos por extração dirigida, nada inteiro no contexto) virou regra explícita: acima de ~20 KB, consultar por shell e só o recorte útil volta. Antes era sabedoria de sessão — cada agente redescobria, ou pagava o preço.
+>>>>>>> 207af1a (fix(decidir+load-policy): baixa no ledger na mesma rodada e arquivo grande vai pro shell (#303, #306))
 
 ## [5.84.0] - 2026-08-03
 

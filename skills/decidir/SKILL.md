@@ -98,7 +98,8 @@ Quando o usuário colar o relatório:
 
    **Links de conteúdo:** ao gerar os cards, use o **campo estruturado `link: {label, href}`** (o template sanitiza via `safeUrl` e escapa o label). **Não** cole `<a>` cru no `contexto`/`evidencia` — inbox é entrada do usuário; HTML cru é porta lateral.
 5. **Comentário é instrução.** "Responder" + comentário = responder daquele jeito. Pergunta no comentário exige resposta concreta.
-6. **Feche informando o estado:** o que foi aplicado, o que foi só rascunhado/aguardando confirmação, o que ficou sem resposta.
+6. **Baixa no ledger na mesma rodada (#303 — fecha o ciclo com a #297):** item originado do `Inbox4Mobile/` despachado (arquivado, descartado, virado pauta/tarefa/referência) → atualizar a entrada correspondente no `Inbox4Mobile/_processed.json` (status + rodada), pelo transporte do host (`inbox-processing.md`; host de ponte usa `device_bash`). Despacho sem baixa é dívida: o registro e a pauta dizem uma coisa, o ledger outra, e a salvaguarda #212 dispara todo briefing pra sempre.
+7. **Feche informando o estado:** o que foi aplicado, o que foi só rascunhado/aguardando confirmação, o que ficou sem resposta.
 
 ## Referências
 
