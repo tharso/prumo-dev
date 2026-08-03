@@ -195,7 +195,7 @@ GUARDRAIL_OWNERS: dict[str, Path] = {
     "extraindo apenas `plaintextBody` — e sem repropagar `htmlBody` adiante": CANAIS,
     "Política de cobertura (FIXA — decisão do dono em 27/07": CANAIS,
     "Respostas ao que o usuário enviou** desde o último briefing": CANAIS,
-    "Anexo é substância (#304)": CANAIS,
+    "primeiro checar se o conector ativo lê anexo": CANAIS,
     "nas threads** selecionar as mensagens EXTERNAS recebidas": CANAIS,
     "Declarar a cobertura em uma linha": CANAIS,
     # #236 — o protocolo mora nos CANAIS (é lá que a query roda); a completude
