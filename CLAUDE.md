@@ -4,7 +4,7 @@ Sistema de organização de vida pessoal com IA. Transforma o Claude (ou qualque
 
 ## Stack
 
-- **Runtime:** Python 3.11+ (`runtime/prumo_runtime/`), empacotado via hatchling
+- **Runtime:** Python 3.10+ (`runtime/prumo_runtime/`), empacotado via hatchling — mínima ditada pela VM do Cowork; `prumo update` é o único comando que exige 3.11 (tomllib), com gate legível (#301)
 - **Skills:** Markdown com referências cruzadas (`skills/`)
 - **Scripts operacionais:** Bash e Python (`scripts/`)
 - **Testes:** unittest (Python) + jobs de smoke no CI (instalação via scripts Bash/PowerShell e wheel)

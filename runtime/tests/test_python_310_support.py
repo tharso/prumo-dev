@@ -136,10 +136,15 @@ class TestInstallersAcceptMinimum(unittest.TestCase):
             self.assertNotIn("--python 3.11", text, name)
 
     def test_powershell_installers_accept_310(self):
+        """Codex r2: `assertIn("3.10")` era guard de papelão — comentário e
+        mensagem de erro satisfazem. O que se exige é a LISTA de candidatos do
+        py launcher e a ausência das duas formas de pin (uv `--python 3.11` e
+        launcher fixo `-3.11 -m pip`)."""
         for name in ("prumo_runtime_install.ps1", "prumo_runtime_update.ps1"):
             text = (REPO_ROOT / "scripts" / name).read_text(encoding="utf-8")
-            self.assertIn("3.10", text, name)
+            self.assertIn('@("3.13", "3.12", "3.11", "3.10")', text, name)
             self.assertNotIn("--python 3.11", text, name)
+            self.assertNotRegex(text, r"-3\.11\"?\s+-m\s+pip", name)
 
 
 class TestContractDeclaredAndExercised(unittest.TestCase):
