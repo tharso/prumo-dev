@@ -98,7 +98,7 @@ Quando o usuário colar o relatório:
 
    **Links de conteúdo:** ao gerar os cards, use o **campo estruturado `link: {label, href}`** (o template sanitiza via `safeUrl` e escapa o label). **Não** cole `<a>` cru no `contexto`/`evidencia` — inbox é entrada do usuário; HTML cru é porta lateral.
 5. **Comentário é instrução.** "Responder" + comentário = responder daquele jeito. Pergunta no comentário exige resposta concreta.
-6. **Baixa no ledger na mesma rodada (#303 — fecha o ciclo com a #297):** item originado do `Inbox4Mobile/` despachado (arquivado, descartado, virado pauta/tarefa/referência) → atualizar a entrada correspondente no `Inbox4Mobile/_processed.json` (status + rodada), pelo transporte do host (`inbox-processing.md`; host de ponte usa `device_bash`). Despacho sem baixa é dívida: o registro e a pauta dizem uma coisa, o ledger outra, e a salvaguarda #212 dispara todo briefing pra sempre.
+6. **Baixa no ledger na mesma rodada — DEPOIS da remoção confirmada (#303, fecha o ciclo com a #297):** item originado do `Inbox4Mobile/` despachado → primeiro o move confirmado do original (`inbox-processing.md`, pelo transporte do host; host de ponte usa `device_bash`), e **junto dele** a entrada correspondente no `_processed.json` (status + rodada). **Nunca a baixa antes do move:** ledger dizendo `processed` com o arquivo ainda na pasta é exatamente o estado inconsistente que some do preview e faz a #212 disparar (Codex, 315-r1). Despacho sem baixa é a dívida simétrica: registro e pauta dizem uma coisa, o ledger outra, todo briefing pra sempre.
 7. **Feche informando o estado:** o que foi aplicado, o que foi só rascunhado/aguardando confirmação, o que ficou sem resposta.
 
 ## Referências
