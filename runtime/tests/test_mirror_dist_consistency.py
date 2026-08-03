@@ -20,7 +20,12 @@ from pathlib import Path
 try:
     import tomllib
 except ModuleNotFoundError:  # Python < 3.11
-    import tomli as tomllib
+    try:
+        import tomli as tomllib
+    except ModuleNotFoundError:
+        # 3.10 puro, sem tomli: a consistência mirror/dist é provada no job
+        # 3.11 do CI; aqui só se declara o pulo (#301)
+        raise unittest.SkipTest("sem leitor de TOML (tomllib/tomli) neste interpretador")
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 PYPROJECT = REPO_ROOT / "pyproject.toml"

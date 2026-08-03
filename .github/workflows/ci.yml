@@ -8,7 +8,7 @@ on:
 
 jobs:
   unit-and-smoke:
-    name: Unit + Smoke (${{ matrix.os }})
+    name: Unit + Smoke (${{ matrix.os }}, py${{ matrix.python-version }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -16,6 +16,13 @@ jobs:
         os:
           - ubuntu-latest
           - macos-latest
+        python-version: ["3.11"]
+        include:
+          # A mínima declarada (requires-python >=3.10) roda a suite inteira
+          # no SO do host real que a motivou (VM do Cowork é Ubuntu). Sem este
+          # job, o suporte a 3.10 é acidental e regride em silêncio (#301).
+          - os: ubuntu-latest
+            python-version: "3.10"
 
     steps:
       - name: Checkout
@@ -26,7 +33,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6
         with:
-          python-version: "3.11"
+          python-version: "${{ matrix.python-version }}"
 
       - name: Setup Node (validador do decidir, #287)
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4
@@ -44,10 +51,13 @@ jobs:
         run: PYTHONPATH=runtime python -m unittest discover -s runtime/tests -v
 
       - name: Quality gate
+        # Só no interpretador canônico: cobertura flutua entre versões pelos
+        # branches version-dependent (o gate mede, não re-testa).
+        if: matrix.python-version == '3.11'
         run: python scripts/quality_gate.py --write-summary /tmp/qg-summary.md
 
       - name: Post quality gate summary
-        if: always()
+        if: always() && matrix.python-version == '3.11'
         run: cat /tmp/qg-summary.md >> $GITHUB_STEP_SUMMARY
 
   windows-runtime-smoke:
