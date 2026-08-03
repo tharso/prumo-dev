@@ -9,6 +9,7 @@ from prumo_runtime.commands import (
     run_acervo_apply,
     run_briefing,
     run_context_dump,
+    run_doctor,
     run_fim,
     run_inbox_preview,
     run_menu,
@@ -219,6 +220,19 @@ def build_parser() -> argparse.ArgumentParser:
         help="Pula confirmacao interativa (pra CI/automacao).",
     )
     update.set_defaults(handler=run_update)
+
+    doctor = subparsers.add_parser(
+        "doctor",
+        help="Diagnóstico: --host reporta sistema, Python, rede e runtime numa chamada (#309)",
+    )
+    doctor.add_argument(
+        "--host",
+        action="store_true",
+        required=True,
+        help="Modo host (obrigatório nesta fase; diagnósticos da #299 entram aqui depois)",
+    )
+    doctor.add_argument("--format", choices=["text", "json"], default="text")
+    doctor.set_defaults(handler=run_doctor)
 
     version_check = subparsers.add_parser(
         "version-check",

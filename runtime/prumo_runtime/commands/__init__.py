@@ -1,6 +1,7 @@
 from prumo_runtime.commands.acervo import run_acervo, run_acervo_apply
 from prumo_runtime.commands.briefing import run_briefing
 from prumo_runtime.commands.context_dump import run_context_dump
+from prumo_runtime.commands.doctor import run_doctor
 from prumo_runtime.commands.fim import run_fim
 from prumo_runtime.commands.inbox_preview import run_inbox_preview
 from prumo_runtime.commands.menu import run_menu
@@ -20,6 +21,7 @@ __all__ = [
     "run_acervo_apply",
     "run_briefing",
     "run_context_dump",
+    "run_doctor",
     "run_fim",
     "run_inbox_preview",
     "run_menu",
