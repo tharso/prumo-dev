@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.89.0] - 2026-08-03
+
+### Added
+- **`prumo doctor --host` — o diagnóstico do host numa chamada (#309)** — sistema, Python vs mínima (o piso da #301), rede (probe que degrada pra `blocked` sem traceback — o host que motivou o comando não tem rede), `prumo` no PATH e executabilidade neste interpretador: rodar o comando JÁ é a prova, inclusive do runtime embarcado via `PYTHONPATH` do bundle. Texto e JSON (`prumo_doctor_host.v1`). O achado do tomllib custou ~7 chamadas de investigação na unha; com isto, custa uma. `--host` é modo explícito: os diagnósticos da #299 (divergência bundle × `.prumo/skills`) entram no mesmo comando depois, sem quebrar contrato. Escopo aprovado pelo dono em 03/08 — trace de fases e bytes-por-fonte ficam registrados na #309, não aprovados por ora.
+
 ## [5.88.0] - 2026-08-03
 
 ### Fixed
