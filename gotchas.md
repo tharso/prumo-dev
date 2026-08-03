@@ -96,3 +96,13 @@ Regras:
 - Codigo do runtime que use `ZoneInfo` precisa do pacote `tzdata` listado em `pyproject.toml` como dependencia condicional: `'tzdata; sys_platform == "win32"'`. macOS/Linux nao instalam (le do sistema), Windows instala via pip.
 - Nao adicionar tzdata como dep incondicional. So Windows precisa, e em Linux/macOS o pacote pip pode divergir do tz do sistema (causando bugs sutis de DST).
 - Se um teste de integracao no CI Windows passar a invocar funcao do runtime que use timezone, garantir que `tzdata` ja esta instalado pelo install via pip antes do step.
+
+## Pipe e encadeamento engolem exit code de comando crítico
+
+Três tropeços na mesma sessão (03/08, execução do relatório de campo): `unittest | grep` deixou um `git push` seguir com a suite FAILED (o exit da cadeia era do grep, que achou a palavra "FAILED" e saiu 0); `git rebase | tail -1` mascarou um conflito DUAS vezes, e os comandos seguintes (`sed` de bump, `commit`) rodaram sobre árvore em estado de rebase — num dos casos o push forçado subiu CHANGELOG com marker de conflito dentro.
+
+Regra: comando cujo resultado decide o passo seguinte **nunca alimenta pipe na mesma cadeia**. Capturar em arquivo e testar o veredito real (`cmd > log 2>&1; grep -q "^OK" log && próximo-passo`), ou testar `$?` do comando cru. `&&` depois de um pipe testa o ÚLTIMO estágio do pipe, não o comando que importa. Parente do achado da #311 (o quality gate aceitava cobertura de suite quebrada): medir/prosseguir sem conferir o veredito é a mesma família de bug, no shell ou no gate.
+
+## Worktree criado da main local fica órfão do merge remoto
+
+`git worktree add ... main` usa a ref LOCAL — que não anda quando o merge acontece no GitHub. Na sessão de 03/08, três worktrees nasceram sem o merge da #301 como ancestral, e o review do PR #317 pegou o contrato prescrevendo um fallback que não existia na base ("a #301 não é ancestral deste patch"). Regra: worktree novo nasce de `origin/main` após `git fetch` — nunca de `main` — e branch de PR rebasa em `origin/main` antes de push.
