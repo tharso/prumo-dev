@@ -21,7 +21,9 @@ function Find-Uv {
 }
 
 function Find-Python {
-  foreach ($candidate in @("py", "python", "python3")) {
+  # Interpretador ATIVO do ambiente primeiro; o py launcher por último — ele
+  # escolhe versão própria, e os Scripts dela podem não estar no PATH (#301)
+  foreach ($candidate in @("python", "python3", "py")) {
     $command = Get-Command $candidate -ErrorAction SilentlyContinue
     if ($command) {
       return $command.Source
