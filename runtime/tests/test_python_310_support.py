@@ -123,6 +123,25 @@ class TestUpdateGateBelow311(unittest.TestCase):
         self.assertIn("update", message)
 
 
+class TestInstallersAcceptMinimum(unittest.TestCase):
+    """O instalador oficial acompanha o contrato (achado do Codex, PR #310 r1):
+    com a mínima em 3.10, nenhum caminho de instalação pode exigir 3.11 — nem
+    pin de `--python 3.11` no uv (o requires-python do pyproject é a fonte),
+    nem loop de candidatos sem `python3.10`."""
+
+    def test_shell_installers_accept_310(self):
+        for name in ("prumo_runtime_install.sh", "prumo_runtime_update.sh"):
+            text = (REPO_ROOT / "scripts" / name).read_text(encoding="utf-8")
+            self.assertIn("python3.10", text, name)
+            self.assertNotIn("--python 3.11", text, name)
+
+    def test_powershell_installers_accept_310(self):
+        for name in ("prumo_runtime_install.ps1", "prumo_runtime_update.ps1"):
+            text = (REPO_ROOT / "scripts" / name).read_text(encoding="utf-8")
+            self.assertIn("3.10", text, name)
+            self.assertNotIn("--python 3.11", text, name)
+
+
 class TestContractDeclaredAndExercised(unittest.TestCase):
     """O par que não pode se separar: a mínima declarada e o CI que a exercita.
 

@@ -90,7 +90,7 @@ find_uv() {
 
 find_python() {
   local candidate
-  for candidate in python3.13 python3.12 python3.11; do
+  for candidate in python3.13 python3.12 python3.11 python3.10; do
     if command -v "$candidate" >/dev/null 2>&1; then
       command -v "$candidate"
       return 0
@@ -110,13 +110,15 @@ echo "Modo de instalação: $INSTALL_MODE"
 if UV_BIN="$(find_uv)"; then
   echo "Usando uv: $UV_BIN"
   PACKAGE_MANAGER="uv-tool"
+  # Sem pin de versão: o uv honra o requires-python do pyproject (>=3.10),
+  # que é a única fonte da mínima (#301)
   if [ "$INSTALL_MODE" = "editable" ]; then
-    "$UV_BIN" tool install --editable --force --python 3.11 "$ROOT_DIR"
+    "$UV_BIN" tool install --editable --force "$ROOT_DIR"
     SOURCE_KIND="editable"
   else
-    "$UV_BIN" tool install --force --python 3.11 "$ROOT_DIR"
+    "$UV_BIN" tool install --force "$ROOT_DIR"
   fi
-  PYTHON_USED="$("$UV_BIN" python find 3.11 2>/dev/null || echo "unknown")"
+  PYTHON_USED="$("$UV_BIN" python find '>=3.10' 2>/dev/null || echo "unknown")"
 elif PYTHON_BIN="$(find_python)"; then
   echo "uv nao encontrado. Vou de pip com $PYTHON_BIN"
   PACKAGE_MANAGER="pip-user"
@@ -128,8 +130,8 @@ elif PYTHON_BIN="$(find_python)"; then
     "$PYTHON_BIN" -m pip install --user "$ROOT_DIR"
   fi
 else
-  echo "erro: preciso de uv ou Python 3.11+ para instalar o runtime." >&2
-  echo "Instale uv (https://docs.astral.sh/uv/) ou um Python 3.11+ e tente de novo." >&2
+  echo "erro: preciso de uv ou Python 3.10+ para instalar o runtime." >&2
+  echo "Instale uv (https://docs.astral.sh/uv/) ou um Python 3.10+ e tente de novo." >&2
   exit 1
 fi
 

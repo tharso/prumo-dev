@@ -32,16 +32,25 @@ Write-Host "Repo: $RootDir"
 $UvBin = Find-Uv
 if ($UvBin) {
   Write-Host "Usando uv: $UvBin"
-  & $UvBin tool install --editable --force --python 3.11 $RootDir
+  # Sem pin de versao: o uv honra o requires-python do pyproject (>=3.10) — #301
+  & $UvBin tool install --editable --force $RootDir
 }
 else {
   $PythonBin = Find-Python
   if (-not $PythonBin) {
-    Write-Error "Preciso de uv ou Python 3.11+ para atualizar o runtime. Instale um deles e tente de novo."
+    Write-Error "Preciso de uv ou Python 3.10+ para atualizar o runtime. Instale um deles e tente de novo."
   }
   Write-Host "uv não encontrado. Vou de pip com $PythonBin"
   if ((Split-Path $PythonBin -Leaf).ToLower() -eq "py.exe" -or (Split-Path $PythonBin -Leaf).ToLower() -eq "py") {
-    & $PythonBin -3.11 -m pip install --user -e $RootDir
+    $PyVersion = $null
+    foreach ($v in @("3.13", "3.12", "3.11", "3.10")) {
+      & $PythonBin "-$v" -c "pass" 2>$null
+      if ($LASTEXITCODE -eq 0) { $PyVersion = $v; break }
+    }
+    if (-not $PyVersion) {
+      Write-Error "Nenhum Python 3.10+ registrado no py launcher. Instale um e tente de novo."
+    }
+    & $PythonBin "-$PyVersion" -m pip install --user -e $RootDir
   }
   else {
     & $PythonBin -m pip install --user -e $RootDir
