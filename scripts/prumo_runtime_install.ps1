@@ -21,13 +21,22 @@ function Find-Uv {
 }
 
 function Find-Python {
-  # Interpretador ATIVO do ambiente primeiro; o py launcher por último — ele
-  # escolhe versão própria, e os Scripts dela podem não estar no PATH (#301)
-  foreach ($candidate in @("python", "python3", "py")) {
+  # Interpretador ATIVO do ambiente primeiro, e só se for 3.10+ (senão um
+  # python 3.9 no PATH seria aceito e o launcher válido nunca tentado); o py
+  # launcher por último — ele escolhe versão própria, e os Scripts dela
+  # podem não estar no PATH (#301)
+  foreach ($candidate in @("python", "python3")) {
     $command = Get-Command $candidate -ErrorAction SilentlyContinue
     if ($command) {
-      return $command.Source
+      & $command.Source -c "import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)" 2>$null
+      if ($LASTEXITCODE -eq 0) {
+        return $command.Source
+      }
     }
+  }
+  $py = Get-Command "py" -ErrorAction SilentlyContinue
+  if ($py) {
+    return $py.Source
   }
   return $null
 }
