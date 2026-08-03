@@ -12,6 +12,7 @@ credentials*.json
 google-oauth-client.json
 
 # Materiais internos (não publicar no repositório de produto)
+.prumo-contexto.md
 Prumo-Ideias-e-Possibilidades.pdf
 aprendizados-*.md
 artigo-prumo-*.md

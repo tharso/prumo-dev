@@ -35,6 +35,8 @@ pyproject.toml       ← empacotamento Python do runtime
 
 Os seguintes diretórios e arquivos foram removidos em abril/2026 durante a consolidação skills-first. Não recriar: `cowork-plugin/`, `bridges/`, `_lixeira/`, `commands/`, `docs/`, adapter playbooks (`*-ADAPTER-PLAYBOOK.md`), ADRs avulsos na raiz.
 
+**Exceção nomeada (31/07):** `docs/agents/` existe e é legítimo — é config de tooling de agente (issue tracker, labels de triagem, ponteiro de domínio), não documentação de produto, que é o que a consolidação removeu. Nada mais entra em `docs/`. Ver DECISIONS.md de 2026-07-31.
+
 ## Planning
 
 - Quando pedirem pra planejar: apenas o plano. Sem execução até aprovação explícita.
@@ -50,6 +52,7 @@ Os seguintes diretórios e arquivos foram removidos em abril/2026 durante a cons
 - TDD contextual: features em produção seguem TDD (testes antes do código). Protótipos e explorações podem ter testes depois, mas antes de qualquer merge.
 - Commitar com mensagens descritivas em português. Prefixos: `feat:`, `fix:`, `refactor:`, `chore:`, `docs:`, `test:`.
 - Bumpar versão em `plugin.json`, `pyproject.toml`, `marketplace.json` e `VERSION` simultaneamente. Versão fora de sincronia é bug.
+- Ao encerrar uma sessão de trabalho relevante, revisar o `.prumo-contexto.md` da raiz (local, gitignored) e atualizá-lo se a realidade mudou (estado, decisões, próximos passos); só então atualizar o `updated:` (RFC 3339 com offset). Nunca atualizar apenas o timestamp — narrativa velha com data nova é pior que narrativa velha detectável. Esquecer não quebra nada (a defasagem aparece no índice do Prumo), mas manter em dia é o que faz o Prumo responder com contexto atual quando o Tharso perguntar por este projeto.
 
 ### Autoria de commits redigidos por agente
 
@@ -64,6 +67,28 @@ Co-authored-by: Claude (Cowork) <noreply@anthropic.com>
 ```
 
 Isso vale apenas para commits onde o agente *efetivamente redige* — código, mensagem, decisão. Commits onde o agente apenas executa comando ditado pelo usuário ficam sem trailer (autoria humana clara). Quando em dúvida, marcar — falsa modéstia atrapalha mais que ruído de log.
+
+O e-mail do trailer acompanha o fornecedor do modelo real: `noreply@anthropic.com` pra Claude, `noreply@openai.com` pra Codex — nunca um domínio único pra todos.
+
+### Loop de desenvolvimento (TDD + agentes)
+
+**Arranjo: Preset A — Executor revisado.** Quem abre a sessão é o **host/gerente** (fala com o humano e orquestra) e também implementa; o **delegado** é a sessão independente que revisa. O arranjo é simétrico em tese, mas na prática o host é o Claude e o revisor é o Codex (ver estado das receitas abaixo). Este é o default do projeto — override por task no chat; mudança durável = editar este bloco e registrar no DECISIONS.md (tópico `governance`).
+
+**CLIs verificados neste projeto em 2026-08-03:**
+
+- **Codex (codex-cli 0.144.3) — VERIFICADO por smoke test:** iniciar `codex exec "<brief>"` (session_id sai no transcript), retomar `codex exec resume <session_id> "<feedback>"`, review dedicado `codex exec review --base main`. Nunca reinvocar stateless entre rounds — perde a memória do round anterior.
+- **Claude Code headless — receita padrão, NÃO verificada:** `claude -p "<brief>" --output-format json` (session_id no JSON) → `claude -p --resume <session_id> "<feedback>"`. Smoke de 03/08 falhou por OAuth expirado do CLI. Antes de usar Claude como delegado: rodar `claude login` e repetir o smoke.
+- **Gemini — presente, fora do arranjo default:** testado como revisor e rebaixado (edita arquivos em plan mode, alucina achados). Se for usado: worktree isolado, e os achados são carregados pelo Codex. Entrada no arranjo só via decisão explícita.
+
+Cada task não-trivial de código segue este loop:
+
+1. **Planejar.** Ler os canônicos (DECISIONS.md via índice temático, gotchas.md, código tocado) antes de propor. Pra feature não-trivial (3+ passos ou decisão arquitetural), a saída é uma **spec curta** na issue: problema, contratos de entrada/saída, regras de domínio, critérios de aceite, fora-de-escopo. A spec é a fonte da verdade da task.
+2. **TDD.** Teste antes do código (TDD contextual, como no Workflow acima).
+3. **Implementar em branch.** O host implementa. Nunca direto na main. Trailer de co-autoria conforme "Autoria de commits" acima.
+4. **Revisão independente (cética por design).** Quem escreveu não aprova. O revisor não vê o chat — só diff, testes e brief autocontido (task, critérios de aceite, arquivos, restrições relevantes deste CLAUDE.md, trechos pertinentes de DECISIONS/gotchas, branch). Round 1 com o comando de review verificado; rounds 2+: corrigir na MESMA branch e retomar a MESMA sessão via resume, descrevendo o que mudou. P1 do revisor: presumir certo até prova em contrário. Esperado 2–5 rounds; mais de 5 sem convergir → escalar pro Tharso descrevendo o impasse.
+5. **Push + PR.** Corpo abre com o elenco `[dev: <modelo> session <id> | review: <modelo> session <id> | N rounds, aprovado]` + resumo round-a-round; o mesmo resumo vai em comentário na issue. Transcript bruto não vai pro repo; session_ids ficam pra auditoria e retomada.
+6. **Merge — delegação registrada (DECISIONS.md 2026-08-03).** Espelha a governança abaixo, sem mudá-la: issue criada pelo agente dentro dos limites (bug trivial, refactor pequeno, sem mudança de comportamento observável) + revisor aprovado + CI verde → o agente mergeia e fecha sem re-perguntar. Pausa obrigatória com OK explícito do Tharso: feature nova, mudança de UX/comportamento observável, `plugin.json`/`marketplace.json`/`pyproject.toml`/`scripts/baseline.json`, nova dependência, mudança de contrato, ação irreversível. Revogável por uma linha no chat.
+7. **Pós-merge.** Atualizar canônicos (DECISIONS.md/gotchas.md) — só o host escreve neles; delegados reportam. Mudança de comportamento valida com smoke manual antes de declarar concluída.
 
 ### Issues e documentação
 
@@ -139,6 +164,10 @@ O projeto tem um quality gate que congela as métricas do `scripts/baseline.json
 - Quando o usuário disser "sim", "faz", "manda": executar. Não repetir o plano.
 - Quando apontarem código ou conteúdo existente como referência: estudar e replicar os padrões.
 - Trabalhar a partir de dados concretos. Não chutar. Se falta informação, perguntar.
+- **Didática nos pontos de decisão.** Toda discussão de decisão (proposta, trade-off, merge, risco) em linguagem não-técnica, como pra um aluno esperto do ensino médio: primeiro a analogia ou a consequência prática, depois o termo técnico entre parênteses — o usuário aprende o vocabulário em vez de depender de tradução. Execução rotineira não vira aula: resumo curto e claro.
+- **Decisão só conta como aprovada se foi compreendida.** "Ok" seco e imediato pra algo com consequência, aprovação sem nenhuma pergunta em tema novo ou aprovações em série disparam, antes de executar, uma checagem de entendimento: reformular em uma frase o que muda, a consequência prática e o custo de reverter, e fechar com uma pergunta concreta que só quem entendeu responde. (Isso não revoga o "sim = executar" de rotina — a checagem é só pra decisão pesada em tema novo aprovada rápido demais.)
+- **Retomada.** Suspeitou depois que algo passou batido (consequência que só ficou visível agora, jargão que ficou sem explicar, aprovação rápida demais na época)? Retomar o tema no próximo contato e se certificar. "Já foi aprovado" não encerra o assunto: entendimento pendente é dívida.
+- **Grill de domínio.** Regra de negócio nova ou ambígua não entra em código (nem em conteúdo) calada: entrevistar o usuário, uma pergunta por vez, até entendimento mútuo; o entendimento vira critério de aceite/teste e, se relevante, entrada no DECISIONS.md. É a revisão invertida: em vez de o humano ler todo o diff, o agente confere o entendimento do humano.
 
 ## Comunicação entre agentes (ambiente de desenvolvimento)
 
@@ -150,6 +179,20 @@ Regras:
 - **Lock entre agentes no produto final**: coordenação no workspace do usuário acontece via `.prumo/state/agent-lock.json`. Sem narrativa, sem PENDING_VALIDATION. **Exceção nomeada (#244):** o escopo `Prumo/Referencias/INDICE.md` usa aquisição atômica de filesystem (`.prumo/state/locks/`) porque ID sequencial não admite duplicata e lock cooperativo tem janela — contrato em `multiagent.md`.
 - **Validações cruzadas entre Codex/Cowork/Gemini/Claude durante dev**: podem usar os artefatos em `dev-archive/` como registro histórico ou continuar a prática localmente, desde que não vaze nada disso pra dentro das skills ou do runtime.
 - Se uma próxima geração do produto precisar de um contrato de handover de volta, vira issue nova e decisão arquitetural explícita. Não é "reverter a remoção".
+
+## Agent skills
+
+### Issue tracker
+
+Issues no GitHub, em `tharso/prumo-dev`. Ver `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Os cinco papéis canônicos mapeados para o vocabulário `status/*` que já existia. Ver `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context; onde as skills dizem "ADR", é o `DECISIONS.md`. Ver `docs/agents/domain.md`.
 
 ## Decisões arquiteturais
 
