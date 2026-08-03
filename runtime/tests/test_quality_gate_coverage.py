@@ -62,22 +62,24 @@ class CollectCoverageTests(unittest.TestCase):
         self.assertEqual(m.call_count, 1)
 
     def test_suite_quebrada_diagnostico_visivel(self) -> None:
-        # Três módulos falhando no load, como no caso real — o PRIMEIRO erro
-        # abre o stderr de propósito: qualquer recorte menor que o bloco
-        # inteiro (ex.: [-40:] mutado pra [-1:]) perde um módulo e falha.
-        stderr = (
-            "ModuleNotFoundError: No module named 'prumo_runtime.alpha'\n"
-            "  ...traceback...\n"
-            "  ...traceback...\n"
-            "ERROR: test_beta (unittest.loader._FailedTest.test_beta)\n"
-            "ModuleNotFoundError: No module named 'prumo_runtime.beta'\n"
-            "  ...traceback...\n"
-            "  ...traceback...\n"
-            "ERROR: test_gama (unittest.loader._FailedTest.test_gama)\n"
-            "ModuleNotFoundError: No module named 'prumo_runtime.gama'\n"
-            "FAILED (errors=3)\n"
+        # Três módulos falhando no load, como no caso real. O fixture tem
+        # EXATAMENTE 40 linhas e o módulo alpha abre o bloco na posição -40:
+        # qualquer encolhimento do recorte ([-39:] ou menos) perde o alpha e
+        # falha. Trava o piso do contrato — com fixture curto, a mutação
+        # [-10:] sobreviveu à rodada 2 do Codex.
+        stderr_lines = (
+            ["ModuleNotFoundError: No module named 'prumo_runtime.alpha'"]
+            + ["  File traceback (recheio)"] * 17
+            + ["ModuleNotFoundError: No module named 'prumo_runtime.beta'"]
+            + ["  File traceback (recheio)"] * 17
+            + ["ModuleNotFoundError: No module named 'prumo_runtime.gama'"]
+            + ["  File traceback (recheio)"] * 2
+            + ["FAILED (errors=3)"]
         )
-        _, out, _ = self._run([_proc(returncode=1, stderr=stderr)])
+        self.assertEqual(len(stderr_lines), 40)
+        _, out, _ = self._run(
+            [_proc(returncode=1, stderr="\n".join(stderr_lines) + "\n")]
+        )
         self.assertIn("suite quebrada", out)
         # O exit code faz parte do diagnóstico (critério 2 da #311); a âncora
         # "unittest exit=" é da mensagem nova — "exit=1" solto casaria com a
