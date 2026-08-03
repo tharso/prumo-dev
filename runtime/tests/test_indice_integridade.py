@@ -156,23 +156,44 @@ class VolumeTest(BaseTest):
         self.assertEqual(len(r["sem_entrada"]), BULK - 1)
         self.assertEqual(r["decisao"], indice_integridade.REINDEXAR)
 
-    def test_fora_da_convencao_nunca_conta(self) -> None:
-        """Operacionais, rascunhos E os 4 casos reais do incidente de 03/08
-        (#305): o que não casa `Autor_Assunto_AAAA-MM-DD.<ext>` não é ficha e
-        não vira candidato a reindexar."""
+    def test_fora_da_convencao_nao_aciona_mas_e_nomeado(self) -> None:
+        """Operacionais e os 4 casos reais do incidente de 03/08 (#305) nunca
+        acionam reindexação — mas ficam NOMEADOS em `fora_convencao` (Codex,
+        314-r1: invisibilidade total deixaria truncamento de legado passar
+        limpo). Ocultos e rascunhos não aparecem em conta nenhuma."""
         self.escrever(_tabela([1]) + "\n<!-- proximo-id: 2 -->\n")
         self.fichas([1])
-        for nome in (
-            "WORKFLOWS.md",
-            "EMAIL-CURADORIA.md",
-            "_rascunho.md",
+        visiveis = [
             "CONTEXT-EFFICIENCY-AUDIT.md",
             "Frila-StripePartners-GHz-due-diligence-2026-07-04.md",
             "REUNIOES-INDEX.md",
             "WORKFLOWS-GRANOLA.md",
-        ):
+        ]
+        infra_e_ocultos = ["WORKFLOWS.md", "EMAIL-CURADORIA.md", "_rascunho.md", ".oculto.md"]
+        for nome in visiveis + infra_e_ocultos:
             (self.root / nome).write_text("x", encoding="utf-8")
-        self.assertEqual(self.avaliar()["sem_entrada"], [])
+        r = self.avaliar()
+        self.assertEqual(r["sem_entrada"], [])
+        self.assertEqual(r["fora_convencao"], sorted(visiveis))
+        self.assertEqual(r["decisao"], indice_integridade.OK)
+
+    def test_legado_truncado_nao_passa_limpo(self) -> None:
+        """Cenário do Codex (314-r1): referência legada fora da convenção que
+        perde a linha da tabela precisa aparecer nomeada no relato — e a marca
+        `fichas-fora-conferidas` (mecanismo da #261) a despacha por nome."""
+        self.escrever(_tabela([1]) + "\n<!-- proximo-id: 2 -->\n")
+        self.fichas([1])
+        (self.root / "research-notes.md").write_text("x", encoding="utf-8")
+        r = self.avaliar()
+        self.assertIn("research-notes.md", r["fora_convencao"])
+        self.assertIn("research-notes.md", indice_integridade.render(r))
+        self.escrever(
+            _tabela([1])
+            + "\n<!-- proximo-id: 2 -->\n"
+            + "<!-- fichas-fora-conferidas: research-notes.md -->\n"
+        )
+        r2 = self.avaliar()
+        self.assertEqual(r2["fora_convencao"], [])
 
 
 class ArvoreUnicaTest(BaseTest):

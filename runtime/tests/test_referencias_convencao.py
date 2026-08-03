@@ -17,6 +17,7 @@ class TestFichasReais(unittest.TestCase):
             "Anthropic_Claude-Code-Best-Practices_2026-03-01.md",
             "Autor_Assunto_com_underscores_2026-01-01.md",
             "Autor_Paper_2026-01-01.pdf",
+            "Álvaro_Assunto_2026-01-01.md",
         ):
             self.assertTrue(is_ficha_filename(nome), nome)
 

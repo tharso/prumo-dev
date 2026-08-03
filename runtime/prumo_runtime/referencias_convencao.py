@@ -17,9 +17,19 @@ import re
 
 # Autor (sem underscore) + assunto (pode ter underscore) + data + extensão.
 # Dotfiles e rascunhos (`.x`, `_x`) nunca casam: o autor não começa com eles.
+# O primeiro caractere é Unicode-aware (Codex, 314-r1): `Álvaro_...` é autor
+# legítimo — a convenção documentada não impõe ASCII; só proíbe `.`, `_` e
+# espaço na abertura.
 FICHA_FILENAME_RE = re.compile(
-    r"^[A-Za-z0-9][^_]*_.+_\d{4}-\d{2}-\d{2}\.[A-Za-z0-9]{1,8}$"
+    r"^[^._\s][^_]*_.+_\d{4}-\d{2}-\d{2}\.[A-Za-z0-9]{1,8}$"
 )
+
+# Infraestrutura DO PRODUTO que vive em `Referencias/` — o próprio índice e
+# os arquivos de aprendizado que o Prumo cria. Papel distinto da convenção:
+# a convenção decide o que É ficha; esta lista marca o que é do produto e
+# portanto nunca entra em conta nenhuma (nem candidata, nem "solto"). Fonte
+# única — o acervo importa daqui.
+INFRAESTRUTURA_PRODUTO = frozenset({"INDICE.md", "EMAIL-CURADORIA.md", "WORKFLOWS.md"})
 
 
 def is_ficha_filename(name: str) -> bool:

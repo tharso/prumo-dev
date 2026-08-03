@@ -70,7 +70,7 @@ pergunta "onde guardei aquele artigo?" e Prumo não sabe.
 **Verificar (uma leitura, uma decisão — com semente, tudo já vem pronto em
 `local_panorama.indice_referencias`):**
 - Rodapé `<!-- proximo-id: N -->` e os IDs distintos da tabela
-- Arquivos em `Referencias/` que casam a convenção de ficha (`Autor_Assunto_AAAA-MM-DD.<ext>`, #305 — o que não casa não é ficha e não conta; o acervo mantém exclusão própria, de infraestrutura), comparados com a tabela
+- Arquivos em `Referencias/` comparados com a tabela, em duas contas (#305): os que casam a convenção de ficha (`Autor_Assunto_AAAA-MM-DD.<ext>`) são candidatos a reindexar; os que não casam **nunca acionam reindexação**, mas sem entrada ficam NOMEADOS em `fora_convencao` — resolver na higiene (declarar deliberado via `fichas-fora-conferidas` ou renomear pra convenção). O acervo mantém exclusão própria, de infraestrutura
 
 **Decidir nesta ordem, e parar na primeira que bater:**
 
