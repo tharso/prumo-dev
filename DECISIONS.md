@@ -106,6 +106,8 @@ Entradas anteriores a 2026-05-04 não usam o campo "Relações com decisões ant
 
 **Alternativas consideradas:** ampliar a lista fixa com os 4 nomes novos (rejeitada — é a mesma lista vazando de novo no próximo arquivo); convenção também na enumeração do acervo (rejeitada — o acervo é o navegador do material solto; esconder não-fichas lá esconderia exatamente o que ele existe pra mostrar); `max_items` como alvo aspiracional sem pendência (rejeitada — deixaria o principal crescer até o volume de 30 dias, e o custo real é contexto do briefing, que a dieta da rota paga).
 
+**Emenda do review (Codex, PR #314) — cobertura do legado e catraca 6759 → 6785 (+26), teto aprovado pelo dono em 03/08 após medição:** a convenção decide o que ACIONA reindexação, mas o que não casa e está sem entrada fica NOMEADO em `fora_convencao` (despachável pela marca `fichas-fora-conferidas` da #261) — sem isso, referência legada que perdesse a linha num truncamento passaria limpa, o incidente-mãe de volta. O campo viaja na semente e o consumo no `briefing-estado.md` o declara achado nominal MESMO com decisão `ok` (o `faxina.md` só carrega quando já há pendência — a regra precisa da parte sempre-carregada). A infraestrutura do produto (`INDICE.md`, `EMAIL-CURADORIA.md`, `WORKFLOWS.md`) vive em `referencias_convencao.INFRAESTRUTURA_PRODUTO` (fonte única; o acervo importa de lá) e não entra em conta nenhuma.
+
 ---
 
 ## 2026-07-31 — O update do Cowork ganha contrato de veredito: achar não é atualizar (#276)

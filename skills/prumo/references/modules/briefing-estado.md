@@ -28,7 +28,7 @@ O agente **NUNCA escreve** esse arquivo — estado do runtime (#214); consumo é
 
 1. **Rotação do REGISTRO** — linhas da tabela acima de `max_items` (a semente já traz o número em `local_panorama.faxina`).
 2. **PAUTA→REGISTRO de concluídos** — item marcado concluído (checkbox/riscado/"Concluído") ainda na pauta.
-3. **`Referencias/INDICE.md`** — `indice_referencias.decisao` (#261): `bloquear` = pendente e **proibido reindexar** (higiene resolve); `reindexar` = pendente; `ok` = limpa. Sem o bloco: comparar a **coluna `Arquivo`** e a lacuna do rodapé — só a diferença de conjuntos deixa passar índice truncado sem ficha órfã.
+3. **`Referencias/INDICE.md`** — `indice_referencias.decisao` (#261): `bloquear` = pendente e **proibido reindexar** (higiene resolve); `reindexar` = pendente; `ok` = limpa das contas de ficha. **`fora_convencao` não vazio (#305): achado nominal mesmo em `ok`** — nomear na linha da faxina, resolver na higiene; nunca candidata nem volume. Sem o bloco: comparar a **coluna `Arquivo`** e a lacuna do rodapé — só a diferença de conjuntos deixa passar índice truncado sem ficha órfã.
 4. **Processados velhos do Inbox4Mobile** — entrada de `_processed.json` com `processed_at` além de `processed_expiry_days` (a semente já traz).
 5. **Rotação do `Diario/`** — arquivo com data no NOME além do prazo de rotação do diário.
 

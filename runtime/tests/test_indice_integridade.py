@@ -267,6 +267,19 @@ class SementeTest(BaseTest):
         self.assertEqual(bloco["decisao"], indice_integridade.BLOQUEAR)
         self.assertEqual(bloco["lacunas_pct"], 92)
 
+    def test_semente_transporta_fora_convencao_com_decisao_ok(self) -> None:
+        """Rota produtiva do achado legado (Codex, 314-r2): a semente carrega
+        `fora_convencao` MESMO com `decisao: ok` — é o que o consumo do
+        `briefing-estado.md` nomeia pra higiene; sem isso, o briefing rico
+        anuncia "nada pendente" e o legado truncado passa limpo na interface
+        principal."""
+        self.escrever_coerente([1], "\n<!-- proximo-id: 2 -->\n")
+        (self.root / "research-notes.md").write_text("x", encoding="utf-8")
+
+        bloco = self._panorama()["indice_referencias"]
+        self.assertEqual(bloco["decisao"], indice_integridade.OK)
+        self.assertEqual(bloco["fora_convencao"], ["research-notes.md"])
+
     def test_semente_declara_indisponivel_sem_os_caminhos(self) -> None:
         """Chamador antigo não quebra, mas também não finge saber."""
         panorama, _ = build_local_panorama(

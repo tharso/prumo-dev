@@ -31,10 +31,10 @@ lama, não pavimento.
 - Se acima de `max_items` (default 50 — `faxina-thresholds.md`; overrides em `Prumo/Custom/rules/`): hora de arquivar
 
 **Executar (o tamanho vence a idade — #307):**
-- Acima do teto, mover as mais velhas até restarem `max_items`, mesmo recentes; abaixo dele, mover só o que passou de `archive_age_days` (default 30)
+- Acima do teto, mover as mais velhas até restarem `max_items`, mesmo recentes; abaixo dele, só o que passou de `archive_age_days` (default 30)
 - Agrupar o que sai por mês em `Prumo/Arquivo/REGISTRO-{yyyy-mm}.md`
 - Adicionar nota no cabeçalho: "Itens anteriores em `Arquivo/`"
-- Uma passada converge — "pendente" só quando há o que mover
+- Uma passada converge — "pendente" só com algo a mover
 
 **Não fazer:**
 - Não deletar nenhum item — mover é diferente de apagar
@@ -70,7 +70,7 @@ pergunta "onde guardei aquele artigo?" e Prumo não sabe.
 **Verificar (uma leitura, uma decisão — com semente, tudo já vem pronto em
 `local_panorama.indice_referencias`):**
 - Rodapé `<!-- proximo-id: N -->` e os IDs distintos da tabela
-- Arquivos em `Referencias/` comparados com a tabela, em duas contas (#305): os que casam a convenção de ficha (`Autor_Assunto_AAAA-MM-DD.<ext>`) são candidatos a reindexar; os que não casam **nunca acionam reindexação**, mas sem entrada ficam NOMEADOS em `fora_convencao` — resolver na higiene (declarar deliberado via `fichas-fora-conferidas` ou renomear pra convenção). O acervo mantém exclusão própria, de infraestrutura
+- Arquivos em `Referencias/` comparados com a tabela, em duas contas (#305): casa a convenção (`Autor_Assunto_AAAA-MM-DD.<ext>`) = candidata a reindexar; não casa = **nunca reindexa**, mas sem entrada fica NOMEADO em `fora_convencao` — declarar deliberado (`fichas-fora-conferidas`) ou renomear. O acervo mantém exclusão própria (infraestrutura)
 
 **Decidir nesta ordem, e parar na primeira que bater:**
 
