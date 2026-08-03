@@ -192,7 +192,7 @@ GUARDRAIL_OWNERS: dict[str, Path] = {
     # "texto puro" pedia um degrau que o conector não tem — as âncoras
     # novas travam a regra executável e o predicado de anexo.
     "FORMATO da leitura de corpo (corrigido em 03/08, #304": CANAIS,
-    "**descartando `htmlBody` sem ler** e extraindo apenas `plaintextBody`": CANAIS,
+    "extraindo apenas `plaintextBody` — e sem repropagar `htmlBody` adiante": CANAIS,
     "Política de cobertura (FIXA — decisão do dono em 27/07": CANAIS,
     "Respostas ao que o usuário enviou** desde o último briefing": CANAIS,
     "Anexo é substância (#304)": CANAIS,
