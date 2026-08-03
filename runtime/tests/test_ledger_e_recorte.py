@@ -24,12 +24,18 @@ class TestBaixaNoLedger(unittest.TestCase):
         """A ORDEM é o contrato (Codex, 315-r3): presença das frases não basta
         — a verificação tem de vir textualmente ANTES da baixa, com o
         'somente então' entre elas."""
+        move = self.text.find("executar o move do original")
         verificacao = self.text.find("verificar origem ausente e destino íntegro")
         somente_entao = self.text.find("somente então")
         baixa = self.text.find("atualizar a entrada no `_processed.json`")
-        self.assertGreater(verificacao, -1)
-        self.assertGreater(somente_entao, -1)
-        self.assertGreater(baixa, -1)
+        for pos, nome in (
+            (move, "move"),
+            (verificacao, "verificação"),
+            (somente_entao, "somente então"),
+            (baixa, "baixa"),
+        ):
+            self.assertGreater(pos, -1, f"elo ausente: {nome}")
+        self.assertLess(move, verificacao)
         self.assertLess(verificacao, somente_entao)
         self.assertLess(somente_entao, baixa)
         self.assertIn("Verificação falhou → não dar baixa", self.text)
