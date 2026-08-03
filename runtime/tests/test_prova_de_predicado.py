@@ -472,3 +472,28 @@ class RegistroArquiteturalTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class CardinalidadeTest(unittest.TestCase):
+    """#308 (Codex, 316-r4): o caminho por cardinalidade sem guard deixaria um
+    falso `VAZIO CONFIRMADO` voltar de crachá válido — remover uma condição
+    crítica manteria a suite verde. As condições têm de existir NA ORDEM
+    operacional do texto."""
+
+    def test_condicoes_criticas_na_ordem(self) -> None:
+        texto = CANAIS.read_text(encoding="utf-8")
+        marcas = (
+            "testemunha por cardinalidade (#308)",
+            "assinatura da busca já `VALIDADA`",
+            "granularidade de MENSAGEM",
+            "por identidade, nunca só por contagem",
+            "IDs de mensagem únicos",
+            "pertencimento ao conjunto (o label presente em `labelIds`)",
+            "SEM predicado temporal",
+            "a janela é aplicada por último",
+        )
+        pos = -1
+        for marca in marcas:
+            found = texto.find(marca, pos + 1)
+            self.assertNotEqual(found, -1, f"condição crítica ausente ou fora de ordem: {marca}")
+            pos = found
