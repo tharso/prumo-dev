@@ -62,13 +62,16 @@ class CollectCoverageTests(unittest.TestCase):
         self.assertEqual(m.call_count, 1)
 
     def test_suite_quebrada_diagnostico_visivel(self) -> None:
-        # Três módulos falhando no load, como no caso real. O fixture tem
-        # EXATAMENTE 40 linhas e o módulo alpha abre o bloco na posição -40:
-        # qualquer encolhimento do recorte ([-39:] ou menos) perde o alpha e
-        # falha. Trava o piso do contrato — com fixture curto, a mutação
-        # [-10:] sobreviveu à rodada 2 do Codex.
+        # Três módulos falhando no load, como no caso real. O fixture tem 41
+        # linhas e desenha a janela inteira do recorte [-40:]:
+        # - marcador na posição -41 (fora da janela) → assertNotIn trava o
+        #   teto e a direção ([:40], [-41:] e "sem slice" o deixariam vazar);
+        # - alpha na posição -40 (primeira DENTRO) → encolhimento ([-39:] ou
+        #   menos, como o [-10:] da rodada 2 do Codex) o perde;
+        # - FAILED na posição -1 → o fim da saída do unittest é visível.
         stderr_lines = (
-            ["ModuleNotFoundError: No module named 'prumo_runtime.alpha'"]
+            ["LINHA-ACIMA-DA-JANELA (fora do recorte, não deve aparecer)"]
+            + ["ModuleNotFoundError: No module named 'prumo_runtime.alpha'"]
             + ["  File traceback (recheio)"] * 17
             + ["ModuleNotFoundError: No module named 'prumo_runtime.beta'"]
             + ["  File traceback (recheio)"] * 17
@@ -76,7 +79,7 @@ class CollectCoverageTests(unittest.TestCase):
             + ["  File traceback (recheio)"] * 2
             + ["FAILED (errors=3)"]
         )
-        self.assertEqual(len(stderr_lines), 40)
+        self.assertEqual(len(stderr_lines), 41)
         _, out, _ = self._run(
             [_proc(returncode=1, stderr="\n".join(stderr_lines) + "\n")]
         )
@@ -87,6 +90,8 @@ class CollectCoverageTests(unittest.TestCase):
         self.assertIn("unittest exit=1", out)
         for modulo in ("alpha", "beta", "gama"):
             self.assertIn(f"prumo_runtime.{modulo}", out)
+        self.assertIn("FAILED (errors=3)", out)
+        self.assertNotIn("LINHA-ACIMA-DA-JANELA", out)
 
     def test_report_sem_total_fails_closed(self) -> None:
         result, _, _ = self._run([_proc(), _proc(stdout="No data to report.\n")])
