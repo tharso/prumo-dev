@@ -6,6 +6,14 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.84.0] - 2026-08-03
+
+### Fixed
+- **Um import derrubava o runtime inteiro no host mais usado (#301)** — `commands/update.py` importava `tomllib` (stdlib só a partir do 3.11) no topo do módulo, `commands/__init__.py` puxa o update na carga do pacote, e a VM do Cowork desktop fornece Python 3.10: **todo** comando morria num `ModuleNotFoundError`, inclusive `briefing`, `seed`, `start` e `repair`, que nunca leem TOML. O efeito ficou nove dias invisível — `last-briefing.json` travado em 25/07 com briefings acontecendo por leitura direta, porque cada agente concluía "runtime inalcançável" e seguia sem ele; o relatório de campo de 03/08 provou por transferência + stub que esse import era o único bloqueio. O import virou adiado, dentro das três funções que realmente leem TOML (extraídas para `update_sources.py` — o arquivo estava colado no teto da catraca, primeira parcela da #281); o `prumo update` — único consumidor de TOML, e que nem se aplica no Cowork, onde a VM não tem rede — ganhou gate com mensagem legível e `exit 2` em vez de traceback; e a carga do pacote ganhou piso de versão com erro claro pra host abaixo da mínima. Guard de AST garante que `tomllib` nunca volta ao nível de módulo.
+
+### Changed
+- **Python mínimo formal: 3.10, com o CI rodando a suite inteira na mínima (#301)** — decisão do dono em 03/08: os hosts reais de uso são Cowork desktop e Codex, e o Cowork fornece 3.10 — enquanto o runtime declarava `>=3.11` e o CI só testava 3.11: verde sem dizer nada sobre o host real. `requires-python` desceu pra `>=3.10`, o ruff acompanhou (`target-version = "py310"`), e a matriz do CI ganhou Ubuntu + 3.10 rodando os 1349 testes — sem esse job o suporte seria acidental e a próxima feature 3.11+ quebraria de novo em silêncio. Os módulos de teste do update declaram o pulo na mínima (o contrato do update em 3.10 é o gate de mensagem legível, testado); o quality gate segue medindo só no 3.11 canônico, porque cobertura flutua entre versões pelos branches version-dependent.
+
 ## [5.83.2] - 2026-07-31
 
 ### Fixed

@@ -18,13 +18,17 @@ import subprocess
 import sys
 import tarfile
 import tempfile
-import tomllib
 import urllib.error
 import urllib.request
 from pathlib import Path
 from typing import Any
 
 from prumo_runtime import __version__
+from prumo_runtime.commands.update_sources import (
+    _is_valid_runtime_dir,
+    _local_dir_from_uv_receipt,
+    _staged_version,
+)
 from prumo_runtime.workspace_paths import LEGACY_FLAT_POST_UPDATE_NOTE, is_legacy_flat_workspace, is_prumo_workspace
 
 
@@ -34,6 +38,14 @@ CURL_INSTALL_URL = (
     "https://raw.githubusercontent.com/tharso/prumo/main/scripts/prumo_runtime_install.sh"
 )
 UPDATE_CHANNEL = "latest em main"
+
+
+def _python_supports_update(version_info=None):
+    """O update lê TOML (uv-receipt, pyproject) com tomllib, stdlib 3.11+.
+    A mínima do runtime é 3.10 (#301): só este comando exige mais que ela,
+    então o gate mora aqui e o resto do CLI nunca paga por ele."""
+    found = version_info if version_info is not None else sys.version_info
+    return (found[0], found[1]) >= (3, 11)
 
 
 def install_marker_path() -> Path:
@@ -261,47 +273,6 @@ def build_update_plan(
     return plan
 
 
-def _uv_tools_dir(uv_tool_dir: Path | None = None) -> Path:
-    """Diretório onde o uv guarda os tools instalados. Agnóstico de host:
-    respeita `UV_TOOL_DIR`, senão o padrão do uv sob `XDG_DATA_HOME`/`~/.local/share`.
-    """
-    if uv_tool_dir is not None:
-        return uv_tool_dir
-    env = os.environ.get("UV_TOOL_DIR")
-    if env:
-        return Path(env)
-    base = os.environ.get("XDG_DATA_HOME") or str(Path.home() / ".local" / "share")
-    return Path(base) / "uv" / "tools"
-
-
-def _local_dir_from_uv_receipt(uv_tool_dir: Path | None = None) -> str | None:
-    """Lê o `directory` do `uv-receipt.toml` do prumo-runtime (fonte da verdade
-    do próprio uv pra instalação de diretório local). Retorna o path atual, ou
-    None se não houver receipt de instalação-por-diretório."""
-    receipt = _uv_tools_dir(uv_tool_dir) / "prumo-runtime" / "uv-receipt.toml"
-    try:
-        data = tomllib.loads(receipt.read_text(encoding="utf-8"))
-    except (OSError, tomllib.TOMLDecodeError):
-        return None
-    for req in data.get("tool", {}).get("requirements", []):
-        if isinstance(req, dict) and req.get("name") == "prumo-runtime":
-            directory = req.get("directory")
-            if directory:
-                return str(directory)
-    return None
-
-
-def _is_valid_runtime_dir(path: Path, expected_version: str) -> bool:
-    """O diretório é uma fonte de prumo-runtime na versão esperada?"""
-    pyproject = path / "pyproject.toml"
-    try:
-        data = tomllib.loads(pyproject.read_text(encoding="utf-8"))
-    except (OSError, tomllib.TOMLDecodeError):
-        return False
-    project = data.get("project", {})
-    return project.get("name") == "prumo-runtime" and project.get("version") == expected_version
-
-
 def resolve_local_source_dir(
     remote_version: str,
     *,
@@ -467,30 +438,6 @@ def _safe_extract(tar: "tarfile.TarFile", dest: Path) -> None:
         tar.extractall(dest, members=members)
 
 
-def _staged_version(root: Path) -> str | None:
-    """Versão do artefato extraído — só se for prumo-runtime de verdade, com
-    a árvore mínima (pyproject coerente + runtime/ + skills/ + VERSION)."""
-    try:
-        data = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))
-    except (OSError, tomllib.TOMLDecodeError):
-        return None
-    project = data.get("project", {})
-    if project.get("name") != "prumo-runtime":
-        return None
-    version = project.get("version")
-    if not version:
-        return None
-    try:
-        version_file = (root / "VERSION").read_text(encoding="utf-8").strip()
-    except OSError:
-        return None
-    if version_file != version:
-        return None
-    if not (root / "runtime" / "prumo_runtime").is_dir() or not (root / "skills").is_dir():
-        return None
-    return version
-
-
 def stage_archive_source(remote_version: str, work_dir: Path) -> tuple[str | None, str | None, str | None]:
     """Baixa o tarball do espelho, extrai com filtro e valida o artefato.
 
@@ -637,6 +584,14 @@ def _get_post_update_version() -> str | None:
 
 
 def run_update(args) -> int:
+    if not _python_supports_update():
+        print(
+            "prumo update requer Python 3.11+ (tomllib na stdlib); este interpretador é "
+            f"{sys.version_info[0]}.{sys.version_info[1]}. Os demais comandos do prumo "
+            "funcionam normalmente na mínima 3.10.",
+            file=sys.stderr,
+        )
+        return 2
     method_info = detect_install_method()
     remote_version = fetch_remote_version()
     # Instalação de diretório local (cache do plugin): resolve o path da nova

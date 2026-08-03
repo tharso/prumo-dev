@@ -13,6 +13,7 @@ from __future__ import annotations
 import io
 import json
 import os
+import sys
 import tempfile
 import unittest
 from contextlib import redirect_stdout
@@ -26,6 +27,15 @@ from prumo_runtime.commands.update import (
     detect_install_method,
     install_marker_path,
 )
+
+
+def setUpModule():
+    if sys.version_info < (3, 11):
+        raise unittest.SkipTest(
+            "prumo update requer tomllib (stdlib 3.11+); na mínima 3.10 o "
+            "contrato do update é o gate de mensagem legível, provado em "
+            "test_python_310_support (#301)"
+        )
 
 
 def _write_marker_v1(path: Path, **overrides) -> None:

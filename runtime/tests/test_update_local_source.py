@@ -15,6 +15,7 @@ from tempfile import TemporaryDirectory
 import io
 import json
 import os
+import sys
 import types
 from contextlib import redirect_stdout
 from unittest import mock
@@ -26,6 +27,15 @@ from prumo_runtime.commands.update import (
     run_update,
     workspace_core_status,
 )
+
+
+def setUpModule():
+    if sys.version_info < (3, 11):
+        raise unittest.SkipTest(
+            "prumo update requer tomllib (stdlib 3.11+); na mínima 3.10 o "
+            "contrato do update é o gate de mensagem legível, provado em "
+            "test_python_310_support (#301)"
+        )
 
 
 class BuildPlanCopyInstall(unittest.TestCase):
