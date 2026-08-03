@@ -188,11 +188,14 @@ GUARDRAIL_OWNERS: dict[str, Path] = {
     "Sinal de divergência agenda × email (#211)": MONTAGEM,
     "só com confirmação do usuário; nunca criar sozinho": MONTAGEM,
     # Relatório de 27/07 (B1/B2/B3 — decisões do dono nas perguntas didáticas):
-    "FORMATO da leitura de corpo (relatório de 27/07, achado 5.1)": CANAIS,
-    "escalar pra `FULL_CONTENT` **só** se o texto puro não bastar": CANAIS,
+    # A regra de formato foi corrigida na #304 (03/08): a escalada por
+    # "texto puro" pedia um degrau que o conector não tem — as âncoras
+    # novas travam a regra executável e o predicado de anexo.
+    "FORMATO da leitura de corpo (corrigido em 03/08, #304": CANAIS,
+    "extraindo apenas `plaintextBody` — e sem repropagar `htmlBody` adiante": CANAIS,
     "Política de cobertura (FIXA — decisão do dono em 27/07": CANAIS,
     "Respostas ao que o usuário enviou** desde o último briefing": CANAIS,
-    "`htmlBody` de newsletter é descartado sem ler": CANAIS,
+    "primeiro checar se o conector ativo lê anexo": CANAIS,
     "nas threads** selecionar as mensagens EXTERNAS recebidas": CANAIS,
     "Declarar a cobertura em uma linha": CANAIS,
     # #236 — o protocolo mora nos CANAIS (é lá que a query roda); a completude

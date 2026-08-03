@@ -6,6 +6,14 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.87.0] - 2026-08-03
+
+### Changed
+- **Os canais de email foram realinhados ao conector real (#304, #296)** — a escada de formato pedia um "texto puro" que não existe (regra nascida do relatório de 27/07 sem validação contra o conector): agora é `FULL_CONTENT` extraindo só `plaintextBody`, com honestidade de custo (a resposta inline já pagou os dois campos; a economia real é o transbordo pra arquivo + extração dirigida — o caso de 56 KB de 03/08). Anexo decisivo ganhou predicado por capacidade: checar se o conector ativo lê anexo antes de pedir upload (a petição de 03/08 só entrou por upload manual). E o label da Camada 1 ganhou o contrato que a prova de 03/08 exigiu: **nome de exibição, nunca ID** — a doc do conector afirma o inverso do comportamento real; doc de conector não é prova.
+
+### Added
+- **Testemunha por cardinalidade — caminho adicional pra `VAZIO CONFIRMADO` (#308)** — total declarado por fora da busca (`list_labels`) + busca de assinatura **VALIDADA** devolvendo exatamente esse total = conjunto completo, janela aplicada por último, localmente. Pré-condições do review, inegociáveis: assinatura já VALIDADA (sobre query sem prova de vida, vazio não é evidência — a busca por ID de 03/08 teria promovido falso-negativo a confirmado) e reconciliação **por identidade** na granularidade de mensagem (IDs distintos = `messagesTotal`, pertencimento por `labelIds`, busca de reconciliação sem predicado temporal). Tira do limbo permanente a assinatura que voltava à fila todo briefing desde 31/07.
+
 ## [5.86.0] - 2026-08-03
 
 ### Changed
