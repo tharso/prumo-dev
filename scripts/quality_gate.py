@@ -49,11 +49,16 @@ def collect_ruff_violations() -> int:
 
 
 def collect_coverage() -> float:
-    """Roda pytest com coverage e retorna o percentual total.
+    """Roda unittest com coverage e retorna o percentual total.
 
     Usa a configuração de [tool.coverage.run] do pyproject.toml
     (source = ["prumo_runtime"]) via --rcfile. Parseia a linha
     TOTAL do coverage report.
+
+    Fail-closed (#311): suite quebrada (unittest exit != 0) ou report
+    sem TOTAL → -1.0. Percentual medido sobre suite mutilada não é
+    métrica — no caso real, 3 módulos falharam no load e o gate acusou
+    "regressão" de 87% pra 83% que nunca existiu.
     """
     import re
 
@@ -76,6 +81,11 @@ def collect_coverage() -> float:
         cwd=REPO_ROOT,
     )
     print(f"[qg]   coverage run exit={run_result.returncode} data_file_exists={data_file.exists()}")
+    if run_result.returncode != 0:
+        print(f"[qg]   suite quebrada (unittest exit={run_result.returncode}) — cobertura não medida")
+        for ln in run_result.stderr.strip().splitlines()[-40:]:
+            print(f"[qg]     {ln}")
+        return -1.0
     if run_result.stderr:
         # Mostrar apenas linhas relevantes (warnings do coverage)
         for ln in run_result.stderr.splitlines()[:10]:
@@ -102,7 +112,7 @@ def collect_coverage() -> float:
     if report_result.stderr:
         print(f"[qg]   coverage report stderr: {report_result.stderr[:300]}")
 
-    return 0.0
+    return -1.0
 
 
 def collect_briefing_route_worst() -> int:
@@ -220,6 +230,9 @@ def main() -> int:
     print(f"[qg]   ruff_violations  : {violations}")
 
     coverage = collect_coverage()
+    if coverage < 0:
+        print("[qg] ERRO: cobertura não medida — fail-closed (diagnóstico acima).", file=sys.stderr)
+        return 1
     print(f"[qg]   coverage_pct     : {coverage:.1f}%")
 
     largest_lines, largest_file = collect_largest_file()
