@@ -8,7 +8,10 @@ on:
 
 jobs:
   unit-and-smoke:
-    name: Unit + Smoke (${{ matrix.os }}, py${{ matrix.python-version }})
+    # O nome canônico (sem sufixo) é contexto EXIGIDO pela branch protection
+    # da main — o job 3.11 precisa se chamar exatamente como ela espera; o
+    # job da mínima entra como contexto extra, com sufixo (#301)
+    name: Unit + Smoke (${{ matrix.os }}${{ matrix.python-version != '3.11' && format(', py{0}', matrix.python-version) || '' }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
