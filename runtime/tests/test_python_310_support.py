@@ -161,6 +161,8 @@ class TestInstallersAcceptMinimum(unittest.TestCase):
         """Cenário do Codex r4, executado de verdade: `python` ativo abaixo da
         mínima reprova a validação de versão e o py launcher vira o fallback —
         sem a validação, o 3.9 do PATH seria aceito e o pip recusaria."""
+        pwsh = shutil.which("pwsh")
+        self.assertIsNotNone(pwsh)
         text = (REPO_ROOT / "scripts" / "prumo_runtime_install.ps1").read_text(
             encoding="utf-8"
         )
@@ -181,8 +183,10 @@ class TestInstallersAcceptMinimum(unittest.TestCase):
                 + 'else { Write-Output "NONE" }\n',
                 encoding="utf-8",
             )
+            # Caminho absoluto: o PATH fabricado governa também a resolução
+            # do próprio executável do subprocess (Codex r5)
             result = subprocess.run(
-                ["pwsh", "-NoProfile", "-File", str(probe)],
+                [pwsh, "-NoProfile", "-File", str(probe)],
                 capture_output=True,
                 text=True,
                 env={**os.environ, "PATH": str(tmpdir)},
