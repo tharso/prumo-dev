@@ -17,7 +17,7 @@ tenha prova comportamental em vez de um cálculo paralelo que só os testes
 chamam (Codex, 261-7). Sem runtime, o `faxina.md` replica o algoritmo em
 texto — limitação nomeada, não maquiada.
 
-Módulo folha: só stdlib e `faxina_thresholds`.
+Módulo folha: só stdlib, `faxina_thresholds` e `referencias_convencao`.
 """
 
 from __future__ import annotations
@@ -25,11 +25,9 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-SCHEMA = "prumo_indice_integridade.v1"
+from prumo_runtime.referencias_convencao import INFRAESTRUTURA_PRODUTO, is_ficha_filename
 
-# Mesma lista de exclusão do acervo e da faxina: infraestrutura de
-# `Referencias/`, não referência catalogável.
-OPERACIONAIS = frozenset({"INDICE.md", "WORKFLOWS.md", "EMAIL-CURADORIA.md"})
+SCHEMA = "prumo_indice_integridade.v1"
 
 _RODAPE = re.compile(r"<!--\s*proximo-id:\s*(\d+)\s*-->")
 # Marcas de conferência (#261): a higiene grava aqui o que o usuário declarou
@@ -188,8 +186,18 @@ def arquivos_indexados(texto: str) -> set[str]:
     return nomes
 
 
-def fichas_sem_entrada(referencias_root: Path, texto: str) -> list[str] | None:
-    """Fichas em disco fora da coluna `Arquivo`. `None` = fonte indisponível.
+def fichas_sem_entrada(
+    referencias_root: Path, texto: str
+) -> tuple[list[str], list[str]] | None:
+    """Arquivos `.md` em disco fora da coluna `Arquivo`, em DUAS listas:
+    `(na_convencao, fora_convencao)`. `None` = fonte indisponível.
+
+    A convenção decide o que ACIONA reindexação; a segunda lista preserva a
+    cobertura de integridade pro material legado (Codex, 314-r1): ficha
+    indexada com nome fora da convenção que perde a linha num truncamento
+    precisa continuar aparecendo NOMEADA — senão o truncamento passa limpo,
+    que é o incidente que este detector existe pra pegar. Ocultos e rascunhos
+    (`.x`, `_x`) não entram em lista nenhuma.
 
     Distinguir "nenhuma ficha" de "não consegui olhar" é o que impede raiz
     inacessível de virar casa em ordem (Codex, 261D-5).
@@ -203,7 +211,8 @@ def fichas_sem_entrada(referencias_root: Path, texto: str) -> list[str] | None:
     import stat as stat_module
 
     indexados = arquivos_indexados(texto)
-    faltando: list[str] = []
+    na_convencao: list[str] = []
+    fora_convencao: list[str] = []
     try:
         # `iterdir`, não `glob`: o glob engole erro por entrada e a falha de
         # listagem passaria como pasta vazia (Codex, r2).
@@ -214,7 +223,9 @@ def fichas_sem_entrada(referencias_root: Path, texto: str) -> list[str] | None:
         return None
     for path in candidatos:
         nome = path.name
-        if nome in OPERACIONAIS or nome.startswith((".", "_")):
+        # Infra do produto (o próprio índice incluso) e ocultos/rascunhos não
+        # entram em conta nenhuma — não são material do usuário.
+        if nome in INFRAESTRUTURA_PRODUTO or nome.startswith((".", "_")):
             continue
         try:
             # `lstat` protegido, não `is_file()`: o helper transforma erro de
@@ -226,8 +237,10 @@ def fichas_sem_entrada(referencias_root: Path, texto: str) -> list[str] | None:
         if stat_module.S_ISLNK(st.st_mode) or not stat_module.S_ISREG(st.st_mode):
             continue
         if nome not in indexados:
-            faltando.append(nome)
-    return faltando
+            # Convenção no lugar da lista fixa (#305): só ela ACIONA
+            # reindexação — mas o que não casa fica NOMEADO na outra lista.
+            (na_convencao if is_ficha_filename(nome) else fora_convencao).append(nome)
+    return na_convencao, fora_convencao
 
 
 def entradas_sem_arquivo(referencias_root: Path, texto: str) -> list[str]:
@@ -270,6 +283,7 @@ def avaliar(
         "ids_distintos": 0,
         "lacunas_pct": None,
         "sem_entrada": [],
+        "fora_convencao": [],
         "entradas_sem_arquivo": [],
         "lacunas_conferidas": None,
         "fichas_fora_conferidas": [],
@@ -298,31 +312,33 @@ def avaliar(
     resultado["ids_distintos"] = len(ids_da_tabela(texto))
     resultado["lacunas_pct"] = lacunas_pct(texto)
 
-    sem_entrada_bruto = fichas_sem_entrada(referencias_root, texto)
+    par_sem_entrada = fichas_sem_entrada(referencias_root, texto)
     conferidas_fora = fichas_fora_conferidas(texto)
-    sem_entrada = (
-        None if sem_entrada_bruto is None
-        else [n for n in sem_entrada_bruto if n not in conferidas_fora]
-    )
-    if sem_entrada is None:
+    if par_sem_entrada is None:
         # Não é "nenhuma ficha fora": é "não consegui olhar". Chamar isso de
         # casa em ordem seria o silêncio confiante que a #236 já nomeou.
         resultado["fonte_completa"] = False
         resultado["decisao"] = BLOQUEAR
         resultado["razoes"] = ["não consegui listar `Referencias/` — inventário indisponível"]
         return resultado
+    sem_entrada = [n for n in par_sem_entrada[0] if n not in conferidas_fora]
+    # A marca `fichas-fora-conferidas` é por NOME e despacha os dois lados:
+    # é o mecanismo existente (#261) que tira o legado da lista sem renomear.
+    fora_convencao = [n for n in par_sem_entrada[1] if n not in conferidas_fora]
     resultado["sem_entrada"] = sem_entrada
+    resultado["fora_convencao"] = fora_convencao
     orfas = entradas_sem_arquivo(referencias_root, texto)
     resultado["entradas_sem_arquivo"] = orfas
 
-    if not indice_existe and sem_entrada:
+    if not indice_existe and (sem_entrada or fora_convencao):
         # Índice sumido COM fichas em disco é a forma mais grave do incidente,
         # não um workspace novo. Reindexar aqui recriaria o catálogo com IDs
         # novos e descrições derivadas — o reflexo que a #261 existe pra matar.
         resultado["fonte_completa"] = False
         resultado["decisao"] = BLOQUEAR
         resultado["razoes"] = [
-            f"`INDICE.md` ausente com {len(sem_entrada)} ficha(s) em disco"
+            "`INDICE.md` ausente com "
+            f"{len(sem_entrada) + len(fora_convencao)} arquivo(s) em disco"
         ]
         return resultado
 
@@ -380,7 +396,7 @@ def render(resultado: dict) -> str:
             linha += " Sem arquivo: " + ", ".join(f"`{n}`" for n in orfas[:10])
             if len(orfas) > 10:
                 linha += f" (+{len(orfas) - 10})"
-        return linha
+        return linha + _linha_fora_convencao(resultado)
     if decisao == REINDEXAR:
         partes = []
         if nomes:
@@ -388,5 +404,21 @@ def render(resultado: dict) -> str:
         orfas = resultado.get("entradas_sem_arquivo", [])
         if orfas:
             partes.append(", ".join(f"`{n}`" for n in orfas) + " sem arquivo")
-        return "Índice: " + "; ".join(partes) + " — reindexar e nomear."
-    return ""
+        linha = "Índice: " + "; ".join(partes) + " — reindexar e nomear."
+        return linha + _linha_fora_convencao(resultado)
+    return _linha_fora_convencao(resultado).lstrip()
+
+
+def _linha_fora_convencao(resultado: dict) -> str:
+    """Solto NUNCA some do relato (Codex, 314-r1): fora da convenção não
+    aciona reindexação, mas material legado sem entrada precisa de nome —
+    truncamento de ficha legada que passasse limpo seria o incidente-mãe."""
+    soltos = resultado.get("fora_convencao", [])
+    if not soltos:
+        return ""
+    linha = " Fora da convenção de ficha, sem entrada: " + ", ".join(
+        f"`{n}`" for n in soltos[:10]
+    )
+    if len(soltos) > 10:
+        linha += f" (+{len(soltos) - 10})"
+    return linha + " — declarar deliberado na higiene ou renomear pra convenção."

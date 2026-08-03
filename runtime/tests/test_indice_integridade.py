@@ -25,7 +25,7 @@ GAP = faxina_thresholds.DEFAULTS["referencias_id_gap_alert_pct"]
 BULK = faxina_thresholds.DEFAULTS["referencias_bulk_reindex_at"]
 
 
-def _tabela(ids, arquivo=lambda n: f"ficha-{n}.md") -> str:
+def _tabela(ids, arquivo=lambda n: f"Autor_Ficha-{n}_2026-01-01.md") -> str:
     linhas = "".join(
         f"| {n} | Ficha {n} | {arquivo(n)} | 01/02/2026 | descrição autoral | tag |\n"
         for n in ids
@@ -55,7 +55,7 @@ class BaseTest(unittest.TestCase):
 
     def fichas(self, ids) -> None:
         for n in ids:
-            (self.root / f"ficha-{n}.md").write_text(f"# Ficha {n}\n", encoding="utf-8")
+            (self.root / f"Autor_Ficha-{n}_2026-01-01.md").write_text(f"# Ficha {n}\n", encoding="utf-8")
 
     def avaliar(self, **kw) -> dict:
         return indice_integridade.avaliar(
@@ -138,7 +138,7 @@ class VolumeTest(BaseTest):
         self.fichas([1, 2, 3])
         r = self.avaliar()
         self.assertEqual(r["decisao"], indice_integridade.REINDEXAR)
-        self.assertEqual(r["sem_entrada"], ["ficha-3.md"])
+        self.assertEqual(r["sem_entrada"], ["Autor_Ficha-3_2026-01-01.md"])
 
     def test_lote_no_limiar_bloqueia(self) -> None:
         """`>= referencias_bulk_reindex_at`, não `>`."""
@@ -156,12 +156,44 @@ class VolumeTest(BaseTest):
         self.assertEqual(len(r["sem_entrada"]), BULK - 1)
         self.assertEqual(r["decisao"], indice_integridade.REINDEXAR)
 
-    def test_operacionais_nunca_contam(self) -> None:
+    def test_fora_da_convencao_nao_aciona_mas_e_nomeado(self) -> None:
+        """Operacionais e os 4 casos reais do incidente de 03/08 (#305) nunca
+        acionam reindexação — mas ficam NOMEADOS em `fora_convencao` (Codex,
+        314-r1: invisibilidade total deixaria truncamento de legado passar
+        limpo). Ocultos e rascunhos não aparecem em conta nenhuma."""
         self.escrever(_tabela([1]) + "\n<!-- proximo-id: 2 -->\n")
         self.fichas([1])
-        for nome in ("WORKFLOWS.md", "EMAIL-CURADORIA.md", "_rascunho.md"):
+        visiveis = [
+            "CONTEXT-EFFICIENCY-AUDIT.md",
+            "Frila-StripePartners-GHz-due-diligence-2026-07-04.md",
+            "REUNIOES-INDEX.md",
+            "WORKFLOWS-GRANOLA.md",
+        ]
+        infra_e_ocultos = ["WORKFLOWS.md", "EMAIL-CURADORIA.md", "_rascunho.md", ".oculto.md"]
+        for nome in visiveis + infra_e_ocultos:
             (self.root / nome).write_text("x", encoding="utf-8")
-        self.assertEqual(self.avaliar()["sem_entrada"], [])
+        r = self.avaliar()
+        self.assertEqual(r["sem_entrada"], [])
+        self.assertEqual(r["fora_convencao"], sorted(visiveis))
+        self.assertEqual(r["decisao"], indice_integridade.OK)
+
+    def test_legado_truncado_nao_passa_limpo(self) -> None:
+        """Cenário do Codex (314-r1): referência legada fora da convenção que
+        perde a linha da tabela precisa aparecer nomeada no relato — e a marca
+        `fichas-fora-conferidas` (mecanismo da #261) a despacha por nome."""
+        self.escrever(_tabela([1]) + "\n<!-- proximo-id: 2 -->\n")
+        self.fichas([1])
+        (self.root / "research-notes.md").write_text("x", encoding="utf-8")
+        r = self.avaliar()
+        self.assertIn("research-notes.md", r["fora_convencao"])
+        self.assertIn("research-notes.md", indice_integridade.render(r))
+        self.escrever(
+            _tabela([1])
+            + "\n<!-- proximo-id: 2 -->\n"
+            + "<!-- fichas-fora-conferidas: research-notes.md -->\n"
+        )
+        r2 = self.avaliar()
+        self.assertEqual(r2["fora_convencao"], [])
 
 
 class ArvoreUnicaTest(BaseTest):
@@ -195,7 +227,7 @@ class ArvoreUnicaTest(BaseTest):
         self.escrever(_tabela([1]) + "\n<!-- proximo-id: 2 -->\n")
         self.fichas([1, 2])
         texto = indice_integridade.render(self.avaliar())
-        self.assertIn("ficha-2.md", texto)
+        self.assertIn("Autor_Ficha-2_2026-01-01.md", texto)
 
     def test_casa_em_ordem_e_silencio(self) -> None:
         self.escrever_coerente([1, 2], "\n<!-- proximo-id: 3 -->\n")
@@ -234,6 +266,38 @@ class SementeTest(BaseTest):
         self.assertEqual(bloco["schema"], indice_integridade.SCHEMA)
         self.assertEqual(bloco["decisao"], indice_integridade.BLOQUEAR)
         self.assertEqual(bloco["lacunas_pct"], 92)
+
+    def test_semente_transporta_fora_convencao_com_decisao_ok(self) -> None:
+        """Rota produtiva do achado legado (Codex, 314-r2): a semente carrega
+        `fora_convencao` MESMO com `decisao: ok` — é o que o consumo do
+        `briefing-estado.md` nomeia pra higiene; sem isso, o briefing rico
+        anuncia "nada pendente" e o legado truncado passa limpo na interface
+        principal."""
+        self.escrever_coerente([1], "\n<!-- proximo-id: 2 -->\n")
+        (self.root / "research-notes.md").write_text("x", encoding="utf-8")
+
+        bloco = self._panorama()["indice_referencias"]
+        self.assertEqual(bloco["decisao"], indice_integridade.OK)
+        self.assertEqual(bloco["fora_convencao"], ["research-notes.md"])
+
+    def test_contrato_de_consumo_sempre_carregado(self) -> None:
+        """Codex (314-r3): o guard tem de segurar o CONSUMIDOR, não só o
+        transporte — sem estas âncoras no `briefing-estado.md`, remover a
+        frase deixaria tudo verde (a catraca até desceria) e o achado legado
+        voltaria a morrer antes da interface principal."""
+        estado = (
+            Path(__file__).resolve().parents[2]
+            / "skills"
+            / "prumo"
+            / "references"
+            / "modules"
+            / "briefing-estado.md"
+        ).read_text(encoding="utf-8")
+        self.assertIn(
+            "**`fora_convencao` não vazio (#305): achado nominal mesmo em `ok`**",
+            estado,
+        )
+        self.assertIn("nunca candidata nem volume", estado)
 
     def test_semente_declara_indisponivel_sem_os_caminhos(self) -> None:
         """Chamador antigo não quebra, mas também não finge saber."""
@@ -319,26 +383,26 @@ class ColunaArquivoTest(BaseTest):
         texto = (
             "# Índice\n\n| # | Título | Arquivo | Data | Descrição | Keywords |\n"
             "|---|---|---|---|---|---|\n"
-            "| 1 | Outra | outra.md | 01/02/2026 | conversa com ficha-2.md | tag |\n"
+            "| 1 | Outra | outra.md | 01/02/2026 | conversa com Autor_Ficha-2_2026-01-01.md | tag |\n"
             "\n<!-- proximo-id: 2 -->\n"
         )
         self.escrever(texto)
         (self.root / "outra.md").write_text("x", encoding="utf-8")
-        (self.root / "ficha-2.md").write_text("x", encoding="utf-8")
+        (self.root / "Autor_Ficha-2_2026-01-01.md").write_text("x", encoding="utf-8")
 
         r = self.avaliar()
-        self.assertEqual(r["sem_entrada"], ["ficha-2.md"], "menção na descrição virou entrada")
+        self.assertEqual(r["sem_entrada"], ["Autor_Ficha-2_2026-01-01.md"], "menção na descrição virou entrada")
 
     def test_celula_com_link_markdown_conta(self) -> None:
         """Negativa: a coluna pode vir como link — isso É entrada."""
         texto = (
             "# Índice\n\n| # | Título | Arquivo | Data | Descrição | Keywords |\n"
             "|---|---|---|---|---|---|\n"
-            "| 1 | Ficha | [Ficha](ficha-1.md) | 01/02/2026 | desc | tag |\n"
+            "| 1 | Ficha | [Ficha](Autor_Ficha-1_2026-01-01.md) | 01/02/2026 | desc | tag |\n"
             "\n<!-- proximo-id: 2 -->\n"
         )
         self.escrever(texto)
-        (self.root / "ficha-1.md").write_text("x", encoding="utf-8")
+        (self.root / "Autor_Ficha-1_2026-01-01.md").write_text("x", encoding="utf-8")
         self.assertEqual(self.avaliar()["sem_entrada"], [])
 
 
@@ -553,8 +617,8 @@ class ConferenciaTest(BaseTest):
         a confirmação não encerrava o alarme (Codex, r4)."""
         self.escrever(
             _tabela([1]) + "\n<!-- proximo-id: 2 -->\n"
-            "<!-- fichas-fora-conferidas: ficha-2.md, ficha-3.md, ficha-4.md, "
-            "ficha-5.md, ficha-6.md -->\n"
+            "<!-- fichas-fora-conferidas: Autor_Ficha-2_2026-01-01.md, Autor_Ficha-3_2026-01-01.md, Autor_Ficha-4_2026-01-01.md, "
+            "Autor_Ficha-5_2026-01-01.md, Autor_Ficha-6_2026-01-01.md -->\n"
         )
         self.fichas(range(1, 7))
         self.assertEqual(self.avaliar()["decisao"], indice_integridade.OK)
@@ -568,12 +632,12 @@ class ConferenciaTest(BaseTest):
         """
         self.escrever(
             _tabela([1]) + "\n<!-- proximo-id: 2 -->\n"
-            "<!-- fichas-fora-conferidas: ficha-3.md -->\n"
+            "<!-- fichas-fora-conferidas: Autor_Ficha-3_2026-01-01.md -->\n"
         )
         self.fichas([1, 2, 3])
         r = self.avaliar()
         self.assertEqual(r["decisao"], indice_integridade.REINDEXAR)
-        self.assertEqual(r["sem_entrada"], ["ficha-2.md"])
+        self.assertEqual(r["sem_entrada"], ["Autor_Ficha-2_2026-01-01.md"])
 
     def test_lacuna_que_cresce_alem_do_conferido_volta_a_alarmar(self) -> None:
         """Negativa central: conferir não é cheque em branco."""
@@ -603,7 +667,7 @@ class FichaInacessivelTest(BaseTest):
         self.escrever(_tabela([1]) + "\n<!-- proximo-id: 2 -->\n")
         self.fichas([1])
         real = Path.lstat
-        alvo = (self.root / "ficha-1.md").resolve()
+        alvo = (self.root / "Autor_Ficha-1_2026-01-01.md").resolve()
 
         def falha(self, *a, **kw):
             if self.resolve() == alvo:
@@ -664,12 +728,12 @@ class OrfasTest(BaseTest):
     def test_entrada_sem_arquivo_nao_deixa_a_familia_limpa(self) -> None:
         self.escrever(_tabela([1]) + "\n<!-- proximo-id: 2 -->\n")  # sem criar a ficha
         r = self.avaliar()
-        self.assertEqual(r["entradas_sem_arquivo"], ["ficha-1.md"])
+        self.assertEqual(r["entradas_sem_arquivo"], ["Autor_Ficha-1_2026-01-01.md"])
         self.assertNotEqual(r["decisao"], indice_integridade.OK, "família limpa com órfã")
 
     def test_orfa_aparece_nomeada_no_relato(self) -> None:
         self.escrever(_tabela([1]) + "\n<!-- proximo-id: 2 -->\n")
-        self.assertIn("ficha-1.md", indice_integridade.render(self.avaliar()))
+        self.assertIn("Autor_Ficha-1_2026-01-01.md", indice_integridade.render(self.avaliar()))
         self.assertIn("sem arquivo", indice_integridade.render(self.avaliar()))
 
     def test_indice_coerente_nao_tem_orfa(self) -> None:
@@ -754,7 +818,7 @@ class RelatoProdutivoTest(BaseTest):
         }
         with patch.object(cmd, "build_briefing_payload", return_value=payload):
             saida = self._rodar(cmd)
-        self.assertIn("ficha-1.md", saida)
+        self.assertIn("Autor_Ficha-1_2026-01-01.md", saida)
         self.assertIn("[indice]", saida)
 
     def test_briefing_silencioso_com_indice_limpo(self) -> None:
@@ -819,7 +883,7 @@ class PipeEscapadoTest(BaseTest):
         texto = (
             "# Índice\n\n| # | Título | Arquivo | Data | Descrição | Keywords |\n"
             "|---|---|---|---|---|---|\n"
-            "| 1 | A \\| B | ficha-1.md | 01/02/2026 | desc | tag |\n"
+            "| 1 | A \\| B | Autor_Ficha-1_2026-01-01.md | 01/02/2026 | desc | tag |\n"
             "\n<!-- proximo-id: 2 -->\n"
         )
         self.escrever(texto)

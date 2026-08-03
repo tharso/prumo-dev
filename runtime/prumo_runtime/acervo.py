@@ -21,6 +21,7 @@ from datetime import date
 from pathlib import Path
 
 from prumo_runtime.pauta_parsing import _section_header_matches
+from prumo_runtime.referencias_convencao import INFRAESTRUTURA_PRODUTO
 from prumo_runtime.workspace import read_text
 from prumo_runtime.workspace_paths import WorkspacePaths, workspace_paths
 
@@ -47,9 +48,12 @@ HIBERNANDO_HEADING = "Hibernando"
 
 # Arquivos operacionais de `Referencias/` que NUNCA entram no acervo: não são
 # "limbo", são config viva (índice, regras de curadoria de email, workflows).
-# Alinhado a `skills/prumo/references/file-protection-rules.md` e ao que a
-# `faxina` já ignora ao catalogar. Ver DECISIONS.md 2026-06-26 (#125).
-OPERATIONAL_REFERENCIAS = frozenset({"INDICE.md", "EMAIL-CURADORIA.md", "WORKFLOWS.md"})
+# Alinhado a `skills/prumo/references/file-protection-rules.md`. Ver
+# DECISIONS.md 2026-06-26 (#125). Papel DIFERENTE da conta do índice, que
+# desde a #305 filtra pela convenção de ficha (`referencias_convencao`): o
+# acervo mostra todo o material solto — inclusive o que não é ficha —, então
+# a exclusão aqui é só a infraestrutura do produto (fonte única na folha).
+OPERATIONAL_REFERENCIAS = INFRAESTRUTURA_PRODUTO
 
 # Só lê conteúdo (para título/snippet/hash de fragmento) de arquivos de texto.
 # Outros formatos (pdf, imagens) entram como item de arquivo inteiro, hash dos
