@@ -280,6 +280,25 @@ class SementeTest(BaseTest):
         self.assertEqual(bloco["decisao"], indice_integridade.OK)
         self.assertEqual(bloco["fora_convencao"], ["research-notes.md"])
 
+    def test_contrato_de_consumo_sempre_carregado(self) -> None:
+        """Codex (314-r3): o guard tem de segurar o CONSUMIDOR, não só o
+        transporte — sem estas âncoras no `briefing-estado.md`, remover a
+        frase deixaria tudo verde (a catraca até desceria) e o achado legado
+        voltaria a morrer antes da interface principal."""
+        estado = (
+            Path(__file__).resolve().parents[2]
+            / "skills"
+            / "prumo"
+            / "references"
+            / "modules"
+            / "briefing-estado.md"
+        ).read_text(encoding="utf-8")
+        self.assertIn(
+            "**`fora_convencao` não vazio (#305): achado nominal mesmo em `ok`**",
+            estado,
+        )
+        self.assertIn("nunca candidata nem volume", estado)
+
     def test_semente_declara_indisponivel_sem_os_caminhos(self) -> None:
         """Chamador antigo não quebra, mas também não finge saber."""
         panorama, _ = build_local_panorama(
