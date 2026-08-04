@@ -134,5 +134,37 @@ class ApresentacaoTest(unittest.TestCase):
         self.assertIn("só abrem DEPOIS da primeira entrega", MONTAGEM)
 
 
+
+class IdentidadeDaEvidenciaTest(unittest.TestCase):
+    """Codex 325-r2: consumo por prosa não consome nada — o mesmo email
+    resumido com outras palavras parecia evidência nova."""
+
+    def test_evento_exige_identidade_estavel(self) -> None:
+        self.assertIn("[id: <identidade estável>]", CANAIS)
+        self.assertIn("identidade estável é obrigatória", CANAIS)
+        self.assertIn("é por ELA que o consumo reconhece", CANAIS)
+
+    def test_consumo_compara_pelo_id_nunca_pelo_resumo(self) -> None:
+        self.assertIn("a comparação é pelo id, nunca pelo resumo", CANAIS)
+
+    def test_busca_leva_o_item_nao_so_o_prefixo(self) -> None:
+        # O prefixo sozinho num REGISTRO cheio devolve as reaberturas de
+        # todos os itens — recorte sem direção não é recorte.
+        self.assertIn("junto do identificador do item suprimido", CANAIS)
+        self.assertIn("nunca o prefixo sozinho", CANAIS)
+
+    def test_gatilho_do_mapa_cobre_variante_zero_canais(self) -> None:
+        # Sem esta perna, F2 nunca abre no host sem email/agenda/inbox e a
+        # reabertura fora da cauda fica suprimida com briefing "completo".
+        skill = (
+            REPO_ROOT / "skills" / "briefing" / "SKILL.md"
+        ).read_text(encoding="utf-8")
+        linha_canais = next(
+            ln for ln in skill.splitlines()
+            if "briefing-canais.md" in ln and "| F2 |" in ln
+        )
+        self.assertIn("OU suprimido sem evento na cauda", linha_canais)
+
+
 if __name__ == "__main__":
     unittest.main()

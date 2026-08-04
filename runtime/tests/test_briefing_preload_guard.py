@@ -94,7 +94,7 @@ EXPECTED_MAP = frozenset(
         ),
         (
             "F2",
-            "antes da triagem local do Inbox4Mobile, de caixa declarada OU de abrir email/agenda",
+            "antes da triagem local do Inbox4Mobile, de caixa declarada OU de abrir email/agenda; OU suprimido sem evento na cauda",
             f"{_M}/briefing-canais.md",
             "(integral)",
             "canais",
