@@ -1,6 +1,6 @@
 # Briefing — Estado operacional (F1)
 
-> **module_version: 1.1.0**
+> **module_version: 1.2.0**
 >
 > Fase F1 da rota fásica do briefing (#180): de onde vem o retrato local
 > (pauta, inbox, registro, sinais de faxina) que abre o primeiro tempo.
@@ -12,7 +12,7 @@
 
 Arquivo bruto abre em **dois casos apenas**: (1) **edição** — escrever `PAUTA.md`/`REGISTRO.md` no fechamento sempre relê antes; (2) **sinalização** — `payload_completeness.<fonte>.complete == false`, ambiguidade real, ou a heurística de aprofundamento (`load-policy.md`, carregar no primeiro uso). O fallback é **por fonte**: `faxina_override` divergente (editado/removido após o `seed`) **invalida o bloco `faxina` inteiro** — carregar o doc + o override atual, recompor thresholds e **recontar** o que depende deles; pauta incompleta → `PAUTA.md`; `inbox4mobile` com status ≠ `gerado` (enum: `gerado|stale|ausente|invalido|indeterminado`) → `prumo inbox preview` (operação explícita) ou listagem direta; as demais seguem servidas pela semente. `degradation` genérico não motiva releitura integral.
 
-**2. Sem runtime no PATH mas COM o arquivo-semente `.prumo/state/local-panorama.json` (#216 — gravado pelo `prumo seed` de outra máquina):** usar com gate TRIPLO:
+**2. Sem runtime alcançável, COM o arquivo-semente `.prumo/state/local-panorama.json` (#216):** usar com gate TRIPLO:
 
 1. **Capacidade**, como na semente viva — senão, fallback direto.
 2. **DATA**: `local_panorama.generated_for` == a data de HOJE no fuso do workspace — `visible_today` (filtro de cobrança) e sinais de faxina dependem da data, não só dos arquivos; **semente de ontem invalida no mínimo PAUTA e processados** (virada do dia), mesmo com arquivos intactos.
@@ -36,6 +36,6 @@ Atestar limpeza olhando só uma parte é mentira com crachá novo. Família pend
 
 ## Filtro de cobrança (a regra é a mesma nos dois caminhos)
 
-Itens com marker `| cobrar: DD/MM` só são elegíveis para o briefing quando a data é hoje, ontem (véspera) ou passada (atrasado). Itens com cobrança para daqui a 2+ dias ficam de fora — não cobrar antes da hora. Itens sem marker aparecem sempre. Marker ambíguo: fail-open (mostrar). Na semente, `visible_today` já vem calculado por essa regra (e o teste de paridade do runtime trava a equivalência); em leitura direta, aplicar manualmente.
+Marker `| cobrar: DD/MM`: elegível quando a data é hoje, véspera ou passada; 2+ dias à frente fica fora — não cobrar antes da hora. Sem marker: sempre. Ambíguo: fail-open. **Exceção (#325) — evidência queima supressão:** item suprimido com reabertura VÁLIDA no REGISTRO volta VIVO, reaberto — validade, busca além da cauda (recorte dirigido) e cruzamento: canais, F2. `visible_today` da semente calcula a regra base (paridade por teste); a exceção aplica-se DEPOIS; leitura direta aplica tudo manualmente.
 
-Não persistir estado de briefing entre sessões.
+Estado transitório não cruza sessões.

@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.94.0] - 2026-08-03
+
+### Added
+- **Evidência nova reabre item suprimido por `cobrar:` (#325)** — o caso-mãe: processo suprimido por `cobrar: 06/08` e a guia de custas chegando por email NO MESMO DIA como item avulso, sem conexão. As quatro regras do grill com o dono (03/08): qualquer evidência reabre (sem juízo de relevância); a evidência **queima a supressão** (o item volta vivo até despacho — `cobrar` é soneca, não cofre); os **três braços** cruzam contra a lista de suprimidos (email, calendário, inbox — lista da semente, zero leitura nova); na dúvida, reabre como **"vínculo possível"**. Persistência por evento no REGISTRO com a data original do cobrar — vale enquanto o cobrar da linha for o mesmo: re-suprimir é UM passo (data nova → evento envelhece sozinho, sem ledger novo). Apresentação com o vínculo visível — reabertura já conhecida no bullet das pendências; descoberta por email/agenda no SEGUNDO tempo (Codex, 325-r1). Onze endurecimentos do review (r1–r4): busca dirigida além da cauda de ~10 linhas (com o identificador do ITEM, nunca o prefixo sozinho); evidência consumida não re-queima — comparação por IDENTIDADE ESTÁVEL (id de mensagem/ocorrência/arquivo), nunca pelo resumo; o gatilho do canais cobre a variante zero-canais e exige evento VÁLIDO na cauda (stale não dispensa a busca); a identidade do item é seção + linha sem markers (a chave nunca inclui o cobrar que a re-supressão altera; colisão na mesma seção mostra ambas); a busca tem teto declarado (20 linhas mais recentes) e, truncado, candidata sem match reabre como 'vínculo possível — histórico truncado' — nunca fica suprimida. Exceção no filtro de F1 paga com podas (cesto fecha em 6805, um abaixo do teto). Guards de posição e da relação de staleness em `test_reentrada_evidencia.py`.
+
 ## [5.93.0] - 2026-08-03
 
 ### Added

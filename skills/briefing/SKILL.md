@@ -42,7 +42,7 @@ A **lista canônica ÚNICA** de carregamento do briefing (#195/#180). Nenhum out
 | F1 | override do usuário existir | `Prumo/Custom/rules/faxina-thresholds.md` | (integral) | overrides |
 | F1 | família de faxina pendente (execução — a checagem mínima mora no estado) | `.prumo/skills/prumo/references/modules/faxina.md` | (integral) | executor |
 | F2 | `MAPA-AUTORAL.md` com nota (gramática dos marcadores) | `.prumo/skills/prumo/references/modules/load-policy.md` | `## Listagem de diretórios (perímetro de leitura, #194)` | marcadores (#245) |
-| F2 | antes da triagem local do Inbox4Mobile, de caixa declarada OU de abrir email/agenda | `.prumo/skills/prumo/references/modules/briefing-canais.md` | (integral) | canais |
+| F2 | antes da triagem local do Inbox4Mobile, de caixa declarada OU de abrir email/agenda; OU suprimido sem evento válido na cauda | `.prumo/skills/prumo/references/modules/briefing-canais.md` | (integral) | canais |
 | F2 | zero suspeito OU validar/registrar assinatura | `.prumo/skills/prumo/references/modules/canais-prova-predicado.md` | (integral) | prova (#236) |
 | F2 | Inbox4Mobile com itens novos | `.prumo/skills/prumo/references/modules/inbox-processing.md` | (integral) | inbox |
 | F2 | antes de filtrar email (se existir) | `Prumo/Referencias/EMAIL-CURADORIA.md` | (integral) | curadoria |

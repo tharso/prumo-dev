@@ -1,6 +1,6 @@
 # Briefing — Montagem e fechamento (F3)
 
-> **module_version: 5.90.0**
+> **module_version: 5.94.0**
 >
 > Fase F3 da rota fásica do briefing (#180). Carregar **ao montar o
 > panorama** (o primeiro tempo já pode ser emitido a partir daqui; a
@@ -18,7 +18,7 @@ Emitido a partir da semente (ou da leitura direta, conforme o gate de `briefing-
 Componentes do primeiro tempo (estruturais sem número; **só item despachável numera**, 1..k conforme houver):
 
 - Abertura com data correta no fuso do usuário (sem número).
-- Pendências vivas da PAUTA (quente, em andamento, agendado) — **cada pendência é um item numerado**, **respeitando o marker `| cobrar: DD/MM`**. Item com marker de cobrança só aparece no briefing quando falta no máximo 1 dia para a data (véspera ou dia). Itens com cobrança no passado (atrasados) sempre aparecem. Item sem marker aparece sempre. Marker mal formado ou ambíguo: mostrar o item (fail-open, melhor ruído que perda silenciosa). **Rituais do `PERFIL.md`/`ROTINA.md` não são pendências** — não entram aqui como itens; rituais com hora aparecem como eventos da agenda, não como pauta.
+- Pendências vivas da PAUTA (quente, em andamento, agendado) — **cada pendência é um item numerado**, **respeitando o marker `| cobrar: DD/MM`**. Item com marker de cobrança só aparece no briefing quando falta no máximo 1 dia para a data (véspera ou dia). Itens com cobrança no passado (atrasados) sempre aparecem. Item sem marker aparece sempre. Marker mal formado ou ambíguo: mostrar o item (fail-open, melhor ruído que perda silenciosa). **Item REABERTO por evidência (#325) entra SEMPRE, com o vínculo visível** — a evidência que reabriu + a data original do cobrar (ex.: *"(reaberto: guia de custas por email — cobrar 06/08 queimado)"*; "vínculo possível" quando ambíguo) — reaberto sem o vínculo é a conexão perdida que motivou a regra. Aqui entram as reaberturas JÁ conhecidas (evento no REGISTRO ou braço local do inbox); a descoberta por email/agenda apresenta no segundo tempo (componente próprio, abaixo). **Rituais do `PERFIL.md`/`ROTINA.md` não são pendências** — não entram aqui como itens; rituais com hora aparecem como eventos da agenda, não como pauta.
 - **Linha de faxina obrigatória (#217):** o primeiro tempo contém a linha com o resultado da checagem de `briefing-estado.md` — *"Faxina: nada pendente"* ou *"Faxina: arquivei N itens do registro"* (elemento estrutural, sem número). Briefing sem a linha de faxina é briefing **fora de conformidade**.
 - Caixas declaradas (#245): se o usuário marcou pastas como `(caixa de entrada)` no mapa autoral, apresentar a contagem em uma linha — "Caixas declaradas: N em `X/`, M em `Y/`" —, sem despejar itens. Contar e cobrar, nunca reorganizar.
 - Inbox4Mobile: se houver itens novos (detectados em `briefing-canais.md` → Inbox4Mobile), apresentar a contagem e a triagem — **itens de triagem numeram**. Linkar `inbox-preview.html` quando ele existir e estiver utilizável (predicado em `inbox-processing.md` — é o HTML, não o índice). No primeiro tempo, não despejar conteúdo bruto dos arquivos — preferir resumo numerado com classificação. **Este item é sobre formato de apresentação. A triagem real acontece no estágio local dos canais — não pular por causa deste item.**
@@ -34,6 +34,7 @@ Componentes do segundo tempo (itens k+1..N, cada um com seu número):
 
 - Emails curados (Camadas 1, 2 e 3 aplicadas), com classificação Responder/Ver/Sem ação e prioridade P1/P2/P3 — **cada email é um item, continuando de k+1**.
 - Agenda do dia, consolidada por conta quando aplicável — **cada evento é um item, continuando após o último email** (é a ordem da regra de numeração e do Calendário dos canais).
+- **Reabertura descoberta na curadoria (#325 — Codex, 325-r1):** item da PAUTA reaberto por evidência de **email ou agenda** entra no **SEGUNDO tempo** como item numerado, com o vínculo visível (mesmo formato do bullet do primeiro tempo) — no fluxo de dois tempos, Gmail/Calendar só abrem DEPOIS da primeira entrega, então a reabertura descoberta por eles não tem como sair no primeiro; via **inbox** (braço local) ela já sai no primeiro. Reaberto que só aparecesse amanhã, pela cauda, é a conexão perdida de novo.
 - **Sinal de divergência agenda × email (#211):** para cada caso de divergência PRODUZIDO pela detecção dos canais (`briefing-canais.md` — é lá que se compara e se consulta a agenda), emitir o sinal em linha própria (sem número): *"⚠ Agenda de {hoje|amanhã} vazia, mas o item N marca 19h — esse compromisso não está no calendário."* (a data no aviso é a DO COMPROMISSO) — e oferecer criar o evento (**só com confirmação do usuário; nunca criar sozinho**). Não-bloqueante: sem caso, sem linha.
 
 Depois da lista numerada — **só no segundo tempo, porque precisa do quadro completo** — entregar a proposta do dia em uma linha curta (sem número) e oferecer opções respondíveis:
