@@ -1,6 +1,6 @@
 # Briefing — Estado operacional (F1)
 
-> **module_version: 1.0.0**
+> **module_version: 1.1.0**
 >
 > Fase F1 da rota fásica do briefing (#180): de onde vem o retrato local
 > (pauta, inbox, registro, sinais de faxina) que abre o primeiro tempo.

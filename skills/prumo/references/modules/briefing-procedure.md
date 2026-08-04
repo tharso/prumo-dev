@@ -1,6 +1,6 @@
 # Briefing Procedure (espinha da rota fásica)
 
-> **module_version: 5.0.0**
+> **module_version: 5.1.0**
 >
 > Fonte canônica do procedimento de briefing do Prumo — a ESPINHA (#180):
 > identidade, ordem dos passos e gates. O detalhe de cada fase mora nos
