@@ -31,6 +31,7 @@ SKILL = REPO_ROOT / "skills" / "briefing" / "SKILL.md"
 ESPINHA = MODULES / "briefing-procedure.md"
 ESTADO = MODULES / "briefing-estado.md"
 CANAIS = MODULES / "briefing-canais.md"
+SATELITE_PROVA = MODULES / "canais-prova-predicado.md"
 MONTAGEM = MODULES / "briefing-montagem.md"
 PREFLIGHT = MODULES / "version-preflight.md"
 VERSION_UPDATE = MODULES / "version-update.md"
@@ -97,6 +98,13 @@ EXPECTED_MAP = frozenset(
             f"{_M}/briefing-canais.md",
             "(integral)",
             "canais",
+        ),
+        (
+            "F2",
+            "zero suspeito sem assinatura VALIDADA",
+            f"{_M}/canais-prova-predicado.md",
+            "(integral)",
+            "prova (#236)",
         ),
         ("F2", "Inbox4Mobile com itens novos", f"{_M}/inbox-processing.md", "(integral)", "inbox"),
         ("F2", "antes de filtrar email (se existir)", "Prumo/Referencias/EMAIL-CURADORIA.md", "(integral)", "curadoria"),
@@ -201,10 +209,12 @@ GUARDRAIL_OWNERS: dict[str, Path] = {
     # #236 — o protocolo mora nos CANAIS (é lá que a query roda); a completude
     # do briefing segue dona da MONTAGEM. Dois donos semânticos de
     # `--mark-done` foi o risco que o review do plano pegou.
-    "Prova de predicado de busca (#236)": CANAIS,
-    "query nunca é testemunha de si mesma": CANAIS,
-    "Nada é aprovado por osmose": CANAIS,
-    "três validações novas por briefing": CANAIS,
+    # #323: o protocolo saiu do núcleo dos canais pro satélite — os
+    # invariantes moram com as frases operacionais (padrão da #304).
+    "Prova de predicado de busca (#236)": SATELITE_PROVA,
+    "query nunca é testemunha de si mesma": SATELITE_PROVA,
+    "Nada é aprovado por osmose": SATELITE_PROVA,
+    "três validações novas por briefing": SATELITE_PROVA,
     "Braço `INCONCLUSIVO` (#236) — este módulo é o dono da completude": MONTAGEM,
     "em Cowork/host containerizado, **WebFetch PRIMEIRO**": PREFLIGHT,
     '"não consegui checar" só depois de esgotar os dois': PREFLIGHT,
@@ -224,10 +234,14 @@ EXCLUSIVITY_EXEMPT = frozenset(
         "gate TRIPLO",
         "prumo version-check --ensure-fresh",
         "`inbox4mobile_manifest`",  # resumo do gate 2 na espinha é declarado
+        # #323: o stub em briefing-canais.md repete o TÍTULO da seção dona
+        # (satélite) de propósito — é o gatilho declarado, não cópia; os
+        # ponteiros externos continuam achando a seção pelo nome.
+        "Prova de predicado de busca (#236)",
     }
 )
 
-_PHASE_FILES = (ESPINHA, ESTADO, CANAIS, MONTAGEM, PREFLIGHT)
+_PHASE_FILES = (ESPINHA, ESTADO, CANAIS, SATELITE_PROVA, MONTAGEM, PREFLIGHT)
 
 # Predicados de leitura de corpo — verificados DENTRO do bloco do Estágio 2
 # (busca global deixaria remoção passar batida; Codex, diff r2 da #195).
