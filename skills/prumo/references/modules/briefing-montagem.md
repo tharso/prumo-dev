@@ -1,6 +1,6 @@
 # Briefing — Montagem e fechamento (F3)
 
-> **module_version: 5.81.0**
+> **module_version: 5.90.0**
 >
 > Fase F3 da rota fásica do briefing (#180). Carregar **ao montar o
 > panorama** (o primeiro tempo já pode ser emitido a partir daqui; a
@@ -85,7 +85,7 @@ Quando o panorama tiver **6+ itens acionáveis** (conta só item que pede decis�
 
 - **Aditivo, não substitutivo.** O panorama numerado em chat continua sendo a camada base (regra 12 do core: dois tempos com numeração única — o HTML nunca substitui o chat). O HTML é a camada rica de despacho. Os cards **reusam os mesmos números** do panorama (o item `7` do chat vira o card `id: '7'`).
 - **Override do usuário, sempre.** "quero visual" / "gera o decidir" → gerar mesmo com poucos itens. "resolve no chat" / "sem HTML" → não gerar. Sinais conflitantes → perguntar "visual ou chat?".
-- **Como gerar:** seguir `skills/decidir/SKILL.md` (preencher `assets/template.html`, ações da allowlist por tipo, salvar em `.prumo/state/decidir/`, copiar a fonte, offline). O usuário abre no próprio browser, despacha, clica "Copiar respostas" e cola de volta; o Prumo lê o bloco JSON e executa em camadas.
+- **Como gerar:** seguir `skills/decidir/SKILL.md` — autorar o `cards.json` (schema `prumo_decidir_cards.v1`) e rodar o builder `build-cards.mjs` (injeta no template, valida e **só escreve aprovado**; sem `node`, preencher `assets/template.html` à mão com a validação declarada como não executada), ações da allowlist por tipo, salvar em `.prumo/state/decidir/`, copiar a fonte, offline. **Nunca escrever gerador ad-hoc** — o custo que a #321 matou. O usuário abre no próprio browser, despacha, clica "Copiar respostas" e cola de volta; o Prumo lê o bloco JSON e executa em camadas.
 - **Acoplamento brando.** Se a skill `decidir` não estiver disponível ou a escrita do arquivo falhar, **cair no despacho em chat** — nunca travar o briefing.
 
 > O runtime **não** gera a `decidir` (descartado na #104: altitude errada — o runtime não cura email/agenda). A `decidir` aparece na curadoria rica conduzida pelo agente; o runtime entrega só a prévia.

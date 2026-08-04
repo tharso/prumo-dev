@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.90.0] - 2026-08-03
+
+### Added
+- **`cards.json` + `build-cards.mjs` — o decidir vira dados, não código (#321)** — o agente autora um JSON estrito (`prumo_decidir_cards.v1`: `doc` com os 11 campos do documento + `sections` + `points`) e o builder injeta nos marcadores do template, valida com o MESMO `validar()` do `validate-cards.mjs` (fonte única de verdade — zero regra duplicada) e **se recusa a escrever artefato reprovado**. Mata a classe de custo medida no relatório de 03/08: gerador ad-hoc de 22 KB por briefing, 2min04s sem nenhuma chamada de ferramenta (o maior bloco único do relógio) e a maior fatia dos 114k tokens de output. Executa a alternativa que a #287 adiou como decisão de produto — JSON estrito como contrato de autoria, com exemplos e docs convertidos. Os dois placeholders que vivem dentro de string JS (`storage_key`, `report_title`) entram via `JSON.stringify` — aspas no valor não quebram mais o documento. Sem `node`, o `cards.json` continua o artefato de autoria e o caminho manual segue com a validação declarada como não executada (regra da #287 intocada).
+
 ## [5.89.0] - 2026-08-03
 
 ### Added
