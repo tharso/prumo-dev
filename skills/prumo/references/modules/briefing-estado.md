@@ -22,8 +22,6 @@ O agente **NUNCA escreve** esse arquivo — estado do runtime (#214); consumo é
 
 **3. Passo 0 esgotado (PATH e embarcado), sem arquivo-semente, sem `local_panorama` no JSON, ou JSON com erro:** fallback integral — ler `PAUTA.md` e `INBOX.md` como sempre. Nunca inventar dado a partir de JSON parcial (regras do AGENT.md: não fabricar JSON, não simular runtime).
 
-Host de ponte: staging agrupado — inventário conhecido numa chamada, pós-gate noutra; nunca arquivo a arquivo.
-
 ## Faxina (checagem SEMPRE declarada, #217)
 
 **A checagem de faxina declara o resultado SEMPRE (#217 — verificável, não pulável):** a linha obrigatória do primeiro tempo (formato na montagem). O **contrato mínimo da checagem mora AQUI** (sem circularidade: checar não exige abrir o módulo executor); `faxina.md` carrega só quando alguma família está PENDENTE, pra executar. Os NÚMEROS vêm de `faxina.thresholds` da semente (#258): **efetivos**, com o override (`Custom/rules/faxina-thresholds.md`) já aplicado pelo runtime; `thresholds_source` diz a origem; `ignored_keys` lista o que o override trazia fora do vocabulário (reportar, nunca adivinhar). Sem semente, com `faxina.schema` ≠ `prumo_faxina_thresholds.v1` (o único aceito) ou com override divergente: carregar o doc **+ o override atual** — os três caminhos que trazem `faxina-thresholds.md` pra rota. **"Nada pendente" só depois de olhar as CINCO famílias do `faxina.md`** — as cinco checagens baratas:

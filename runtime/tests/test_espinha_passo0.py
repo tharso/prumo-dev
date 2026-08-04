@@ -56,15 +56,27 @@ class EscadaConhecePasso0(unittest.TestCase):
 
 
 class StagingAgrupado(unittest.TestCase):
-    def test_regra_de_batching_na_parte_sempre_carregada(self) -> None:
+    BRIEFING_SKILL = (
+        REPO_ROOT / "skills" / "briefing" / "SKILL.md"
+    ).read_text(encoding="utf-8")
+
+    def test_regra_de_batching_no_material_pre_staging(self) -> None:
         # 8 chamadas de staging onde 3–4 bastavam (relatório 18h, atrito 4).
-        # A regra vive em F1 — regra em módulo que não carrega não dispara
-        # (lição da #261).
+        # A regra precisa estar em contexto ANTES do primeiro staging — e o
+        # único material garantido nesse momento é o corpo da própria skill,
+        # carregado na invocação (Codex, 322-r1: em briefing-estado.md, F1,
+        # ela chegava DEPOIS do staging de F0 que deveria governar).
         self.assertIn(
             "staging agrupado — inventário conhecido numa chamada, pós-gate noutra",
-            ESTADO,
+            self.BRIEFING_SKILL,
         )
-        self.assertIn("nunca arquivo a arquivo", ESTADO)
+        self.assertIn("nunca arquivo a arquivo", self.BRIEFING_SKILL)
+
+    def test_batching_nao_regrediu_pro_modulo_de_f1(self) -> None:
+        # A mutação barata: alguém "organiza" a regra de volta pro estado
+        # (F1) — onde ela não governa nada. Uma casa só (duas listas, uma
+        # é drift).
+        self.assertNotIn("staging agrupado", ESTADO)
 
 
 if __name__ == "__main__":

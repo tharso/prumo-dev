@@ -53,7 +53,7 @@ A **lista canônica ÚNICA** de carregamento do briefing (#195, emendada pela #1
 
 **F4 (fechamento)** não carrega material novo: executa `## Escrita e fechamento` de `briefing-montagem.md` (em contexto desde F3) — escrita nos canais, `_processed.json` e marcação do dia. É FASE do contrato (#177/#180); sem linha na tabela por design.
 
-Cada item lido **uma vez**; já em contexto, não reler. Repo `Prumo/` inacessível → bundle instalado; atalho inventado não é interpretação.
+Cada item lido **uma vez**; já em contexto, não reler. Host de ponte: staging agrupado — inventário conhecido numa chamada, pós-gate noutra; nunca arquivo a arquivo. Repo `Prumo/` inacessível → bundle instalado; atalho inventado não é interpretação.
 
 ## Carregamento obrigatório
 
