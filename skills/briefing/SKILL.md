@@ -16,7 +16,7 @@ Você está rodando o morning briefing do Prumo. Rota **fásica** (#180): cada m
 
 ## Mapa de carregamento por fase
 
-A **lista canônica ÚNICA** de carregamento do briefing (#195, emendada pela #180: a Pré-carga virou este mapa). Nenhum outro arquivo mantém segunda enumeração — duas listas, uma é drift. Gatilho `sempre` carrega na abertura da fase; os demais, **no primeiro uso real** (deferred-load ≠ deferred-run: a obrigação RODA na fase dela; o texto só abre quando tem trabalho).
+A **lista canônica ÚNICA** de carregamento do briefing (#195/#180). Nenhum outro arquivo mantém segunda enumeração — duas listas, uma é drift. Gatilho `sempre` carrega na abertura da fase; os demais, **no primeiro uso real** (deferred-load ≠ deferred-run: a obrigação RODA na fase dela; o texto só abre quando tem trabalho).
 
 | Fase | Gatilho | Arquivo | Seção | Tipo |
 |---|---|---|---|---|
@@ -43,6 +43,7 @@ A **lista canônica ÚNICA** de carregamento do briefing (#195, emendada pela #1
 | F1 | família de faxina pendente (execução — a checagem mínima mora no estado) | `.prumo/skills/prumo/references/modules/faxina.md` | (integral) | executor |
 | F2 | `MAPA-AUTORAL.md` com nota (gramática dos marcadores) | `.prumo/skills/prumo/references/modules/load-policy.md` | `## Listagem de diretórios (perímetro de leitura, #194)` | marcadores (#245) |
 | F2 | antes da triagem local do Inbox4Mobile, de caixa declarada OU de abrir email/agenda | `.prumo/skills/prumo/references/modules/briefing-canais.md` | (integral) | canais |
+| F2 | zero suspeito OU validar/registrar assinatura | `.prumo/skills/prumo/references/modules/canais-prova-predicado.md` | (integral) | prova (#236) |
 | F2 | Inbox4Mobile com itens novos | `.prumo/skills/prumo/references/modules/inbox-processing.md` | (integral) | inbox |
 | F2 | antes de filtrar email (se existir) | `Prumo/Referencias/EMAIL-CURADORIA.md` | (integral) | curadoria |
 | F2 | canal de email disponível E EMAIL-CURADORIA.md ausente (criação) | `.prumo/skills/prumo/references/file-templates.md` | `## Prumo/Referencias/EMAIL-CURADORIA.md` | template |
@@ -57,7 +58,7 @@ Cada item lido **uma vez**; já em contexto, não reler. Host de ponte: staging 
 
 ## Carregamento obrigatório
 
-O mapa acima é a única lista deste briefing. A **espinha** (`briefing-procedure.md`) manda na ordem dos passos; em conflito com este resumo, ela vence; `ASSERT:` do core vence tudo.
+A **espinha** (`briefing-procedure.md`) manda na ordem dos passos; em conflito com este resumo, ela vence; `ASSERT:` do core vence tudo.
 
 ## O runtime é a prévia, não o briefing
 

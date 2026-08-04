@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.92.0] - 2026-08-03
+
+### Changed
+- **O canais ganha quebra fásica — o protocolo da prova vira satélite de F2 (#323)** — `briefing-canais.md` carregava 27,8 KB integrais em F2, e na execução de 03/08 a prova de predicado (#236), o protocolo de assinaturas e a cardinalidade (#308) não foram acionados — pagos mesmo assim. O bloco inteiro moveu verbatim pro satélite `canais-prova-predicado.md`, que só carrega pelo gatilho do mapa único ("zero suspeito OU validar/registrar assinatura" — a segunda perna é achado do review: sem ela a validação era inalcançável); o núcleo mantém o stub declarado com o princípio de decisão e o dever de degradação. **F2 padrão: 27.818 → 21.966 bytes (−21%)**. Precedência (#243) e defesas de terceiros (#156) ficam no núcleo por decisão declarada (endereço estável; contrato fundante). Registry de invariantes repontado pro dono novo (padrão #304); guard do mapa com a linha nova; o custo da linha no cesto F0/F1 foi pago com podas no próprio SKILL.md (6806 → 6805).
+
 ## [5.91.0] - 2026-08-03
 
 ### Changed

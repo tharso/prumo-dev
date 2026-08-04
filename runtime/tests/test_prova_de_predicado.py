@@ -22,6 +22,9 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SKILLS = REPO_ROOT / "skills"
 CANAIS = SKILLS / "prumo" / "references" / "modules" / "briefing-canais.md"
+# #323: o protocolo saiu do núcleo dos canais pro satélite de F2 — o dono
+# do texto mudou de arquivo; o stub em briefing-canais.md só aciona.
+SATELITE = SKILLS / "prumo" / "references" / "modules" / "canais-prova-predicado.md"
 MONTAGEM = SKILLS / "prumo" / "references" / "modules" / "briefing-montagem.md"
 FILE_TEMPLATES = SKILLS / "prumo" / "references" / "file-templates.md"
 
@@ -41,10 +44,10 @@ def _flat(text: str) -> str:
 
 
 def _secao_do_protocolo() -> str:
-    """O corpo da seção dona, do título até o próximo `### `."""
-    texto = CANAIS.read_text(encoding="utf-8")
+    """O corpo da seção dona, do título até o próximo `### ` (#323: no satélite)."""
+    texto = SATELITE.read_text(encoding="utf-8")
     inicio = texto.find(TITULO)
-    assert inicio != -1, f"seção dona sumiu de {CANAIS.name}"
+    assert inicio != -1, f"seção dona sumiu de {SATELITE.name}"
     fim = texto.find("\n### ", inicio + len(TITULO))
     return texto[inicio : fim if fim != -1 else len(texto)]
 
@@ -257,7 +260,7 @@ class RegistroTest(unittest.TestCase):
 
     def test_schema_identico_nos_dois_lados(self) -> None:
         """Dono e template divergindo em silêncio já foi bug aqui (#195)."""
-        for nome, path in (("template", FILE_TEMPLATES), ("canais", CANAIS)):
+        for nome, path in (("template", FILE_TEMPLATES), ("prova-predicado", SATELITE)):
             self.assertIn(self.SCHEMA, _flat(path.read_text(encoding="utf-8")), f"schema ausente em {nome}")
         self.assertIn("## Compatibilidade da busca", _flat(FILE_TEMPLATES.read_text(encoding="utf-8")))
 
@@ -329,10 +332,12 @@ class DonoUnicoTest(unittest.TestCase):
     def test_protocolo_declarado_uma_vez_so(self) -> None:
         offenders = []
         for md in sorted(SKILLS.rglob("*.md")):
-            if md == CANAIS:
+            if md == SATELITE:
                 continue
             if _copia_do_protocolo(_flat(md.read_text(encoding="utf-8"))):
                 offenders.append(str(md.relative_to(REPO_ROOT)))
+        # O stub em briefing-canais.md NÃO pode acumular o protocolo de
+        # volta — o guard varre o núcleo como qualquer outro módulo.
         self.assertEqual(offenders, [], f"protocolo duplicado fora do dono: {offenders}")
 
     def test_guard_de_copia_reprova_copia_e_aprova_ponteiro(self) -> None:
@@ -481,7 +486,7 @@ class CardinalidadeTest(unittest.TestCase):
     operacional do texto."""
 
     def test_condicoes_criticas_na_ordem(self) -> None:
-        texto = CANAIS.read_text(encoding="utf-8")
+        texto = SATELITE.read_text(encoding="utf-8")
         marcas = (
             "testemunha por cardinalidade (#308)",
             "assinatura da busca já `VALIDADA`",
