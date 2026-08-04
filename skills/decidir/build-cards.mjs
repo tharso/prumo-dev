@@ -157,38 +157,50 @@ function montar(dados, template) {
     html = cabecalho + html.slice(fimCabecalho);
   }
 
+  // Substituição em UMA passada com callback: o texto que o callback
+  // devolve nunca é re-lido pelo scanner (garantia da spec do replace),
+  // então valor com cara de placeholder — ou de marcador — atravessa
+  // intacto em vez de receber a substituição seguinte dentro de si
+  // (Codex, 321-r2: doc.title = "__KICKER__" saía como o valor do
+  // kicker, exit 0, corrupção silenciosa). Callback também não expande
+  // `$&` — a proteção que o split/join dava, a função dá de graça.
+  const valores = new Map();
   for (const [campo, token] of Object.entries(CAMPOS_HTML)) {
-    if (!html.includes(token)) erros.push(`template sem o placeholder ${token}`);
-    html = substituir(html, token, doc[campo]);
+    valores.set(token, () => doc[campo]);
   }
   for (const [campo, token] of Object.entries(CAMPOS_JS)) {
-    if (!html.includes(token)) erros.push(`template sem o placeholder ${token}`);
-    html = substituir(html, token, jsonParaScript(String(doc[campo])));
+    valores.set(token, () => jsonParaScript(String(doc[campo])));
   }
+  valores.set("/*__SECTIONS__*/", () =>
+    sections.map((s) => "  " + jsonParaScript(s)).join(",\n"),
+  );
+  valores.set("/*__POINTS__*/", () =>
+    points.map((p) => "  " + jsonParaScript(p)).join(",\n"),
+  );
 
-  // Resíduo conferido ANTES da injeção de dados: neste ponto, token
-  // sobrando só pode ser substituição que falhou — conteúdo de card ainda
-  // não entrou, então não há falso positivo possível.
-  for (const token of Object.values(CAMPOS_HTML)) {
-    if (html.includes(token)) erros.push(`${token} sobrou após a substituição`);
-  }
-  for (const token of Object.values(CAMPOS_JS)) {
-    if (html.includes(token.slice(1, -1))) {
-      erros.push(`${token.slice(1, -1)} sobrou após a substituição`);
+  const nusJS = new Set(Object.values(CAMPOS_JS).map((t) => t.slice(1, -1)));
+  const vistos = new Set();
+  const RE_TOKENS =
+    /'__STORAGE_KEY__'|'__REPORT_TITLE__'|\/\*__(?:SECTIONS|POINTS)__\*\/|__[A-Z][A-Z_]*__/g;
+  html = html.replace(RE_TOKENS, (tok) => {
+    const gera = valores.get(tok);
+    if (!gera) {
+      // Forma nua de token de string JS fora do cabeçalho é drift do
+      // template; `__ASSIM__` e afins são documentação e ficam como estão.
+      if (nusJS.has(tok)) erros.push(`${tok} fora de contexto de string JS no template`);
+      return tok;
     }
+    vistos.add(tok);
+    return gera();
+  });
+
+  // Presença conferida pelo que a passada VIU, não por re-busca no
+  // resultado — busca no resultado acusaria falso positivo quando um
+  // valor legitimamente contém a string de um token.
+  for (const esperado of valores.keys()) {
+    if (!vistos.has(esperado)) erros.push(`template sem o placeholder ${esperado}`);
   }
   if (erros.length) throw new ErroDeConteudo(erros);
-
-  for (const [marcador, lista] of [
-    ["/*__SECTIONS__*/", sections],
-    ["/*__POINTS__*/", points],
-  ]) {
-    if (!html.includes(marcador)) {
-      throw new ErroDeConteudo([`template sem o marcador ${marcador}`]);
-    }
-    const injecao = lista.map((item) => "  " + jsonParaScript(item)).join(",\n");
-    html = substituir(html, marcador, injecao);
-  }
 
   return html;
 }

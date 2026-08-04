@@ -299,6 +299,29 @@ class BuilderTest(unittest.TestCase):
         self.assertIn("\\u003c/script", html)
         self.assertTrue(_validar_saida(destino)["ok"])
 
+    def test_valor_com_cara_de_placeholder_atravessa_intacto(self) -> None:
+        # Codex 321-r2 (P2): a substituição sequencial reprocessava valor já
+        # inserido — doc.title = "__KICKER__" saía como o valor do kicker no
+        # <title>, exit 0, validador aprovando. Passada única com callback:
+        # o texto devolvido nunca é re-lido pelo scanner.
+        cards = _cards()
+        cards["doc"]["title"] = "__KICKER__"
+        cards["doc"]["kicker"] = "KICKER-REAL"
+        r, destino = _build(cards)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        html = destino.read_text(encoding="utf-8")
+        self.assertIn("<title>__KICKER__</title>", html)
+
+    def test_valor_com_cara_de_marcador_nao_recebe_injecao(self) -> None:
+        # A mesma família, no marcador de dados: um doc que cita
+        # /*__POINTS__*/ literalmente não pode ganhar os cards DENTRO de si.
+        cards = _cards()
+        cards["doc"]["intro"] = "documentação cita /*__POINTS__*/ literal"
+        r, destino = _build(cards)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        html = destino.read_text(encoding="utf-8")
+        self.assertIn("documentação cita /*__POINTS__*/ literal", html)
+
     def test_points_vazio_nao_sai(self) -> None:
         # Documento sem card não decide nada — e o validador aprovaria o
         # vazio (0 erros em 0 cards). A guarda é do builder.
