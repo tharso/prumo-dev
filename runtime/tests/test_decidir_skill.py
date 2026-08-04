@@ -148,7 +148,9 @@ class DecidirTriagemNoEscuroGuards(unittest.TestCase):
         text = (SKILL_DIR / "references" / "exemplos-de-cards.md").read_text(encoding="utf-8")
         self.assertIn("Texto integral", text)
         self.assertIn("triagem no escuro", text)
-        self.assertIn("conteudo_b64:", text)  # o card BOM usa o transporte base64, não o contexto
+        # O card BOM usa o transporte base64, não o contexto. Âncora na forma
+        # JSON estrito — o formato de autoria desde a #321 (builder).
+        self.assertIn('"conteudo_b64":', text)
 
 
 class DecidirConteudoEscapadoGuards(unittest.TestCase):

@@ -46,7 +46,7 @@ Se a geração falhar (não conseguiu escrever o arquivo), **cair no despacho em
 
 ## Como gerar
 
-Use `assets/template.html`. A mecânica (estado em localStorage, ações por-card, relatório markdown + JSON, clipboard) já é verificada — **preencha, não reescreva**.
+O caminho canônico é **dados, não código**: autore um `cards.json` e rode o builder `build-cards.mjs` — ele preenche `assets/template.html`, valida e escreve o HTML final. A mecânica do template (estado em localStorage, ações por-card, relatório markdown + JSON, clipboard) já é verificada — **alimente-a com dados, não a reescreva**. Escrever gerador ad-hoc de preenchimento é a classe de custo que a #321 matou (22 KB de Python por briefing, o maior bloco único de tempo do briefing de 03/08).
 
 1. **Reuse os números do panorama.** No briefing, o item numerado `7` do panorama vira o card de `id: '7'`. O usuário responde "o 7" no mesmo número que viu no chat. Nunca renumerar.
 
@@ -57,17 +57,21 @@ Use `assets/template.html`. A mecânica (estado em localStorage, ações por-car
    - **`escolha`** — decisões entre alternativas (foco do dia, qual caminho). Opções A/B/C com **texto final** e uma `rec: true`.
    - **Default do detalhe (#246):** ao montar a ação, preencha `default` quando houver valor óbvio — `discard` sempre leva `"não interessa mais"`; `keep_with_reason` só leva default quando o card **já exibe motivo e tag concretos** inferidos do item (sem os dois, deixe sem default: `requires_missing` cobra, e a ficha canônica manda perguntar). O relatório devolve `default_used` + `resolved_detail`; comentário digitado vence o default.
 
-3. **Preencha CONFIG e os placeholders:**
-   - `storageKey` **única por rodada**: `prumo-decidir-<data>-<hora>-<hash-curto>` (ex.: `prumo-decidir-2026-06-23-0830-a1b2`). Dois briefings no mesmo dia precisam de chaves diferentes, senão o estado contamina.
-   - `__REPORT_TITLE__`, `__HEADLINE__`, `__META__`, `__HOWTO__` etc. em PT.
+3. **Monte o `cards.json`** — JSON **estrito** (chaves entre aspas duplas, sem comentário, sem apóstrofo como delimitador; o formato JS-literal antigo o builder recusa). Topo: `{"schema": "prumo_decidir_cards.v1", "doc": {...}, "sections": [...], "points": [...]}`.
+   - `doc` preenche o corpo do documento — `title`, `kicker`, `headline`, `meta`, `intro`, `howto`, `finale_title`, `finale_text`, `finale_hint`, `storage_key`, `report_title` — **todos obrigatórios, strings**, em PT.
+   - `storage_key` **única por rodada**: `prumo-decidir-<data>-<hora>-<hash-curto>` (ex.: `prumo-decidir-2026-06-23-0830-a1b2`). Dois briefings no mesmo dia precisam de chaves diferentes, senão o estado contamina. Aspas no valor não quebram o documento — o builder injeta via `JSON.stringify`.
+   - `sections`/`points` seguem o schema comentado no próprio template e os `references/exemplos-de-cards.md`. Guarde o `cards.json` de trabalho em `.prumo/state/rascunho/` (território de intermediários do agente), nunca em pasta do usuário.
 
-4. **Salve e mantenha offline:**
+4. **Rode o builder:** `node skills/decidir/build-cards.mjs <cards.json> <saida.html>` (no workspace: `.prumo/skills/decidir/build-cards.mjs`; `--json` pra saída de máquina). Ele injeta os dados nos marcadores, valida por dentro com o MESMO `validar()` do validador e **se recusa a escrever quando reprova** — artefato inválido não ganha arquivo com cara de entregável.
+   - **Sem `node` no host:** o `cards.json` continua sendo o artefato de autoria. Preencha o template à mão com os MESMOS dados (placeholders `__X__`, marcadores `/*__SECTIONS__*/` e `/*__POINTS__*/`) e siga a escada de verificação do passo 6 — a validação sai **declarada como não executada**.
+
+5. **Salve e mantenha offline:**
    - Caminho: `.prumo/state/decidir/briefing-<data>-<hora>-<hash>.html`. **Nunca** em pasta de build (`public/`, `dist/`, `static/`).
    - **Copie `assets/Boliand.otf` para a mesma pasta do HTML** (o `@font-face` referencia `Boliand.otf` relativo). Sem a cópia, o título cai no fallback de sistema — funciona, só perde o display da marca.
    - **Sem rede na mecânica.** A mecânica do documento (fontes, JS, CSS) **não pode depender de rede** — nada de Google Fonts, CDN ou analytics; a fonte é local (`Boliand.otf` copiada). **Mas os links de conteúdo do usuário vêm ATIVOS** (`<a href="…" target="_blank" rel="noopener">`): vídeo, artigo, qualquer URL que o item carrega. A regra offline protege a mecânica, não cega o conteúdo — card com link inerte é triagem no escuro.
 
-5. **Verifique antes de entregar** (a entrega é um artefato — entregue testado):
-   - **Rode o validador:** `node skills/decidir/validate-cards.mjs <arquivo.html>` (no workspace: `.prumo/skills/decidir/validate-cards.mjs`). Ele confere o que engole cards antes de eles sumirem — tag não permitida ou `<` solto nos campos de markup, `sec` que não existe em `SECTIONS` (esse card some **em silêncio**, sem erro e sem console), id ou chave de ação repetida, `conteudo_b64` com quebra de linha. Roda em milissegundos, sem rede. **Não conte `<article class="card">` com `grep`:** essa string existe uma única vez no arquivo, dentro do template — a contagem daria 1 com 29 cards ou com zero.
+6. **Verifique antes de entregar** (a entrega é um artefato — entregue testado):
+   - **Validação:** quem gerou pelo builder já validou — é o mesmo `validar()`. No caminho manual (sem builder), rode `node skills/decidir/validate-cards.mjs <arquivo.html>` (no workspace: `.prumo/skills/decidir/validate-cards.mjs`). Ele confere o que engole cards antes de eles sumirem — tag não permitida ou `<` solto nos campos de markup, `sec` que não existe em `SECTIONS` (esse card some **em silêncio**, sem erro e sem console), id ou chave de ação repetida, `conteudo_b64` com quebra de linha. Roda em milissegundos, sem rede. **Não conte `<article class="card">` com `grep`:** essa string existe uma única vez no arquivo, dentro do template — a contagem daria 1 com 29 cards ou com zero.
    - **Card sem escuro (todo card baseado em fonte, não só inbox):** item de inbox tem `conteudo_b64` inline **ou** `link` ativo de visualização; email tem **remetente + trecho citável** (ou link pra thread); evento tem o dado que sustenta a decisão (horário, quem convida). Card que só descreve a fonte, sem conteúdo nem link, não sai — meta-descrição de gravata ainda é triagem no escuro.
    - **Ações que cabem:** `Delegar` só com **delegado plausível** no contexto do item; `Confirmar/Recusar` só com RSVP. Fileira idêntica à tabela da allowlist é sinal de que faltou filtrar.
    - **NUNCA instalar browser, runtime ou dependência para validar.** Nada de `npm i`, download de Chromium, Playwright ou equivalente: um briefing real gastou **186 segundos** (28% do relógio) fazendo isso — para conferir o que o validador acima confere em milissegundos. O agente **não renderiza** (ver o topo desta skill); "se houver browser" significa aproveitar um que já exista, nunca fabricá-lo.
@@ -103,6 +107,7 @@ Quando o usuário colar o relatório:
 
 ## Referências
 
-- `assets/template.html` — o template (mecânica verificada; preencha, não reescreva).
+- `build-cards.mjs` — o builder: `cards.json` (schema `prumo_decidir_cards.v1`) → HTML validado. Recusa escrever artefato reprovado.
+- `assets/template.html` — o template (mecânica verificada; o builder o preenche — à mão só no fallback sem node).
 - `references/acoes-allowlist.md` — allowlist de ações por tipo de item, com `effect`, `requires` e risco. **Selecione daqui; não invente verbos.**
 - `references/exemplos-de-cards.md` — cards reais de referência (bons e ruins) para `despacho` e `escolha`.

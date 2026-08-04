@@ -11,8 +11,12 @@
   markdown humano.
 
   COMO USAR
-  - Substitua os placeholders __ASSIM__, preencha CONFIG e os dados
-    SECTIONS/POINTS no bloco <script>.
+  - Caminho canônico: autore um cards.json (schema prumo_decidir_cards.v1)
+    e rode `node skills/decidir/build-cards.mjs cards.json saida.html` —
+    ele injeta os dados, valida via validate-cards.mjs e só escreve
+    aprovado (#321).
+  - Fallback sem node: substitua os placeholders __ASSIM__, preencha
+    CONFIG e os dados SECTIONS/POINTS no bloco <script>.
   - NÃO altere a mecânica (estado, relatório, clipboard) — verificada.
   - O arquivo é aberto pelo usuário no próprio browser (file://),
     offline. Ao terminar, o usuário clica "Copiar respostas" e cola
