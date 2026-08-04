@@ -98,6 +98,16 @@ function substituir(html, token, valor) {
   return html.split(token).join(valor);
 }
 
+// `</script>` dentro de um valor JSON fecha o <script> do template — o
+// parser de HTML roda ANTES do de JS, então a sequência vale mesmo dentro
+// de string. E o validador não polícia `link.href`, que carrega URL de
+// terceiro (item de inbox): sem isto, o builder emitia artefato "aprovado"
+// e executável (Codex, 321-r1). O escape < decodifica pro MESMO
+// `<` no parse: dado idêntico, HTML cego pra tag.
+function jsonParaScript(valor) {
+  return JSON.stringify(valor).replace(/</g, "\\u003c");
+}
+
 function montar(dados, template) {
   const erros = [];
   const doc = dados.doc;
@@ -128,18 +138,32 @@ function montar(dados, template) {
   if (erros.length) throw new ErroDeConteudo(erros);
 
   let html = template;
+
+  // O cabeçalho <!-- ... --> documenta os placeholders com os MESMOS
+  // tokens do corpo. Valor NENHUM entra em comentário HTML — um `-->` no
+  // valor fecharia o comentário e o resto viraria markup. Os tokens de lá
+  // viram marcador fixo ANTES da substituição do corpo; o valor real já
+  // vive no lugar certo (corpo/CONFIG).
+  const fimCabecalho = html.indexOf("-->");
+  if (fimCabecalho !== -1) {
+    let cabecalho = html.slice(0, fimCabecalho);
+    const nus = [
+      ...Object.values(CAMPOS_HTML),
+      ...Object.values(CAMPOS_JS).map((t) => t.slice(1, -1)),
+    ];
+    for (const token of nus) {
+      cabecalho = substituir(cabecalho, token, "(preenchido pelo build-cards.mjs)");
+    }
+    html = cabecalho + html.slice(fimCabecalho);
+  }
+
   for (const [campo, token] of Object.entries(CAMPOS_HTML)) {
     if (!html.includes(token)) erros.push(`template sem o placeholder ${token}`);
     html = substituir(html, token, doc[campo]);
   }
   for (const [campo, token] of Object.entries(CAMPOS_JS)) {
     if (!html.includes(token)) erros.push(`template sem o placeholder ${token}`);
-    html = substituir(html, token, JSON.stringify(String(doc[campo])));
-    // O comentário-documentação do template cita estes dois SEM aspas
-    // ("Placeholders do corpo: __STORAGE_KEY__ …"). Segunda passada na
-    // forma nua, simétrica ao que já acontece com os 9 de HTML — senão o
-    // artefato final sai com token cru no cabeçalho.
-    html = substituir(html, token.slice(1, -1), doc[campo]);
+    html = substituir(html, token, jsonParaScript(String(doc[campo])));
   }
 
   // Resíduo conferido ANTES da injeção de dados: neste ponto, token
@@ -162,7 +186,7 @@ function montar(dados, template) {
     if (!html.includes(marcador)) {
       throw new ErroDeConteudo([`template sem o marcador ${marcador}`]);
     }
-    const injecao = lista.map((item) => "  " + JSON.stringify(item)).join(",\n");
+    const injecao = lista.map((item) => "  " + jsonParaScript(item)).join(",\n");
     html = substituir(html, marcador, injecao);
   }
 

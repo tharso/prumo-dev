@@ -275,6 +275,30 @@ class BuilderTest(unittest.TestCase):
         self.assertIn(json.dumps(cards["doc"]["storage_key"]), html)
         self.assertTrue(_validar_saida(destino)["ok"])
 
+    def test_fecha_script_no_dado_nao_escapa_do_literal(self) -> None:
+        # `</script>` num valor JSON fecha o <script> do template — o parser
+        # de HTML roda ANTES do de JS, e o validador não polícia href (Codex,
+        # 321-r1). O builder escapa `<` como \u003c: dado idêntico após o
+        # parse, HTML cego pra tag. href é o vetor real: URL de item de inbox
+        # é conteúdo de terceiro.
+        cards = _cards()
+        cards["points"][0]["link"] = {
+            "label": "thread",
+            "href": "https://x/</script><script>alert(1)</script>",
+        }
+        cards["doc"]["report_title"] = "Relatório </script> do dia"
+        r, destino = _build(cards)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        html = destino.read_text(encoding="utf-8")
+        tpl = TEMPLATE.read_text(encoding="utf-8")
+        self.assertEqual(
+            html.count("</script>"),
+            tpl.count("</script>"),
+            "dado injetado carregou </script> cru — fecha o script do template",
+        )
+        self.assertIn("\\u003c/script", html)
+        self.assertTrue(_validar_saida(destino)["ok"])
+
     def test_points_vazio_nao_sai(self) -> None:
         # Documento sem card não decide nada — e o validador aprovaria o
         # vazio (0 erros em 0 cards). A guarda é do builder.
