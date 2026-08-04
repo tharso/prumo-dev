@@ -156,6 +156,8 @@ class IdentidadeDaEvidenciaTest(unittest.TestCase):
     def test_gatilho_do_mapa_cobre_variante_zero_canais(self) -> None:
         # Sem esta perna, F2 nunca abre no host sem email/agenda/inbox e a
         # reabertura fora da cauda fica suprimida com briefing "completo".
+        # "Válido" importa (325-r3): evento STALE na cauda não dispensa a
+        # busca — um consumido fora dela pareceria evidência nova.
         skill = (
             REPO_ROOT / "skills" / "briefing" / "SKILL.md"
         ).read_text(encoding="utf-8")
@@ -163,7 +165,27 @@ class IdentidadeDaEvidenciaTest(unittest.TestCase):
             ln for ln in skill.splitlines()
             if "briefing-canais.md" in ln and "| F2 |" in ln
         )
-        self.assertIn("OU suprimido sem evento na cauda", linha_canais)
+        self.assertIn("OU suprimido sem evento válido na cauda", linha_canais)
+
+    def test_evento_stale_na_cauda_nao_dispensa_a_busca(self) -> None:
+        # Codex 325-r3 (P1): E2 stale na cauda bloqueava a busca por E1
+        # consumida fora dela — E1 parecia nova e re-queimava.
+        self.assertIn("sem evento VÁLIDO na cauda", CANAIS)
+        self.assertIn("evento stale na cauda NÃO dispensa a busca", CANAIS)
+
+    def test_identidade_do_item_exclui_os_markers(self) -> None:
+        # Codex 325-r3 (P1): com a linha inteira como chave, mudar o cobrar
+        # mudaria exatamente a chave usada pra achar o histórico.
+        self.assertIn("Identidade do item (Codex, 325-r3)", CANAIS)
+        self.assertIn("sem os markers `| chave: valor` e sem numeração", CANAIS)
+        self.assertIn("NUNCA inclui o marker que a re-supressão altera", CANAIS)
+
+    def test_busca_tem_teto_declarado(self) -> None:
+        # Codex 325-r3 (P2): recorte sem teto pode devolver uma parcela
+        # arbitrária do REGISTRO num item recorrente.
+        self.assertIn("teto explícito: as 20 linhas mais recentes do item", CANAIS)
+        self.assertIn("declarar o corte", CANAIS)
+        self.assertIn('"histórico truncado"', CANAIS)
 
 
 if __name__ == "__main__":
