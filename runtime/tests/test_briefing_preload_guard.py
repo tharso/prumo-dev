@@ -206,7 +206,8 @@ GUARDRAIL_OWNERS: dict[str, Path] = {
     "primeiro checar se o conector ativo lê anexo": CANAIS,
     "nas threads** selecionar as mensagens EXTERNAS recebidas": CANAIS,
     "Declarar a cobertura em uma linha": CANAIS,
-    # #236 — o protocolo mora nos CANAIS (é lá que a query roda); a completude
+    # #236 — o protocolo mudou pro SATÉLITE na #323 (o núcleo dos canais
+    # mantém só o stub-gatilho, onde a query roda); a completude
     # do briefing segue dona da MONTAGEM. Dois donos semânticos de
     # `--mark-done` foi o risco que o review do plano pegou.
     # #323: o protocolo saiu do núcleo dos canais pro satélite — os
