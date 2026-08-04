@@ -38,4 +38,4 @@ Atestar limpeza olhando só uma parte é mentira com crachá novo. Família pend
 
 Marker `| cobrar: DD/MM`: elegível quando a data é hoje, véspera ou passada; 2+ dias à frente fica fora — não cobrar antes da hora. Sem marker: sempre. Ambíguo: fail-open. **Exceção (#325) — evidência queima supressão:** item suprimido com reabertura VÁLIDA no REGISTRO volta VIVO, reaberto — validade, busca além da cauda (recorte dirigido) e cruzamento: canais, F2. `visible_today` da semente calcula a regra base (paridade por teste); a exceção aplica-se DEPOIS; leitura direta aplica tudo manualmente.
 
-Não persistir estado entre sessões.
+Estado transitório não cruza sessões.

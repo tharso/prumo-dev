@@ -189,7 +189,7 @@ class IdentidadeDaEvidenciaTest(unittest.TestCase):
 
 
 
-class BordasDoRound4Test(unittest.TestCase):
+class HistoricoTruncadoEColisoesTest(unittest.TestCase):
     """Codex 325-r4: o teto não pode tornar falsa a promessa do consumo, e
     a identidade normalizada não pode colidir em silêncio."""
 
