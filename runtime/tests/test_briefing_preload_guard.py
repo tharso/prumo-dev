@@ -101,7 +101,7 @@ EXPECTED_MAP = frozenset(
         ),
         (
             "F2",
-            "zero suspeito sem assinatura VALIDADA",
+            "zero suspeito OU validar/registrar assinatura",
             f"{_M}/canais-prova-predicado.md",
             "(integral)",
             "prova (#236)",

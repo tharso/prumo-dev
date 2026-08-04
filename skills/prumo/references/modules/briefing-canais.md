@@ -57,7 +57,7 @@ Usar integração nativa de Gmail MCP e Calendar MCP como fonte primária.
 
 ### Prova de predicado de busca (#236) — stub; o protocolo mora no satélite
 
-**Fecha** o *zero silencioso* (query vazia lida como "não tem nada"); **não fecha** resultado incompleto. **Zero em braço com predicado só é confiável com assinatura `VALIDADA` ou por `VAZIO CONFIRMADO`** — qualquer outro zero é suspeito: **carregar `canais-prova-predicado.md`** (estados, protocolo, testemunha por cardinalidade #308, orçamento, registro em `EMAIL-CURADORIA.md` — tudo mora lá) e seguir o protocolo antes de afirmar cobertura. Braço degradado é nomeado na linha de cobertura (Política de cobertura, Camada 2).
+**Fecha** o *zero silencioso* (query vazia lida como "não tem nada"); **não fecha** resultado incompleto. **Zero em braço com predicado só é confiável com assinatura `VALIDADA` ou por `VAZIO CONFIRMADO`** — qualquer outro zero é suspeito: **carregar `canais-prova-predicado.md`** (estados, protocolo, testemunha por cardinalidade #308, orçamento, registro em `EMAIL-CURADORIA.md` — tudo mora lá) e seguir o protocolo antes de afirmar cobertura. **Carregar TAMBÉM ao validar ou registrar assinatura** — resultado não-vazio cuja metadata prova o predicado é a chance de `VALIDADA`, e o orçamento e o registro append-only moram no satélite; sem carregá-lo, a assinatura fica eternamente não-validada e todo zero futuro degrada à toa (Codex, 323-r1). Braço degradado é nomeado na linha de cobertura (Política de cobertura, Camada 2).
 
 ### Pipeline de curadoria em camadas
 
