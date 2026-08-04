@@ -84,6 +84,25 @@ class LocalizadorTest(unittest.TestCase):
         vazio = Path(tempfile.mkdtemp())
         self.assertIsNone(store_clone.locate_prumo_clone(store_root=vazio))
 
+    def test_registry_na_forma_repo_com_clone_fora_de_marketplaces(self) -> None:
+        # Codex 324-r1: o registry também representa fontes como
+        # {"source": "github", "repo": "tharso/prumo"} — e o installLocation
+        # pode viver FORA de marketplaces/, onde a varredura não alcança.
+        # Só a forma url localizava; a forma repo caía em falso "ausente".
+        root = _montar_store(registry=None, clone_de_verdade=False)
+        fora = root / "outra-pasta" / "clone-prumo"
+        (fora / "skills" / "prumo").mkdir(parents=True)
+        (fora / "VERSION").write_text("5.83.2\n", encoding="utf-8")
+        (root / "known_marketplaces.json").write_text(
+            json.dumps({"prumo-marketplace": {
+                "source": {"source": "github", "repo": "tharso/prumo"},
+                "installLocation": str(fora),
+            }}),
+            encoding="utf-8",
+        )
+        clone = store_clone.locate_prumo_clone(store_root=root)
+        self.assertEqual(str(clone), str(fora))
+
 
 class ColetorTest(unittest.TestCase):
     def test_fresca_quando_clone_bate_com_o_remoto(self) -> None:

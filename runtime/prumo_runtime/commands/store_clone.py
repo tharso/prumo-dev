@@ -49,9 +49,16 @@ def locate_prumo_clone(store_root: Path | None = None) -> Path | None:
             if not isinstance(entry, dict):
                 continue
             source = entry.get("source")
-            url = str(source.get("url", "")) if isinstance(source, dict) else ""
+            # O registry usa DUAS formas de fonte: {"source": "git",
+            # "url": "https://github.com/tharso/prumo.git"} e {"source":
+            # "github", "repo": "tharso/prumo"}. Só a url deixava a forma
+            # repo cair em falso "ausente" quando o installLocation vive
+            # fora de marketplaces/ (Codex, 324-r1).
+            alvo = ""
+            if isinstance(source, dict):
+                alvo = f"{source.get('url', '')} {source.get('repo', '')}"
             location = entry.get("installLocation")
-            if location and "tharso/prumo" in url:
+            if location and "tharso/prumo" in alvo:
                 candidate = Path(location)
                 if candidate.is_dir():
                     return candidate
