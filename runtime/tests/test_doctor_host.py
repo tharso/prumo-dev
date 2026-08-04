@@ -30,9 +30,14 @@ def _args(**kw):
 class TestDoctorHostPayload(unittest.TestCase):
     def test_json_payload_carrega_os_fatos_do_host(self):
         stdout = io.StringIO()
-        with mock.patch.object(doctor, "_probe_network", return_value="ok"):
-            with contextlib.redirect_stdout(stdout):
-                rc = doctor.run_doctor(_args(format="json"))
+        # #324: a sonda virou fetch do VERSION remoto (uma ida só, com cb);
+        # a store é injetada pra não tocar a $HOME real do runner.
+        with mock.patch.object(doctor, "_fetch_remote", return_value="9.9.9"):
+            with mock.patch.object(
+                doctor, "_collect_store", return_value={"found": False, "status": "ausente"}
+            ):
+                with contextlib.redirect_stdout(stdout):
+                    rc = doctor.run_doctor(_args(format="json"))
         self.assertEqual(rc, 0)
         payload = json.loads(stdout.getvalue())
         self.assertEqual(payload["schema"], "prumo_doctor_host.v1")
@@ -52,9 +57,12 @@ class TestDoctorHostPayload(unittest.TestCase):
 
     def test_texto_diz_o_essencial(self):
         stdout = io.StringIO()
-        with mock.patch.object(doctor, "_probe_network", return_value="blocked"):
-            with contextlib.redirect_stdout(stdout):
-                rc = doctor.run_doctor(_args())
+        with mock.patch.object(doctor, "_fetch_remote", return_value=None):
+            with mock.patch.object(
+                doctor, "_collect_store", return_value={"found": False, "status": "ausente"}
+            ):
+                with contextlib.redirect_stdout(stdout):
+                    rc = doctor.run_doctor(_args())
         self.assertEqual(rc, 0)
         texto = stdout.getvalue()
         self.assertIn(f"{sys.version_info[0]}.{sys.version_info[1]}", texto)
@@ -64,19 +72,29 @@ class TestDoctorHostPayload(unittest.TestCase):
 
     def test_rede_bloqueada_nao_derruba_o_diagnostico(self):
         """No host que motivou o comando (VM do Cowork) a rede é bloqueada —
-        o probe degrada pra 'blocked', nunca pra traceback."""
+        a sonda degrada, nunca traceback. Desde a #324 a sonda é o
+        `fetch_remote_version` do update: aqui o urlopen REAL do módulo do
+        update levanta URLError e o doctor atravessa inteiro — rede
+        'blocked', remoto None, rc 0."""
         import urllib.error
+
+        from prumo_runtime.commands import update as update_module
 
         stdout = io.StringIO()
         with mock.patch.object(
-            doctor.urllib.request,
+            update_module.urllib.request,
             "urlopen",
             side_effect=urllib.error.URLError("tunnel 403"),
         ):
-            with contextlib.redirect_stdout(stdout):
-                rc = doctor.run_doctor(_args(format="json"))
+            with mock.patch.object(
+                doctor, "_collect_store", return_value={"found": False, "status": "ausente"}
+            ):
+                with contextlib.redirect_stdout(stdout):
+                    rc = doctor.run_doctor(_args(format="json"))
         self.assertEqual(rc, 0)
-        self.assertEqual(json.loads(stdout.getvalue())["network"], "blocked")
+        payload = json.loads(stdout.getvalue())
+        self.assertEqual(payload["network"], "blocked")
+        self.assertIsNone(payload["remote_version"])
 
 
 class TestDoctorWiring(unittest.TestCase):

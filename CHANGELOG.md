@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.93.0] - 2026-08-03
+
+### Added
+- **O doctor enxerga a store congelada (#324)** — o incidente de 03/08: espelho servindo 5.89.0, runtime atualizável, e o botão "Atualizar" do app desabilitado porque o clone do marketplace estava congelado há 3 dias (`FETCH_HEAD` parado) — a última milha falhando em silêncio. `prumo doctor --host` ganha a checagem de frescor do clone da store ativa: localiza pelo `known_marketplaces.json` (a mesma fonte que o app usa; fallback por varredura da árvore do espelho) e emite veredito fechado `ausente | fresca | defasada | indeterminada` — sem rede nunca vira "fresca". Achado em texto E json (#275), com reparo sugerido na linha (re-sync no app; `prumo update` cobre o runtime). A sonda de rede virou uma ida só ao VERSION remoto com cache-busting (#291), servindo de sonda e de referência. Campos aditivos no `prumo_doctor_host.v1`; host sem store é `ausente` declarado, não erro.
+
 ## [5.92.0] - 2026-08-03
 
 ### Changed
