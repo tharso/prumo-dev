@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.91.0] - 2026-08-03
+
+### Changed
+- **A escada de F1 conhece o runtime embarcado (#322)** — o degrau 1 da escada de transportes vira "runtime alcançável — PATH ou embarcado (Passo 0, `runtime-paths.md`)" e o fallback integral passa a exigir "Passo 0 esgotado": a #302 criou o Passo 0 na fonte canônica, mas a escada — onde a decisão de fato acontece — pulava do PATH direto pro arquivo-semente (a mesma classe da #261: regra sem gatilho na rota não dispara; o ponto cego custou 9 dias de briefings degradados). A espinha aponta junto no gate. Staging de ponte agrupado: inventário conhecido numa chamada, pós-gate noutra — nunca arquivo a arquivo (8 chamadas onde 3–4 bastavam, rodada 18h de 03/08). Catraca 6785 → 6806 (+21, aprovado pelo dono com custo medido antes; poda compensatória: a janela de email de 24h, duplicada, saiu de F1 — o dono é o canais). Guards de posição em `test_espinha_passo0.py`.
+
 ## [5.90.0] - 2026-08-03
 
 ### Added

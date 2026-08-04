@@ -1,6 +1,6 @@
 # Briefing Procedure (espinha da rota fásica)
 
-> **module_version: 5.0.0**
+> **module_version: 5.1.0**
 >
 > Fonte canônica do procedimento de briefing do Prumo — a ESPINHA (#180):
 > identidade, ordem dos passos e gates. O detalhe de cada fase mora nos
@@ -39,7 +39,7 @@ Executar o preflight de `version-preflight.md` (F1 — já carregado): transport
 
 Montar o retrato local por `briefing-estado.md` (F1 — já carregado). Os gates, em uma linha cada:
 
-1. **Semente viva** (runtime no PATH): gate por CAPACIDADE — `schema_version` v1, `outras_secoes` lista **e** `indice_referencias.schema`; capenga → fallback direto.
+1. **Semente viva** (runtime alcançável — Passo 0): gate por CAPACIDADE — `schema_version` v1, `outras_secoes` lista **e** `indice_referencias.schema`; capenga → fallback direto.
 2. **Arquivo-semente** `.prumo/state/local-panorama.json` (#216): gate TRIPLO — capacidade + `generated_for` == hoje + frescor POR FONTE (`source_mtimes` + `inbox4mobile_manifest`); o agente **nunca** escreve esse arquivo.
 3. **Leitura direta** (`PAUTA.md` + `INBOX.md`) quando não há semente válida — nunca inventar dado de JSON parcial.
 

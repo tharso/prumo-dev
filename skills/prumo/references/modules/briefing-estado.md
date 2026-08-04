@@ -1,6 +1,6 @@
 # Briefing — Estado operacional (F1)
 
-> **module_version: 1.0.0**
+> **module_version: 1.1.0**
 >
 > Fase F1 da rota fásica do briefing (#180): de onde vem o retrato local
 > (pauta, inbox, registro, sinais de faxina) que abre o primeiro tempo.
@@ -8,7 +8,7 @@
 
 ## Os três transportes, na ordem (semente-primeiro, #197)
 
-**1. Runtime no trilho novo (semente viva):** o JSON de `prumo briefing --workspace <path> --format json` traz o bloco `local_panorama` com tudo que este passo consome. **Gate por CAPACIDADE, não por presença de binário (#206):** confiar na semente exige `local_panorama.schema_version == prumo_local_panorama.v1`, `pauta.outras_secoes` presente como lista e `indice_referencias.schema` (#261) — runtime velho = semente incompleta: fallback de leitura direta, nunca semente capenga. A semente carrega: PAUTA por seção — **incluindo `Hibernando`** e **as seções autorais em `pauta.outras_secoes`** (nada da PAUTA fica fora do transporte, #206) — com `text`, `display_text` (esparso: só quando truncado) e `cobrar` parseado (esparso: `state` `future|tomorrow|today|overdue|invalid` + `visible_today`); contagem do `INBOX.md`; cauda do `REGISTRO.md`; sinais mecânicos de faxina. Montar o estado **a partir da semente — não reler `PAUTA.md`/`INBOX.md` integrais pra exibir**.
+**1. Runtime alcançável — PATH ou embarcado (Passo 0, `runtime-paths.md`) — semente viva:** o JSON de `prumo briefing --workspace <path> --format json` traz o bloco `local_panorama` com tudo que este passo consome. **Gate por CAPACIDADE, não por presença de binário (#206):** confiar na semente exige `local_panorama.schema_version == prumo_local_panorama.v1`, `pauta.outras_secoes` presente como lista e `indice_referencias.schema` (#261) — runtime velho = semente incompleta: fallback de leitura direta, nunca semente capenga. A semente carrega: PAUTA por seção — **incluindo `Hibernando`** e **as seções autorais em `pauta.outras_secoes`** (nada da PAUTA fica fora do transporte, #206) — com `text`, `display_text` (esparso: só quando truncado) e `cobrar` parseado (esparso: `state` `future|tomorrow|today|overdue|invalid` + `visible_today`); contagem do `INBOX.md`; cauda do `REGISTRO.md`; sinais mecânicos de faxina. Montar o estado **a partir da semente — não reler `PAUTA.md`/`INBOX.md` integrais pra exibir**.
 
 Arquivo bruto abre em **dois casos apenas**: (1) **edição** — escrever `PAUTA.md`/`REGISTRO.md` no fechamento sempre relê antes; (2) **sinalização** — `payload_completeness.<fonte>.complete == false`, ambiguidade real, ou a heurística de aprofundamento (`load-policy.md`, carregar no primeiro uso). O fallback é **por fonte**: `faxina_override` divergente (editado/removido após o `seed`) **invalida o bloco `faxina` inteiro** — carregar o doc + o override atual, recompor thresholds e **recontar** o que depende deles; pauta incompleta → `PAUTA.md`; `inbox4mobile` com status ≠ `gerado` (enum: `gerado|stale|ausente|invalido|indeterminado`) → `prumo inbox preview` (operação explícita) ou listagem direta; as demais seguem servidas pela semente. `degradation` genérico não motiva releitura integral.
 
@@ -20,7 +20,7 @@ Arquivo bruto abre em **dois casos apenas**: (1) **edição** — escrever `PAUT
 
 O agente **NUNCA escreve** esse arquivo — estado do runtime (#214); consumo é leitura pura.
 
-**3. Sem runtime, sem arquivo-semente, sem `local_panorama` no JSON, ou JSON com erro:** fallback integral — ler `PAUTA.md` e `INBOX.md` como sempre. Nunca inventar dado a partir de JSON parcial (regras do AGENT.md: não fabricar JSON, não simular runtime).
+**3. Passo 0 esgotado (PATH e embarcado), sem arquivo-semente, sem `local_panorama` no JSON, ou JSON com erro:** fallback integral — ler `PAUTA.md` e `INBOX.md` como sempre. Nunca inventar dado a partir de JSON parcial (regras do AGENT.md: não fabricar JSON, não simular runtime).
 
 ## Faxina (checagem SEMPRE declarada, #217)
 
@@ -38,4 +38,4 @@ Atestar limpeza olhando só uma parte é mentira com crachá novo. Família pend
 
 Itens com marker `| cobrar: DD/MM` só são elegíveis para o briefing quando a data é hoje, ontem (véspera) ou passada (atrasado). Itens com cobrança para daqui a 2+ dias ficam de fora — não cobrar antes da hora. Itens sem marker aparecem sempre. Marker ambíguo: fail-open (mostrar). Na semente, `visible_today` já vem calculado por essa regra (e o teste de paridade do runtime trava a equivalência); em leitura direta, aplicar manualmente.
 
-Não persistir estado de briefing entre sessões. Janela de email fixa em 24h (`briefing-canais.md`).
+Não persistir estado de briefing entre sessões.
