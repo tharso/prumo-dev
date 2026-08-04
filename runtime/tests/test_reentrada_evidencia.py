@@ -176,7 +176,7 @@ class IdentidadeDaEvidenciaTest(unittest.TestCase):
     def test_identidade_do_item_exclui_os_markers(self) -> None:
         # Codex 325-r3 (P1): com a linha inteira como chave, mudar o cobrar
         # mudaria exatamente a chave usada pra achar o histórico.
-        self.assertIn("Identidade do item (Codex, 325-r3)", CANAIS)
+        self.assertIn("Identidade do item (Codex, 325-r3/r4)", CANAIS)
         self.assertIn("sem os markers `| chave: valor` e sem numeração", CANAIS)
         self.assertIn("NUNCA inclui o marker que a re-supressão altera", CANAIS)
 
@@ -186,6 +186,28 @@ class IdentidadeDaEvidenciaTest(unittest.TestCase):
         self.assertIn("teto explícito: as 20 linhas mais recentes do item", CANAIS)
         self.assertIn("declarar o corte", CANAIS)
         self.assertIn('"histórico truncado"', CANAIS)
+
+
+
+class BordasDoRound4Test(unittest.TestCase):
+    """Codex 325-r4: o teto não pode tornar falsa a promessa do consumo, e
+    a identidade normalizada não pode colidir em silêncio."""
+
+    def test_truncamento_reabre_como_vinculo_possivel(self) -> None:
+        # Com 21+ eventos, id consumido além do teto pareceria novo. Na
+        # dúvida do histórico vale a régua do dono: mostrar custa um clique;
+        # esconder custa o incidente-mãe.
+        self.assertIn("o consumo é INCOMPLETO por construção", CANAIS)
+        self.assertIn('"vínculo possível — histórico truncado"', CANAIS)
+        self.assertIn("nunca fica suprimida", CANAIS)
+
+    def test_identidade_leva_a_secao_como_discriminador(self) -> None:
+        self.assertIn("a seção da PAUTA + a linha sem os markers", CANAIS)
+        self.assertIn("A seção é o discriminador", CANAIS)
+
+    def test_colisao_na_mesma_secao_trata_pro_lado_de_mostrar(self) -> None:
+        self.assertIn("colisão trata pro lado de mostrar", CANAIS)
+        self.assertIn("a reabertura vale pra ambas", CANAIS)
 
 
 if __name__ == "__main__":
