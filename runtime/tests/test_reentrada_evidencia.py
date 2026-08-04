@@ -74,6 +74,22 @@ class PersistenciaTest(unittest.TestCase):
         # #242: a PAUTA só muda via despacho.
         self.assertIn("**nunca** mexe no `cobrar` por conta própria", CANAIS)
 
+    def test_busca_alem_da_cauda(self) -> None:
+        # Codex 325-r1 (P1): a cauda da semente tem ~10 linhas — evento fora
+        # dela suprimiria de volta em silêncio, quebrando o "vivo até
+        # despacho". Suprimido sem evento na cauda exige busca dirigida.
+        self.assertIn("Busca além da cauda", CANAIS)
+        self.assertIn("recorte dirigido", CANAIS)
+        self.assertIn("NÃO pode suprimir o item de volta em silêncio", CANAIS)
+
+    def test_evidencia_consumida_nao_requeima(self) -> None:
+        # Codex 325-r1 (P2): o email ainda na janela de 24h re-queimaria a
+        # data nova no briefing seguinte — re-suprimir de UM passo viraria
+        # zero. Evidência já registrada em reabertura anterior está consumida.
+        self.assertIn("CONSUMIDA", CANAIS)
+        self.assertIn("só evidência nova reabre", CANAIS)
+        self.assertIn("viraria zero passos", CANAIS)
+
 
 class FiltroDeF1Test(unittest.TestCase):
     def test_excecao_vive_DENTRO_do_filtro_de_cobranca(self) -> None:
@@ -83,14 +99,16 @@ class FiltroDeF1Test(unittest.TestCase):
         fim = ESTADO.find("\n## ", inicio + 1)
         filtro = ESTADO[inicio : fim if fim != -1 else len(ESTADO)]
         self.assertIn("Exceção (#325)", filtro)
-        self.assertIn("cauda do REGISTRO", filtro)
+        self.assertIn("reabertura VÁLIDA no REGISTRO", filtro)
         self.assertIn("volta VIVO", filtro)
+        # A busca não é só a cauda (Codex 325-r1): o gatilho de F1 aponta o
+        # recorte dirigido cuja regra completa mora nos canais.
+        self.assertIn("busca além da cauda (recorte dirigido)", filtro)
 
     def test_excecao_aplica_depois_da_regra_base(self) -> None:
         # A semente calcula a regra base; a exceção é do agente, DEPOIS —
         # senão a paridade do runtime viraria mentira.
-        self.assertIn("aplica-se DEPOIS, sobre a cauda", ESTADO)
-        self.assertIn("cobrar registrado igual ao ATUAL da linha", ESTADO)
+        self.assertIn("aplica-se DEPOIS", ESTADO)
 
 
 class ApresentacaoTest(unittest.TestCase):
@@ -105,6 +123,15 @@ class ApresentacaoTest(unittest.TestCase):
         self.assertIn("vínculo visível", bullet)
         self.assertIn("cobrar 06/08 queimado", bullet)
         self.assertIn("vínculo possível", bullet)
+
+    def test_descoberta_por_email_agenda_apresenta_no_segundo_tempo(self) -> None:
+        # Codex 325-r1 (P1): no fluxo de dois tempos, Gmail/Calendar só
+        # abrem DEPOIS da primeira entrega — a reabertura descoberta por
+        # eles precisa de caminho de apresentação no SEGUNDO tempo, senão
+        # ela só apareceria amanhã (a conexão perdida de novo).
+        self.assertIn("Reabertura descoberta na curadoria (#325", MONTAGEM)
+        self.assertIn("entra no **SEGUNDO tempo** como item numerado", MONTAGEM)
+        self.assertIn("só abrem DEPOIS da primeira entrega", MONTAGEM)
 
 
 if __name__ == "__main__":

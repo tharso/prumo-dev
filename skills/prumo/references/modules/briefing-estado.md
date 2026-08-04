@@ -36,6 +36,6 @@ Atestar limpeza olhando só uma parte é mentira com crachá novo. Família pend
 
 ## Filtro de cobrança (a regra é a mesma nos dois caminhos)
 
-Marker `| cobrar: DD/MM`: elegível quando a data é hoje, véspera ou passada; 2+ dias à frente fica fora — não cobrar antes da hora. Sem marker: sempre. Ambíguo: fail-open. **Exceção (#325) — evidência queima supressão:** evento de reabertura na cauda do REGISTRO com o cobrar registrado igual ao ATUAL da linha → item volta VIVO, reaberto (canais, F2). `visible_today` da semente calcula a regra base (paridade por teste); a exceção aplica-se DEPOIS, sobre a cauda; leitura direta aplica tudo manualmente.
+Marker `| cobrar: DD/MM`: elegível quando a data é hoje, véspera ou passada; 2+ dias à frente fica fora — não cobrar antes da hora. Sem marker: sempre. Ambíguo: fail-open. **Exceção (#325) — evidência queima supressão:** item suprimido com reabertura VÁLIDA no REGISTRO volta VIVO, reaberto — validade, busca além da cauda (recorte dirigido) e cruzamento: canais, F2. `visible_today` da semente calcula a regra base (paridade por teste); a exceção aplica-se DEPOIS; leitura direta aplica tudo manualmente.
 
 Não persistir estado de briefing entre sessões.
