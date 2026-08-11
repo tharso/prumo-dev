@@ -126,19 +126,25 @@ class NestedTests(_Base):
             self.assertIn("DEFASADO", texto)
             self.assertIn("prumo repair --workspace .", texto)
 
-    def test_core_a_frente_nunca_vira_em_dia(self):
+    def test_core_a_frente_nunca_vira_em_dia_nem_prescreve_repair(self):
         """Direção preservada: core mais novo que o runtime em execução é
-        divergência (runtime velho ou core adulterado), jamais saúde."""
+        divergência (runtime velho ou core adulterado), jamais saúde. E a
+        prescrição é `prumo update` — repair convergiria o workspace PRA
+        BAIXO, pro runtime velho que o próprio achado denuncia (Codex,
+        335-code-r1)."""
         with tempfile.TemporaryDirectory() as tmp:
             ws = _nested(Path(tmp), "> **prumo_version: 99.0.0**\n")
             payload = self._run(ws, which="/usr/local/bin/prumo", probe=self._probe_ok())
             core = payload["workspace"]["core"]
             self.assertEqual(core["status"], "divergente")
             self.assertEqual(core["direction"], "core_ahead_of_runtime")
+            self.assertEqual(core["recommended_command"], "prumo update")
         with tempfile.TemporaryDirectory() as tmp:
             ws = _nested(Path(tmp), "> **prumo_version: 99.0.0**\n")
             texto = self._run(ws, fmt="text", which="/usr/local/bin/prumo", probe=self._probe_ok())
             self.assertIn("velho", texto)  # hipótese de runtime velho, declarada
+            self.assertIn("prumo update", texto)
+            self.assertNotIn("prumo repair", texto)
 
     def test_core_malformado_e_indeterminado_nunca_direcao_inventada(self):
         casos = [

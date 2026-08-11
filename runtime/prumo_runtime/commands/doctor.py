@@ -130,10 +130,14 @@ def _elo_do_workspace(cwd: Path, runtime_version: str) -> dict:
         core["status"] = "em_dia"
     else:
         core["status"] = "divergente"
-        core["direction"] = (
-            "core_behind_runtime" if tupla_core < tupla_runtime else "core_ahead_of_runtime"
-        )
-        core.update(_prescreve("prumo repair --workspace .", runtime_version))
+        if tupla_core < tupla_runtime:
+            core["direction"] = "core_behind_runtime"
+            core.update(_prescreve("prumo repair --workspace .", runtime_version))
+        else:
+            # Codex 335-code-r1 (P1): repair converge pro runtime em execução —
+            # com core à frente, prescrevê-lo seria DOWNGRADE do workspace.
+            core["direction"] = "core_ahead_of_runtime"
+            core.update(_prescreve("prumo update", runtime_version))
     return {"detected": True, "layout": "nested", "core": core}
 
 
@@ -146,8 +150,8 @@ def _sufixo_prescricao(bloco: dict, acao: str) -> str:
         return f"`prumo` ausente do PATH — runtime-paths.md passo 0 antes de {acao}"
     if check == "divergente":
         return (
-            f"`prumo` do PATH está em {bloco.get('path_runtime_version')} — "
-            f"alinhe o PATH com este runtime antes de {acao}"
+            f"`prumo` do PATH está em {bloco.get('path_runtime_version')} — alinhe o PATH "
+            f"com este runtime, ou reexecute o diagnóstico por ele, antes de {acao}"
         )
     return f"binário do PATH não verificado — confira antes de {acao}"
 
@@ -171,7 +175,7 @@ def _linha_do_workspace(bloco: dict) -> str:
         )
     return (
         f"core {versao} — à frente do runtime deste diagnóstico ({runtime}), "
-        f"provável runtime velho; {_sufixo_prescricao(core, 'reparar')}"
+        f"provável runtime velho; {_sufixo_prescricao(core, 'atualizar')}"
     )
 
 
