@@ -152,6 +152,29 @@ class CaixasDeclaradasTest(unittest.TestCase):
         self.assertIn("Autor_Assunto_AAAA-MM-DD", flat)
         self.assertIn("fora dela o arquivo sai da rota de recuperação do índice", flat)
 
+    def test_lote_respeita_precedencia_de_roteamento(self) -> None:
+        """[Codex r2, P1]: 'DIRETO pra Referencias/' fixaria destino por cima
+        da escala da #243 — contrato autoral aplicável vence o default."""
+        flat = _flat(CANAIS)
+        self.assertIn("destino da precedência de roteamento (#243", flat)
+        self.assertIn(
+            "`Referencias/` é o default quando nenhum degrau mais forte decidir",
+            flat,
+        )
+
+    def test_lote_adiciona_tipo_e_origem(self) -> None:
+        """[Codex r2, P1]: 'preservar' não é 'acrescentar' — os campos da spec
+        entram no frontmatter do item catalogado."""
+        flat = _flat(CANAIS)
+        self.assertIn("campos `tipo` e `origem` adicionados", flat)
+
+    def test_descricao_do_indice_nasce_do_motivo(self) -> None:
+        """[Codex r2, P1]: duas fontes disputavam a coluna Descrição — a dona
+        do mapeamento (ficha-de-fonte, #140) vence; o clipper só complementa."""
+        flat = _flat(CANAIS)
+        self.assertIn("a Descrição nasce do motivo de retenção", flat)
+        self.assertIn("complementa, nunca substitui", flat)
+
     def test_montagem_apresenta_a_oferta(self) -> None:
         flat = _flat(MONTAGEM)
         self.assertIn("oferta de catalogação (#332)", flat)
