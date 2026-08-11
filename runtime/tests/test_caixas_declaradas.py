@@ -187,6 +187,13 @@ class CaixasDeclaradasTest(unittest.TestCase):
             flat,
         )
 
+    def test_copy_e_pergunta_nao_anuncio(self) -> None:
+        """[Codex r5, P2]: 'vou catalogar...' preservaria todos os slogans e
+        mataria a oferta — as duas copies interrogativas são o contrato."""
+        flat = _flat(CANAIS)
+        self.assertIn('"quer que eu catalogue os N na Biblioteca?"', flat)
+        self.assertIn('"quer que eu mova os N pra `<destino resolvido>`?"', flat)
+
     def test_gate_da_contagem_tem_os_dois_lados(self) -> None:
         """[Codex r4, P2]: guard positivo não trava `>= 0` — o gate e o zero
         precisam estar afirmados dos dois lados, aqui e na montagem."""
