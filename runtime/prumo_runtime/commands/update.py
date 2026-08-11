@@ -722,9 +722,11 @@ def run_update(args) -> int:
         # Propaga o update pro workspace (#146): sem isto, o runtime atualiza
         # mas as skills do workspace ficam velhas e comandos novos "não existem".
         elif workspace_detected and not legacy_flat:
-            payload["post_update"].update(
-                _run_post_update_repair(Path.cwd(), expected_version=expected)
-            )
+            resultado = _run_post_update_repair(Path.cwd(), expected_version=expected)
+            payload["post_update"].update(resultado)
+            if resultado.get("repair_note"):
+                # 335-code-r2: a nota substitui a recomendação TAMBÉM no JSON.
+                payload["post_update"]["repair_suggested"] = False
 
     return _emit(payload, output_format, exit_code=rc)
 

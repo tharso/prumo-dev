@@ -161,6 +161,35 @@ class UltimaMilhaTests(unittest.TestCase):
             self.assertNotIn("Rode `prumo repair --workspace .`", out)
 
 
+    def test_guarda_b_zera_repair_suggested_tambem_no_json(self):
+        """335-code-r2: o texto escondia a recomendação, mas o JSON seguia com
+        repair_suggested: true — consumidor de JSON re-sugeriria o repair
+        inseguro. A nota substitui a recomendação nos DOIS formatos."""
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = _nested_workspace(Path(tmp))
+            rc, out = self._run_update(
+                ws, cwd=ws, post_version="5.99.0", fmt="json",
+                extra_patches=[patch(
+                    "prumo_runtime.commands.update._run_post_update_repair",
+                    return_value={"repair_executed": False, "repair_note": "fonte errada"},
+                )],
+            )
+            payload = json.loads(out)
+            self.assertFalse(payload["post_update"]["repair_suggested"])
+        # PATH ausente atravessando a guarda REAL (sem mock do repair):
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = _nested_workspace(Path(tmp))
+            rc, out = self._run_update(
+                ws, cwd=ws, post_version="5.99.0", fmt="json",
+                extra_patches=[patch(
+                    "prumo_runtime.commands.update.shutil.which", return_value=None,
+                )],
+            )
+            payload = json.loads(out)
+            self.assertFalse(payload["post_update"]["repair_suggested"])
+            self.assertIn("passo 0", payload["post_update"]["repair_note"])
+
+
 class RunPostUpdateRepairNotesTests(unittest.TestCase):
     """As notas da guarda B, chamando `_run_post_update_repair` direto."""
 
