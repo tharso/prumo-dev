@@ -143,7 +143,7 @@ class CaixasDeclaradasTest(unittest.TestCase):
         `keep_with_reason` — sem motivo inferível ou dado, o item degrada."""
         flat = _flat(CANAIS)
         self.assertIn("`keep_with_reason` vale item a item", flat)
-        self.assertIn("sem motivo, duplicado ou ambíguo", flat)
+        self.assertIn("no destino Biblioteca, sem motivo", flat)
 
     def test_lote_renomeia_na_convencao_canonica(self) -> None:
         """[Codex r1, P2]: renomeação 'descritiva' fora da convenção deixa o
@@ -166,6 +166,34 @@ class CaixasDeclaradasTest(unittest.TestCase):
         nem indexação da Biblioteca — pasta do usuário, regra do usuário."""
         flat = _flat(CANAIS)
         self.assertIn("sem impor convenção nem indexação da Biblioteca", flat)
+
+    def test_pacote_corta_por_destino_nao_por_fonte(self) -> None:
+        """[Codex r4, P1]: a escada da #243 tem quatro degraus — tratar só o
+        primeiro e o último deixava o meio sem contrato. O corte é o destino."""
+        flat = _flat(CANAIS)
+        self.assertIn(
+            "o corte adiante é o destino resolvido, não a fonte que o resolveu",
+            flat,
+        )
+        self.assertIn("qualquer que seja o degrau que o resolveu", flat)
+
+    def test_so_a_maquina_do_inbox_e_reutilizada(self) -> None:
+        """[Codex r4, P1]: o §Material de referência do inbox-processing manda
+        tudo pra Referencias/ — se a delegação não delimitar, o executor
+        atropela o destino resolvido."""
+        flat = _flat(CANAIS)
+        self.assertIn(
+            "só a máquina é reutilizada: destino e pacote vêm desta seção",
+            flat,
+        )
+
+    def test_gate_da_contagem_tem_os_dois_lados(self) -> None:
+        """[Codex r4, P2]: guard positivo não trava `>= 0` — o gate e o zero
+        precisam estar afirmados dos dois lados, aqui e na montagem."""
+        flat = _flat(CANAIS)
+        self.assertIn("contagem > 0 fecha a linha de contagem com a oferta", flat)
+        self.assertIn("contagem zero → sem oferta", flat)
+        self.assertIn("Com N > 0", _flat(MONTAGEM))
 
     def test_lote_adiciona_tipo_e_origem(self) -> None:
         """[Codex r2, P1]: 'preservar' não é 'acrescentar' — os campos da spec
