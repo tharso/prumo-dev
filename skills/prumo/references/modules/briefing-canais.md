@@ -1,6 +1,6 @@
 # Briefing — Canais de entrada (F2)
 
-> **module_version: 1.2.0**
+> **module_version: 1.3.0**
 >
 > Fase F2 da rota fásica do briefing (#180). Carregar **antes de abrir
 > qualquer canal externo (Gmail MCP / Calendar MCP)** — as defesas de
@@ -40,6 +40,8 @@ Caixa de entrada não é biblioteca: item processado SAI dela. Além do `Inbox4M
 **Escopo:** inventário e cobrança. **Nenhum processamento automático** de caixa declarada: `_processed.json` é contrato exclusivo do `Inbox4Mobile/`, e caixa de terceiros (ex.: pasta de um clipper) nunca é reorganizada por iniciativa própria. Quando o usuário mandar processar um item de lá, vale a máquina de remoção do `inbox-processing.md` (confirmar → registrar → mover pro destino durável ou quarentena → verificar), **sem baixa em ledger**.
 
 O que apodrece não é a pasta existir; é ninguém contar.
+
+**Oferta de catalogação (#332):** contagem > 0 → a linha de contagem fecha com a oferta de despacho em uma frase ("quer que eu catalogue os N na Biblioteca?") — **oferta, nunca ação**: **sem confirmação explícita, nenhuma escrita e nenhuma leitura de conteúdo** da caixa (o marcador segue metadata-rasa até o usuário mandar; a confirmação é o que legitima abrir os itens). Com confirmação, lote único pelo fluxo existente do `inbox-processing.md`: retenção durável move DIRETO pra `Referencias/` com renomeação descritiva e frontmatter preservado, linha no `INDICE.md` (ID pela alocação com lock da `ficha-de-fonte.md`), trilha no `REGISTRO.md` ANTES da remoção. **Item sem frontmatter legível, duplicado ou ambíguo degrada pra proposta individual** — o lote nunca age no escuro. A oferta não muda o escopo do marcador: **continua sem processamento automático e sem ledger** — quem transforma contagem em despacho é sempre o usuário.
 
 ## Email e calendário via MCP direto
 

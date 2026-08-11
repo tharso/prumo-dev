@@ -100,6 +100,49 @@ class CaixasDeclaradasTest(unittest.TestCase):
         self.assertIn("`declared_inbox_stale_days`", flat)
         self.assertIn("sinalizar, nunca reorganizar", flat)
 
+    def test_oferta_de_catalogacao_oferece_sem_agir(self) -> None:
+        """#332: contagem > 0 gera OFERTA — e a oferta não compra nada sozinha:
+        sem confirmação não há escrita nem leitura de conteúdo."""
+        flat = _flat(CANAIS)
+        self.assertIn("Oferta de catalogação (#332)", flat)
+        self.assertIn("oferta, nunca ação", flat)
+        self.assertIn(
+            "sem confirmação explícita, nenhuma escrita e nenhuma leitura de conteúdo",
+            flat,
+            "a oferta precisa declarar que não lê nem escreve antes do sim",
+        )
+
+    def test_oferta_mora_na_secao_dona(self) -> None:
+        """A oferta vale porque carrega junto do gate das caixas declaradas —
+        fora da seção, a frase vira letra morta que nenhum fluxo lê."""
+        text = CANAIS.read_text(encoding="utf-8")
+        secao = text.index("## Caixas de entrada declaradas (#245)")
+        oferta = text.index("Oferta de catalogação (#332)")
+        proxima = text.index("## ", secao + 1)
+        self.assertTrue(
+            secao < oferta < proxima,
+            "a oferta tem de viver DENTRO da seção 'Caixas de entrada declaradas'",
+        )
+
+    def test_oferta_reafirma_escopo_do_marcador(self) -> None:
+        """A oferta não é licença: o escopo do #245 (sem processamento
+        automático, sem ledger) é reafirmado DENTRO do texto da oferta."""
+        flat = _flat(CANAIS)
+        self.assertIn("Nenhum processamento automático", flat)
+        self.assertIn("continua sem processamento automático e sem ledger", flat)
+
+    def test_lote_degrada_no_escuro(self) -> None:
+        """Item sem frontmatter legível não entra no lote cego: degrada pra
+        proposta individual."""
+        flat = _flat(CANAIS)
+        self.assertIn("degrada pra proposta individual", flat)
+        self.assertIn("o lote nunca age no escuro", flat)
+
+    def test_montagem_apresenta_a_oferta(self) -> None:
+        flat = _flat(MONTAGEM)
+        self.assertIn("oferta de catalogação (#332)", flat)
+        self.assertIn("nunca ação sem confirmação", flat)
+
     def test_threshold_do_override_existe_de_verdade(self) -> None:
         """[P5-2]: a promessa de override precisa de chave canônica declarada —
         vocabulário inventado não é sobrescrevível."""

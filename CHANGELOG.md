@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.95.0] - 2026-08-11
+
+### Added
+- **Oferta de catalogação para caixas declaradas (#332)** — o briefing deixava a contagem de caixa declarada sem saída ("N em `Clippings/`" e nada mais); agora, contagem > 0 fecha a linha com a oferta de despacho em uma frase. Oferta, nunca ação: sem confirmação explícita, nenhuma escrita e nenhuma leitura de conteúdo da caixa (o marcador segue metadata-rasa até o usuário mandar). Com confirmação, lote único pelo fluxo existente do `inbox-processing.md` (retenção durável direto pra `Referencias/`, `INDICE.md` via lock, trilha no `REGISTRO.md` antes da remoção); item sem frontmatter legível, duplicado ou ambíguo degrada pra proposta individual — o lote nunca age no escuro. O escopo do #245 fica intacto: sem processamento automático e sem ledger. Caso-mãe: 5 artigos parados no `Clippings/` de 27/06 a 11/08, e mais 11 chegando durante a sessão que desenhou a solução. Guards em `test_caixas_declaradas.py` (oferta sem ação, posição na seção dona, escopo reafirmado, degradação, formato na montagem).
+
 ## [5.94.0] - 2026-08-03
 
 ### Added
