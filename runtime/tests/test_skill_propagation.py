@@ -190,7 +190,10 @@ class UpdateChainsRepairTests(unittest.TestCase):
             result = _run_post_update_repair(Path("/tmp/ws"), expected_version=None)
         self.assertFalse(result["repair_executed"], "sem versão esperada não há como verificar — aborta")
 
-    def test_missing_binary_degrades_to_suggestion(self) -> None:
+    def test_missing_binary_degrades_to_recovery_note(self) -> None:
+        """#335: sem `prumo` no PATH, a nota orienta expor o runtime primeiro
+        (runtime-paths.md passo 0) — sugerir `prumo repair` aqui era prescrever
+        um comando que não roda."""
         from unittest import mock
 
         from prumo_runtime.commands.update import _run_post_update_repair
@@ -198,7 +201,7 @@ class UpdateChainsRepairTests(unittest.TestCase):
         with mock.patch("prumo_runtime.commands.update.shutil.which", return_value=None):
             result = _run_post_update_repair(Path("/tmp/ws"), expected_version="5.22.0")
         self.assertFalse(result["repair_executed"])
-        self.assertIn("repair", result["repair_note"])
+        self.assertIn("passo 0", result["repair_note"])
 
     def test_repair_failure_is_reported_not_raised(self) -> None:
         from unittest import mock
