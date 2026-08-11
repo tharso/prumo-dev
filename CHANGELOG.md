@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.95.0] - 2026-08-11
+
+### Added
+- **Oferta de catalogação para caixas declaradas (#332)** — o briefing deixava a contagem de caixa declarada sem saída ("N em `Clippings/`" e nada mais); agora, contagem > 0 fecha a linha com a oferta de despacho em uma frase. Oferta, nunca ação: sem confirmação explícita, nenhuma escrita e nenhuma leitura de conteúdo da caixa (o marcador segue metadata-rasa até o usuário mandar). Com confirmação, lote único pela máquina de remoção do `inbox-processing.md` — só a máquina é reutilizada; destino e pacote vêm da seção da oferta (destino resolvido pela precedência de roteamento #243 ANTES da oferta, copy nomeando o destino; corte por destino resolvido, não pela fonte: em `Referencias/`, pacote da Biblioteca — convenção canônica `Autor_Assunto_AAAA-MM-DD.<ext>`, frontmatter preservado + `tipo`/`origem` adicionados, `INDICE.md` via lock com a Descrição nascendo do motivo de retenção; em qualquer outro destino, a regra da fonte vencedora, sem convenção nem indexação da Biblioteca; trilha no `REGISTRO.md` antes da remoção); `keep_with_reason` vale item a item — confirmação genérica não compra o motivo (Codex, 332-r1); item sem frontmatter legível, duplicado, ambíguo — ou, no destino Biblioteca, sem motivo — degrada pra proposta individual — o lote nunca age no escuro. O escopo do #245 fica intacto: sem processamento automático e sem ledger. Caso-mãe: 5 artigos parados no `Clippings/` de 27/06 a 11/08, e mais 11 chegando durante a sessão que desenhou a solução. Guards em `test_caixas_declaradas.py` (oferta sem ação, posição na seção dona, escopo reafirmado, degradação, formato na montagem).
+
 ## [5.94.0] - 2026-08-03
 
 ### Added

@@ -100,6 +100,126 @@ class CaixasDeclaradasTest(unittest.TestCase):
         self.assertIn("`declared_inbox_stale_days`", flat)
         self.assertIn("sinalizar, nunca reorganizar", flat)
 
+    def test_oferta_de_catalogacao_oferece_sem_agir(self) -> None:
+        """#332: contagem > 0 gera OFERTA — e a oferta não compra nada sozinha:
+        sem confirmação não há escrita nem leitura de conteúdo."""
+        flat = _flat(CANAIS)
+        self.assertIn("Oferta de catalogação (#332)", flat)
+        self.assertIn("oferta, nunca ação", flat.lower())
+        self.assertIn(
+            "sem confirmação explícita, nenhuma escrita e nenhuma leitura de conteúdo",
+            flat,
+            "a oferta precisa declarar que não lê nem escreve antes do sim",
+        )
+
+    def test_oferta_mora_na_secao_dona(self) -> None:
+        """A oferta vale porque carrega junto do gate das caixas declaradas —
+        fora da seção, a frase vira letra morta que nenhum fluxo lê."""
+        text = CANAIS.read_text(encoding="utf-8")
+        secao = text.index("## Caixas de entrada declaradas (#245)")
+        oferta = text.index("Oferta de catalogação (#332)")
+        proxima = text.index("## ", secao + 1)
+        self.assertTrue(
+            secao < oferta < proxima,
+            "a oferta tem de viver DENTRO da seção 'Caixas de entrada declaradas'",
+        )
+
+    def test_oferta_reafirma_escopo_do_marcador(self) -> None:
+        """A oferta não é licença: o escopo do #245 (sem processamento
+        automático, sem ledger) é reafirmado DENTRO do texto da oferta."""
+        flat = _flat(CANAIS)
+        self.assertIn("Nenhum processamento automático", flat)
+        self.assertIn("continua sem processamento automático e sem ledger", flat)
+
+    def test_lote_degrada_no_escuro(self) -> None:
+        """Item sem frontmatter legível não entra no lote cego: degrada pra
+        proposta individual."""
+        flat = _flat(CANAIS)
+        self.assertIn("degrada pra proposta individual", flat)
+        self.assertIn("o lote nunca age no escuro", flat)
+
+    def test_lote_exige_motivo_item_a_item(self) -> None:
+        """[Codex r1, P1]: confirmação genérica de lote não compra o
+        `keep_with_reason` — sem motivo inferível ou dado, o item degrada."""
+        flat = _flat(CANAIS)
+        self.assertIn("`keep_with_reason` vale item a item", flat)
+        self.assertIn("no destino Biblioteca, sem motivo", flat)
+
+    def test_lote_renomeia_na_convencao_canonica(self) -> None:
+        """[Codex r1, P2]: renomeação 'descritiva' fora da convenção deixa o
+        arquivo fora da rota de recuperação do índice (#305)."""
+        flat = _flat(CANAIS)
+        self.assertIn("Autor_Assunto_AAAA-MM-DD", flat)
+        self.assertIn("fora dela o arquivo sai da rota de recuperação do índice", flat)
+
+    def test_lote_respeita_precedencia_de_roteamento(self) -> None:
+        """[Codex r2/r3, P1]: destino fixo por cima da escala da #243 era o
+        bug; copy prometendo Biblioteca com entrega noutro lugar era o bug do
+        conserto. O destino resolve ANTES da oferta e a copy diz a verdade."""
+        flat = _flat(CANAIS)
+        self.assertIn("resolver o destino ANTES da oferta", flat)
+        self.assertIn("A copy nomeia o destino resolvido", flat)
+        self.assertIn("nenhum default novo de organização", flat)
+
+    def test_destino_autoral_sem_imposicao(self) -> None:
+        """[Codex r3, P1]: destino de contrato autoral não recebe convenção
+        nem indexação da Biblioteca — pasta do usuário, regra do usuário."""
+        flat = _flat(CANAIS)
+        self.assertIn("sem impor convenção nem indexação da Biblioteca", flat)
+
+    def test_pacote_corta_por_destino_nao_por_fonte(self) -> None:
+        """[Codex r4, P1]: a escada da #243 tem quatro degraus — tratar só o
+        primeiro e o último deixava o meio sem contrato. O corte é o destino."""
+        flat = _flat(CANAIS)
+        self.assertIn(
+            "o corte adiante é o destino resolvido, não a fonte que o resolveu",
+            flat,
+        )
+        self.assertIn("qualquer que seja o degrau que o resolveu", flat)
+
+    def test_so_a_maquina_do_inbox_e_reutilizada(self) -> None:
+        """[Codex r4, P1]: o §Material de referência do inbox-processing manda
+        tudo pra Referencias/ — se a delegação não delimitar, o executor
+        atropela o destino resolvido."""
+        flat = _flat(CANAIS)
+        self.assertIn(
+            "só a máquina é reutilizada: destino e pacote vêm desta seção",
+            flat,
+        )
+
+    def test_copy_e_pergunta_nao_anuncio(self) -> None:
+        """[Codex r5, P2]: 'vou catalogar...' preservaria todos os slogans e
+        mataria a oferta — as duas copies interrogativas são o contrato."""
+        flat = _flat(CANAIS)
+        self.assertIn('"quer que eu catalogue os N na Biblioteca?"', flat)
+        self.assertIn('"quer que eu mova os N pra `<destino resolvido>`?"', flat)
+
+    def test_gate_da_contagem_tem_os_dois_lados(self) -> None:
+        """[Codex r4, P2]: guard positivo não trava `>= 0` — o gate e o zero
+        precisam estar afirmados dos dois lados, aqui e na montagem."""
+        flat = _flat(CANAIS)
+        self.assertIn("contagem > 0 fecha a linha de contagem com a oferta", flat)
+        self.assertIn("contagem zero → sem oferta", flat)
+        self.assertIn("Com N > 0", _flat(MONTAGEM))
+
+    def test_lote_adiciona_tipo_e_origem(self) -> None:
+        """[Codex r2, P1]: 'preservar' não é 'acrescentar' — os campos da spec
+        entram no frontmatter do item catalogado."""
+        flat = _flat(CANAIS)
+        self.assertIn("campos `tipo` e `origem` adicionados", flat)
+
+    def test_descricao_do_indice_nasce_do_motivo(self) -> None:
+        """[Codex r2, P1]: duas fontes disputavam a coluna Descrição — a dona
+        do mapeamento (ficha-de-fonte, #140) vence; o clipper só complementa."""
+        flat = _flat(CANAIS)
+        self.assertIn("a Descrição nasce do motivo de retenção", flat)
+        self.assertIn("complementa, nunca substitui", flat)
+
+    def test_montagem_apresenta_a_oferta(self) -> None:
+        flat = _flat(MONTAGEM)
+        self.assertIn("oferta de catalogação (#332)", flat)
+        self.assertIn("nunca ação sem confirmação", flat)
+
     def test_threshold_do_override_existe_de_verdade(self) -> None:
         """[P5-2]: a promessa de override precisa de chave canônica declarada —
         vocabulário inventado não é sobrescrevível."""
