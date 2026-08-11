@@ -138,6 +138,20 @@ class CaixasDeclaradasTest(unittest.TestCase):
         self.assertIn("degrada pra proposta individual", flat)
         self.assertIn("o lote nunca age no escuro", flat)
 
+    def test_lote_exige_motivo_item_a_item(self) -> None:
+        """[Codex r1, P1]: confirmação genérica de lote não compra o
+        `keep_with_reason` — sem motivo inferível ou dado, o item degrada."""
+        flat = _flat(CANAIS)
+        self.assertIn("`keep_with_reason` vale item a item", flat)
+        self.assertIn("sem motivo, duplicado ou ambíguo", flat)
+
+    def test_lote_renomeia_na_convencao_canonica(self) -> None:
+        """[Codex r1, P2]: renomeação 'descritiva' fora da convenção deixa o
+        arquivo fora da rota de recuperação do índice (#305)."""
+        flat = _flat(CANAIS)
+        self.assertIn("Autor_Assunto_AAAA-MM-DD", flat)
+        self.assertIn("fora dela o arquivo sai da rota de recuperação do índice", flat)
+
     def test_montagem_apresenta_a_oferta(self) -> None:
         flat = _flat(MONTAGEM)
         self.assertIn("oferta de catalogação (#332)", flat)
