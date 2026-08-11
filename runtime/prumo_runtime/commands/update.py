@@ -683,6 +683,7 @@ def run_update(args) -> int:
         # binário diz de si mesmo — senão um update que não pegou "valida"
         # comparando a versão velha com ela própria (review Codex, #232).
         expected = artifact_version or remote_version
+        version_confirmed = bool(expected) and new_version == expected
         workspace_detected = is_prumo_workspace(Path.cwd())
         # O repair pós-update GRAVA, e grava nested (`install_skills` força
         # layout_mode="nested"): dispará-lo num flat converteria o layout do
@@ -691,23 +692,41 @@ def run_update(args) -> int:
         payload["post_update"] = {
             "new_version": new_version,
             "expected_version": expected,
-            "version_confirmed": bool(expected) and new_version == expected,
+            "version_confirmed": version_confirmed,
             "workspace_detected": workspace_detected,
-            "repair_suggested": workspace_detected and not legacy_flat,
+            # #335: versão não confirmada ⇒ zero repair (fonte não validada).
+            "repair_suggested": workspace_detected and not legacy_flat and version_confirmed,
         }
         if legacy_flat:
             payload["post_update"]["workspace_note"] = LEGACY_FLAT_POST_UPDATE_NOTE
+        if not workspace_detected:
+            # #335: o runtime é stateless e não sabe onde os workspaces estão —
+            # o que dá pra garantir é a defasagem deixar de ser invisível.
+            payload["post_update"]["last_mile"] = {
+                "status": "nao_sincronizado",
+                "message": (
+                    "runtime atualizado, mas nenhum workspace foi sincronizado — "
+                    "o update só alcança o diretório em que roda"
+                ),
+                "recommended_command": (
+                    "prumo repair --workspace /caminho/do/workspace"
+                    if version_confirmed
+                    else None
+                ),
+            }
         if expected and new_version != expected:
             payload["post_update"]["warning"] = (
                 f"binário reporta {new_version}, artefato instalado era {expected} — "
-                "PATH pode estar servindo um executável antigo; repair não vai rodar."
+                "verifique/reinstale o runtime neste interpretador; repair não vai rodar."
             )
         # Propaga o update pro workspace (#146): sem isto, o runtime atualiza
         # mas as skills do workspace ficam velhas e comandos novos "não existem".
         elif workspace_detected and not legacy_flat:
-            payload["post_update"].update(
-                _run_post_update_repair(Path.cwd(), expected_version=expected)
-            )
+            resultado = _run_post_update_repair(Path.cwd(), expected_version=expected)
+            payload["post_update"].update(resultado)
+            if resultado.get("repair_note"):
+                # 335-code-r2: a nota substitui a recomendação TAMBÉM no JSON.
+                payload["post_update"]["repair_suggested"] = False
 
     return _emit(payload, output_format, exit_code=rc)
 
@@ -722,9 +741,13 @@ def _run_post_update_repair(workspace: Path, *, expected_version: str | None) ->
     """
     exe = shutil.which("prumo")
     if exe is None:
+        # #335: sem `prumo` no PATH, sugerir `prumo repair` é comando que não roda.
         return {
             "repair_executed": False,
-            "repair_note": "binário `prumo` não encontrado no PATH; rode `prumo repair --workspace .` manualmente",
+            "repair_note": (
+                "binário `prumo` não encontrado no PATH — exponha o runtime no "
+                "PATH (runtime-paths.md, passo 0) antes de sincronizar o workspace"
+            ),
         }
     try:
         version_check = subprocess.run(
@@ -739,7 +762,8 @@ def _run_post_update_repair(workspace: Path, *, expected_version: str | None) ->
             "repair_note": (
                 f"o `prumo` do PATH ({exe}) está em {binary_version or 'versão desconhecida'}, "
                 f"não na recém-instalada {expected_version or '?'} — repair automático abortado "
-                "pra não sincronizar o workspace com a fonte errada"
+                "pra não sincronizar o workspace com a fonte errada; alinhe o PATH "
+                "com a recém-instalada antes de reparar"
             ),
         }
     try:
@@ -773,10 +797,19 @@ def _emit(payload: dict, output_format: str, exit_code: int = 0) -> int:
     # Core do workspace (#170): não esconder um workspace defasado no texto.
     if "workspace_core_version" in payload:
         core_v = payload["workspace_core_version"] or "n/d"
+        # #335: versão pós-update não confirmada ⇒ nenhuma linha manda rodar
+        # repair. Sem post_update (check/dry-run) não houve execução: não se aplica.
+        pos = payload.get("post_update") or {}
+        confirmada = pos.get("version_confirmed", "post_update" not in payload)
         if payload.get("workspace_core_needs_update"):
             flat = payload.get("workspace_layout_legacy_flat")
-            acao = "`prumo migrate --workspace .` (layout antigo: o repair criaria um híbrido)" if flat else "`prumo repair --workspace .` após atualizar o runtime"
-            print(f"⚠ Core do workspace: {core_v} — atrás da pública. Rode {acao}.")
+            if flat:
+                acao = "Rode `prumo migrate --workspace .` (layout antigo: o repair criaria um híbrido)."
+            elif confirmada:
+                acao = "Rode `prumo repair --workspace .` após atualizar o runtime."
+            else:
+                acao = "Sincronize depois de resolver o runtime (warning abaixo)."
+            print(f"⚠ Core do workspace: {core_v} — atrás da pública. {acao}")
         else:
             print(f"Core do workspace: {core_v} (em dia)")
 
@@ -810,14 +843,23 @@ def _emit(payload: dict, output_format: str, exit_code: int = 0) -> int:
     if post:
         if post.get("new_version"):
             print(f"Versão pós-update: {post['new_version']}")
+        # #335: o warning só existia no JSON — o texto escondia o pior caso.
+        if post.get("warning"):
+            print(f"⚠ {post['warning']}")
         if post.get("workspace_note"):
             print(f"⚠ {post['workspace_note']}")
+        last_mile = post.get("last_mile")
+        if last_mile:
+            print(f"⚠ {last_mile['message']}")
+            if last_mile.get("recommended_command"):
+                print(f"  Em cada workspace: `{last_mile['recommended_command']}`")
         if post.get("repair_executed"):
             print("Workspace detectado no CWD — `prumo repair` executado automaticamente (skills propagadas).")
+        elif post.get("repair_note"):
+            # #335: a nota específica SUBSTITUI a genérica — nota de fonte
+            # errada seguida de "rode repair" era contradição.
+            print(f"⚠ {post['repair_note']}")
         elif post.get("repair_suggested"):
-            note = post.get("repair_note")
-            if note:
-                print(f"⚠ {note}")
             print("Workspace detectado no CWD. Rode `prumo repair --workspace .` para alinhar.")
 
     return exit_code

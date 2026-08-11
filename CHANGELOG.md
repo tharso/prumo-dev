@@ -6,6 +6,14 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.96.0] - 2026-08-11
+
+### Added
+- **A última milha do workspace declarada no `prumo update` e diagnosticada no `doctor --host` (#335)** — o incidente de 11/08: `prumo update --yes` fora do workspace levou o runtime a 5.95.0 e deixou o checkout embarcado do DailyLife em 5.94.0, em silêncio — e sessões cloud do Cowork leem o checkout do workspace. Recorte B+C-lite do spec review (4 rounds com o Codex; opção A — registro de workspaces — rejeitada por violar o workspace-first/stateless de 2026-04-22): (B) update bem-sucedido fora de workspace passa a declarar `post_update.last_mile` em texto e JSON, com comando copiável `prumo repair --workspace /caminho/do/workspace` só quando a versão pós-update foi confirmada; (C-lite) `doctor --host` ganha o elo do workspace — `prumo_version` do core × runtime QUE EXECUTA o diagnóstico, estados fechados (`em_dia`/`divergente` com direção preservada/`indeterminado` — malformado nunca vira direção; flat tem precedência e aponta `migrate`), bloco `workspace.core` aditivo no schema v1 (deixa `workspace.skills` livre pra #299). Coerência régua × fonte: o doctor só prescreve comando quando o `prumo` do PATH coincide em versão com o runtime em execução — divergente/ausente/não verificado reporta o achado e suprime a prescrição (`path_runtime_version` visível no JSON). Com `core_ahead_of_runtime` a prescrição é `prumo update` — nunca `repair`, que faria downgrade do workspace pro runtime velho que o próprio achado denuncia (Codex, 335-code-r1).
+
+### Fixed
+- **Warning de binário divergente invisível no texto do update (#335)** — `post_update.warning` só existia no JSON; a saída humana escondia exatamente o caso em que o repair usaria a fonte errada. Pior: `repair_suggested` era setado ANTES da guarda, então o texto recomendava `prumo repair` com o binário errado no PATH (achado do spec review, Codex 335-r1). Agora: warning impresso, orientação por causa (guarda do interpretador ≠ guarda do PATH), invariante "versão não confirmada ⇒ zero recomendação de repair na saída inteira" (inclusive na linha do core do #170), e a nota específica da guarda B substitui a recomendação genérica — nunca convivem.
+
 ## [5.95.0] - 2026-08-11
 
 ### Added

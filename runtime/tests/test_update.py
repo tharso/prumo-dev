@@ -461,6 +461,11 @@ class PostUpdateTests(unittest.TestCase):
             ), patch(
                 "prumo_runtime.commands.update.Path.cwd",
                 return_value=Path(tmpdir),
+            ), patch(
+                # #335: a sugestão agora exige a guarda B limpa; sem este mock
+                # o teste consultava o `prumo` REAL da máquina (não-hermético).
+                "prumo_runtime.commands.update._run_post_update_repair",
+                return_value={"repair_executed": True, "repair_exit_code": 0},
             ):
                 rc, output = self._run_main_capturing(["update", "--yes", "--format", "json"])
             payload = json.loads(output)
