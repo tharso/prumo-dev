@@ -105,7 +105,7 @@ class CaixasDeclaradasTest(unittest.TestCase):
         sem confirmação não há escrita nem leitura de conteúdo."""
         flat = _flat(CANAIS)
         self.assertIn("Oferta de catalogação (#332)", flat)
-        self.assertIn("oferta, nunca ação", flat)
+        self.assertIn("oferta, nunca ação", flat.lower())
         self.assertIn(
             "sem confirmação explícita, nenhuma escrita e nenhuma leitura de conteúdo",
             flat,
@@ -153,14 +153,19 @@ class CaixasDeclaradasTest(unittest.TestCase):
         self.assertIn("fora dela o arquivo sai da rota de recuperação do índice", flat)
 
     def test_lote_respeita_precedencia_de_roteamento(self) -> None:
-        """[Codex r2, P1]: 'DIRETO pra Referencias/' fixaria destino por cima
-        da escala da #243 — contrato autoral aplicável vence o default."""
+        """[Codex r2/r3, P1]: destino fixo por cima da escala da #243 era o
+        bug; copy prometendo Biblioteca com entrega noutro lugar era o bug do
+        conserto. O destino resolve ANTES da oferta e a copy diz a verdade."""
         flat = _flat(CANAIS)
-        self.assertIn("destino da precedência de roteamento (#243", flat)
-        self.assertIn(
-            "`Referencias/` é o default quando nenhum degrau mais forte decidir",
-            flat,
-        )
+        self.assertIn("resolver o destino ANTES da oferta", flat)
+        self.assertIn("A copy nomeia o destino resolvido", flat)
+        self.assertIn("nenhum default novo de organização", flat)
+
+    def test_destino_autoral_sem_imposicao(self) -> None:
+        """[Codex r3, P1]: destino de contrato autoral não recebe convenção
+        nem indexação da Biblioteca — pasta do usuário, regra do usuário."""
+        flat = _flat(CANAIS)
+        self.assertIn("sem impor convenção nem indexação da Biblioteca", flat)
 
     def test_lote_adiciona_tipo_e_origem(self) -> None:
         """[Codex r2, P1]: 'preservar' não é 'acrescentar' — os campos da spec
