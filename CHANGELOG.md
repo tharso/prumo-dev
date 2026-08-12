@@ -6,6 +6,11 @@ O formato segue, de forma pragmática, a ideia de Keep a Changelog e versionamen
 
 ## [Unreleased]
 
+## [5.96.1] - 2026-08-11
+
+### Fixed
+- **Copy dos manifests deixou de amarrar o produto a um agente (#337)** — o card do plugin dizia "Transforma o Claude em interface única…" (e o manifest do Codex, "Transforma o Codex"); o `marketplace.json` posicionava o produto "via Claude". O Prumo é agnóstico (skills-first, #77) e a landing já dizia isso — os manifests ficaram pra trás. Copy única aprovada pelo dono em todos os manifests: "Transforma qualquer agente — Claude, Codex ou o próximo — em interface única para capturar, processar, lembrar e cobrar." Guard novo em `test_manifests_copy.py`: descrições idênticas entre os `plugin.json`, positivo "qualquer agente" + negativo de amarração — reintroduzir copy por host quebra a suíte.
+
 ## [5.96.0] - 2026-08-11
 
 ### Added
