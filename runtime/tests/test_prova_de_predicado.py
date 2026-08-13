@@ -15,7 +15,6 @@ eles impedem é o contrato perder uma perna numa edição futura.
 
 from __future__ import annotations
 
-import os
 import re
 import subprocess
 import unittest
@@ -418,37 +417,51 @@ def _enderecos_pessoais(dados: bytes) -> set[str]:
     return {m.decode("ascii") for m in _EMAIL_RE.findall(dados)} - _ENDERECOS_ILUSTRATIVOS
 
 
-def _conteudo_publicado(path: Path) -> bytes:
-    """O byte que o git publica pra este caminho.
-
-    Symlink: o conteúdo do blob é o CAMINHO apontado, não o arquivo de destino.
-    Seguir o link leria coisa que não está no repo — podendo sair dele — e
-    deixaria o alvo real (a string do caminho) sem varredura.
-    """
-    if path.is_symlink():
-        return os.readlink(path).encode("utf-8", errors="surrogateescape")
-    return path.read_bytes()
-
-
-def _arquivos_publicados() -> list[Path]:
-    """Todo arquivo RASTREADO pelo git — o perímetro exato de publicação.
-
-    `skills/` era o perímetro antigo e é menor que a política que o guard diz
-    representar: o repo inteiro é legível por quem clona. Arquivo rastreado
-    entra na varredura no instante em que é adicionado, sem lista pra manter
-    desatualizada; arquivo não rastreado não publica e fica de fora.
-
-    Fail-closed de propósito: sem git, levanta. Guard que pula em silêncio
-    quando o ambiente muda é guard que promete cobertura e entrega nada — a
-    suíte só roda no checkout (job `unit-and-smoke`), então isto nunca é skip
-    legítimo, é sinal de que alguém mudou o modo de execução.
-    """
-    saida = subprocess.run(
-        ["git", "-C", str(REPO_ROOT), "ls-files", "-z"],
+def _git(*args: str, entrada: bytes | None = None) -> bytes:
+    """Fail-closed de propósito: sem git, levanta. Guard que pula em silêncio
+    quando o ambiente muda promete cobertura e entrega nada — a suíte só roda no
+    checkout (job `unit-and-smoke`), então isto nunca é skip legítimo, é sinal
+    de que alguém mudou o modo de execução."""
+    return subprocess.run(
+        ["git", "-C", str(REPO_ROOT), *args],
+        input=entrada,
         capture_output=True,
         check=True,
     ).stdout
-    return [REPO_ROOT / n.decode("utf-8") for n in saida.split(b"\0") if n]
+
+
+def _blobs_publicados() -> dict[str, bytes]:
+    """{caminho: conteúdo do BLOB} — o que o git publica, na mesma fotografia.
+
+    Nome E conteúdo saem do índice. A versão anterior tirava o nome de
+    `ls-files` e o conteúdo de `read_bytes()` na árvore de trabalho: endereço
+    adicionado ao índice e depois apagado só do arquivo local deixava o guard
+    verde, e o commit seguinte publicava o endereço (review do #340, r3).
+
+    De brinde, symlink sai certo sem caso especial: o blob de modo 120000 já
+    É o caminho apontado. Ler pelo OID nunca segue link pra fora do repo.
+    """
+    linhas = [ln for ln in _git("ls-files", "--stage", "-z").split(b"\0") if ln]
+    caminhos: list[str] = []
+    oids: list[bytes] = []
+    for linha in linhas:
+        meta, _, caminho = linha.partition(b"\t")
+        oids.append(meta.split()[1])
+        caminhos.append(caminho.decode("utf-8", errors="surrogateescape"))
+
+    if not caminhos:
+        raise AssertionError("git ls-files não devolveu nada — perímetro vazio")
+
+    saida = _git("cat-file", "--batch", entrada=b"\n".join(oids) + b"\n")
+    blobs: dict[str, bytes] = {}
+    pos = 0
+    for caminho in caminhos:
+        fim_cabecalho = saida.index(b"\n", pos)
+        tamanho = int(saida[pos:fim_cabecalho].split()[2])
+        inicio = fim_cabecalho + 1
+        blobs[caminho] = saida[inicio : inicio + tamanho]
+        pos = inicio + tamanho + 1  # pula o \n que fecha o objeto
+    return blobs
 
 
 class SemEnderecoPessoalTest(unittest.TestCase):
@@ -464,29 +477,32 @@ class SemEnderecoPessoalTest(unittest.TestCase):
           carregava as 4 contas do dono em `runtime/tests/` — fora do perímetro
           do próprio guard — e foi pra dentro do repo público (auditoria 13/08).
         """
-        # SEM filtro. Todo caminho que o git rastreia é elegível, ponto — a
-        # versão anterior montava `elegiveis` DEPOIS de um `continue`, então a
-        # igualdade de cobertura media o que sobrevivia ao filtro em vez do que
-        # o git publica, e ficava verde omitindo (review do #340, P2). Caso
-        # especial vira asserção alta, nunca `continue` calado.
-        elegiveis = set(_arquivos_publicados())
+        # SEM filtro. Todo caminho do índice é varrido, ponto: caso especial
+        # vira asserção alta, nunca `continue` calado.
+        blobs = _blobs_publicados()
         offenders: dict[str, set[str]] = {}
-        lidos: set[Path] = set()
-        for path in sorted(elegiveis):
-            achados = _enderecos_pessoais(_conteudo_publicado(path))
-            lidos.add(path)  # só DEPOIS da leitura: exceção não vira "lido"
+        lidos: set[str] = set()
+        for caminho, conteudo in sorted(blobs.items()):
+            achados = _enderecos_pessoais(conteudo)
+            lidos.add(caminho)  # só DEPOIS da leitura: exceção não vira "lido"
             if achados:
-                offenders[str(path.relative_to(REPO_ROOT))] = achados
+                offenders[caminho] = achados
         self.assertEqual(offenders, {}, f"endereço pessoal em arquivo publicado: {offenders}")
 
-        # Cobertura TOTAL contra uma CONSULTA INDEPENDENTE ao git — não contra
-        # `elegiveis`, que é a mesma variável que o laço usa. Comparar com ela
-        # seria circular: um filtro novo encolheria os dois lados e a igualdade
-        # seguiria verde (foi o que a mutação M6 mostrou; o P2 do review estava
-        # só meio fechado). Aqui, filtro entre a lista do git e a varredura
-        # encolhe `lidos` e deixa o outro lado intacto — e a asserção acusa.
+        # ORÁCULO QUE NÃO PASSA PELO HELPER SOB TESTE. Comparar com
+        # `_blobs_publicados()` de novo seria circular: filtro DENTRO do helper
+        # encolhe as duas fotografias e a igualdade fica verde — o review
+        # provou isso por mutação em memória, e a minha própria bateria já
+        # tinha pego a versão anterior do mesmo erro. `git ls-files -z` cru,
+        # aqui, é o enunciado mais primitivo do perímetro: pra burlar agora é
+        # preciso editar ESTA linha, e isso lê como "removi a checagem".
+        do_git = {
+            n.decode("utf-8", errors="surrogateescape")
+            for n in _git("ls-files", "-z").split(b"\0")
+            if n
+        }
         self.assertEqual(
-            set(_arquivos_publicados()) - lidos,
+            do_git - lidos,
             set(),
             "o guard pulou arquivo rastreado — perímetro furado",
         )
@@ -494,7 +510,7 @@ class SemEnderecoPessoalTest(unittest.TestCase):
         # Contagem não prova cobertura: 49 markdown ≥ 2 HTML deixava a mutação
         # `rglob("*.md")` passar verde (gate r2). O que se afirma é que ESTES
         # paths foram lidos.
-        htmls = set(SKILLS.rglob("*.html"))
+        htmls = {p.relative_to(REPO_ROOT).as_posix() for p in SKILLS.rglob("*.html")}
         self.assertTrue(htmls, "fixture do próprio guard: sumiram os HTML de skills/")
         self.assertEqual(
             htmls - lidos,
@@ -507,7 +523,7 @@ class SemEnderecoPessoalTest(unittest.TestCase):
         # este arquivo derruba o teste aqui, e não daqui a três meses numa
         # auditoria. `skills/` passava em tudo acima e falhava só nesta linha.
         self.assertIn(
-            Path(__file__).resolve(),
+            Path(__file__).resolve().relative_to(REPO_ROOT).as_posix(),
             lidos,
             "o guard não varre o próprio arquivo — perímetro menor que a política",
         )
