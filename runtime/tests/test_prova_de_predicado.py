@@ -403,10 +403,20 @@ _ENDERECOS_ILUSTRATIVOS = frozenset(
 )
 
 _EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
+# Mesma forma em bytes: endereço de e-mail é ASCII por especificação (RFC 5321),
+# então varrer o byte cru acha o endereço dentro de QUALQUER container — Latin-1,
+# metadado de fonte .otf, blob binário. Decodificar antes obrigava a escolher um
+# encoding, e escolher errado virava `continue` silencioso (review Codex do #340).
+_EMAIL_RE_BYTES = re.compile(rb"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 
 
 def _enderecos_pessoais(texto: str) -> set[str]:
     return {e for e in _EMAIL_RE.findall(texto) if e not in _ENDERECOS_ILUSTRATIVOS}
+
+
+def _enderecos_pessoais_em_bytes(dados: bytes) -> set[str]:
+    achados = {m.decode("ascii") for m in _EMAIL_RE_BYTES.findall(dados)}
+    return achados - _ENDERECOS_ILUSTRATIVOS
 
 
 def _arquivos_publicados() -> list[Path]:
@@ -445,18 +455,29 @@ class SemEnderecoPessoalTest(unittest.TestCase):
         """
         offenders: dict[str, set[str]] = {}
         lidos: set[Path] = set()
+        elegiveis: set[Path] = set()
         for path in sorted(_arquivos_publicados()):
             if not path.is_file() or path.name == ".DS_Store":
                 continue
-            try:
-                texto = path.read_text(encoding="utf-8")
-            except (UnicodeDecodeError, ValueError):
-                continue  # binário (fontes .otf) não carrega endereço legível
+            elegiveis.add(path)
+            # Byte cru, sem decode: não existe caminho de `continue` aqui. A
+            # versão anterior pulava o arquivo que não decodificasse em UTF-8
+            # "porque binário não carrega endereço legível" — suposição falsa
+            # (metadado de fonte carrega), e o pulo era silencioso.
             lidos.add(path)
-            achados = _enderecos_pessoais(texto)
+            achados = _enderecos_pessoais_em_bytes(path.read_bytes())
             if achados:
                 offenders[str(path.relative_to(REPO_ROOT))] = achados
         self.assertEqual(offenders, {}, f"endereço pessoal em arquivo publicado: {offenders}")
+
+        # Cobertura TOTAL, não amostral: todo arquivo elegível foi lido. Enquanto
+        # esta igualdade valer, nenhuma exceção nova pode reintroduzir um skip
+        # silencioso — a única saída é o arquivo deixar de ser rastreado.
+        self.assertEqual(
+            elegiveis - lidos,
+            set(),
+            "o guard pulou arquivo rastreado — perímetro furado",
+        )
 
         # Contagem não prova cobertura: 49 markdown ≥ 2 HTML deixava a mutação
         # `rglob("*.md")` passar verde (gate r2). O que se afirma é que ESTES
@@ -507,6 +528,41 @@ class SemEnderecoPessoalTest(unittest.TestCase):
             _enderecos_pessoais("escreve pra fulano@contador.com quando houver item fiscal"),
             set(),
             "endereço ilustrativo não pode ser acusado",
+        )
+
+    def test_guard_le_endereco_dentro_de_bytes_indecodificaveis(self) -> None:
+        """O furo que o review do #340 apontou: `read_text()` levantava em
+        arquivo não-UTF-8 e o `except` pulava o arquivo INTEIRO. Endereço de
+        e-mail é ASCII por spec, então ele sobrevive legível dentro de fonte,
+        blob binário ou texto Latin-1 — e o guard tem que achá-lo lá.
+
+        Os endereços aqui também são montados em runtime, pelo mesmo motivo da
+        outra fixture — e o guard provou a regra em si mesmo: a primeira versão
+        deste teste trazia os dois em literal e foi acusada por ele.
+        """
+        pessoal = f"pessoa@{'empresa-real.example'}"
+        latin1 = f"contato de josé: {pessoal}".encode("latin-1")
+        with self.assertRaises(UnicodeDecodeError):
+            latin1.decode("utf-8")  # o arquivo que a versão anterior pulava
+        self.assertEqual(
+            _enderecos_pessoais_em_bytes(latin1),
+            {pessoal},
+            "endereço em bytes não-UTF-8 escapou do guard",
+        )
+
+        tipografo = f"tipografo@{'fundicao-real.example'}"
+        fonte = b"\x00\x01\x00\x00OTTO\x00designer: " + tipografo.encode() + b"\x00\xff\xfe"
+        self.assertEqual(
+            _enderecos_pessoais_em_bytes(fonte),
+            {tipografo},
+            "endereço em metadado binário escapou do guard",
+        )
+
+        ilustrativo = f"fulano@{'contador.com'}"
+        self.assertEqual(
+            _enderecos_pessoais_em_bytes(ilustrativo.encode()),
+            set(),
+            "allowlist tem que valer também no caminho de bytes",
         )
 
     def test_contas_monitoradas_viraram_a_fonte(self) -> None:
