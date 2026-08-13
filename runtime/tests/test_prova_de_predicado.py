@@ -16,6 +16,7 @@ eles impedem é o contrato perder uma perna numa edição futura.
 from __future__ import annotations
 
 import re
+import subprocess
 import unittest
 from pathlib import Path
 
@@ -369,16 +370,35 @@ class DonoUnicoTest(unittest.TestCase):
 
 
 # Endereços ilustrativos legítimos (placeholder, exemplo de doc, pattern de
-# ruído). Qualquer OUTRO endereço concreto em skills/ é identidade de uma
-# pessoa real vazando pro produto que vai pra todo mundo.
+# ruído). Qualquer OUTRO endereço concreto em arquivo rastreado é identidade de
+# uma pessoa real vazando pro repositório — que é público.
+#
+# A lista é fail-closed de propósito: endereço novo num exemplo exige uma linha
+# aqui. Essa fricção é o ponto — é ela que faz alguém olhar duas vezes antes de
+# colar num arquivo um endereço copiado de um caso real.
 _ENDERECOS_ILUSTRATIVOS = frozenset(
     {
+        # Placeholders da doc do produto (skills/)
         "SEUEMAIL@gmail.com",
         "ana@acme.com",
         "email-de-feedback@dominio-do-produto.com",
         "fulano@contador.com",
         "marketing@servico.com",
+        # Identidades técnicas públicas (trailers de co-autoria, bot do espelho)
         "noreply@github.com",
+        "noreply@anthropic.com",
+        "noreply@openai.com",
+        "mirror@prumo.me",
+        # Fixtures dos 5 vetores de injeção (conformance/fixtures/injection/)
+        "usuario@exemplo.com",
+        "ana@fornecedora-exemplo.com",
+        "marcelo@empresa-exemplo.com",
+        "marcelo.financeiro@empresa-exemp1o.com",
+        "alertas@servico-desconhecido-exemplo.com",
+        "verificacao@parceiro-exemplo.com",
+        "eventos@desconhecido-exemplo.com",
+        # Fixture de teste do runtime
+        "teste@prumo.local",
     }
 )
 
@@ -389,16 +409,43 @@ def _enderecos_pessoais(texto: str) -> set[str]:
     return {e for e in _EMAIL_RE.findall(texto) if e not in _ENDERECOS_ILUSTRATIVOS}
 
 
+def _arquivos_publicados() -> list[Path]:
+    """Todo arquivo RASTREADO pelo git — o perímetro exato de publicação.
+
+    `skills/` era o perímetro antigo e é menor que a política que o guard diz
+    representar: o repo inteiro é legível por quem clona. Arquivo rastreado
+    entra na varredura no instante em que é adicionado, sem lista pra manter
+    desatualizada; arquivo não rastreado não publica e fica de fora.
+
+    Fail-closed de propósito: sem git, levanta. Guard que pula em silêncio
+    quando o ambiente muda é guard que promete cobertura e entrega nada — a
+    suíte só roda no checkout (job `unit-and-smoke`), então isto nunca é skip
+    legítimo, é sinal de que alguém mudou o modo de execução.
+    """
+    saida = subprocess.run(
+        ["git", "-C", str(REPO_ROOT), "ls-files", "-z"],
+        capture_output=True,
+        check=True,
+    ).stdout
+    return [REPO_ROOT / n.decode("utf-8") for n in saida.split(b"\0") if n]
+
+
 class SemEnderecoPessoalTest(unittest.TestCase):
     """Critério 3 da #236. A linha 89 do canais listava as 4 contas do dono —
     todo usuário do Prumo lia os emails do Tharso no próprio módulo."""
 
-    def test_nenhum_endereco_pessoal_em_skills(self) -> None:
-        """Varre TODO arquivo de texto de `skills/`, não só `*.md`: o guard
-        prometia `skills/` e percorria markdown — e existe HTML lá (gate r1)."""
+    def test_nenhum_endereco_pessoal_em_arquivo_publicado(self) -> None:
+        """Varre TODO arquivo rastreado, não só `skills/`.
+
+        Duas ampliações, cada uma paga com um vazamento real:
+        - `*.md` → todo arquivo de texto, porque existe HTML em skills/ (gate r1);
+        - `skills/` → repo rastreado inteiro, porque a fixture deste arquivo
+          carregava as 4 contas do dono em `runtime/tests/` — fora do perímetro
+          do próprio guard — e foi pra dentro do repo público (auditoria 13/08).
+        """
         offenders: dict[str, set[str]] = {}
         lidos: set[Path] = set()
-        for path in sorted(SKILLS.rglob("*")):
+        for path in sorted(_arquivos_publicados()):
             if not path.is_file() or path.name == ".DS_Store":
                 continue
             try:
@@ -409,7 +456,7 @@ class SemEnderecoPessoalTest(unittest.TestCase):
             achados = _enderecos_pessoais(texto)
             if achados:
                 offenders[str(path.relative_to(REPO_ROOT))] = achados
-        self.assertEqual(offenders, {}, f"endereço pessoal em módulo canônico: {offenders}")
+        self.assertEqual(offenders, {}, f"endereço pessoal em arquivo publicado: {offenders}")
 
         # Contagem não prova cobertura: 49 markdown ≥ 2 HTML deixava a mutação
         # `rglob("*.md")` passar verde (gate r2). O que se afirma é que ESTES
@@ -422,12 +469,39 @@ class SemEnderecoPessoalTest(unittest.TestCase):
             "o guard deixou de ler arquivos não-markdown de skills/",
         )
 
-    def test_guard_pega_o_endereco_que_estava_la(self) -> None:
-        """Fixture negativa com a linha REAL que existia antes da correção."""
-        antes = (
-            "A inbox agrega 4 contas (tharso@gmail.com, tharso@brise.cloud, "
-            "tharso@brise.science, tharso@tharso.com). Uma query cobre todas."
+        # O guard tem que se enxergar. Esta é A asserção que o defeito de 28/07
+        # pedia: qualquer volta do perímetro pra um subdiretório que não contenha
+        # este arquivo derruba o teste aqui, e não daqui a três meses numa
+        # auditoria. `skills/` passava em tudo acima e falhava só nesta linha.
+        self.assertIn(
+            Path(__file__).resolve(),
+            lidos,
+            "o guard não varre o próprio arquivo — perímetro menor que a política",
         )
+
+    def test_guard_pega_o_endereco_que_estava_la(self) -> None:
+        """Fixture negativa com a FORMA da linha que existia antes da correção.
+
+        Os endereços são montados em runtime: nenhum literal concreto mora neste
+        arquivo. A versão anterior desta fixture trazia as 4 contas reais do dono
+        em texto fixo — e como o guard só varria `skills/`, ela seguiu verde
+        enquanto o dado ficava público no repo (auditoria 13/08). Guardar o dado
+        real pra provar que o guard pega o dado real é o defeito se reproduzindo
+        dentro do próprio remédio; o que precisa ser preservado é a forma
+        (4 contas distintas numa linha de prosa), não a identidade.
+
+        `.example` é TLD reservado (RFC 2606) — não resolve, não é de ninguém.
+        """
+        contas = ", ".join(
+            f"titular@{dominio}"
+            for dominio in (
+                "provedor.example",
+                "empresa-a.example",
+                "empresa-b.example",
+                "dominio-proprio.example",
+            )
+        )
+        antes = f"A inbox agrega 4 contas ({contas}). Uma query cobre todas."
         self.assertEqual(len(_enderecos_pessoais(antes)), 4, "o guard não pega a linha original")
         self.assertEqual(
             _enderecos_pessoais("escreve pra fulano@contador.com quando houver item fiscal"),
