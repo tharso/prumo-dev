@@ -15,6 +15,7 @@ eles impedem é o contrato perder uma perna numa edição futura.
 
 from __future__ import annotations
 
+import hashlib
 import re
 import subprocess
 import unittest
@@ -430,8 +431,13 @@ def _git(*args: str, entrada: bytes | None = None) -> bytes:
     ).stdout
 
 
-def _blobs_publicados() -> dict[str, bytes]:
-    """{caminho: conteúdo do BLOB} — o que o git publica, na mesma fotografia.
+def _blobs_publicados() -> dict[str, tuple[str, bytes]]:
+    """{caminho: (oid, conteúdo do BLOB)} — o que o git publica, na mesma fotografia.
+
+    O `oid` viaja junto pra que o teste possa CONFERIR os bytes contra o índice
+    sem passar por este parser: presença de caminho não prova que algo foi lido
+    (um helper que devolvesse conteúdo vazio satisfazia o oráculo de nomes —
+    review do #340, r4).
 
     Nome E conteúdo saem do índice. A versão anterior tirava o nome de
     `ls-files` e o conteúdo de `read_bytes()` na árvore de trabalho: endereço
@@ -453,13 +459,13 @@ def _blobs_publicados() -> dict[str, bytes]:
         raise AssertionError("git ls-files não devolveu nada — perímetro vazio")
 
     saida = _git("cat-file", "--batch", entrada=b"\n".join(oids) + b"\n")
-    blobs: dict[str, bytes] = {}
+    blobs: dict[str, tuple[str, bytes]] = {}
     pos = 0
-    for caminho in caminhos:
+    for caminho, oid in zip(caminhos, oids):
         fim_cabecalho = saida.index(b"\n", pos)
         tamanho = int(saida[pos:fim_cabecalho].split()[2])
         inicio = fim_cabecalho + 1
-        blobs[caminho] = saida[inicio : inicio + tamanho]
+        blobs[caminho] = (oid.decode("ascii"), saida[inicio : inicio + tamanho])
         pos = inicio + tamanho + 1  # pula o \n que fecha o objeto
     return blobs
 
@@ -482,9 +488,15 @@ class SemEnderecoPessoalTest(unittest.TestCase):
         blobs = _blobs_publicados()
         offenders: dict[str, set[str]] = {}
         lidos: set[str] = set()
-        for caminho, conteudo in sorted(blobs.items()):
+        varridos: dict[str, str] = {}
+        for caminho, (oid, conteudo) in sorted(blobs.items()):
             achados = _enderecos_pessoais(conteudo)
             lidos.add(caminho)  # só DEPOIS da leitura: exceção não vira "lido"
+            # Digest do que o scanner REALMENTE recebeu, na fórmula de objeto do
+            # git. Conferido contra o OID do índice logo abaixo.
+            varridos[caminho] = hashlib.sha1(
+                b"blob %d\0" % len(conteudo) + conteudo  # noqa: S324 — id de objeto, não segurança
+            ).hexdigest()
             if achados:
                 offenders[caminho] = achados
         self.assertEqual(offenders, {}, f"endereço pessoal em arquivo publicado: {offenders}")
@@ -505,6 +517,26 @@ class SemEnderecoPessoalTest(unittest.TestCase):
             do_git - lidos,
             set(),
             "o guard pulou arquivo rastreado — perímetro furado",
+        )
+
+        # Nome presente não prova byte lido: um helper devolvendo conteúdo vazio
+        # satisfazia a igualdade acima e não varria nada (review do #340, r4).
+        # Aqui o digest do que o scanner recebeu é conferido contra o OID do
+        # índice — esvaziar, truncar ou trocar o conteúdo muda o hash e cai.
+        self.assertEqual(
+            _git("rev-parse", "--show-object-format").strip(),
+            b"sha1",
+            "repo mudou de formato de objeto; a conferência de digest precisa acompanhar",
+        )
+        divergentes = {
+            caminho: (oid, varridos[caminho])
+            for caminho, (oid, _) in _blobs_publicados().items()
+            if varridos.get(caminho) != oid
+        }
+        self.assertEqual(
+            divergentes,
+            {},
+            f"byte varrido não confere com o blob do índice: {divergentes}",
         )
 
         # Contagem não prova cobertura: 49 markdown ≥ 2 HTML deixava a mutação
