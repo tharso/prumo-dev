@@ -15,6 +15,7 @@ eles impedem é o contrato perder uma perna numa edição futura.
 
 from __future__ import annotations
 
+import os
 import re
 import subprocess
 import unittest
@@ -402,21 +403,31 @@ _ENDERECOS_ILUSTRATIVOS = frozenset(
     }
 )
 
-_EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
-# Mesma forma em bytes: endereço de e-mail é ASCII por especificação (RFC 5321),
-# então varrer o byte cru acha o endereço dentro de QUALQUER container — Latin-1,
-# metadado de fonte .otf, blob binário. Decodificar antes obrigava a escolher um
-# encoding, e escolher errado virava `continue` silencioso (review Codex do #340).
-_EMAIL_RE_BYTES = re.compile(rb"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
+# Endereço de e-mail é ASCII por especificação (RFC 5321), então varrer o byte
+# cru acha o endereço dentro de QUALQUER container — Latin-1, metadado de fonte
+# .otf, blob binário. Decodificar antes obrigava a escolher um encoding, e
+# escolher errado virava `continue` silencioso (review do #340, P2).
+#
+# UM scanner só, em bytes. Ter um par str/bytes deixava os testes validarem uma
+# implementação e a produção usar outra — os dois regexes divergiriam em silêncio
+# (review do #340, P3). Quem testa converte pra bytes e exercita ESTE.
+_EMAIL_RE = re.compile(rb"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 
 
-def _enderecos_pessoais(texto: str) -> set[str]:
-    return {e for e in _EMAIL_RE.findall(texto) if e not in _ENDERECOS_ILUSTRATIVOS}
+def _enderecos_pessoais(dados: bytes) -> set[str]:
+    return {m.decode("ascii") for m in _EMAIL_RE.findall(dados)} - _ENDERECOS_ILUSTRATIVOS
 
 
-def _enderecos_pessoais_em_bytes(dados: bytes) -> set[str]:
-    achados = {m.decode("ascii") for m in _EMAIL_RE_BYTES.findall(dados)}
-    return achados - _ENDERECOS_ILUSTRATIVOS
+def _conteudo_publicado(path: Path) -> bytes:
+    """O byte que o git publica pra este caminho.
+
+    Symlink: o conteúdo do blob é o CAMINHO apontado, não o arquivo de destino.
+    Seguir o link leria coisa que não está no repo — podendo sair dele — e
+    deixaria o alvo real (a string do caminho) sem varredura.
+    """
+    if path.is_symlink():
+        return os.readlink(path).encode("utf-8", errors="surrogateescape")
+    return path.read_bytes()
 
 
 def _arquivos_publicados() -> list[Path]:
@@ -453,28 +464,29 @@ class SemEnderecoPessoalTest(unittest.TestCase):
           carregava as 4 contas do dono em `runtime/tests/` — fora do perímetro
           do próprio guard — e foi pra dentro do repo público (auditoria 13/08).
         """
+        # SEM filtro. Todo caminho que o git rastreia é elegível, ponto — a
+        # versão anterior montava `elegiveis` DEPOIS de um `continue`, então a
+        # igualdade de cobertura media o que sobrevivia ao filtro em vez do que
+        # o git publica, e ficava verde omitindo (review do #340, P2). Caso
+        # especial vira asserção alta, nunca `continue` calado.
+        elegiveis = set(_arquivos_publicados())
         offenders: dict[str, set[str]] = {}
         lidos: set[Path] = set()
-        elegiveis: set[Path] = set()
-        for path in sorted(_arquivos_publicados()):
-            if not path.is_file() or path.name == ".DS_Store":
-                continue
-            elegiveis.add(path)
-            # Byte cru, sem decode: não existe caminho de `continue` aqui. A
-            # versão anterior pulava o arquivo que não decodificasse em UTF-8
-            # "porque binário não carrega endereço legível" — suposição falsa
-            # (metadado de fonte carrega), e o pulo era silencioso.
-            lidos.add(path)
-            achados = _enderecos_pessoais_em_bytes(path.read_bytes())
+        for path in sorted(elegiveis):
+            achados = _enderecos_pessoais(_conteudo_publicado(path))
+            lidos.add(path)  # só DEPOIS da leitura: exceção não vira "lido"
             if achados:
                 offenders[str(path.relative_to(REPO_ROOT))] = achados
         self.assertEqual(offenders, {}, f"endereço pessoal em arquivo publicado: {offenders}")
 
-        # Cobertura TOTAL, não amostral: todo arquivo elegível foi lido. Enquanto
-        # esta igualdade valer, nenhuma exceção nova pode reintroduzir um skip
-        # silencioso — a única saída é o arquivo deixar de ser rastreado.
+        # Cobertura TOTAL contra uma CONSULTA INDEPENDENTE ao git — não contra
+        # `elegiveis`, que é a mesma variável que o laço usa. Comparar com ela
+        # seria circular: um filtro novo encolheria os dois lados e a igualdade
+        # seguiria verde (foi o que a mutação M6 mostrou; o P2 do review estava
+        # só meio fechado). Aqui, filtro entre a lista do git e a varredura
+        # encolhe `lidos` e deixa o outro lado intacto — e a asserção acusa.
         self.assertEqual(
-            elegiveis - lidos,
+            set(_arquivos_publicados()) - lidos,
             set(),
             "o guard pulou arquivo rastreado — perímetro furado",
         )
@@ -523,9 +535,16 @@ class SemEnderecoPessoalTest(unittest.TestCase):
             )
         )
         antes = f"A inbox agrega 4 contas ({contas}). Uma query cobre todas."
-        self.assertEqual(len(_enderecos_pessoais(antes)), 4, "o guard não pega a linha original")
+        # `.encode()` e não um scanner de string paralelo: a fixture tem que
+        # exercitar A função que o guard roda, senão os dois divergem em
+        # silêncio e este teste fica verde pelo caminho errado (#340, P3).
         self.assertEqual(
-            _enderecos_pessoais("escreve pra fulano@contador.com quando houver item fiscal"),
+            len(_enderecos_pessoais(antes.encode())), 4, "o guard não pega a linha original"
+        )
+        self.assertEqual(
+            _enderecos_pessoais(
+                f"escreve pra fulano@{'contador.com'} quando houver item fiscal".encode()
+            ),
             set(),
             "endereço ilustrativo não pode ser acusado",
         )
@@ -545,7 +564,7 @@ class SemEnderecoPessoalTest(unittest.TestCase):
         with self.assertRaises(UnicodeDecodeError):
             latin1.decode("utf-8")  # o arquivo que a versão anterior pulava
         self.assertEqual(
-            _enderecos_pessoais_em_bytes(latin1),
+            _enderecos_pessoais(latin1),
             {pessoal},
             "endereço em bytes não-UTF-8 escapou do guard",
         )
@@ -553,14 +572,14 @@ class SemEnderecoPessoalTest(unittest.TestCase):
         tipografo = f"tipografo@{'fundicao-real.example'}"
         fonte = b"\x00\x01\x00\x00OTTO\x00designer: " + tipografo.encode() + b"\x00\xff\xfe"
         self.assertEqual(
-            _enderecos_pessoais_em_bytes(fonte),
+            _enderecos_pessoais(fonte),
             {tipografo},
             "endereço em metadado binário escapou do guard",
         )
 
         ilustrativo = f"fulano@{'contador.com'}"
         self.assertEqual(
-            _enderecos_pessoais_em_bytes(ilustrativo.encode()),
+            _enderecos_pessoais(ilustrativo.encode()),
             set(),
             "allowlist tem que valer também no caminho de bytes",
         )
