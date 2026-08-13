@@ -431,13 +431,13 @@ def _git(*args: str, entrada: bytes | None = None) -> bytes:
     ).stdout
 
 
-def _blobs_publicados() -> dict[str, tuple[str, bytes]]:
-    """{caminho: (oid, conteúdo do BLOB)} — o que o git publica, na mesma fotografia.
+def _blobs_publicados() -> dict[str, bytes]:
+    """{caminho: conteúdo do BLOB} — o que o git publica, na mesma fotografia.
 
-    O `oid` viaja junto pra que o teste possa CONFERIR os bytes contra o índice
-    sem passar por este parser: presença de caminho não prova que algo foi lido
-    (um helper que devolvesse conteúdo vazio satisfazia o oráculo de nomes —
-    review do #340, r4).
+    Esta função fornece SÓ os bytes. Quem confere se eles são mesmo os do índice
+    é o teste, com OIDs que ele lê do git por conta própria — helper que
+    devolvesse conteúdo E o digest correspondente validaria a si mesmo
+    (review do #340, r5).
 
     Nome E conteúdo saem do índice. A versão anterior tirava o nome de
     `ls-files` e o conteúdo de `read_bytes()` na árvore de trabalho: endereço
@@ -459,15 +459,31 @@ def _blobs_publicados() -> dict[str, tuple[str, bytes]]:
         raise AssertionError("git ls-files não devolveu nada — perímetro vazio")
 
     saida = _git("cat-file", "--batch", entrada=b"\n".join(oids) + b"\n")
-    blobs: dict[str, tuple[str, bytes]] = {}
+    blobs: dict[str, bytes] = {}
     pos = 0
-    for caminho, oid in zip(caminhos, oids):
+    for caminho in caminhos:
         fim_cabecalho = saida.index(b"\n", pos)
         tamanho = int(saida[pos:fim_cabecalho].split()[2])
         inicio = fim_cabecalho + 1
-        blobs[caminho] = (oid.decode("ascii"), saida[inicio : inicio + tamanho])
+        blobs[caminho] = saida[inicio : inicio + tamanho]
         pos = inicio + tamanho + 1  # pula o \n que fecha o objeto
     return blobs
+
+
+def _indice_do_git() -> dict[str, str]:
+    """{caminho: oid} lido do git — o ORÁCULO, independente de `_blobs_publicados`.
+
+    Sim, isto reparsa `ls-files --stage` que o helper também parsa. A duplicação
+    é DELIBERADA e é o ponto: um oráculo que reusasse o helper validaria o
+    componente sob teste com dados do próprio componente. Não unifique.
+    """
+    indice: dict[str, str] = {}
+    for linha in _git("ls-files", "--stage", "-z").split(b"\0"):
+        if not linha:
+            continue
+        meta, _, caminho = linha.partition(b"\t")
+        indice[caminho.decode("utf-8", errors="surrogateescape")] = meta.split()[1].decode("ascii")
+    return indice
 
 
 class SemEnderecoPessoalTest(unittest.TestCase):
@@ -489,7 +505,7 @@ class SemEnderecoPessoalTest(unittest.TestCase):
         offenders: dict[str, set[str]] = {}
         lidos: set[str] = set()
         varridos: dict[str, str] = {}
-        for caminho, (oid, conteudo) in sorted(blobs.items()):
+        for caminho, conteudo in sorted(blobs.items()):
             achados = _enderecos_pessoais(conteudo)
             lidos.add(caminho)  # só DEPOIS da leitura: exceção não vira "lido"
             # Digest do que o scanner REALMENTE recebeu, na fórmula de objeto do
@@ -508,29 +524,28 @@ class SemEnderecoPessoalTest(unittest.TestCase):
         # tinha pego a versão anterior do mesmo erro. `git ls-files -z` cru,
         # aqui, é o enunciado mais primitivo do perímetro: pra burlar agora é
         # preciso editar ESTA linha, e isso lê como "removi a checagem".
-        do_git = {
-            n.decode("utf-8", errors="surrogateescape")
-            for n in _git("ls-files", "-z").split(b"\0")
-            if n
-        }
+        indice = _indice_do_git()
         self.assertEqual(
-            do_git - lidos,
+            set(indice) - lidos,
             set(),
             "o guard pulou arquivo rastreado — perímetro furado",
         )
 
         # Nome presente não prova byte lido: um helper devolvendo conteúdo vazio
-        # satisfazia a igualdade acima e não varria nada (review do #340, r4).
-        # Aqui o digest do que o scanner recebeu é conferido contra o OID do
-        # índice — esvaziar, truncar ou trocar o conteúdo muda o hash e cai.
+        # satisfazia a igualdade acima sem varrer nada (r4). E tirar o OID do
+        # próprio helper também não bastava — ele podia forjar conteúdo e digest
+        # juntos (r5). Aqui o digest do que o scanner recebeu é conferido contra
+        # o OID que o TESTE leu do git: esvaziar, truncar ou trocar o conteúdo
+        # muda o hash e cai, porque o outro lado da comparação não passa pelo
+        # componente sob teste.
         self.assertEqual(
             _git("rev-parse", "--show-object-format").strip(),
             b"sha1",
             "repo mudou de formato de objeto; a conferência de digest precisa acompanhar",
         )
         divergentes = {
-            caminho: (oid, varridos[caminho])
-            for caminho, (oid, _) in _blobs_publicados().items()
+            caminho: (oid, varridos.get(caminho))
+            for caminho, oid in indice.items()
             if varridos.get(caminho) != oid
         }
         self.assertEqual(
