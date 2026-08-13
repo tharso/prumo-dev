@@ -15,7 +15,9 @@ eles impedem é o contrato perder uma perna numa edição futura.
 
 from __future__ import annotations
 
+import hashlib
 import re
+import subprocess
 import unittest
 from pathlib import Path
 
@@ -369,52 +371,193 @@ class DonoUnicoTest(unittest.TestCase):
 
 
 # Endereços ilustrativos legítimos (placeholder, exemplo de doc, pattern de
-# ruído). Qualquer OUTRO endereço concreto em skills/ é identidade de uma
-# pessoa real vazando pro produto que vai pra todo mundo.
+# ruído). Qualquer OUTRO endereço concreto em arquivo rastreado é identidade de
+# uma pessoa real vazando pro repositório — que é público.
+#
+# A lista é fail-closed de propósito: endereço novo num exemplo exige uma linha
+# aqui. Essa fricção é o ponto — é ela que faz alguém olhar duas vezes antes de
+# colar num arquivo um endereço copiado de um caso real.
 _ENDERECOS_ILUSTRATIVOS = frozenset(
     {
+        # Placeholders da doc do produto (skills/)
         "SEUEMAIL@gmail.com",
         "ana@acme.com",
         "email-de-feedback@dominio-do-produto.com",
         "fulano@contador.com",
         "marketing@servico.com",
+        # Identidades técnicas públicas (trailers de co-autoria, bot do espelho)
         "noreply@github.com",
+        "noreply@anthropic.com",
+        "noreply@openai.com",
+        "mirror@prumo.me",
+        # Fixtures dos 5 vetores de injeção (conformance/fixtures/injection/)
+        "usuario@exemplo.com",
+        "ana@fornecedora-exemplo.com",
+        "marcelo@empresa-exemplo.com",
+        "marcelo.financeiro@empresa-exemp1o.com",
+        "alertas@servico-desconhecido-exemplo.com",
+        "verificacao@parceiro-exemplo.com",
+        "eventos@desconhecido-exemplo.com",
+        # Fixture de teste do runtime
+        "teste@prumo.local",
     }
 )
 
-_EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
+# Endereço de e-mail é ASCII por especificação (RFC 5321), então varrer o byte
+# cru acha o endereço dentro de QUALQUER container — Latin-1, metadado de fonte
+# .otf, blob binário. Decodificar antes obrigava a escolher um encoding, e
+# escolher errado virava `continue` silencioso (review do #340, P2).
+#
+# UM scanner só, em bytes. Ter um par str/bytes deixava os testes validarem uma
+# implementação e a produção usar outra — os dois regexes divergiriam em silêncio
+# (review do #340, P3). Quem testa converte pra bytes e exercita ESTE.
+_EMAIL_RE = re.compile(rb"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 
 
-def _enderecos_pessoais(texto: str) -> set[str]:
-    return {e for e in _EMAIL_RE.findall(texto) if e not in _ENDERECOS_ILUSTRATIVOS}
+def _enderecos_pessoais(dados: bytes) -> set[str]:
+    return {m.decode("ascii") for m in _EMAIL_RE.findall(dados)} - _ENDERECOS_ILUSTRATIVOS
+
+
+def _git(*args: str, entrada: bytes | None = None) -> bytes:
+    """Fail-closed de propósito: sem git, levanta. Guard que pula em silêncio
+    quando o ambiente muda promete cobertura e entrega nada — a suíte só roda no
+    checkout (job `unit-and-smoke`), então isto nunca é skip legítimo, é sinal
+    de que alguém mudou o modo de execução."""
+    return subprocess.run(
+        ["git", "-C", str(REPO_ROOT), *args],
+        input=entrada,
+        capture_output=True,
+        check=True,
+    ).stdout
+
+
+def _blobs_publicados() -> dict[str, bytes]:
+    """{caminho: conteúdo do BLOB} — o que o git publica, na mesma fotografia.
+
+    Esta função fornece SÓ os bytes. Quem confere se eles são mesmo os do índice
+    é o teste, com OIDs que ele lê do git por conta própria — helper que
+    devolvesse conteúdo E o digest correspondente validaria a si mesmo
+    (review do #340, r5).
+
+    Nome E conteúdo saem do índice. A versão anterior tirava o nome de
+    `ls-files` e o conteúdo de `read_bytes()` na árvore de trabalho: endereço
+    adicionado ao índice e depois apagado só do arquivo local deixava o guard
+    verde, e o commit seguinte publicava o endereço (review do #340, r3).
+
+    De brinde, symlink sai certo sem caso especial: o blob de modo 120000 já
+    É o caminho apontado. Ler pelo OID nunca segue link pra fora do repo.
+    """
+    linhas = [ln for ln in _git("ls-files", "--stage", "-z").split(b"\0") if ln]
+    caminhos: list[str] = []
+    oids: list[bytes] = []
+    for linha in linhas:
+        meta, _, caminho = linha.partition(b"\t")
+        oids.append(meta.split()[1])
+        caminhos.append(caminho.decode("utf-8", errors="surrogateescape"))
+
+    if not caminhos:
+        raise AssertionError("git ls-files não devolveu nada — perímetro vazio")
+
+    saida = _git("cat-file", "--batch", entrada=b"\n".join(oids) + b"\n")
+    blobs: dict[str, bytes] = {}
+    pos = 0
+    for caminho in caminhos:
+        fim_cabecalho = saida.index(b"\n", pos)
+        tamanho = int(saida[pos:fim_cabecalho].split()[2])
+        inicio = fim_cabecalho + 1
+        blobs[caminho] = saida[inicio : inicio + tamanho]
+        pos = inicio + tamanho + 1  # pula o \n que fecha o objeto
+    return blobs
+
+
+def _indice_do_git() -> dict[str, str]:
+    """{caminho: oid} lido do git — o ORÁCULO, independente de `_blobs_publicados`.
+
+    Sim, isto reparsa `ls-files --stage` que o helper também parsa. A duplicação
+    é DELIBERADA e é o ponto: um oráculo que reusasse o helper validaria o
+    componente sob teste com dados do próprio componente. Não unifique.
+    """
+    indice: dict[str, str] = {}
+    for linha in _git("ls-files", "--stage", "-z").split(b"\0"):
+        if not linha:
+            continue
+        meta, _, caminho = linha.partition(b"\t")
+        indice[caminho.decode("utf-8", errors="surrogateescape")] = meta.split()[1].decode("ascii")
+    return indice
 
 
 class SemEnderecoPessoalTest(unittest.TestCase):
     """Critério 3 da #236. A linha 89 do canais listava as 4 contas do dono —
     todo usuário do Prumo lia os emails do Tharso no próprio módulo."""
 
-    def test_nenhum_endereco_pessoal_em_skills(self) -> None:
-        """Varre TODO arquivo de texto de `skills/`, não só `*.md`: o guard
-        prometia `skills/` e percorria markdown — e existe HTML lá (gate r1)."""
+    def test_nenhum_endereco_pessoal_em_arquivo_publicado(self) -> None:
+        """Varre TODO arquivo rastreado, não só `skills/`.
+
+        Duas ampliações, cada uma paga com um vazamento real:
+        - `*.md` → todo arquivo de texto, porque existe HTML em skills/ (gate r1);
+        - `skills/` → repo rastreado inteiro, porque a fixture deste arquivo
+          carregava as 4 contas do dono em `runtime/tests/` — fora do perímetro
+          do próprio guard — e foi pra dentro do repo público (auditoria 13/08).
+        """
+        # SEM filtro. Todo caminho do índice é varrido, ponto: caso especial
+        # vira asserção alta, nunca `continue` calado.
+        blobs = _blobs_publicados()
         offenders: dict[str, set[str]] = {}
-        lidos: set[Path] = set()
-        for path in sorted(SKILLS.rglob("*")):
-            if not path.is_file() or path.name == ".DS_Store":
-                continue
-            try:
-                texto = path.read_text(encoding="utf-8")
-            except (UnicodeDecodeError, ValueError):
-                continue  # binário (fontes .otf) não carrega endereço legível
-            lidos.add(path)
-            achados = _enderecos_pessoais(texto)
+        lidos: set[str] = set()
+        varridos: dict[str, str] = {}
+        for caminho, conteudo in sorted(blobs.items()):
+            achados = _enderecos_pessoais(conteudo)
+            lidos.add(caminho)  # só DEPOIS da leitura: exceção não vira "lido"
+            # Digest do que o scanner REALMENTE recebeu, na fórmula de objeto do
+            # git. Conferido contra o OID do índice logo abaixo.
+            varridos[caminho] = hashlib.sha1(
+                b"blob %d\0" % len(conteudo) + conteudo  # noqa: S324 — id de objeto, não segurança
+            ).hexdigest()
             if achados:
-                offenders[str(path.relative_to(REPO_ROOT))] = achados
-        self.assertEqual(offenders, {}, f"endereço pessoal em módulo canônico: {offenders}")
+                offenders[caminho] = achados
+        self.assertEqual(offenders, {}, f"endereço pessoal em arquivo publicado: {offenders}")
+
+        # ORÁCULO QUE NÃO PASSA PELO HELPER SOB TESTE. Comparar com
+        # `_blobs_publicados()` de novo seria circular: filtro DENTRO do helper
+        # encolhe as duas fotografias e a igualdade fica verde — o review
+        # provou isso por mutação em memória, e a minha própria bateria já
+        # tinha pego a versão anterior do mesmo erro. `git ls-files -z` cru,
+        # aqui, é o enunciado mais primitivo do perímetro: pra burlar agora é
+        # preciso editar ESTA linha, e isso lê como "removi a checagem".
+        indice = _indice_do_git()
+        self.assertEqual(
+            set(indice) - lidos,
+            set(),
+            "o guard pulou arquivo rastreado — perímetro furado",
+        )
+
+        # Nome presente não prova byte lido: um helper devolvendo conteúdo vazio
+        # satisfazia a igualdade acima sem varrer nada (r4). E tirar o OID do
+        # próprio helper também não bastava — ele podia forjar conteúdo e digest
+        # juntos (r5). Aqui o digest do que o scanner recebeu é conferido contra
+        # o OID que o TESTE leu do git: esvaziar, truncar ou trocar o conteúdo
+        # muda o hash e cai, porque o outro lado da comparação não passa pelo
+        # componente sob teste.
+        self.assertEqual(
+            _git("rev-parse", "--show-object-format").strip(),
+            b"sha1",
+            "repo mudou de formato de objeto; a conferência de digest precisa acompanhar",
+        )
+        divergentes = {
+            caminho: (oid, varridos.get(caminho))
+            for caminho, oid in indice.items()
+            if varridos.get(caminho) != oid
+        }
+        self.assertEqual(
+            divergentes,
+            {},
+            f"byte varrido não confere com o blob do índice: {divergentes}",
+        )
 
         # Contagem não prova cobertura: 49 markdown ≥ 2 HTML deixava a mutação
         # `rglob("*.md")` passar verde (gate r2). O que se afirma é que ESTES
         # paths foram lidos.
-        htmls = set(SKILLS.rglob("*.html"))
+        htmls = {p.relative_to(REPO_ROOT).as_posix() for p in SKILLS.rglob("*.html")}
         self.assertTrue(htmls, "fixture do próprio guard: sumiram os HTML de skills/")
         self.assertEqual(
             htmls - lidos,
@@ -422,17 +565,86 @@ class SemEnderecoPessoalTest(unittest.TestCase):
             "o guard deixou de ler arquivos não-markdown de skills/",
         )
 
-    def test_guard_pega_o_endereco_que_estava_la(self) -> None:
-        """Fixture negativa com a linha REAL que existia antes da correção."""
-        antes = (
-            "A inbox agrega 4 contas (tharso@gmail.com, tharso@brise.cloud, "
-            "tharso@brise.science, tharso@tharso.com). Uma query cobre todas."
+        # O guard tem que se enxergar. Esta é A asserção que o defeito de 28/07
+        # pedia: qualquer volta do perímetro pra um subdiretório que não contenha
+        # este arquivo derruba o teste aqui, e não daqui a três meses numa
+        # auditoria. `skills/` passava em tudo acima e falhava só nesta linha.
+        self.assertIn(
+            Path(__file__).resolve().relative_to(REPO_ROOT).as_posix(),
+            lidos,
+            "o guard não varre o próprio arquivo — perímetro menor que a política",
         )
-        self.assertEqual(len(_enderecos_pessoais(antes)), 4, "o guard não pega a linha original")
+
+    def test_guard_pega_o_endereco_que_estava_la(self) -> None:
+        """Fixture negativa com a FORMA da linha que existia antes da correção.
+
+        Os endereços são montados em runtime: nenhum literal concreto mora neste
+        arquivo. A versão anterior desta fixture trazia as 4 contas reais do dono
+        em texto fixo — e como o guard só varria `skills/`, ela seguiu verde
+        enquanto o dado ficava público no repo (auditoria 13/08). Guardar o dado
+        real pra provar que o guard pega o dado real é o defeito se reproduzindo
+        dentro do próprio remédio; o que precisa ser preservado é a forma
+        (4 contas distintas numa linha de prosa), não a identidade.
+
+        `.example` é TLD reservado (RFC 2606) — não resolve, não é de ninguém.
+        """
+        contas = ", ".join(
+            f"titular@{dominio}"
+            for dominio in (
+                "provedor.example",
+                "empresa-a.example",
+                "empresa-b.example",
+                "dominio-proprio.example",
+            )
+        )
+        antes = f"A inbox agrega 4 contas ({contas}). Uma query cobre todas."
+        # `.encode()` e não um scanner de string paralelo: a fixture tem que
+        # exercitar A função que o guard roda, senão os dois divergem em
+        # silêncio e este teste fica verde pelo caminho errado (#340, P3).
         self.assertEqual(
-            _enderecos_pessoais("escreve pra fulano@contador.com quando houver item fiscal"),
+            len(_enderecos_pessoais(antes.encode())), 4, "o guard não pega a linha original"
+        )
+        self.assertEqual(
+            _enderecos_pessoais(
+                f"escreve pra fulano@{'contador.com'} quando houver item fiscal".encode()
+            ),
             set(),
             "endereço ilustrativo não pode ser acusado",
+        )
+
+    def test_guard_le_endereco_dentro_de_bytes_indecodificaveis(self) -> None:
+        """O furo que o review do #340 apontou: `read_text()` levantava em
+        arquivo não-UTF-8 e o `except` pulava o arquivo INTEIRO. Endereço de
+        e-mail é ASCII por spec, então ele sobrevive legível dentro de fonte,
+        blob binário ou texto Latin-1 — e o guard tem que achá-lo lá.
+
+        Os endereços aqui também são montados em runtime, pelo mesmo motivo da
+        outra fixture — e o guard provou a regra em si mesmo: a primeira versão
+        deste teste trazia os dois em literal e foi acusada por ele.
+        """
+        pessoal = f"pessoa@{'empresa-real.example'}"
+        latin1 = f"contato de josé: {pessoal}".encode("latin-1")
+        with self.assertRaises(UnicodeDecodeError):
+            latin1.decode("utf-8")  # o arquivo que a versão anterior pulava
+        self.assertEqual(
+            _enderecos_pessoais(latin1),
+            {pessoal},
+            "endereço em bytes não-UTF-8 escapou do guard",
+        )
+
+        tipografo = f"tipografo@{'fundicao-real.example'}"
+        fonte = b"\x00\x01\x00\x00OTTO\x00designer: " + tipografo.encode() + b"\x00\xff\xfe"
+        self.assertEqual(
+            _enderecos_pessoais(fonte),
+            {tipografo},
+            "endereço em metadado binário escapou do guard",
+        )
+
+        ilustrativo = f"fulano@{'contador.com'}"
+        self.assertEqual(
+            _enderecos_pessoais(ilustrativo.encode()),
+            set(),
+            "allowlist tem que valer também no caminho de bytes",
         )
 
     def test_contas_monitoradas_viraram_a_fonte(self) -> None:
